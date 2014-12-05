@@ -15,7 +15,7 @@ Features
 Structures
 ..........
 
-- CSR matrix
+- CSR matrix, able to operate on borrowed data
 
 TODO
 ----
@@ -23,6 +23,8 @@ TODO
 Structures
 ..........
 
+- CSR matrix, able to operate on owned data
+- unified interface for owned and borrowed data
 - CSC matrix
 - lower/upper triangular CSC/CSR matrices
 - block-sparse matrices
@@ -34,3 +36,7 @@ Algorithms
 - sparse LU decomposition
 - sparse Cholesky decomposition
 
+Misc
+....
+
+- Python bindings

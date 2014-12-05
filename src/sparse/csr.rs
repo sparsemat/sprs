@@ -6,28 +6,28 @@
 /// for i in [0, nrows],
 /// A(i, indices[indptr[i]..indptr[i+1]]) = data[indptr[i]..indptr[i+1]]
 
-pub struct CSR<N> {
+pub struct CSR<'a, N: 'a> {
     nrows : uint,
     ncols : uint,
     nnz : uint,
-    indptr : Vec<uint>,
-    indices : Vec<uint>,
-    data : Vec<N>
+    indptr : &'a [uint],
+    indices : &'a [uint],
+    data : &'a [N]
 }
 
 /// Create a CSR matrix from its main components, checking their validity
 /// Validity check is performed using check_csr_structure()
-pub fn new_csr<N: Clone>(
+pub fn new_csr<'a, N: Clone>(
         nrows : uint, ncols: uint,
-        indptr : &[uint], indices : &[uint], data : &[N]
-        ) -> Option<CSR<N>> {
+        indptr : &'a[uint], indices : &'a[uint], data : &'a[N]
+        ) -> Option<CSR<'a, N>> {
     let m = CSR {
         nrows : nrows,
         ncols: ncols,
         nnz : data.len(),
-        indptr : indptr.to_vec(),
-        indices : indices.to_vec(),
-        data : data.to_vec()
+        indptr : indptr,
+        indices : indices,
+        data : data
     };
     match m.check_csr_structure() {
         None => None,
@@ -35,7 +35,7 @@ pub fn new_csr<N: Clone>(
     }
 }
 
-impl<N: Clone> CSR<N> {
+impl<'a, N: 'a + Clone> CSR<'a, N> {
 
     /// Check the structure of CSR components
     fn check_csr_structure(&self) -> Option<uint> {
