@@ -1,5 +1,5 @@
 
-pub use self::csr::{BorrowedCSR};
+pub use self::csmat::{CompressedStorage, BorrowedCsMat, CsMat};
 
-mod csr;
+mod csmat;
 
