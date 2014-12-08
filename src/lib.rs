@@ -6,7 +6,7 @@ CSRust is a sparse linear algebra library for Rust.
 
 */
 
-pub use sparse::{CSR};
+pub use sparse::{BorrowedCSR};
 
 mod sparse;
 

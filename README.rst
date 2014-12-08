@@ -16,6 +16,7 @@ Structures
 ..........
 
 - CSR matrix, able to operate on borrowed data
+- CSR matrix, able to operate on owned data
 
 TODO
 ----
@@ -23,9 +24,8 @@ TODO
 Structures
 ..........
 
-- CSR matrix, able to operate on owned data
 - unified interface for owned and borrowed data
-- CSC matrix
+- CSC matrix, unified code with CSR
 - lower/upper triangular CSC/CSR matrices
 - block-sparse matrices
 

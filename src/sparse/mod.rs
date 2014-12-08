@@ -1,5 +1,5 @@
 
-pub use self::csr::{CSR};
+pub use self::csr::{BorrowedCSR};
 
 mod csr;
 

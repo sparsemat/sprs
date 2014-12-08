@@ -6,7 +6,11 @@
 /// for i in [0, nrows],
 /// A(i, indices[indptr[i]..indptr[i+1]]) = data[indptr[i]..indptr[i+1]]
 
-pub struct CSR<'a, N: 'a> {
+pub trait AsBorrowed<'a, N: 'a> {
+    fn as_borrowed(&'a self) -> BorrowedCSR<'a, N>;
+}
+
+pub struct BorrowedCSR<'a, N: 'a> {
     nrows : uint,
     ncols : uint,
     nnz : uint,
@@ -15,13 +19,35 @@ pub struct CSR<'a, N: 'a> {
     data : &'a [N]
 }
 
+pub struct CSR<N> {
+    nrows : uint,
+    ncols : uint,
+    nnz : uint,
+    indptr : Vec<uint>,
+    indices : Vec<uint>,
+    data : Vec<N>
+}
+
+impl<'a, N: 'a> AsBorrowed<'a, N> for CSR<N> {
+    fn as_borrowed(&'a self) -> BorrowedCSR<'a, N> {
+        BorrowedCSR {
+            nrows: self.nrows,
+            ncols: self.ncols,
+            nnz: self.nnz,
+            indptr: self.indptr.as_slice(),
+            indices: self.indices.as_slice(),
+            data: self.data.as_slice(),
+        }
+    }
+}
+
 /// Create a CSR matrix from its main components, checking their validity
 /// Validity check is performed using check_csr_structure()
-pub fn new_csr<'a, N: Clone>(
+pub fn new_borrowed_csr<'a, N: Clone>(
         nrows : uint, ncols: uint,
         indptr : &'a[uint], indices : &'a[uint], data : &'a[N]
-        ) -> Option<CSR<'a, N>> {
-    let m = CSR {
+        ) -> Option<BorrowedCSR<'a, N>> {
+    let m = BorrowedCSR {
         nrows : nrows,
         ncols: ncols,
         nnz : data.len(),
@@ -35,7 +61,31 @@ pub fn new_csr<'a, N: Clone>(
     }
 }
 
-impl<'a, N: 'a + Clone> CSR<'a, N> {
+pub fn new_csr<N: Clone>(
+        nrows : uint, ncols: uint,
+        indptr : &Vec<uint>, indices : &Vec<uint>, data : &Vec<N>
+        ) -> Option<CSR<N>> {
+    let m = CSR {
+        nrows : nrows,
+        ncols: ncols,
+        nnz : data.len(),
+        indptr : indptr.clone(),
+        indices : indices.clone(),
+        data : data.clone()
+    };
+    match m.check_csr_structure() {
+        None => None,
+        _ => Some(m)
+    }
+}
+
+impl<N: Clone> CSR<N> {
+    fn check_csr_structure(&self) -> Option<uint> {
+        self.as_borrowed().check_csr_structure()
+    }
+}
+
+impl<'a, N: 'a + Clone> BorrowedCSR<'a, N> {
 
     /// Check the structure of CSR components
     fn check_csr_structure(&self) -> Option<uint> {
@@ -78,16 +128,17 @@ impl<'a, N: 'a + Clone> CSR<'a, N> {
     }
 }
 
+
 #[cfg(test)]
 mod test {
-    use super::new_csr;
+    use super::{new_borrowed_csr, new_csr};
 
     #[test]
     fn test_new_csr_success() {
         let indptr_ok : &[uint] = &[0, 1, 2, 3];
         let indices_ok : &[uint] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        match new_csr(3, 3, indptr_ok, indices_ok, data_ok) {
+        match new_borrowed_csr(3, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
@@ -105,33 +156,56 @@ mod test {
         let indices_fail2 : &[uint] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        match new_csr(3, 3, indptr_fail1, indices_ok, data_ok) {
+        match new_borrowed_csr(3, 3, indptr_fail1, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_csr(3, 3, indptr_fail2, indices_ok, data_ok) {
+        match new_borrowed_csr(3, 3, indptr_fail2, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_csr(3, 3, indptr_fail3, indices_ok, data_ok) {
+        match new_borrowed_csr(3, 3, indptr_fail3, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_csr(3, 3, indptr_ok, indices_fail1, data_ok) {
+        match new_borrowed_csr(3, 3, indptr_ok, indices_fail1, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_csr(3, 3, indptr_ok, indices_fail2, data_ok) {
+        match new_borrowed_csr(3, 3, indptr_ok, indices_fail2, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_csr(3, 3, indptr_ok, indices_ok, data_fail1) {
+        match new_borrowed_csr(3, 3, indptr_ok, indices_ok, data_fail1) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_csr(3, 3, indptr_ok, indices_ok, data_fail2) {
+        match new_borrowed_csr(3, 3, indptr_ok, indices_ok, data_fail2) {
             Some(_) => assert!(false),
             None => assert!(true)
+        }
+    }
+
+    #[test]
+    fn test_new_csr_vec_borrowed() {
+        let indptr_ok = vec![0u, 1, 2, 3];
+        let indices_ok = vec![0u, 1, 2];
+        let data_ok : Vec<f64> = vec![1., 1., 1.];
+        match new_borrowed_csr(3, 3, indptr_ok.as_slice(),
+                      indices_ok.as_slice(), data_ok.as_slice()) {
+            Some(_) => assert!(true),
+            None => assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_new_csr_vec_owned() {
+        let indptr_ok = vec![0u, 1, 2, 3];
+        let indices_ok = vec![0u, 1, 2];
+        let data_ok : Vec<f64> = vec![1., 1., 1.];
+        match new_csr(3, 3, &indptr_ok, &indices_ok, &data_ok) {
+            Some(_) => assert!(true),
+            None => assert!(false)
         }
     }
 }
