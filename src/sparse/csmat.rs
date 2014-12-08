@@ -208,6 +208,41 @@ mod test {
     }
 
     #[test]
+    fn test_new_csr_csc_success() {
+        let indptr_ok : &[uint] = &[0, 2, 5, 6];
+        let indices_ok : &[uint] = &[2, 3, 1, 2, 3, 3];
+        let data_ok : &[f64] = &[
+            0.05734571, 0.15543348, 0.75628258,
+            0.83054515, 0.71851547, 0.46202352];
+        match new_borrowed_csmat(CSR, 3, 4, indptr_ok, indices_ok, data_ok) {
+            Some(_) => assert!(true),
+            None => assert!(false)
+        }
+        match new_borrowed_csmat(CSC, 4, 3, indptr_ok, indices_ok, data_ok) {
+            Some(_) => assert!(true),
+            None => assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_new_csr_csc_fails() {
+        let indptr_ok : &[uint] = &[0, 2, 5, 6];
+        let indices_ok : &[uint] = &[2, 3, 1, 2, 3, 3];
+        let data_ok : &[f64] = &[
+            0.05734571, 0.15543348, 0.75628258,
+            0.83054515, 0.71851547, 0.46202352];
+        match new_borrowed_csmat(CSR, 4, 3, indptr_ok, indices_ok, data_ok) {
+            Some(_) => assert!(false),
+            None => assert!(true)
+        }
+        match new_borrowed_csmat(CSC, 3, 4, indptr_ok, indices_ok, data_ok) {
+            Some(_) => assert!(false),
+            None => assert!(true)
+        }
+    }
+
+
+    #[test]
     fn test_new_csr_vec_borrowed() {
         let indptr_ok = vec![0u, 1, 2, 3];
         let indices_ok = vec![0u, 1, 2];
