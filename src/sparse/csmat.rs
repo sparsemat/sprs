@@ -51,6 +51,20 @@ impl<'a, N: 'a> AsBorrowed<'a, N> for CsMat<N> {
     }
 }
 
+impl<'a, N: 'a> AsBorrowed<'a, N> for BorrowedCsMat<'a, N> {
+    fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N> {
+        BorrowedCsMat {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            nnz: self.nnz,
+            indptr: self.indptr,
+            indices: self.indices,
+            data: self.data,
+        }
+    }
+}
+
 /// Create a CsMat matrix from its main components, checking their validity
 /// Validity check is performed using check_compressed_structure()
 pub fn new_borrowed_csmat<'a, N: Clone>(
@@ -66,7 +80,7 @@ pub fn new_borrowed_csmat<'a, N: Clone>(
         indices : indices,
         data : data
     };
-    match m.check_compressed_structure() {
+    match check_csmat_structure(&m) {
         None => None,
         _ => Some(m)
     }
@@ -85,7 +99,7 @@ pub fn new_csmat<N: Clone>(
         indices : indices.clone(),
         data : data.clone()
     };
-    match m.check_compressed_structure() {
+    match check_csmat_structure(&m) {
         None => None,
         _ => Some(m)
     }
@@ -96,6 +110,12 @@ impl<N: Clone> CsMat<N> {
     fn check_compressed_structure(&self) -> Option<uint> {
         self.as_borrowed().check_compressed_structure()
     }
+}
+
+pub fn check_csmat_structure<'a, N: 'a + Clone, M: AsBorrowed<'a,N>>(
+        mat: &'a M) -> Option<uint> {
+    let m = mat.as_borrowed();
+    m.check_compressed_structure()
 }
 
 impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {

@@ -25,6 +25,7 @@ TODO
 Structures
 ..........
 
+- complete CsMat structure check (inner indices ordering)
 - CSC/CSR tests with more trickier shapes/data
 - unified interface for owned and borrowed data
 - lower/upper triangular CSC/CSR matrices
