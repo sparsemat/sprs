@@ -8,6 +8,9 @@
 /// In the CSC format, the relation is
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
+use std::iter::{Skip, Take, Enumerate, Peekable};
+
+#[deriving(Clone)]
 pub enum CompressedStorage {
     CSR,
     CSC
@@ -15,6 +18,37 @@ pub enum CompressedStorage {
 
 pub trait AsBorrowed<'a, N: 'a> {
     fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N>;
+}
+
+/// Iterator on the matrix' outer dimension
+/// Implemented over an iterator on the indptr array
+/// or even on iterators on all arrays
+pub struct OuterIterator<'a, N: 'a, IterType1: 'a> {
+    outer_ind: uint,
+    indptr_iter: Peekable<uint, IterType1>,
+    indices: &'a [uint],
+    data: &'a [N]
+}
+
+impl <'a, N: 'a, IterType1: 'a + Iterator<uint>>
+Iterator<(uint, &'a[uint], &'a[N])>
+for OuterIterator<'a, N, IterType1> {
+    #[inline]
+    fn next(&mut self) -> Option<(uint, &'a[uint], &'a[N])> {
+        let cur_index = match self.indptr_iter.next() {
+            None => { return None; },
+            Some(value) => value
+        };
+        match self.indptr_iter.peek() {
+            None => None,
+            Some(next_index) => {
+                self.outer_ind += 1;
+                return Some((self.outer_ind - 1,
+                        self.indices[cur_index..*next_index],
+                        self.data[cur_index..*next_index]));
+            }
+        }
+    }
 }
 
 pub struct BorrowedCsMat<'a, N: 'a> {
@@ -40,7 +74,7 @@ pub struct CsMat<N> {
 impl<'a, N: 'a> AsBorrowed<'a, N> for CsMat<N> {
     fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N> {
         BorrowedCsMat {
-            storage: self.storage,
+            storage: self.storage.clone(),
             nrows: self.nrows,
             ncols: self.ncols,
             nnz: self.nnz,
@@ -54,7 +88,7 @@ impl<'a, N: 'a> AsBorrowed<'a, N> for CsMat<N> {
 impl<'a, N: 'a> AsBorrowed<'a, N> for BorrowedCsMat<'a, N> {
     fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N> {
         BorrowedCsMat {
-            storage: self.storage,
+            storage: self.storage.clone(),
             nrows: self.nrows,
             ncols: self.ncols,
             nnz: self.nnz,
@@ -152,11 +186,11 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
             return None;
         }
         let mut prev_indptr : uint = 0;
-        let sorted_closure = |&x| {
+        let sorted_closure = |x: &uint| {
             let old_prev = prev_indptr.clone();
             println!("old_prev, x: {}, {}", &old_prev, &x);
-            prev_indptr = x;
-            x >= old_prev
+            prev_indptr = *x;
+            *x >= old_prev
         };
         if ! self.indptr.iter().all(sorted_closure) {
             println!("CsMat indptr not sorted");

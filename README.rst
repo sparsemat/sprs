@@ -19,6 +19,11 @@ Structures
 - CSR matrix, able to operate on owned data
 - CSC matrix, unified code with CSR
 
+Algorithms
+..........
+
+- Outer iterator on compressed sparse matrices
+
 TODO
 ----
 
@@ -34,6 +39,7 @@ Structures
 Algorithms
 ..........
 
+- tests on the outer iterator
 - sparse triangular solve
 - sparse LU decomposition
 - sparse Cholesky decomposition
