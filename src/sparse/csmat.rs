@@ -9,8 +9,9 @@
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
 use std::iter::{Skip, Take, Enumerate, Peekable};
+use std::slice::{Iter};
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub enum CompressedStorage {
     CSR,
     CSC
@@ -23,16 +24,17 @@ pub trait AsBorrowed<'a, N: 'a> {
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
 /// or even on iterators on all arrays
-pub struct OuterIterator<'a, N: 'a, IterType1: 'a> {
+pub struct OuterIterator<'a, N: 'a> {
     outer_ind: uint,
-    indptr_iter: Peekable<uint, IterType1>,
+    indptr_iter: Peekable<&'a uint, Iter<'a, uint>>,
     indices: &'a [uint],
     data: &'a [N]
 }
 
-impl <'a, N: 'a, IterType1: 'a + Iterator<uint>>
-Iterator<(uint, &'a[uint], &'a[N])>
-for OuterIterator<'a, N, IterType1> {
+impl <'a, N: 'a>
+Iterator
+for OuterIterator<'a, N> {
+    type Item = (uint, &'a[uint], &'a[N]);
     #[inline]
     fn next(&mut self) -> Option<(uint, &'a[uint], &'a[N])> {
         let cur_index = match self.indptr_iter.next() {
@@ -43,9 +45,11 @@ for OuterIterator<'a, N, IterType1> {
             None => None,
             Some(next_index) => {
                 self.outer_ind += 1;
+                // FIXME double dereference is ugly...
+                // this seems to show something is wrong with the types
                 return Some((self.outer_ind - 1,
-                        self.indices[cur_index..*next_index],
-                        self.data[cur_index..*next_index]));
+                        self.indices[*cur_index..**next_index],
+                        self.data[*cur_index..**next_index]));
             }
         }
     }
@@ -140,7 +144,6 @@ pub fn new_csmat<N: Clone>(
 }
 
 impl<N: Clone> CsMat<N> {
-    /// Check the 
     fn check_compressed_structure(&self) -> Option<uint> {
         self.as_borrowed().check_compressed_structure()
     }
@@ -153,6 +156,9 @@ pub fn check_csmat_structure<'a, N: 'a + Clone, M: AsBorrowed<'a,N>>(
 }
 
 impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
+
+    // /// Return an outer iterator for the matrix
+    // fn outer_iterator(&self) -> OuterIterator<'a, N,  
 
     /// Check the structure of CsMat components
     fn check_compressed_structure(&self) -> Option<uint> {
@@ -186,7 +192,7 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
             return None;
         }
         let mut prev_indptr : uint = 0;
-        let sorted_closure = |x: &uint| {
+        let sorted_closure = |&mut: x: &uint| {
             let old_prev = prev_indptr.clone();
             println!("old_prev, x: {}, {}", &old_prev, &x);
             prev_indptr = *x;
