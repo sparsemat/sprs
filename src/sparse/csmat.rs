@@ -8,10 +8,10 @@
 /// In the CSC format, the relation is
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
-use std::iter::{Skip, Take, Enumerate, Peekable};
+use std::iter::{Peekable};
 use std::slice::{Iter};
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum CompressedStorage {
     CSR,
     CSC
@@ -25,18 +25,18 @@ pub trait AsBorrowed<'a, N: 'a> {
 /// Implemented over an iterator on the indptr array
 /// or even on iterators on all arrays
 pub struct OuterIterator<'a, N: 'a> {
-    outer_ind: uint,
-    indptr_iter: Peekable<&'a uint, Iter<'a, uint>>,
-    indices: &'a [uint],
+    outer_ind: usize,
+    indptr_iter: Peekable<&'a usize, Iter<'a, usize>>,
+    indices: &'a [usize],
     data: &'a [N]
 }
 
 impl <'a, N: 'a>
 Iterator
 for OuterIterator<'a, N> {
-    type Item = (uint, &'a[uint], &'a[N]);
+    type Item = (usize, &'a[usize], &'a[N]);
     #[inline]
-    fn next(&mut self) -> Option<(uint, &'a[uint], &'a[N])> {
+    fn next(&mut self) -> Option<(usize, &'a[usize], &'a[N])> {
         let cur_index = match self.indptr_iter.next() {
             None => { return None; },
             Some(value) => value
@@ -48,8 +48,8 @@ for OuterIterator<'a, N> {
                 // FIXME double dereference is ugly...
                 // this seems to show something is wrong with the types
                 return Some((self.outer_ind - 1,
-                        self.indices[*cur_index..**next_index],
-                        self.data[*cur_index..**next_index]));
+                        &self.indices[*cur_index..**next_index],
+                        &self.data[*cur_index..**next_index]));
             }
         }
     }
@@ -57,21 +57,21 @@ for OuterIterator<'a, N> {
 
 pub struct BorrowedCsMat<'a, N: 'a> {
     storage: CompressedStorage,
-    nrows : uint,
-    ncols : uint,
-    nnz : uint,
-    indptr : &'a [uint],
-    indices : &'a [uint],
+    nrows : usize,
+    ncols : usize,
+    nnz : usize,
+    indptr : &'a [usize],
+    indices : &'a [usize],
     data : &'a [N]
 }
 
 pub struct CsMat<N> {
     storage: CompressedStorage,
-    nrows : uint,
-    ncols : uint,
-    nnz : uint,
-    indptr : Vec<uint>,
-    indices : Vec<uint>,
+    nrows : usize,
+    ncols : usize,
+    nnz : usize,
+    indptr : Vec<usize>,
+    indices : Vec<usize>,
     data : Vec<N>
 }
 
@@ -106,8 +106,8 @@ impl<'a, N: 'a> AsBorrowed<'a, N> for BorrowedCsMat<'a, N> {
 /// Create a CsMat matrix from its main components, checking their validity
 /// Validity check is performed using check_compressed_structure()
 pub fn new_borrowed_csmat<'a, N: Clone>(
-        storage: CompressedStorage, nrows : uint, ncols: uint,
-        indptr : &'a[uint], indices : &'a[uint], data : &'a[N]
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         ) -> Option<BorrowedCsMat<'a, N>> {
     let m = BorrowedCsMat {
         storage: storage,
@@ -125,8 +125,8 @@ pub fn new_borrowed_csmat<'a, N: Clone>(
 }
 
 pub fn new_csmat<N: Clone>(
-        storage: CompressedStorage, nrows : uint, ncols: uint,
-        indptr : &Vec<uint>, indices : &Vec<uint>, data : &Vec<N>
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : &Vec<usize>, indices : &Vec<usize>, data : &Vec<N>
         ) -> Option<CsMat<N>> {
     let m = CsMat {
         storage: storage,
@@ -144,13 +144,13 @@ pub fn new_csmat<N: Clone>(
 }
 
 impl<N: Clone> CsMat<N> {
-    fn check_compressed_structure(&self) -> Option<uint> {
+    fn check_compressed_structure(&self) -> Option<usize> {
         self.as_borrowed().check_compressed_structure()
     }
 }
 
 pub fn check_csmat_structure<'a, N: 'a + Clone, M: AsBorrowed<'a,N>>(
-        mat: &'a M) -> Option<uint> {
+        mat: &'a M) -> Option<usize> {
     let m = mat.as_borrowed();
     m.check_compressed_structure()
 }
@@ -161,7 +161,7 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
     // fn outer_iterator(&self) -> OuterIterator<'a, N,  
 
     /// Check the structure of CsMat components
-    fn check_compressed_structure(&self) -> Option<uint> {
+    fn check_compressed_structure(&self) -> Option<usize> {
         let inner = match self.storage {
             CompressedStorage::CSR => self.ncols,
             CompressedStorage::CSC => self.nrows
@@ -191,8 +191,8 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
             println!("CsMat indices values incoherent with ncols");
             return None;
         }
-        let mut prev_indptr : uint = 0;
-        let sorted_closure = |&mut: x: &uint| {
+        let mut prev_indptr : usize = 0;
+        let sorted_closure = |&mut: x: &usize| {
             let old_prev = prev_indptr.clone();
             println!("old_prev, x: {}, {}", &old_prev, &x);
             prev_indptr = *x;
@@ -216,8 +216,8 @@ mod test {
 
     #[test]
     fn test_new_csr_success() {
-        let indptr_ok : &[uint] = &[0, 1, 2, 3];
-        let indices_ok : &[uint] = &[0, 1, 2];
+        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+        let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
         match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
@@ -227,14 +227,14 @@ mod test {
 
     #[test]
     fn test_new_csr_fails() {
-        let indptr_ok : &[uint] = &[0, 1, 2, 3];
-        let indices_ok : &[uint] = &[0, 1, 2];
+        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+        let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let indptr_fail1 : &[uint] = &[0, 1, 2];
-        let indptr_fail2 : &[uint] = &[0, 1, 2, 4];
-        let indptr_fail3 : &[uint] = &[0, 2, 1, 3];
-        let indices_fail1 : &[uint] = &[0, 1];
-        let indices_fail2 : &[uint] = &[0, 1, 4];
+        let indptr_fail1 : &[usize] = &[0, 1, 2];
+        let indptr_fail2 : &[usize] = &[0, 1, 2, 4];
+        let indptr_fail3 : &[usize] = &[0, 2, 1, 3];
+        let indices_fail1 : &[usize] = &[0, 1];
+        let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
         match new_borrowed_csmat(CSR, 3, 3, indptr_fail1, indices_ok, data_ok) {
@@ -269,8 +269,8 @@ mod test {
 
     #[test]
     fn test_new_csr_csc_success() {
-        let indptr_ok : &[uint] = &[0, 2, 5, 6];
-        let indices_ok : &[uint] = &[2, 3, 1, 2, 3, 3];
+        let indptr_ok : &[usize] = &[0, 2, 5, 6];
+        let indices_ok : &[usize] = &[2, 3, 1, 2, 3, 3];
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
@@ -286,8 +286,8 @@ mod test {
 
     #[test]
     fn test_new_csr_csc_fails() {
-        let indptr_ok : &[uint] = &[0, 2, 5, 6];
-        let indices_ok : &[uint] = &[2, 3, 1, 2, 3, 3];
+        let indptr_ok : &[usize] = &[0, 2, 5, 6];
+        let indices_ok : &[usize] = &[2, 3, 1, 2, 3, 3];
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
@@ -304,8 +304,8 @@ mod test {
 
     #[test]
     fn test_new_csr_vec_borrowed() {
-        let indptr_ok = vec![0u, 1, 2, 3];
-        let indices_ok = vec![0u, 1, 2];
+        let indptr_ok = vec![0us, 1, 2, 3];
+        let indices_ok = vec![0us, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
         match new_borrowed_csmat(CSR, 3, 3, indptr_ok.as_slice(),
                       indices_ok.as_slice(), data_ok.as_slice()) {
@@ -316,8 +316,8 @@ mod test {
 
     #[test]
     fn test_new_csr_vec_owned() {
-        let indptr_ok = vec![0u, 1, 2, 3];
-        let indices_ok = vec![0u, 1, 2];
+        let indptr_ok = vec![0us, 1, 2, 3];
+        let indices_ok = vec![0us, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
         match new_csmat(CSR, 3, 3, &indptr_ok, &indices_ok, &data_ok) {
             Some(_) => assert!(true),

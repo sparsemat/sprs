@@ -5,8 +5,6 @@ CSRust
 CSRust is a sparse linear algebra library for Rust.
 
 */
-#![feature(slicing_syntax)]
-
 
 pub use sparse::{
     CompressedStorage,
