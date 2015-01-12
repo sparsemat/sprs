@@ -23,7 +23,6 @@ pub trait AsBorrowed<'a, N: 'a> {
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
-/// or even on iterators on all arrays
 pub struct OuterIterator<'a, N: 'a> {
     outer_ind: usize,
     indptr_iter: Peekable<&'a usize, Iter<'a, usize>>,
@@ -31,6 +30,9 @@ pub struct OuterIterator<'a, N: 'a> {
     data: &'a [N]
 }
 
+/// Outer iteration on a compressed matrix yields
+/// a tuple consisting of the outer index and the corresponding
+/// inner indices and associated data
 impl <'a, N: 'a>
 Iterator
 for OuterIterator<'a, N> {
@@ -155,10 +157,21 @@ pub fn check_csmat_structure<'a, N: 'a + Clone, M: AsBorrowed<'a,N>>(
     m.check_compressed_structure()
 }
 
+fn indices_are_sorted(data: &[usize]) -> bool {
+    data.windows(2).all(|&: x| x[0] < x[1])
+}
+
 impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
 
-    // /// Return an outer iterator for the matrix
-    // fn outer_iterator(&self) -> OuterIterator<'a, N,  
+    /// Return an outer iterator for the matrix
+    fn outer_iterator(&self) -> OuterIterator<'a, N> {
+        OuterIterator {
+            outer_ind: 0us,
+            indptr_iter: self.indptr.iter().peekable(),
+            indices: self.indices.as_slice(),
+            data: self.data.as_slice()
+        }
+    }
 
     /// Check the structure of CsMat components
     fn check_compressed_structure(&self) -> Option<usize> {
@@ -191,19 +204,22 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
             println!("CsMat indices values incoherent with ncols");
             return None;
         }
-        let mut prev_indptr : usize = 0;
-        let sorted_closure = |&mut: x: &usize| {
-            let old_prev = prev_indptr.clone();
-            println!("old_prev, x: {}, {}", &old_prev, &x);
-            prev_indptr = *x;
-            *x >= old_prev
-        };
-        if ! self.indptr.iter().all(sorted_closure) {
+
+        if ! indices_are_sorted(self.indptr) {
             println!("CsMat indptr not sorted");
             return None;
         }
 
-        // TODO: check that the indices are sorted for each row
+        let inner_slice_is_sorted = | &: (_, inds, _) | {
+            indices_are_sorted(inds)
+        };
+
+        // check that the indices are sorted for each row
+        if ! self.outer_iterator().all(inner_slice_is_sorted) {
+            println!("CsMat indices not sorted for each outer ind");
+            return None;
+        }
+
         Some(nnz)
     }
 }
@@ -262,6 +278,20 @@ mod test {
             None => assert!(true)
         }
         match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_fail2) {
+            Some(_) => assert!(false),
+            None => assert!(true)
+        }
+    }
+
+    #[test]
+    fn test_new_csr_fail_indices_ordering() {
+        let indptr: &[usize] = &[0, 2, 4, 5, 6, 7];
+        // good indices would be [2, 3, 3, 4, 2, 1, 3];
+        let indices: &[usize] = &[3, 2, 3, 4, 2, 1, 3];
+        let data: &[f64] = &[
+            0.35310881, 0.42380633, 0.28035896, 0.58082095,
+            0.53350123, 0.88132896, 0.72527863];
+        match new_borrowed_csmat(CSR, 5, 5, indptr, indices, data) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
