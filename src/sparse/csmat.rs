@@ -11,7 +11,7 @@
 use std::iter::{Peekable};
 use std::slice::{Iter};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CompressedStorage {
     CSR,
     CSC
@@ -164,13 +164,25 @@ fn indices_are_sorted(data: &[usize]) -> bool {
 impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
 
     /// Return an outer iterator for the matrix
-    fn outer_iterator(&self) -> OuterIterator<'a, N> {
+    pub fn outer_iterator(&self) -> OuterIterator<'a, N> {
         OuterIterator {
             outer_ind: 0us,
             indptr_iter: self.indptr.iter().peekable(),
             indices: self.indices.as_slice(),
             data: self.data.as_slice()
         }
+    }
+
+    pub fn storage_type(&self) -> CompressedStorage {
+        self.storage
+    }
+
+    pub fn rows(&self) -> usize {
+        self.nrows
+    }
+
+    pub fn cols(&self) -> usize {
+        self.ncols
     }
 
     /// Check the structure of CsMat components

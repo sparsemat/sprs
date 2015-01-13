@@ -23,6 +23,7 @@ Algorithms
 ..........
 
 - Outer iterator on compressed sparse matrices
+- CSC/vector product
 
 TODO
 ----
@@ -40,6 +41,7 @@ Algorithms
 ..........
 
 - tests on the outer iterator
+- tests on the CSC/vector product
 - sparse triangular solve
 - sparse LU decomposition
 - sparse Cholesky decomposition

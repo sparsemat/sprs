@@ -11,7 +11,9 @@ pub use sparse::{
     CsMat,
     BorrowedCsMat,
     check_csmat_structure,
+    mul_acc_mat_vec_csc,
 };
+
 
 mod sparse;
 
