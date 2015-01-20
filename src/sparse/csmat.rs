@@ -9,16 +9,14 @@
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
 use std::iter::{Peekable};
-use std::slice::{Iter};
+use std::slice::{Iter, SliceExt};
+use std::borrow::{Cow, IntoCow};
+use std::ops::{Deref};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CompressedStorage {
     CSR,
     CSC
-}
-
-pub trait AsBorrowed<'a, N: 'a> {
-    fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N>;
 }
 
 /// Iterator on the matrix' outer dimension
@@ -57,52 +55,14 @@ for OuterIterator<'a, N> {
     }
 }
 
-pub struct BorrowedCsMat<'a, N: 'a> {
+pub struct CsMat<'a, N: 'a + Clone> {
     storage: CompressedStorage,
     nrows : usize,
     ncols : usize,
     nnz : usize,
-    indptr : &'a [usize],
-    indices : &'a [usize],
-    data : &'a [N]
-}
-
-pub struct CsMat<N> {
-    storage: CompressedStorage,
-    nrows : usize,
-    ncols : usize,
-    nnz : usize,
-    indptr : Vec<usize>,
-    indices : Vec<usize>,
-    data : Vec<N>
-}
-
-impl<'a, N: 'a> AsBorrowed<'a, N> for CsMat<N> {
-    fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N> {
-        BorrowedCsMat {
-            storage: self.storage.clone(),
-            nrows: self.nrows,
-            ncols: self.ncols,
-            nnz: self.nnz,
-            indptr: self.indptr.as_slice(),
-            indices: self.indices.as_slice(),
-            data: self.data.as_slice(),
-        }
-    }
-}
-
-impl<'a, N: 'a> AsBorrowed<'a, N> for BorrowedCsMat<'a, N> {
-    fn as_borrowed(&'a self) -> BorrowedCsMat<'a, N> {
-        BorrowedCsMat {
-            storage: self.storage.clone(),
-            nrows: self.nrows,
-            ncols: self.ncols,
-            nnz: self.nnz,
-            indptr: self.indptr,
-            indices: self.indices,
-            data: self.data,
-        }
-    }
+    indptr : Cow<'a, Vec<usize>, [usize]>,
+    indices : Cow<'a, Vec<usize>, [usize]>,
+    data : Cow<'a, Vec<N>, [N]>,
 }
 
 /// Create a CsMat matrix from its main components, checking their validity
@@ -110,65 +70,45 @@ impl<'a, N: 'a> AsBorrowed<'a, N> for BorrowedCsMat<'a, N> {
 pub fn new_borrowed_csmat<'a, N: Clone>(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
-        ) -> Option<BorrowedCsMat<'a, N>> {
-    let m = BorrowedCsMat {
-        storage: storage,
-        nrows : nrows,
-        ncols: ncols,
-        nnz : data.len(),
-        indptr : indptr,
-        indices : indices,
-        data : data
-    };
-    match check_csmat_structure(&m) {
-        None => None,
-        _ => Some(m)
-    }
-}
-
-pub fn new_csmat<N: Clone>(
-        storage: CompressedStorage, nrows : usize, ncols: usize,
-        indptr : &Vec<usize>, indices : &Vec<usize>, data : &Vec<N>
-        ) -> Option<CsMat<N>> {
+        ) -> Option<CsMat<'a, N>> {
     let m = CsMat {
         storage: storage,
         nrows : nrows,
         ncols: ncols,
         nnz : data.len(),
-        indptr : indptr.clone(),
-        indices : indices.clone(),
-        data : data.clone()
+        indptr : indptr.into_cow(),
+        indices : indices.into_cow(),
+        data : data.into_cow(),
     };
-    match check_csmat_structure(&m) {
+    match m.check_compressed_structure() {
         None => None,
         _ => Some(m)
     }
 }
 
-impl<N: Clone> CsMat<N> {
-    fn check_compressed_structure(&self) -> Option<usize> {
-        self.as_borrowed().check_compressed_structure()
+pub fn new_csmat<'a, N: 'a + Clone>(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
+        ) -> Option<CsMat<'a, N>> {
+    let m = CsMat {
+        storage: storage,
+        nrows : nrows,
+        ncols: ncols,
+        nnz : data.len(),
+        indptr : indptr.into_cow(),
+        indices : indices.into_cow(),
+        data : data.into_cow(),
+    };
+    match m.check_compressed_structure() {
+        None => None,
+        _ => Some(m)
     }
 }
 
-pub fn check_csmat_structure<'a, N: 'a + Clone, M: AsBorrowed<'a,N>>(
-        mat: &'a M) -> Option<usize> {
-    let m = mat.as_borrowed();
-    m.check_compressed_structure()
-}
-
-fn indptr_is_sorted(data: &[usize]) -> bool {
-    data.windows(2).all(|&: x| x[0] <= x[1])
-}
-
-fn indices_are_sorted(data: &[usize]) -> bool {
-    data.windows(2).all(|&: x| x[0] < x[1])
-}
-
-impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
+impl<'a, N: 'a + Clone> CsMat<'a, N> {
 
     /// Return an outer iterator for the matrix
-    pub fn outer_iterator(&self) -> OuterIterator<'a, N> {
+    pub fn outer_iterator(&'a self) -> OuterIterator<'a, N> {
         OuterIterator {
             outer_ind: 0us,
             indptr_iter: self.indptr.iter().peekable(),
@@ -221,17 +161,16 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
             return None;
         }
 
-        if ! indptr_is_sorted(self.indptr) {
+        if ! self.indptr.deref().windows(2).all(|&: x| x[0] <= x[1]) {
             println!("CsMat indptr not sorted");
             return None;
         }
 
-        let inner_slice_is_sorted = | &: (_, inds, _) | {
-            indices_are_sorted(inds)
-        };
-
         // check that the indices are sorted for each row
-        if ! self.outer_iterator().all(inner_slice_is_sorted) {
+        if ! self.outer_iterator().all(
+            | &: (_, inds, _) | {
+                inds.windows(2).all(|&: x| x[0] < x[1])
+            }) {
             println!("CsMat indices not sorted for each outer ind");
             return None;
         }
@@ -365,7 +304,7 @@ mod test {
         let indptr_ok = vec![0us, 1, 2, 3];
         let indices_ok = vec![0us, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match new_csmat(CSR, 3, 3, &indptr_ok, &indices_ok, &data_ok) {
+        match new_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }

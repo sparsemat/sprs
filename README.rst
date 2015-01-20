@@ -15,15 +15,14 @@ Features
 Structures
 ..........
 
-- CSR matrix, able to operate on borrowed data
-- CSR matrix, able to operate on owned data
-- CSC matrix, unified code with CSR
+- CSR/CSC matrix, able to operate on borrowed or owned data
 
 Algorithms
 ..........
 
 - Outer iterator on compressed sparse matrices
-- CSC/vector product
+- CSC/dense vector product
+- CSR/dense vector product
 
 TODO
 ----
@@ -31,9 +30,7 @@ TODO
 Structures
 ..........
 
-- complete CsMat structure check (inner indices ordering)
 - CSC/CSR tests with more trickier shapes/data
-- unified interface for owned and borrowed data
 - lower/upper triangular CSC/CSR matrices
 - block-sparse matrices
 
