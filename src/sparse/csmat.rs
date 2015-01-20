@@ -157,6 +157,10 @@ pub fn check_csmat_structure<'a, N: 'a + Clone, M: AsBorrowed<'a,N>>(
     m.check_compressed_structure()
 }
 
+fn indptr_is_sorted(data: &[usize]) -> bool {
+    data.windows(2).all(|&: x| x[0] <= x[1])
+}
+
 fn indices_are_sorted(data: &[usize]) -> bool {
     data.windows(2).all(|&: x| x[0] < x[1])
 }
@@ -217,7 +221,7 @@ impl<'a, N: 'a + Clone> BorrowedCsMat<'a, N> {
             return None;
         }
 
-        if ! indices_are_sorted(self.indptr) {
+        if ! indptr_is_sorted(self.indptr) {
             println!("CsMat indptr not sorted");
             return None;
         }
@@ -362,6 +366,19 @@ mod test {
         let indices_ok = vec![0us, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
         match new_csmat(CSR, 3, 3, &indptr_ok, &indices_ok, &data_ok) {
+            Some(_) => assert!(true),
+            None => assert!(false)
+        }
+    }
+
+    #[test]
+    fn new_csr_with_empty_row() {
+        let indptr: &[usize] = &[0, 3, 3, 5, 6, 7];
+        let indices: &[usize] = &[1, 2, 3, 2, 3, 4, 4];
+        let data: &[f64] = &[
+            0.75672424, 0.1649078, 0.30140296, 0.10358244,
+            0.6283315, 0.39244208, 0.57202407];
+        match new_borrowed_csmat(CSR, 5, 5, indptr, indices, data) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
