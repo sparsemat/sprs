@@ -3,3 +3,7 @@
 name = "CSRust"
 version = "0.0.1"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
+
+[dependencies]
+
+num = "*"

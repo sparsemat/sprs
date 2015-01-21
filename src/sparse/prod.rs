@@ -3,8 +3,9 @@
 use std::ops::{Add, Mul};
 use sparse::csmat::CompressedStorage::{CSC, CSR};
 use sparse::csmat::{CsMat};
+use num::traits::Num;
 
-pub fn mul_acc_mat_vec_csc<N: Add<Output=N> + Mul<Output=N> + Clone + Copy>(
+pub fn mul_acc_mat_vec_csc<N: Num + Clone + Copy>(
     theMat: CsMat<N>, inVec: &[N], resVec: &mut[N]) {
     assert!(theMat.cols() == inVec.len(), "Matrix and vector dims must agree");
     assert!(theMat.rows() == resVec.len(), "Matrix and res vector dims must agree");
@@ -20,7 +21,7 @@ pub fn mul_acc_mat_vec_csc<N: Add<Output=N> + Mul<Output=N> + Clone + Copy>(
     }
 }
 
-pub fn mul_acc_mat_vec_csr<N: Add<Output=N> + Mul<Output=N> + Clone + Copy>(
+pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy>(
     theMat: CsMat<N>, inVec: &[N], resVec: &mut[N]) {
     assert!(theMat.cols() == inVec.len(), "Matrix and vector dims must agree");
     assert!(theMat.rows() == resVec.len(), "Matrix and res vector dims must agree");
