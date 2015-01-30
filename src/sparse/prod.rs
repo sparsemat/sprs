@@ -36,6 +36,7 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy>(
     }
 }
 
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::{new_borrowed_csmat};

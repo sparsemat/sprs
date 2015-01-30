@@ -12,4 +12,6 @@ pub use self::prod::{
 
 mod csmat;
 mod prod;
+mod linalg;
+mod symmetric;
 

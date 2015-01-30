@@ -14,6 +14,6 @@ pub use sparse::{
     mul_acc_mat_vec_csc,
 };
 
-
 mod sparse;
+mod dense;
 
