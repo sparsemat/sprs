@@ -2,6 +2,7 @@
 
 use sparse::csmat::{CsMat};
 use sparse::symmetric::{is_symmetric};
+use sparse::permutation::Permutation;
 use dense::vec;
 
 use std::boxed::Box;
@@ -67,7 +68,7 @@ fn ldl_symbolic<N: Clone>(
     let mut l_nz = (0..n).map(|x| 0).collect::<Vec<usize>>();
 
     // FIXME this loop does not take the permutation into account!!!!
-    for (outer_ind, inner_inds, _) in mat.outer_iterator() {
+    for (outer_ind, vec) in mat.outer_iterator() {
         flag[outer_ind] = outer_ind; // this node is visited
 
         let perm_out = match perm {
@@ -75,7 +76,7 @@ fn ldl_symbolic<N: Clone>(
             Some(p) => p[outer_ind]
         };
 
-        for inner_ind in inner_inds.iter() {
+        for inner_ind in vec.indices().iter() {
             let mut perm_in = match p_inv {
                 None => *inner_ind,
                 Some(ref pinv) => pinv[*inner_ind]

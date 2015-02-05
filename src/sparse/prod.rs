@@ -11,12 +11,12 @@ pub fn mul_acc_mat_vec_csc<N: Num + Clone + Copy>(
     assert!(theMat.rows() == resVec.len(), "Matrix and res vector dims must agree");
     assert!(theMat.storage_type() == CSC, "Matrix must be in CSC format");
 
-    for (col_ind, row_inds, values) in theMat.outer_iterator() {
+    for (col_ind, vec) in theMat.outer_iterator() {
         let multiplier = &inVec[col_ind];
-        for (row_ind, value) in row_inds.iter().zip(values.iter()) {
+        for (row_ind, value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            resVec[*row_ind] =
-                resVec[*row_ind] + *multiplier * *value;
+            resVec[row_ind] =
+                resVec[row_ind] + *multiplier * value;
         }
     }
 }
@@ -27,11 +27,11 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy>(
     assert!(theMat.rows() == resVec.len(), "Matrix and res vector dims must agree");
     assert!(theMat.storage_type() == CSR, "Matrix must be in CSR format");
 
-    for (row_ind, col_inds, values) in theMat.outer_iterator() {
-        for (col_ind, value) in col_inds.iter().zip(values.iter()) {
+    for (row_ind, vec) in theMat.outer_iterator() {
+        for (col_ind, value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
             resVec[row_ind] =
-                resVec[row_ind] + inVec[*col_ind] * *value;
+                resVec[row_ind] + inVec[col_ind] * value;
         }
     }
 }

@@ -8,10 +8,13 @@
 /// In the CSC format, the relation is
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
-use std::iter::{Peekable};
+use std::iter::{Peekable, Enumerate, Zip};
 use std::slice::{Iter, SliceExt};
 use std::borrow::{Cow, IntoCow};
 use std::ops::{Deref};
+
+use sparse::permutation::Permutation;
+use sparse::vec::{CsVec};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CompressedStorage {
@@ -19,39 +22,45 @@ pub enum CompressedStorage {
     CSC
 }
 
+use self::CompressedStorage::*;
+
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
 pub struct OuterIterator<'a, N: 'a> {
     outer_ind: usize,
-    indptr_iter: Peekable<&'a usize, Iter<'a, usize>>,
+    indptr_iter: Peekable<(usize, &'a usize), Enumerate<Iter<'a, usize>>>,
     indices: &'a [usize],
-    data: &'a [N]
+    data: &'a [N],
+    perm: Permutation<'a>,
 }
 
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and the corresponding
 /// inner indices and associated data
-impl <'a, N: 'a>
+impl <'a, N: 'a + Clone>
 Iterator
 for OuterIterator<'a, N> {
-    type Item = (usize, &'a[usize], &'a[N]);
+    type Item = (usize, CsVec<'a, N>);
     #[inline]
-    fn next(&mut self) -> Option<(usize, &'a[usize], &'a[N])> {
-        let cur_index = match self.indptr_iter.next() {
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        let (outer_ind, cur_index) = match self.indptr_iter.next() {
             None => { return None; },
             Some(value) => value
         };
         match self.indptr_iter.peek() {
             None => None,
-            Some(next_index) => {
-                self.outer_ind += 1;
-                // FIXME double dereference is ugly...
-                // this seems to show something is wrong with the types
-                return Some((self.outer_ind - 1,
-                        &self.indices[*cur_index..**next_index],
-                        &self.data[*cur_index..**next_index]));
+            Some(&(_, next_index)) => {
+                let outer_ind_perm = self.perm.at(outer_ind);
+                let indices = &self.indices[*cur_index..*next_index];
+                let data = &self.data[*cur_index..*next_index];
+                let vec = CsVec::new_borrowed(indices, data, self.perm);
+                Some((outer_ind_perm, vec))
             }
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.indptr_iter.size_hint()
     }
 }
 
@@ -109,11 +118,22 @@ impl<'a, N: 'a + Clone> CsMat<'a, N> {
 
     /// Return an outer iterator for the matrix
     pub fn outer_iterator(&'a self) -> OuterIterator<'a, N> {
+        self.outer_iterator_papt(Permutation::identity())
+    }
+
+    /// Return an outer iterator over P*A*P^T
+    pub fn outer_iterator_papt(&'a self, perm: Permutation<'a>) 
+    -> OuterIterator<'a, N> {
+        let oriented_perm = match self.storage {
+            CSR => perm,
+            CSC => Permutation::inv(perm)
+        };
         OuterIterator {
             outer_ind: 0us,
-            indptr_iter: self.indptr.iter().peekable(),
+            indptr_iter: self.indptr.iter().enumerate().peekable(),
             indices: self.indices.as_slice(),
-            data: self.data.as_slice()
+            data: self.data.as_slice(),
+            perm: oriented_perm
         }
     }
 
@@ -168,9 +188,8 @@ impl<'a, N: 'a + Clone> CsMat<'a, N> {
 
         // check that the indices are sorted for each row
         if ! self.outer_iterator().all(
-            | &: (_, inds, _) | {
-                inds.windows(2).all(|&: x| x[0] < x[1])
-            }) {
+            | &: (_, vec) | { vec.check_structure() })
+        {
             println!("CsMat indices not sorted for each outer ind");
             return None;
         }
