@@ -28,7 +28,7 @@ use self::CompressedStorage::*;
 /// Implemented over an iterator on the indptr array
 pub struct OuterIterator<'a, N: 'a> {
     outer_ind: usize,
-    indptr_iter: Peekable<(usize, &'a usize), Enumerate<Iter<'a, usize>>>,
+    indptr_iter: Peekable<Enumerate<Iter<'a, usize>>>,
     indices: &'a [usize],
     data: &'a [N],
     perm: Permutation<'a>,
