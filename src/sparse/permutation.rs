@@ -2,37 +2,35 @@
 /// 
 /// Both the permutation matrices and its inverse are stored
 
-use std::borrow::{Cow, IntoCow};
-
 #[derive(Clone)]
-pub enum Permutation<'a> {
+pub enum Permutation {
     Identity,
     FinitePerm {
-        perm: Cow<'a, Vec<usize>, [usize]>,
-        perm_inv: Cow<'a, Vec<usize>, [usize]>,
+        perm: Vec<usize>,
+        perm_inv: Vec<usize>,
     }
 }
 
 use self::Permutation::*;
 
-impl<'a> Permutation<'a> {
+impl Permutation {
 
-    pub fn new(perm: Vec<usize>) -> Permutation<'a> {
-        let mut perm_inv = perm.clone().into_cow();
+    pub fn new(perm: Vec<usize>) -> Permutation {
+        let mut perm_inv = perm.clone();
         for (ind, val) in perm.iter().enumerate() {
             perm_inv[*val] = ind;
         }
         FinitePerm {
-            perm: perm.into_cow(),
+            perm: perm,
             perm_inv: perm_inv
         }
     }
 
-    pub fn identity() -> Permutation<'a> {
+    pub fn identity() -> Permutation {
         Identity
     }
 
-    pub fn inv(perm: Permutation<'a>) -> Permutation<'a> {
+    pub fn inv(perm: Permutation) -> Permutation {
         match perm {
             Identity => Identity,
             FinitePerm {
@@ -40,22 +38,11 @@ impl<'a> Permutation<'a> {
         }
     }
 
-    pub fn inv_borrow(&self) -> Permutation<'a> {
-        match self {
-            &Identity => Identity,
-            &FinitePerm {
-                perm: p,
-                perm_inv: p_ } => FinitePerm {
-                          perm: p_.as_slice().into_cow(),
-                          perm_inv: p.as_slice().into_cow() }
-        }
-    }
-
     pub fn at(&self, index: usize) -> usize {
         match self {
             &Identity => index,
             &FinitePerm {
-                perm: p, perm_inv: _ } => p[index]
+                perm: ref p, perm_inv: _ } => p[index]
         }
     }
 
@@ -63,7 +50,7 @@ impl<'a> Permutation<'a> {
         match self {
             &Identity => index,
             &FinitePerm {
-                perm: _, perm_inv: p_ } => p_[index]
+                perm: _, perm_inv: ref p_ } => p_[index]
         }
     }
 }

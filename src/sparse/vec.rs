@@ -10,16 +10,16 @@ use sparse::permutation::Permutation;
 pub struct CsVec<'a, N: 'a + Clone> {
     indices : Cow<'a, Vec<usize>, [usize]>,
     data : Cow<'a, Vec<N>, [N]>,
-    perm: Permutation<'a>,
+    perm: &'a Permutation,
 }
 
 pub struct VectorIterator<'a, N: 'a> {
     ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
-    perm: Permutation<'a>,
+    perm: &'a Permutation,
 }
 
 
-impl <'a, N: 'a>
+impl <'a, N: 'a + Copy>
 Iterator
 for VectorIterator<'a, N> {
     type Item = (usize, N);
@@ -39,8 +39,9 @@ for VectorIterator<'a, N> {
 
 
 impl<'a, N: 'a + Clone> CsVec<'a, N> {
+
     pub fn new_borrowed(
-        indices: &'a [usize], data: &'a [N], perm: Permutation<'a>)
+        indices: &'a [usize], data: &'a [N], perm: &'a Permutation)
     -> CsVec<'a, N> {
         CsVec {
             indices: indices.into_cow(),
@@ -48,19 +49,20 @@ impl<'a, N: 'a + Clone> CsVec<'a, N> {
             perm: perm,
         }
     }
+
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
             ind_data: self.indices.iter().zip(self.data.iter()),
-            perm: self.perm
+            perm: &self.perm
         }
     }
 
     pub fn indices(&self) -> &[usize] {
-        self.indices().as_slice()
+        self.indices.as_slice()
     }
 
     pub fn data(&self) -> &[N] {
-        self.data().as_slice()
+        self.data.as_slice()
     }
 
     pub fn check_structure(&self) -> bool {

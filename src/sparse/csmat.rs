@@ -8,7 +8,7 @@
 /// In the CSC format, the relation is
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
-use std::iter::{Peekable, Enumerate, Zip};
+use std::iter::{Peekable, Enumerate};
 use std::slice::{Iter, SliceExt};
 use std::borrow::{Cow, IntoCow};
 use std::ops::{Deref};
@@ -27,20 +27,19 @@ use self::CompressedStorage::*;
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
 pub struct OuterIterator<'a, N: 'a> {
-    outer_ind: usize,
     indptr_iter: Peekable<Enumerate<Iter<'a, usize>>>,
     indices: &'a [usize],
     data: &'a [N],
-    perm: Permutation<'a>,
+    perm: Permutation,
 }
 
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and the corresponding
 /// inner indices and associated data
-impl <'a, N: 'a + Clone>
+impl <'b, 'a: 'b, N: 'a + Clone>
 Iterator
 for OuterIterator<'a, N> {
-    type Item = (usize, CsVec<'a, N>);
+    type Item = (usize, CsVec<'b, N>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let (outer_ind, cur_index) = match self.indptr_iter.next() {
@@ -53,7 +52,8 @@ for OuterIterator<'a, N> {
                 let outer_ind_perm = self.perm.at(outer_ind);
                 let indices = &self.indices[*cur_index..*next_index];
                 let data = &self.data[*cur_index..*next_index];
-                let vec = CsVec::new_borrowed(indices, data, self.perm);
+                let vec = CsVec::new_borrowed(
+                    indices, data, &self.perm);
                 Some((outer_ind_perm, vec))
             }
         }
@@ -122,14 +122,13 @@ impl<'a, N: 'a + Clone> CsMat<'a, N> {
     }
 
     /// Return an outer iterator over P*A*P^T
-    pub fn outer_iterator_papt(&'a self, perm: Permutation<'a>) 
+    pub fn outer_iterator_papt(&'a self, perm: Permutation) 
     -> OuterIterator<'a, N> {
         let oriented_perm = match self.storage {
             CSR => perm,
             CSC => Permutation::inv(perm)
         };
         OuterIterator {
-            outer_ind: 0us,
             indptr_iter: self.indptr.iter().enumerate().peekable(),
             indices: self.indices.as_slice(),
             data: self.data.as_slice(),
