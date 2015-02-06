@@ -148,6 +148,34 @@ impl<'a, N: 'a + Clone> CsMat<'a, N> {
         self.ncols
     }
 
+    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N> {
+        assert!(i < self.nrows);
+        assert!(j < self.ncols);
+
+        match self.storage {
+            CSR => self.at_outer_inner(&(i,j)),
+            CSC => self.at_outer_inner(&(j,i))
+        }
+    }
+
+    pub fn at_outer_inner(&self, &(outer_ind, inner_ind): &(usize, usize))
+    -> Option<N> {
+        let begin = self.indptr[outer_ind];
+        let end = self.indptr[outer_ind+1];
+        if ( begin >= end ) {
+            return None;
+        }
+        let indices = &self.indices[begin..end];
+        let data = &self.data[begin..end];
+
+        let position = match indices.binary_search(&inner_ind) {
+            Ok(ind) => ind,
+            _ => return None
+        };
+
+        Some(data[position].clone())
+    }
+
     /// Check the structure of CsMat components
     fn check_compressed_structure(&self) -> Option<usize> {
         let inner = match self.storage {

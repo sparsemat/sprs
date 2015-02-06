@@ -30,7 +30,7 @@ struct SymbolicLDL {
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-fn ldl_symbolic<N: Clone>(
+fn ldl_symbolic<N: Clone + Copy + PartialEq>(
     mat: &CsMat<N>,
     perm: Option<&[usize]>,
     flag_workspace: OptWorkspace<&mut [usize]>)

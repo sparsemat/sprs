@@ -1,7 +1,7 @@
 /// Dense vector utility functions
 
-use std::num::Int;
+use num::traits::{Num, Zero};
 
-pub fn zeros<N: Int> (n: usize) -> Vec<N> {
-    return (0..n).map(|x| Int::zero()).collect::<Vec<N>>();
+pub fn zeros<N: Num> (n: usize) -> Vec<N> {
+    return (0..n).map(|x| Zero::zero()).collect::<Vec<N>>();
 }
