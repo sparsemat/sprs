@@ -10,11 +10,12 @@
 
 use std::iter::{Peekable, Enumerate};
 use std::slice::{Iter, SliceExt};
-use std::borrow::{Cow, IntoCow};
 use std::ops::{Deref};
 
 use sparse::permutation::Permutation;
 use sparse::vec::{CsVec};
+
+use storage::VecSlice;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CompressedStorage {
@@ -69,9 +70,9 @@ pub struct CsMat<'a, N: 'a + Clone> {
     nrows : usize,
     ncols : usize,
     nnz : usize,
-    indptr : Cow<'a, Vec<usize>, [usize]>,
-    indices : Cow<'a, Vec<usize>, [usize]>,
-    data : Cow<'a, Vec<N>, [N]>,
+    indptr : VecSlice<'a, usize>,
+    indices : VecSlice<'a, usize>,
+    data : VecSlice<'a, N>,
 }
 
 /// Create a CsMat matrix from its main components, checking their validity
@@ -85,9 +86,9 @@ pub fn new_borrowed_csmat<'a, N: Clone>(
         nrows : nrows,
         ncols: ncols,
         nnz : data.len(),
-        indptr : indptr.into_cow(),
-        indices : indices.into_cow(),
-        data : data.into_cow(),
+        indptr : VecSlice::from_slice(indptr),
+        indices : VecSlice::from_slice(indices),
+        data : VecSlice::from_slice(data),
     };
     match m.check_compressed_structure() {
         None => None,
@@ -104,9 +105,9 @@ pub fn new_csmat<'a, N: 'a + Clone>(
         nrows : nrows,
         ncols: ncols,
         nnz : data.len(),
-        indptr : indptr.into_cow(),
-        indices : indices.into_cow(),
-        data : data.into_cow(),
+        indptr : VecSlice::from_vec(indptr),
+        indices : VecSlice::from_vec(indices),
+        data : VecSlice::from_vec(data),
     };
     match m.check_compressed_structure() {
         None => None,

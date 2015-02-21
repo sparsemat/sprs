@@ -3,13 +3,14 @@
 
 use std::iter::{Zip};
 use std::slice::{Iter, SliceExt};
-use std::borrow::{Cow, IntoCow};
 
 use sparse::permutation::Permutation;
 
+use storage::VecSlice;
+
 pub struct CsVec<'a, N: 'a + Clone> {
-    indices : Cow<'a, Vec<usize>, [usize]>,
-    data : Cow<'a, Vec<N>, [N]>,
+    indices : VecSlice<'a, usize>,
+    data : VecSlice<'a, N>,
     perm: &'a Permutation,
 }
 
@@ -44,8 +45,8 @@ impl<'a, N: 'a + Clone> CsVec<'a, N> {
         indices: &'a [usize], data: &'a [N], perm: &'a Permutation)
     -> CsVec<'a, N> {
         CsVec {
-            indices: indices.into_cow(),
-            data: data.into_cow(),
+            indices: VecSlice::from_slice(indices),
+            data: VecSlice::from_slice(data),
             perm: perm,
         }
     }
