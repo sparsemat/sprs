@@ -18,4 +18,3 @@ pub use sparse::{
 
 mod sparse;
 mod dense;
-mod storage;

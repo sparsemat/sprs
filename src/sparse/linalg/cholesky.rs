@@ -1,5 +1,7 @@
 /// Cholesky factorization
 
+use std::ops::{Deref};
+
 use sparse::csmat::{CsMat};
 use sparse::symmetric::{is_symmetric};
 use sparse::permutation::Permutation;
@@ -30,8 +32,8 @@ struct SymbolicLDL {
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-fn ldl_symbolic<N: Clone + Copy + PartialEq>(
-    mat: &CsMat<N>,
+fn ldl_symbolic<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
+    mat: &CsMat<N, IStorage, DStorage>,
     perm: Option<&[usize]>,
     flag_workspace: OptWorkspace<&mut [usize]>)
 -> Option<SymbolicLDL> {

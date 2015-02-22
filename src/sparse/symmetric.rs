@@ -1,8 +1,11 @@
 /// Functions dealing with symmetric sparse matrices
 
+use std::ops::{Deref};
+
 use sparse::csmat::CsMat;
 
-pub fn is_symmetric<N: Clone + Copy + PartialEq>(mat: &CsMat<N>) -> bool {
+pub fn is_symmetric<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
+    mat: &CsMat<N, IStorage, DStorage>) -> bool {
     if mat.rows() != mat.cols() {
         return false;
     }
@@ -22,7 +25,7 @@ pub fn is_symmetric<N: Clone + Copy + PartialEq>(mat: &CsMat<N>) -> bool {
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::new_borrowed_csmat;
+    use sparse::csmat::CsMat;
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::is_symmetric;
 
@@ -52,7 +55,7 @@ mod test {
             0.13, 0.52, 0.11, 1.4,
             0.01, 0.53, 0.56, 3.1];
 
-        let a = new_borrowed_csmat(CSR, 10, 10, indptr, indices, data).unwrap();
+        let a = CsMat::from_slices(CSR, 10, 10, indptr, indices, data).unwrap();
 
         assert!(is_symmetric(&a));
     }

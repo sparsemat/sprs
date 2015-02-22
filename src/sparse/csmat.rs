@@ -15,8 +15,6 @@ use std::ops::{Deref};
 use sparse::permutation::Permutation;
 use sparse::vec::{CsVec};
 
-use storage::VecSlice;
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CompressedStorage {
     CSR,
@@ -40,7 +38,7 @@ pub struct OuterIterator<'a, N: 'a> {
 impl <'b, 'a: 'b, N: 'a + Clone>
 Iterator
 for OuterIterator<'a, N> {
-    type Item = (usize, CsVec<'b, N>);
+    type Item = (usize, CsVec<'b, N, &'b[usize], &'b[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let (outer_ind, cur_index) = match self.indptr_iter.next() {
@@ -65,65 +63,75 @@ for OuterIterator<'a, N> {
     }
 }
 
-pub struct CsMat<'a, N: 'a + Clone> {
+pub struct CsMat<N, IndStorage, DataStorage>
+where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
     storage: CompressedStorage,
     nrows : usize,
     ncols : usize,
     nnz : usize,
-    indptr : VecSlice<'a, usize>,
-    indices : VecSlice<'a, usize>,
-    data : VecSlice<'a, N>,
+    indptr : IndStorage,
+    indices : IndStorage,
+    data : DataStorage
 }
 
-/// Create a CsMat matrix from its main components, checking their validity
-/// Validity check is performed using check_compressed_structure()
-pub fn new_borrowed_csmat<'a, N: Clone>(
+impl<'a, N:'a + Clone> CsMat<N, &'a[usize], &'a[N]> {
+    /// Create a borrowed CsMat matrix from sliced data,
+    /// checking their validity
+    pub fn from_slices(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
-        ) -> Option<CsMat<'a, N>> {
-    let m = CsMat {
-        storage: storage,
-        nrows : nrows,
-        ncols: ncols,
-        nnz : data.len(),
-        indptr : VecSlice::from_slice(indptr),
-        indices : VecSlice::from_slice(indices),
-        data : VecSlice::from_slice(data),
-    };
-    match m.check_compressed_structure() {
-        None => None,
-        _ => Some(m)
+        )
+    -> Option<CsMat<N, &'a[usize], &'a[N]>> {
+        let m = CsMat {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            nnz : data.len(),
+            indptr : indptr,
+            indices : indices,
+            data : data,
+        };
+        match m.check_compressed_structure() {
+            None => None,
+            _ => Some(m)
+        }
     }
 }
 
-pub fn new_csmat<'a, N: 'a + Clone>(
+impl<N: Clone> CsMat<N, Vec<usize>, Vec<N>> {
+    /// Create an owned CsMat matrix from moved data,
+    /// checking their validity
+    pub fn from_vecs(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
-        ) -> Option<CsMat<'a, N>> {
-    let m = CsMat {
-        storage: storage,
-        nrows : nrows,
-        ncols: ncols,
-        nnz : data.len(),
-        indptr : VecSlice::from_vec(indptr),
-        indices : VecSlice::from_vec(indices),
-        data : VecSlice::from_vec(data),
-    };
-    match m.check_compressed_structure() {
-        None => None,
-        _ => Some(m)
+        )
+    -> Option<CsMat<N, Vec<usize>, Vec<N>>> {
+        let m = CsMat {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            nnz : data.len(),
+            indptr : indptr,
+            indices : indices,
+            data : data,
+        };
+        match m.check_compressed_structure() {
+            None => None,
+            _ => Some(m)
+        }
     }
 }
 
-impl<'a, N: 'a + Clone> CsMat<'a, N> {
+impl<N: Clone, IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]>>
+CsMat<N, IndStorage, DataStorage> {
 
     /// Return an outer iterator for the matrix
-    pub fn outer_iterator(&'a self) -> OuterIterator<'a, N> {
+    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N> {
         self.outer_iterator_papt(Permutation::identity())
     }
 
     /// Return an outer iterator over P*A*P^T
-    pub fn outer_iterator_papt(&'a self, perm: Permutation) 
+    pub fn outer_iterator_papt<'a>(&'a self, perm: Permutation)
     -> OuterIterator<'a, N> {
         let oriented_perm = match self.storage {
             CSR => perm,
@@ -131,8 +139,8 @@ impl<'a, N: 'a + Clone> CsMat<'a, N> {
         };
         OuterIterator {
             indptr_iter: self.indptr.iter().enumerate().peekable(),
-            indices: self.indices.as_slice(),
-            data: self.data.as_slice(),
+            indices: &self.indices[..],
+            data: &self.data[..],
             perm: oriented_perm
         }
     }
@@ -229,7 +237,7 @@ impl<'a, N: 'a + Clone> CsMat<'a, N> {
 
 #[cfg(test)]
 mod test {
-    use super::{new_borrowed_csmat, new_csmat};
+    use super::{CsMat};
     use super::CompressedStorage::{CSC, CSR};
 
     #[test]
@@ -237,7 +245,7 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
@@ -255,31 +263,31 @@ mod test {
         let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        match new_borrowed_csmat(CSR, 3, 3, indptr_fail1, indices_ok, data_ok) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_fail1, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSR, 3, 3, indptr_fail2, indices_ok, data_ok) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_fail2, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSR, 3, 3, indptr_fail3, indices_ok, data_ok) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_fail3, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_fail1, data_ok) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_fail1, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_fail2, data_ok) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_fail2, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_fail1) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_fail1) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_fail2) {
+        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_fail2) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
@@ -293,7 +301,7 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        match new_borrowed_csmat(CSR, 5, 5, indptr, indices, data) {
+        match CsMat::from_slices(CSR, 5, 5, indptr, indices, data) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
@@ -306,11 +314,11 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        match new_borrowed_csmat(CSR, 3, 4, indptr_ok, indices_ok, data_ok) {
+        match CsMat::from_slices(CSR, 3, 4, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
-        match new_borrowed_csmat(CSC, 4, 3, indptr_ok, indices_ok, data_ok) {
+        match CsMat::from_slices(CSC, 4, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
@@ -323,11 +331,11 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        match new_borrowed_csmat(CSR, 4, 3, indptr_ok, indices_ok, data_ok) {
+        match CsMat::from_slices(CSR, 4, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
-        match new_borrowed_csmat(CSC, 3, 4, indptr_ok, indices_ok, data_ok) {
+        match CsMat::from_slices(CSC, 3, 4, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(false),
             None => assert!(true)
         }
@@ -339,7 +347,7 @@ mod test {
         let indptr_ok = vec![0us, 1, 2, 3];
         let indices_ok = vec![0us, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match new_borrowed_csmat(CSR, 3, 3, indptr_ok.as_slice(),
+        match CsMat::from_slices(CSR, 3, 3, indptr_ok.as_slice(),
                       indices_ok.as_slice(), data_ok.as_slice()) {
             Some(_) => assert!(true),
             None => assert!(false)
@@ -351,7 +359,7 @@ mod test {
         let indptr_ok = vec![0us, 1, 2, 3];
         let indices_ok = vec![0us, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match new_csmat(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
+        match CsMat::from_vecs(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
@@ -364,7 +372,7 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        match new_borrowed_csmat(CSR, 5, 5, indptr, indices, data) {
+        match CsMat::from_slices(CSR, 5, 5, indptr, indices, data) {
             Some(_) => assert!(true),
             None => assert!(false)
         }

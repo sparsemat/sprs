@@ -1,16 +1,18 @@
 /// A sparse vector, which can be extracted from a sparse matrix
-/// 
+///
 
 use std::iter::{Zip};
+use std::ops::{Deref};
 use std::slice::{Iter, SliceExt};
 
 use sparse::permutation::Permutation;
 
-use storage::VecSlice;
-
-pub struct CsVec<'a, N: 'a + Clone> {
-    indices : VecSlice<'a, usize>,
-    data : VecSlice<'a, N>,
+pub struct CsVec<'a, N, IStorage, DStorage>
+where N: 'a + Clone,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+    indices : IStorage,
+    data : DStorage,
     perm: &'a Permutation,
 }
 
@@ -39,14 +41,14 @@ for VectorIterator<'a, N> {
 }
 
 
-impl<'a, N: 'a + Clone> CsVec<'a, N> {
+impl<'a, N: 'a + Clone> CsVec<'a, N, &'a[usize], &'a[N]> {
 
     pub fn new_borrowed(
         indices: &'a [usize], data: &'a [N], perm: &'a Permutation)
-    -> CsVec<'a, N> {
+    -> CsVec<'a, N, &'a[usize], &'a[N]> {
         CsVec {
-            indices: VecSlice::from_slice(indices),
-            data: VecSlice::from_slice(data),
+            indices: indices,
+            data: data,
             perm: perm,
         }
     }
