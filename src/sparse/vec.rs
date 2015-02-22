@@ -52,6 +52,12 @@ impl<'a, N: 'a + Clone> CsVec<'a, N, &'a[usize], &'a[N]> {
             perm: perm,
         }
     }
+}
+
+impl<'a, N, IStorage, DStorage> CsVec<'a, N, IStorage, DStorage>
+where N: 'a + Clone,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
 
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
