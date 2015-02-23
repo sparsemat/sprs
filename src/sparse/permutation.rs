@@ -1,21 +1,24 @@
 /// Representation of permutation matrices
-/// 
+///
 /// Both the permutation matrices and its inverse are stored
 
-#[derive(Clone)]
-pub enum Permutation {
+use std::ops::{Deref};
+use std::borrow::{ToOwned, Borrow};
+
+pub enum Permutation<IndStorage>
+where IndStorage: Deref<Target=[usize]> {
     Identity,
     FinitePerm {
-        perm: Vec<usize>,
-        perm_inv: Vec<usize>,
+        perm: IndStorage,
+        perm_inv: IndStorage,
     }
 }
 
 use self::Permutation::*;
 
-impl Permutation {
+impl Permutation<Vec<usize>> {
 
-    pub fn new(perm: Vec<usize>) -> Permutation {
+    pub fn new(perm: Vec<usize>) -> Permutation<Vec<usize>> {
         let mut perm_inv = perm.clone();
         for (ind, val) in perm.iter().enumerate() {
             perm_inv[*val] = ind;
@@ -25,16 +28,43 @@ impl Permutation {
             perm_inv: perm_inv
         }
     }
+}
 
-    pub fn identity() -> Permutation {
+impl<IndStorage> Permutation<IndStorage>
+where IndStorage: Deref<Target=[usize]> {
+
+    pub fn identity() -> Permutation<IndStorage> {
         Identity
     }
 
-    pub fn inv(perm: Permutation) -> Permutation {
-        match perm {
-            Identity => Identity,
-            FinitePerm {
-                perm: p, perm_inv: p_ } => FinitePerm { perm: p_, perm_inv: p }
+    pub fn inv<'perm>(&'perm self) -> Permutation<&'perm [usize]> {
+        match self {
+            &Identity => Identity,
+            &FinitePerm {
+                perm: ref p, perm_inv: ref p_
+            } => FinitePerm { perm: &p_[..], perm_inv: &p[..] }
+        }
+    }
+
+    // TODO: either the trait Deref or Borrow should be implemnted for this
+    pub fn borrowed<'perm>(&'perm self) -> Permutation<&'perm [usize]> {
+        match self {
+            &Identity => Identity,
+            &FinitePerm {
+                perm: ref p, perm_inv: ref p_
+            } => FinitePerm { perm: &p[..], perm_inv: &p_[..] }
+        }
+    }
+
+    pub fn owned_clone(&self) -> Permutation<Vec<usize>> {
+        match self {
+            &Identity => Identity,
+            &FinitePerm {
+                perm: ref p, perm_inv: ref p_
+            } => FinitePerm {
+                perm: p.iter().cloned().collect(),
+                perm_inv: p.iter().cloned().collect()
+            }
         }
     }
 

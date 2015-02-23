@@ -12,7 +12,7 @@ use std::iter::{Peekable, Enumerate};
 use std::slice::{Iter, SliceExt};
 use std::ops::{Deref};
 
-use sparse::permutation::Permutation;
+use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -25,20 +25,20 @@ use self::CompressedStorage::*;
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
-pub struct OuterIterator<'a, N: 'a> {
-    indptr_iter: Peekable<Enumerate<Iter<'a, usize>>>,
-    indices: &'a [usize],
-    data: &'a [N],
-    perm: Permutation,
+pub struct OuterIterator<'iter, 'perm: 'iter, N: 'iter> {
+    indptr_iter: Peekable<Enumerate<Iter<'iter, usize>>>,
+    indices: &'iter [usize],
+    data: &'iter [N],
+    perm: Permutation<&'perm[usize]>,
 }
 
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and the corresponding
 /// inner indices and associated data
-impl <'b, 'a: 'b, N: 'a + Clone>
+impl <'res, 'iter: 'res, 'perm: 'iter, N: 'iter + Clone>
 Iterator
-for OuterIterator<'a, N> {
-    type Item = (usize, CsVec<'b, N, &'b[usize], &'b[N]>);
+for OuterIterator<'iter, 'perm, N> {
+    type Item = (usize, CsVec<'res, N, &'res[usize], &'res[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let (outer_ind, cur_index) = match self.indptr_iter.next() {
@@ -52,7 +52,7 @@ for OuterIterator<'a, N> {
                 let indices = &self.indices[*cur_index..*next_index];
                 let data = &self.data[*cur_index..*next_index];
                 let vec = CsVec::new_borrowed(
-                    indices, data, &self.perm);
+                    indices, data, self.perm.borrowed());
                 Some((outer_ind_perm, vec))
             }
         }
@@ -71,7 +71,8 @@ where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
     nnz : usize,
     indptr : IndStorage,
     indices : IndStorage,
-    data : DataStorage
+    data : DataStorage,
+    perm_identity: Permutation<&'static [usize]>
 }
 
 impl<'a, N:'a + Clone> CsMat<N, &'a[usize], &'a[N]> {
@@ -90,6 +91,7 @@ impl<'a, N:'a + Clone> CsMat<N, &'a[usize], &'a[N]> {
             indptr : indptr,
             indices : indices,
             data : data,
+            perm_identity : Permutation::identity(),
         };
         match m.check_compressed_structure() {
             None => None,
@@ -114,6 +116,7 @@ impl<N: Clone> CsMat<N, Vec<usize>, Vec<N>> {
             indptr : indptr,
             indices : indices,
             data : data,
+            perm_identity : Permutation::identity(),
         };
         match m.check_compressed_structure() {
             None => None,
@@ -126,15 +129,16 @@ impl<N: Clone, IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]>
 CsMat<N, IndStorage, DataStorage> {
 
     /// Return an outer iterator for the matrix
-    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N> {
-        self.outer_iterator_papt(Permutation::identity())
+    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, 'a, N> {
+        self.outer_iterator_papt(&self.perm_identity)
     }
 
     /// Return an outer iterator over P*A*P^T
-    pub fn outer_iterator_papt<'a>(&'a self, perm: Permutation)
-    -> OuterIterator<'a, N> {
+    pub fn outer_iterator_papt<'a, 'perm: 'a>(
+        &'a self, perm: &'perm Permutation<&'perm [usize]>)
+    -> OuterIterator<'a, 'perm, N> {
         let oriented_perm = match self.storage {
-            CSR => perm,
+            CSR => perm.borrowed(),
             CSC => Permutation::inv(perm)
         };
         OuterIterator {

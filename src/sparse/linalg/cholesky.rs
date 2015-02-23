@@ -27,16 +27,20 @@ struct SymbolicLDL {
     parents : Vec<isize>,
     /// number of nonzeros in each column of L, len is n
     l_nz : Vec<usize>,
-    /// permutation matrix inverse, if present
-    p_inv : Option<Vec<usize>>
+    /// permutation matrix
+    perm : Permutation<Vec<usize>>
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-fn ldl_symbolic<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
+fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
     mat: &CsMat<N, IStorage, DStorage>,
-    perm: Option<&[usize]>,
-    flag_workspace: OptWorkspace<&mut [usize]>)
--> Option<SymbolicLDL> {
+    perm: Permutation<PStorage>,
+    flag_workspace: OptWorkspace<&mut [usize]>) -> Option<SymbolicLDL>
+where
+N: Clone + Copy + PartialEq,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]>,
+PStorage: Deref<Target=[usize]> {
     if ! is_symmetric(mat) {
         return None;
     }
@@ -54,35 +58,16 @@ fn ldl_symbolic<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>, DS
         Workspace(w) => w
     };
 
-    // TODO: permutations should have their own module
-    let p_inv = match perm {
-        None => None,
-        Some(p) => {
-            let mut p_inv = p.to_vec();
-            for (ind, val) in p.iter().enumerate() {
-                p_inv[*val] = ind;
-            }
-            Some(p_inv)
-        }
-    };
-
     let mut parents = (0..n).map(|x| -1).collect::<Vec<isize>>();
     let mut l_nz = (0..n).map(|x| 0).collect::<Vec<usize>>();
 
-    // FIXME this loop does not take the permutation into account!!!!
-    for (outer_ind, vec) in mat.outer_iterator() {
+    for (outer_ind, vec) in mat.outer_iterator_papt(&perm.borrowed()) {
         flag[outer_ind] = outer_ind; // this node is visited
 
-        let perm_out = match perm {
-            None => outer_ind,
-            Some(p) => p[outer_ind]
-        };
+        let perm_out = perm.at(outer_ind);
 
         for inner_ind in vec.indices().iter() {
-            let mut perm_in = match p_inv {
-                None => *inner_ind,
-                Some(ref pinv) => pinv[*inner_ind]
-            };
+            let mut perm_in = perm.at_inv(*inner_ind);
 
             if ( *inner_ind < outer_ind ) {
                 // get back to the root of the etree
@@ -112,6 +97,6 @@ fn ldl_symbolic<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>, DS
         l_colptr: l_colptr,
         l_nz: l_nz,
         parents: parents,
-        p_inv: p_inv
+        perm: perm.owned_clone()
     })
 }

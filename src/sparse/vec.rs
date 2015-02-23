@@ -7,24 +7,24 @@ use std::slice::{Iter, SliceExt};
 
 use sparse::permutation::Permutation;
 
-pub struct CsVec<'a, N, IStorage, DStorage>
-where N: 'a + Clone,
+pub struct CsVec<'perm, N, IStorage, DStorage>
+where N: 'perm + Clone,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
     indices : IStorage,
     data : DStorage,
-    perm: &'a Permutation,
+    perm: Permutation<&'perm [usize]>,
 }
 
-pub struct VectorIterator<'a, N: 'a> {
-    ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
-    perm: &'a Permutation,
+pub struct VectorIterator<'perm, N: 'perm> {
+    ind_data: Zip<Iter<'perm,usize>, Iter<'perm,N>>,
+    perm: Permutation<&'perm [usize]>,
 }
 
 
-impl <'a, N: 'a + Copy>
+impl <'perm, N: 'perm + Copy>
 Iterator
-for VectorIterator<'a, N> {
+for VectorIterator<'perm, N> {
     type Item = (usize, N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
@@ -41,11 +41,13 @@ for VectorIterator<'a, N> {
 }
 
 
-impl<'a, N: 'a + Clone> CsVec<'a, N, &'a[usize], &'a[N]> {
+impl<'perm, N: 'perm + Clone> CsVec<'perm, N, &'perm[usize], &'perm[N]> {
 
     pub fn new_borrowed(
-        indices: &'a [usize], data: &'a [N], perm: &'a Permutation)
-    -> CsVec<'a, N, &'a[usize], &'a[N]> {
+        indices: &'perm [usize],
+        data: &'perm [N],
+        perm: Permutation<&'perm [usize]>)
+    -> CsVec<'perm, N, &'perm[usize], &'perm[N]> {
         CsVec {
             indices: indices,
             data: data,
@@ -54,15 +56,15 @@ impl<'a, N: 'a + Clone> CsVec<'a, N, &'a[usize], &'a[N]> {
     }
 }
 
-impl<'a, N, IStorage, DStorage> CsVec<'a, N, IStorage, DStorage>
-where N: 'a + Clone,
+impl<'perm, N, IStorage, DStorage> CsVec<'perm, N, IStorage, DStorage>
+where N: 'perm + Clone,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
             ind_data: self.indices.iter().zip(self.data.iter()),
-            perm: &self.perm
+            perm: self.perm.borrowed()
         }
     }
 
