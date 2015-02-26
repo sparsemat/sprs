@@ -175,7 +175,7 @@ CsMat<N, IndStorage, DataStorage> {
     -> Option<N> {
         let begin = self.indptr[outer_ind];
         let end = self.indptr[outer_ind+1];
-        if ( begin >= end ) {
+        if begin >= end {
             return None;
         }
         let indices = &self.indices[begin..end];
@@ -348,8 +348,8 @@ mod test {
 
     #[test]
     fn test_new_csr_vec_borrowed() {
-        let indptr_ok = vec![0us, 1, 2, 3];
-        let indices_ok = vec![0us, 1, 2];
+        let indptr_ok = vec![0, 1, 2, 3];
+        let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
         match CsMat::from_slices(CSR, 3, 3, indptr_ok.as_slice(),
                       indices_ok.as_slice(), data_ok.as_slice()) {
@@ -360,8 +360,8 @@ mod test {
 
     #[test]
     fn test_new_csr_vec_owned() {
-        let indptr_ok = vec![0us, 1, 2, 3];
-        let indices_ok = vec![0us, 1, 2];
+        let indptr_ok = vec![0, 1, 2, 3];
+        let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
         match CsMat::from_vecs(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
             Some(_) => assert!(true),

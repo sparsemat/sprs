@@ -4,12 +4,15 @@ use std::ops::{Deref};
 
 use sparse::csmat::CsMat;
 
-pub fn is_symmetric<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
-    mat: &CsMat<N, IStorage, DStorage>) -> bool {
+pub fn is_symmetric<N, IStorage, DStorage>(
+    mat: &CsMat<N, IStorage, DStorage>) -> bool
+where
+N: Clone + Copy + PartialEq,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
     if mat.rows() != mat.cols() {
         return false;
     }
-    let n = mat.rows();
     for (outer_ind, vec) in mat.outer_iterator() {
         for (inner_ind, value) in vec.iter() {
             match mat.at_outer_inner(&(inner_ind, outer_ind)) {
@@ -26,7 +29,7 @@ pub fn is_symmetric<N: Clone + Copy + PartialEq, IStorage: Deref<Target=[usize]>
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMat;
-    use sparse::csmat::CompressedStorage::{CSC, CSR};
+    use sparse::csmat::CompressedStorage::{CSR};
     use super::is_symmetric;
 
     #[test]

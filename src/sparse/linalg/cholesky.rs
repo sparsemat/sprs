@@ -5,7 +5,6 @@ use std::ops::{Deref};
 use sparse::csmat::{CsMat};
 use sparse::symmetric::{is_symmetric};
 use sparse::permutation::Permutation;
-use dense::vec;
 
 use std::boxed::Box;
 
@@ -18,7 +17,7 @@ pub enum OptWorkspace<T> {
 use self::OptWorkspace::*;
 
 /// Result of the symbolic LDLt decomposition of a symmetric sparse matrix
-struct SymbolicLDL {
+pub struct SymbolicLDL {
     /// Dimension of the matrix
     n : usize,
     /// indptr in the L matrix, len is n+1
@@ -32,7 +31,7 @@ struct SymbolicLDL {
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
+pub fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
     mat: &CsMat<N, IStorage, DStorage>,
     perm: Permutation<PStorage>,
     flag_workspace: OptWorkspace<&mut [usize]>) -> Option<SymbolicLDL>
@@ -58,27 +57,29 @@ PStorage: Deref<Target=[usize]> {
         Workspace(w) => w
     };
 
-    let mut parents = (0..n).map(|x| -1).collect::<Vec<isize>>();
-    let mut l_nz = (0..n).map(|x| 0).collect::<Vec<usize>>();
+    let mut parents = vec![-1isize; n];
+    let mut l_nz = vec![0usize; n];
 
-    for (outer_ind, vec) in mat.outer_iterator_papt(&perm.borrowed()) {
-        flag[outer_ind] = outer_ind; // this node is visited
+    for (k, (outer_ind, vec)) in mat.outer_iterator_papt(&perm.borrowed()).enumerate() {
 
-        let perm_out = perm.at(outer_ind);
+        flag[k] = k; // this node is visited
 
-        for inner_ind in vec.indices().iter() {
-            let mut perm_in = perm.at_inv(*inner_ind);
+        for (inner_ind, _) in vec.iter() {
+            let mut i = inner_ind;
 
-            if ( *inner_ind < outer_ind ) {
+            // FIXME: the article tests inner_ind versus k, but this looks
+            // weird as it would introduce a dissimetry between the permuted
+            // and non permuted cases. Needs test however
+            if i < outer_ind {
                 // get back to the root of the etree
                 // TODO: maybe this calls for a more adequate parent structure?
-                while ( flag[perm_in] != outer_ind ) {
-                    if ( parents[perm_in] == -1 ) {
-                        parents[perm_in] = outer_ind as isize; // TODO check overflow
+                while flag[i] != outer_ind {
+                    if parents[i] == -1 {
+                        parents[i] = outer_ind as isize; // TODO check overflow
                     }
-                    l_nz[perm_in] = l_nz[perm_in] + 1;
-                    flag[perm_in] = outer_ind;
-                    perm_in = parents[perm_in] as usize; // TODO check negative
+                    l_nz[i] = l_nz[i] + 1;
+                    flag[i] = outer_ind;
+                    i = parents[i] as usize; // TODO check negative
                 }
             }
         }

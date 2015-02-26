@@ -14,6 +14,6 @@ mod csmat;
 pub mod vec;
 pub mod permutation;
 mod prod;
-mod linalg;
-mod symmetric;
+pub mod linalg;
+pub mod symmetric;
 

@@ -1,37 +1,37 @@
 ///! Sparse matrix product
 
-use std::ops::{Add, Mul, Deref};
+use std::ops::{Deref};
 use sparse::csmat::CompressedStorage::{CSC, CSR};
 use sparse::csmat::{CsMat};
 use num::traits::Num;
 
 pub fn mul_acc_mat_vec_csc<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
-    mat: CsMat<N, IStorage, DStorage>, inVec: &[N], resVec: &mut[N]) {
-    assert!(mat.cols() == inVec.len(), "Matrix and vector dims must agree");
-    assert!(mat.rows() == resVec.len(), "Matrix and res vector dims must agree");
+    mat: CsMat<N, IStorage, DStorage>, in_vec: &[N], res_vec: &mut[N]) {
+    assert!(mat.cols() == in_vec.len(), "Matrix and vector dims must agree");
+    assert!(mat.rows() == res_vec.len(), "Matrix and res vector dims must agree");
     assert!(mat.storage_type() == CSC, "Matrix must be in CSC format");
 
     for (col_ind, vec) in mat.outer_iterator() {
-        let multiplier = &inVec[col_ind];
+        let multiplier = &in_vec[col_ind];
         for (row_ind, value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            resVec[row_ind] =
-                resVec[row_ind] + *multiplier * value;
+            res_vec[row_ind] =
+                res_vec[row_ind] + *multiplier * value;
         }
     }
 }
 
 pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
-    mat: CsMat<N, IStorage, DStorage>, inVec: &[N], resVec: &mut[N]) {
-    assert!(mat.cols() == inVec.len(), "Matrix and vector dims must agree");
-    assert!(mat.rows() == resVec.len(), "Matrix and res vector dims must agree");
+    mat: CsMat<N, IStorage, DStorage>, in_vec: &[N], res_vec: &mut[N]) {
+    assert!(mat.cols() == in_vec.len(), "Matrix and vector dims must agree");
+    assert!(mat.rows() == res_vec.len(), "Matrix and res vector dims must agree");
     assert!(mat.storage_type() == CSR, "Matrix must be in CSR format");
 
     for (row_ind, vec) in mat.outer_iterator() {
         for (col_ind, value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            resVec[row_ind] =
-                resVec[row_ind] + inVec[col_ind] * value;
+            res_vec[row_ind] =
+                res_vec[row_ind] + in_vec[col_ind] * value;
         }
     }
 }
@@ -54,15 +54,15 @@ mod test {
 
         let mat = CsMat::from_slices(CSC, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
-        let mut resVec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csc(mat, vector.as_slice(), resVec.as_mut_slice());
+        let mut res_vec = vec![0., 0., 0., 0., 0.];
+        mul_acc_mat_vec_csc(mat, vector.as_slice(), res_vec.as_mut_slice());
 
         let expected_output =
             vec![ 0., 0.26439869, -0.01803924, 0.75120319, 0.11616419];
 
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
-        assert!(resVec.iter().zip(expected_output.iter()).all(
+        assert!(res_vec.iter().zip(expected_output.iter()).all(
             |(x,y)| Float::abs(*x-*y) < epsilon));
     }
 
@@ -76,15 +76,15 @@ mod test {
 
         let mat = CsMat::from_slices(CSR, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
-        let mut resVec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csr(mat, vector.as_slice(), resVec.as_mut_slice());
+        let mut res_vec = vec![0., 0., 0., 0., 0.];
+        mul_acc_mat_vec_csr(mat, vector.as_slice(), res_vec.as_mut_slice());
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
 
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
-        assert!(resVec.iter().zip(expected_output.iter()).all(
+        assert!(res_vec.iter().zip(expected_output.iter()).all(
             |(x,y)| Float::abs(*x-*y) < epsilon));
     }
 }

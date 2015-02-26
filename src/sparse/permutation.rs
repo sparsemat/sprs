@@ -3,7 +3,6 @@
 /// Both the permutation matrices and its inverse are stored
 
 use std::ops::{Deref};
-use std::borrow::{ToOwned, Borrow};
 
 pub enum Permutation<IndStorage>
 where IndStorage: Deref<Target=[usize]> {
@@ -63,7 +62,7 @@ where IndStorage: Deref<Target=[usize]> {
                 perm: ref p, perm_inv: ref p_
             } => FinitePerm {
                 perm: p.iter().cloned().collect(),
-                perm_inv: p.iter().cloned().collect()
+                perm_inv: p_.iter().cloned().collect()
             }
         }
     }
