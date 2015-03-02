@@ -89,7 +89,7 @@ PStorage: Deref<Target=[usize]> {
     l_colptr.push(0);
     let mut prev : usize = 0;
     for k in (0..n) {
-        prev = prev + l_nz[k];
+        prev += l_nz[k];
         l_colptr.push(prev);
     }
 
@@ -100,4 +100,26 @@ PStorage: Deref<Target=[usize]> {
         parents: parents,
         perm: perm.owned_clone()
     })
+}
+
+pub struct LDLT {
+    tmp: usize // TODO
+}
+
+pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
+    mat: &CsMat<N, IStorage, DStorage>,
+    ldl_sym: SymbolicLDL,
+    perm: Permutation<PStorage>,
+    y_workspace: OptWorkspace<&mut[N]>,
+    pattern_workspace: OptWorkspace<&mut[usize]>,
+    flag_workspace: OptWorkspace<&mut[usize]>) -> LDLT
+where
+N: Clone + Copy + PartialEq,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]>,
+PStorage: Deref<Target=[usize]> {
+    panic!("not yet implemented");
+    LDLT {
+        tmp: 1
+    }
 }
