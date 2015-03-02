@@ -221,14 +221,14 @@ CsMat<N, IndStorage, DataStorage> {
             return None;
         }
 
-        if ! self.indptr.deref().windows(2).all(|&: x| x[0] <= x[1]) {
+        if ! self.indptr.deref().windows(2).all(|x| x[0] <= x[1]) {
             println!("CsMat indptr not sorted");
             return None;
         }
 
         // check that the indices are sorted for each row
         if ! self.outer_iterator().all(
-            | &: (_, vec) | { vec.check_structure() })
+            | (_, vec) | { vec.check_structure() })
         {
             println!("CsMat indices not sorted for each outer ind");
             return None;

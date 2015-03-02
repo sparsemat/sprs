@@ -77,6 +77,6 @@ DStorage: Deref<Target=[N]> {
     }
 
     pub fn check_structure(&self) -> bool {
-        self.indices.windows(2).all(|&: x| x[0] < x[1])
+        self.indices.windows(2).all(|x| x[0] < x[1])
     }
 }
