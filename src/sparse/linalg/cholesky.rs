@@ -8,14 +8,6 @@ use sparse::permutation::Permutation;
 
 use std::boxed::Box;
 
-/// Optional workspace (to be moved in its own module)
-pub enum OptWorkspace<T> {
-    NoWorkspace,
-    Workspace(T)
-}
-
-use self::OptWorkspace::*;
-
 /// Result of the symbolic LDLt decomposition of a symmetric sparse matrix
 pub struct SymbolicLDL {
     /// Dimension of the matrix
@@ -30,32 +22,31 @@ pub struct SymbolicLDL {
     perm : Permutation<Vec<usize>>
 }
 
+pub enum SymmetryCheck {
+    CheckSymmetry,
+    DontCheckSymmetry
+}
+
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
 pub fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
     mat: &CsMat<N, IStorage, DStorage>,
     perm: Permutation<PStorage>,
-    flag_workspace: OptWorkspace<&mut [usize]>) -> Option<SymbolicLDL>
+    flag: &mut [usize],
+    check_symmetry: SymmetryCheck) -> Option<SymbolicLDL>
 where
 N: Clone + Copy + PartialEq,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]>,
 PStorage: Deref<Target=[usize]> {
-    if ! is_symmetric(mat) {
-        return None;
+
+    match check_symmetry {
+        SymmetryCheck::DontCheckSymmetry => (),
+        SymmetryCheck::CheckSymmetry => if ! is_symmetric(mat) {
+            return None;
+        }
     }
 
     let n = mat.rows();
-
-    let mut ws = Box::new(Vec::<usize>::new());
-    let mut flag = match flag_workspace {
-        NoWorkspace => {
-            for _ in (0..n) {
-                ws.push(0);
-            }
-            ws.as_mut_slice()
-        },
-        Workspace(w) => w
-    };
 
     let mut parents = vec![-1isize; n];
     let mut l_nz = vec![0usize; n];
@@ -110,9 +101,9 @@ pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
     mat: &CsMat<N, IStorage, DStorage>,
     ldl_sym: SymbolicLDL,
     perm: Permutation<PStorage>,
-    y_workspace: OptWorkspace<&mut[N]>,
-    pattern_workspace: OptWorkspace<&mut[usize]>,
-    flag_workspace: OptWorkspace<&mut[usize]>) -> LDLT
+    y_workspace: &mut [N],
+    pattern_workspace: &mut [usize],
+    flag_workspace: &mut [usize]) -> LDLT
 where
 N: Clone + Copy + PartialEq,
 IStorage: Deref<Target=[usize]>,
