@@ -121,7 +121,7 @@ PStorage: Deref<Target=[usize]> {
         let mut top = n;
 
         for (inner_ind, val) in vec.iter().filter(|&(i,_)| i <= k) {
-            y_workspace[inner_ind] += val;
+            y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             let mut len = 0;
             while flag_workspace[i] != outer_ind {
@@ -141,7 +141,7 @@ PStorage: Deref<Target=[usize]> {
         // of the kth row of L
         diag[k] = y_workspace[k];
         y_workspace[k] = N::zero();
-        'pattern: for i in &pattern_workspace[top..n] {
+        'pattern: for &i in &pattern_workspace[top..n] {
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
             let p2 = l_colptr[i] + l_nz[i];
@@ -152,10 +152,11 @@ PStorage: Deref<Target=[usize]> {
                 // actually each iteration of the 'pattern loop adds writes the
                 // value in l_indices that will be read on the next iteration
                 // TODO: can some design change make this fact more obvious?
-                y_workspace[l_indices[p]] -= l_data[p] * yi;
+                let y_index = l_indices[p];
+                y_workspace[y_index] = y_workspace[y_index] - l_data[p] * yi;
             }
             let l_ki = yi / diag[i];
-            diag[k] -= l_ki * yi;
+            diag[k] = diag[k] - l_ki * yi;
             l_indices[p2] = k;
             l_data[p2] = l_ki;
             l_nz[i] += 1;
