@@ -9,7 +9,7 @@
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
 use std::iter::{Peekable, Enumerate};
-use std::slice::{Iter, SliceExt};
+use std::slice::{Iter};
 use std::ops::{Deref};
 
 use sparse::permutation::{Permutation};

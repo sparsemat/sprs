@@ -3,7 +3,7 @@
 
 use std::iter::{Zip};
 use std::ops::{Deref};
-use std::slice::{Iter, SliceExt};
+use std::slice::{Iter};
 
 use sparse::permutation::Permutation;
 
