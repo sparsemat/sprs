@@ -69,11 +69,11 @@ DStorage: Deref<Target=[N]> {
     }
 
     pub fn indices(&self) -> &[usize] {
-        self.indices.as_slice()
+        &self.indices
     }
 
     pub fn data(&self) -> &[N] {
-        self.data.as_slice()
+        &self.data
     }
 
     pub fn check_structure(&self) -> bool {
