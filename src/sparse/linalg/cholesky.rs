@@ -4,7 +4,7 @@ use std::ops::{Deref};
 
 use num::traits::Num;
 
-use sparse::csmat::{CsMat};
+use sparse::csmat::{CsMat, CompressedStorage};
 use sparse::symmetric::{is_symmetric};
 use sparse::permutation::Permutation;
 
@@ -168,4 +168,51 @@ PStorage: Deref<Target=[usize]> {
         }
     }
     Ok(())
+}
+
+pub fn ldl_lsolve<N>(
+    l_colptr: &[usize],
+    l_indices: &[usize],
+    l_data: &[N],
+    x: &mut [N])
+where
+N: Clone + Copy + Num {
+
+    let n = l_indices.len();
+    let l = CsMat::from_slices(
+        CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
+    for (col_ind, vec) in l.outer_iterator() {
+        for (row_ind, value) in vec.iter() {
+            x[col_ind] = x[col_ind] - value * x[row_ind];
+        }
+    }
+}
+
+pub fn ldl_ltsolve<N>(
+    l_colptr: &[usize],
+    l_indices: &[usize],
+    l_data: &[N],
+    x: &mut [N])
+where
+N: Clone + Copy + Num {
+
+    let n = l_indices.len();
+    let lt = CsMat::from_slices(
+        CompressedStorage::CSR, n, n, l_colptr, l_indices, l_data).unwrap();
+    for (row_ind, vec) in lt.outer_iterator() {
+        for (col_ind, value) in vec.iter() {
+            x[row_ind] = x[row_ind] - value * x[col_ind];
+        }
+    }
+}
+
+pub fn ldl_dsolve<N>(
+    d: &[N],
+    x: &mut [N])
+where
+N: Clone + Copy + Num {
+
+    for (xv, dv) in x.iter_mut().zip(d.iter()) {
+        *xv = *xv / *dv;
+    }
 }
