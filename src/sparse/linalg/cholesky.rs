@@ -79,13 +79,12 @@ PStorage: Deref<Target=[usize]> {
         }
     }
 
-    let mut l_colptr = Vec::<usize>::with_capacity(n+1);
-    l_colptr.push(0);
     let mut prev : usize = 0;
-    for k in (0..n) {
+    for (k, colptr) in (0..n).zip(l_colptr.iter_mut()) {
+        *colptr = prev;
         prev += l_nz[k];
-        l_colptr.push(prev);
     }
+    l_colptr[n-1] = prev;
 
     Ok(())
 }
