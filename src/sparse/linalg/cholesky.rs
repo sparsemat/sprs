@@ -90,7 +90,6 @@ PStorage: Deref<Target=[usize]> {
 }
 
 pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
-    n: usize,
     mat: &CsMat<N, IStorage, DStorage>,
     l_colptr: &[usize],
     parents: &[isize],
@@ -107,6 +106,8 @@ N: Clone + Copy + PartialEq + Num + PartialOrd,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]>,
 PStorage: Deref<Target=[usize]> {
+
+    let n = mat.rows();
 
     for (k, (outer_ind, vec))
     in mat.outer_iterator_papt(&perm.borrowed()).enumerate() {
