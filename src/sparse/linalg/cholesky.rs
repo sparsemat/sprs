@@ -178,7 +178,7 @@ pub fn ldl_lsolve<N>(
 where
 N: Clone + Copy + Num {
 
-    let n = l_indices.len();
+    let n = l_colptr.len() - 1;
     let l = CsMat::from_slices(
         CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
     for (col_ind, vec) in l.outer_iterator() {
@@ -196,7 +196,7 @@ pub fn ldl_ltsolve<N>(
 where
 N: Clone + Copy + Num {
 
-    let n = l_indices.len();
+    let n = l_colptr.len() - 1;
     let lt = CsMat::from_slices(
         CompressedStorage::CSR, n, n, l_colptr, l_indices, l_data).unwrap();
     for (row_ind, vec) in lt.outer_iterator() {
