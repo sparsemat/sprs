@@ -84,7 +84,7 @@ PStorage: Deref<Target=[usize]> {
         *colptr = prev;
         prev += l_nz[k];
     }
-    l_colptr[n-1] = prev;
+    l_colptr[n] = prev;
 
     Ok(())
 }
