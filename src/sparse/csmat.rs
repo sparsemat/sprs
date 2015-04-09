@@ -351,8 +351,7 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok.as_slice(),
-                      indices_ok.as_slice(), data_ok.as_slice()) {
+        match CsMat::from_slices(CSR, 3, 3, &indptr_ok, &indices_ok, &data_ok) {
             Some(_) => assert!(true),
             None => assert!(false)
         }
