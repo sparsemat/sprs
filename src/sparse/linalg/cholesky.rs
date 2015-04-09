@@ -220,7 +220,9 @@ N: Clone + Copy + Num {
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMat;
-    use sparse::csmat::CompressedStorage::{CSR};
+    use sparse::csmat::CompressedStorage::{CSR, CSC};
+    use sparse::permutation::Permutation;
+    use super::{SymmetryCheck};
 
     fn test_mat1() -> CsMat<f64, Vec<usize>, Vec<f64>> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
@@ -246,7 +248,7 @@ mod test {
             0.09, 1.6, 0.11,
             0.13, 0.52, 0.11, 1.4,
             0.01, 0.53, 0.56, 3.1];
-        CsMat::from_vecs(CSR, 10, 10, indptr, indices, data).unwrap()
+        CsMat::from_vecs(CSC, 10, 10, indptr, indices, data).unwrap()
     }
 
     fn test_vec1() -> Vec<f64> {
@@ -257,3 +259,40 @@ mod test {
     fn expected_res1() -> Vec<f64> {
         vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.]
     }
+
+    #[test]
+    fn test_factor_solve1() {
+        // FIXME: do better when compile time ints available..
+        // eg with
+        // let n = 10;
+        let mut l_colptr = [0; 11];
+        let mut parents = [0; 10];
+        let mut l_nz = [0; 10];
+        let mut flag_workspace = [0; 10];
+        let perm : Permutation<&[usize]> = Permutation::identity();
+        let mat = test_mat1();
+        super::ldl_symbolic(&mat, &perm, &mut l_colptr, &mut parents,
+                            &mut l_nz, &mut flag_workspace,
+                            SymmetryCheck::CheckSymmetry);
+
+        let nnz = l_colptr[10];
+        let mut l_indices = vec![0; nnz];
+        let mut l_data = vec![0.; nnz];
+        let mut diag = [0.; 10];
+        let mut y_workspace = [0.; 10];
+        let mut pattern_workspace = [0; 10];
+        super::ldl_numeric(&mat, &l_colptr, &parents, &perm, &mut l_nz,
+                           &mut l_indices, &mut l_data, &mut diag,
+                           &mut y_workspace, &mut pattern_workspace,
+                           &mut flag_workspace);
+
+        let b = test_vec1();
+        let mut x = b.clone();
+        super::ldl_lsolve(&l_colptr, &l_indices, &l_data, &mut x);
+        super::ldl_dsolve(&diag, &mut x);
+        super::ldl_ltsolve(&l_colptr, &l_indices, &l_data, &mut x);
+
+        let x0 = expected_res1();
+        assert_eq!(x, x0);
+    }
+}
