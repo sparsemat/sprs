@@ -215,3 +215,44 @@ N: Clone + Copy + Num {
         *xv = *xv / *dv;
     }
 }
+
+#[cfg(test)]
+mod test {
+    use sparse::csmat::CsMat;
+    use sparse::csmat::CompressedStorage::{CSR};
+
+    fn test_mat1() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+        let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
+        let indices = vec![
+            0, 8,
+            1, 4, 9,
+            2,
+            3,
+            1, 4, 6, 7, 8, 9,
+            5,
+            4, 6, 9,
+            4, 7, 8,
+            0, 4, 7, 8,
+            1, 4, 6, 9];
+        let data = vec![
+            1.7, 0.13,
+            1., 0.02, 0.01,
+            1.5,
+            1.1,
+            0.02, 2.6, 0.16, 0.09, 0.52, 0.53,
+            1.2,
+            0.16, 1.3, 0.56,
+            0.09, 1.6, 0.11,
+            0.13, 0.52, 0.11, 1.4,
+            0.01, 0.53, 0.56, 3.1];
+        CsMat::from_vecs(CSR, 10, 10, indptr, indices, data).unwrap()
+    }
+
+    fn test_vec1() -> Vec<f64> {
+        vec![0.287, 0.22, 0.45, 0.44, 2.486, 0.72 ,
+             1.55 ,  1.424,1.621,  3.759]
+    }
+
+    fn expected_res1() -> Vec<f64> {
+        vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.]
+    }
