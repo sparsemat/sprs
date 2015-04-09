@@ -51,12 +51,11 @@ PStorage: Deref<Target=[usize]> {
 
     let n = mat.rows();
 
-    let mut parents = vec![-1isize; n];
-    let mut l_nz = vec![0usize; n];
-
     for (k, (outer_ind, vec)) in mat.outer_iterator_papt(&perm.borrowed()).enumerate() {
 
         flag_workspace[k] = k; // this node is visited
+        parents[k] = -1;
+        l_nz[k] = 0;
 
         for (inner_ind, _) in vec.iter() {
             let mut i = inner_ind;
