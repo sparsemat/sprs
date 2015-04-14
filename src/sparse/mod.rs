@@ -11,5 +11,9 @@ pub use self::prod::{
 };
 
 mod csmat;
+pub mod vec;
+pub mod permutation;
 mod prod;
+pub mod linalg;
+pub mod symmetric;
 

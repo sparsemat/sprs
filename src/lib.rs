@@ -8,12 +8,4 @@ CSRust is a sparse linear algebra library for Rust.
 
 extern crate num;
 
-pub use sparse::{
-    CompressedStorage,
-    CsMat,
-    mul_acc_mat_vec_csc,
-};
-
-
-mod sparse;
-
+pub mod sparse;

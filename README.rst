@@ -47,3 +47,12 @@ Misc
 ....
 
 - Python bindings
+
+
+API guidelines
+--------------
+
+Each exposed functionality should, if deemed necessary for performance reasons,
+be exposed as a low-level C-style function (similar to BLAS API), and also
+exposed as a high level API with good defaults for the performance related
+arguments.
