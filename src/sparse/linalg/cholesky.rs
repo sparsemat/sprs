@@ -122,20 +122,18 @@ PStorage: Deref<Target=[usize]> {
         for (inner_ind, val) in vec.iter().filter(|&(i,_)| i <= k) {
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
-            //let mut len = 0;
+            let mut len = 0;
             while flag_workspace[i] != outer_ind {
-                top -= 1;
-                //pattern_workspace[len] = i;
-                pattern_workspace[top] = i;
-                //len += 1;
+                pattern_workspace[len] = i;
+                len += 1;
                 flag_workspace[i] = k;
                 i = parents[i] as usize;
             }
-            //while len > 0 { // TODO: can be written as a loop with iterators
-            //    top -= 1;
-            //    len -= 1;
-            //    pattern_workspace[top] = pattern_workspace[len];
-            //}
+            while len > 0 { // TODO: can be written as a loop with iterators
+                top -= 1;
+                len -= 1;
+                pattern_workspace[top] = pattern_workspace[len];
+            }
         }
 
         // use a sparse triangular solve to compute the values
