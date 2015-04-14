@@ -258,8 +258,87 @@ mod test {
              1.55 ,  1.424,1.621,  3.759]
     }
 
+    fn expected_factors1() -> (Vec<usize>, Vec<usize>, Vec<f64>, Vec<f64>) {
+        let expected_lp = vec![0, 1, 3, 3, 3, 7, 7, 10, 12, 13, 13];
+        let expected_li = vec![8, 4, 9, 6, 7, 8, 9, 7, 8, 9, 8, 9, 9];
+        let expected_lx = vec![
+            0.076470588235294124, 0.02, 0.01, 0.061547930450838589,
+            0.034620710878596701, 0.20003077396522542, 0.20380058470533929,
+            -0.0042935346524025902, -0.024807089102770519,
+            0.40878266366119237, 0.05752526570865537,
+            -0.010068305077340346, -0.071852278207562709];
+        let expected_d = vec![
+            1.7, 1., 1.5, 1.1000000000000001, 2.5996000000000001, 1.2,
+            1.290152331127866, 1.5968603527854308, 1.2799646117414738,
+            2.7695677698030283];
+        (expected_lp, expected_li, expected_lx, expected_d)
+    }
+
+    fn expected_lsolve_res1() -> Vec<f64> {
+        vec![0.28699999999999998, 0.22, 0.45000000000000001, 0.44,
+             2.4816000000000003, 0.71999999999999997, 1.3972626557931991,
+             1.3440844395148306, 1.0599997771886431, 2.7695677698030279]
+    }
+
+    fn expected_dsolve_res1() -> Vec<f64> {
+        vec![0.16882352941176471, 0.22, 0.29999999999999999,
+             0.39999999999999997, 0.95460840129250657, 0.59999999999999998,
+             1.0830214557467768, 0.84170443406044937, 0.82814772179243734,
+             0.99999999999999989]
+    }
+
     fn expected_res1() -> Vec<f64> {
-        vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.]
+        vec![0.099999999999999992, 0.19999999999999998,
+             0.29999999999999999, 0.39999999999999997,
+             0.5, 0.59999999999999998,
+             0.70000000000000007, 0.79999999999999993,
+             0.90000000000000002, 0.99999999999999989]
+    }
+
+    #[test]
+    fn test_factor1() {
+        let mut l_colptr = [0; 11];
+        let mut parents = [0; 10];
+        let mut l_nz = [0; 10];
+        let mut flag_workspace = [0; 10];
+        let perm : Permutation<&[usize]> = Permutation::identity();
+        let mat = test_mat1();
+        super::ldl_symbolic(&mat, &perm, &mut l_colptr, &mut parents,
+                            &mut l_nz, &mut flag_workspace,
+                            SymmetryCheck::CheckSymmetry);
+
+        let nnz = l_colptr[10];
+        let mut l_indices = vec![0; nnz];
+        let mut l_data = vec![0.; nnz];
+        let mut diag = [0.; 10];
+        let mut y_workspace = [0.; 10];
+        let mut pattern_workspace = [0; 10];
+        super::ldl_numeric(&mat, &l_colptr, &parents, &perm, &mut l_nz,
+                           &mut l_indices, &mut l_data, &mut diag,
+                           &mut y_workspace, &mut pattern_workspace,
+                           &mut flag_workspace);
+
+        let (expected_lp, expected_li, expected_lx, expected_d) = expected_factors1();
+
+        assert_eq!(&l_colptr, &expected_lp[..]);
+        assert_eq!(&l_indices, &expected_li);
+        assert_eq!(&l_data, &expected_lx);
+        assert_eq!(&diag, &expected_d[..]);
+    }
+
+    #[test]
+    fn test_solve1() {
+        let (expected_lp, expected_li, expected_lx, expected_d) = expected_factors1();
+        let b = test_vec1();
+        let mut x = b.clone();
+        super::ldl_lsolve(&expected_lp, &expected_li, &expected_lx, &mut x);
+        assert_eq!(&x, &expected_lsolve_res1());
+        super::ldl_dsolve(&expected_d, &mut x);
+        assert_eq!(&x, &expected_dsolve_res1());
+        super::ldl_ltsolve(&expected_lp, &expected_li, &expected_lx, &mut x);
+
+        let x0 = expected_res1();
+        assert_eq!(x, x0);
     }
 
     #[test]
