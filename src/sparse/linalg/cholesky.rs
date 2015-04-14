@@ -180,7 +180,7 @@ N: Clone + Copy + Num {
         CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
     for (col_ind, vec) in l.outer_iterator() {
         for (row_ind, value) in vec.iter() {
-            x[col_ind] = x[col_ind] - value * x[row_ind];
+            x[row_ind] = x[row_ind] - value * x[col_ind];
         }
     }
 }
