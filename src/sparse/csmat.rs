@@ -89,6 +89,14 @@ for OuterIterator<'iter, 'perm, N> {
     }
 }
 
+impl <'iter, 'perm: 'iter, N: 'iter + Clone>
+ExactSizeIterator
+for OuterIterator<'iter, 'perm, N> {
+    fn len(&self) -> usize {
+        self.indptr_iter.len()
+    }
+}
+
 pub struct CsMat<N, IndStorage, DataStorage>
 where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
     storage: CompressedStorage,
