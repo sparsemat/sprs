@@ -176,16 +176,12 @@ pub fn ldl_ltsolve<N>(
     x: &mut [N])
 where
 N: Clone + Copy + Num {
-    // the ltsolve is a very specific iteration on the matrix, we're iterating
-    // the outer dimension in reverse but the inner dimension in the usual way
-    // It might make sense to abstract it later if it turns out to be
-    // a common pattern, but we're better of doing it by hand here for now
-    for (outer_ind, inner_window) in l_colptr.windows(2).enumerate().rev() {
-        let start = inner_window[0];
-        let end = inner_window[1];
-        for (&inner_ind, &val)
-                in l_indices[start..end].iter().zip(l_data[start..end].iter()) {
-            x[outer_ind] = x[outer_ind] - val * x[inner_ind];
+    let n = l_colptr.len() - 1;
+    let l = CsMat::from_slices(
+        CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
+    for (outer_ind, vec) in l.outer_iterator().rev() {
+        for (inner_ind, value) in vec.iter() {
+            x[outer_ind] = x[outer_ind] - value * x[inner_ind];
         }
     }
 }
