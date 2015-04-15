@@ -42,7 +42,6 @@ mod test {
     use sparse::csmat::{CsMat};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr};
-    use std::num::Float;
 
     #[test]
     fn mul_csc_vec() {
@@ -63,7 +62,7 @@ mod test {
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
         assert!(res_vec.iter().zip(expected_output.iter()).all(
-            |(x,y)| Float::abs(*x-*y) < epsilon));
+            |(x,y)| (*x-*y).abs() < epsilon));
     }
 
     #[test]
@@ -85,6 +84,6 @@ mod test {
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
         assert!(res_vec.iter().zip(expected_output.iter()).all(
-            |(x,y)| Float::abs(*x-*y) < epsilon));
+            |(x,y)| (*x-*y).abs() < epsilon));
     }
 }

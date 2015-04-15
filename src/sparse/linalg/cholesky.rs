@@ -8,20 +8,6 @@ use sparse::csmat::{CsMat, CompressedStorage};
 use sparse::symmetric::{is_symmetric};
 use sparse::permutation::Permutation;
 
-/// Result of the symbolic LDLt decomposition of a symmetric sparse matrix
-pub struct SymbolicLDL {
-    /// Dimension of the matrix
-    n : usize,
-    /// indptr in the L matrix, len is n+1
-    l_colptr : Vec<usize>,
-    /// Elimination tree, len is n
-    parents : Vec<isize>,
-    /// number of nonzeros in each column of L, len is n
-    l_nz : Vec<usize>,
-    /// permutation matrix
-    perm : Permutation<Vec<usize>>
-}
-
 pub enum SymmetryCheck {
     CheckSymmetry,
     DontCheckSymmetry
@@ -35,7 +21,7 @@ pub fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
     parents: &mut [isize],
     l_nz: &mut [usize],
     flag_workspace: &mut [usize],
-    check_symmetry: SymmetryCheck) -> Result<(),()>
+    check_symmetry: SymmetryCheck)
 where
 N: Clone + Copy + PartialEq,
 IStorage: Deref<Target=[usize]>,
@@ -45,7 +31,7 @@ PStorage: Deref<Target=[usize]> {
     match check_symmetry {
         SymmetryCheck::DontCheckSymmetry => (),
         SymmetryCheck::CheckSymmetry => if ! is_symmetric(mat) {
-            return Err(());
+            panic!("Matrix is not symmetric")
         }
     }
 
@@ -85,7 +71,6 @@ PStorage: Deref<Target=[usize]> {
     }
     l_colptr[n] = prev;
 
-    Ok(())
 }
 
 pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
@@ -99,7 +84,7 @@ pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
     diag: &mut [N],
     y_workspace: &mut [N],
     pattern_workspace: &mut [usize],
-    flag_workspace: &mut [usize]) -> Result<(), usize>
+    flag_workspace: &mut [usize])
 where
 N: Clone + Copy + PartialEq + Num + PartialOrd,
 IStorage: Deref<Target=[usize]>,
@@ -161,10 +146,9 @@ PStorage: Deref<Target=[usize]> {
             l_nz[i] += 1;
         }
         if diag[k] == N::zero() {
-            return Err(k)
+            panic!("Matrix is singular");
         }
     }
-    Ok(())
 }
 
 pub fn ldl_lsolve<N>(
@@ -192,8 +176,6 @@ pub fn ldl_ltsolve<N>(
     x: &mut [N])
 where
 N: Clone + Copy + Num {
-
-    let n = l_colptr.len() - 1;
     // the ltsolve is a very specific iteration on the matrix, we're iterating
     // the outer dimension in reverse but the inner dimension in the usual way
     // It might make sense to abstract it later if it turns out to be
@@ -222,7 +204,7 @@ N: Clone + Copy + Num {
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMat;
-    use sparse::csmat::CompressedStorage::{CSR, CSC};
+    use sparse::csmat::CompressedStorage::{CSC};
     use sparse::permutation::Permutation;
     use super::{SymmetryCheck};
 
