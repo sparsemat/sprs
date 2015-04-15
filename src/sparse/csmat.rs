@@ -8,8 +8,8 @@
 /// In the CSC format, the relation is
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
-use std::iter::{Peekable, Enumerate};
-use std::slice::{Iter};
+use std::iter::{Enumerate};
+use std::slice::{Windows};
 use std::ops::{Deref};
 
 use sparse::permutation::{Permutation};
@@ -26,31 +26,29 @@ use self::CompressedStorage::*;
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
 pub struct OuterIterator<'iter, 'perm: 'iter, N: 'iter> {
-    indptr_iter: Peekable<Enumerate<Iter<'iter, usize>>>,
+    indptr_iter: Enumerate<Windows<'iter, usize>>,
     indices: &'iter [usize],
     data: &'iter [N],
     perm: Permutation<&'perm[usize]>,
 }
 
 /// Outer iteration on a compressed matrix yields
-/// a tuple consisting of the outer index and the corresponding
-/// inner indices and associated data
+/// a tuple consisting of the outer index and of a sparse vector
+/// containing the associated inner dimension
 impl <'res, 'iter: 'res, 'perm: 'iter, N: 'iter + Clone>
 Iterator
 for OuterIterator<'iter, 'perm, N> {
     type Item = (usize, CsVec<'res, N, &'res[usize], &'res[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        let (outer_ind, cur_index) = match self.indptr_iter.next() {
-            None => { return None; },
-            Some(value) => value
-        };
-        match self.indptr_iter.peek() {
+        match self.indptr_iter.next() {
             None => None,
-            Some(&(_, next_index)) => {
+            Some((outer_ind, window)) => {
+                let inner_start = window[0];
+                let inner_end = window[1];
                 let outer_ind_perm = self.perm.at(outer_ind);
-                let indices = &self.indices[*cur_index..*next_index];
-                let data = &self.data[*cur_index..*next_index];
+                let indices = &self.indices[inner_start..inner_end];
+                let data = &self.data[inner_start..inner_end];
                 let vec = CsVec::new_borrowed(
                     indices, data, self.perm.borrowed());
                 Some((outer_ind_perm, vec))
@@ -60,6 +58,34 @@ for OuterIterator<'iter, 'perm, N> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.indptr_iter.size_hint()
+    }
+}
+
+/// Reverse outer iteration on a compressed matrix yields
+/// a tuple consisting of the outer index and of a sparse vector
+/// containing the associated inner dimension
+///
+/// Only the outer dimension iteration is reverted. If you wish to also
+/// revert the inner dimension, you should call rev() again when iterating
+/// the vector.
+impl <'res, 'iter: 'res, 'perm: 'iter, N: 'iter + Clone>
+DoubleEndedIterator
+for OuterIterator<'iter, 'perm, N> {
+    #[inline]
+    fn next_back(&mut self) -> Option<<Self as Iterator>::Item> {
+        match self.indptr_iter.next_back() {
+            None => None,
+            Some((outer_ind, window)) => {
+                let inner_start = window[0];
+                let inner_end = window[1];
+                let outer_ind_perm = self.perm.at(outer_ind);
+                let indices = &self.indices[inner_start..inner_end];
+                let data = &self.data[inner_start..inner_end];
+                let vec = CsVec::new_borrowed(
+                    indices, data, self.perm.borrowed());
+                Some((outer_ind_perm, vec))
+            }
+        }
     }
 }
 
@@ -142,7 +168,7 @@ CsMat<N, IndStorage, DataStorage> {
             CSC => Permutation::inv(perm)
         };
         OuterIterator {
-            indptr_iter: self.indptr.iter().enumerate().peekable(),
+            indptr_iter: self.indptr.windows(2).enumerate(),
             indices: &self.indices[..],
             data: &self.data[..],
             perm: oriented_perm
