@@ -19,6 +19,7 @@ DStorage: Deref<Target=[N]> {
 }
 
 pub struct VectorIterator<'perm, N: 'perm> {
+    len: usize,
     ind_data: Zip<Iter<'perm,usize>, Iter<'perm,N>>,
     perm: Permutation<&'perm [usize]>,
 }
@@ -41,6 +42,20 @@ for VectorIterator<'perm, N> {
         self.ind_data.size_hint()
     }
 }
+
+impl<'perm, N: 'perm + Copy> VectorIterator<'perm, N> {
+    pub fn nnz_zip<M>(self,
+                     other: VectorIterator<'perm, M>
+                     ) -> NnzZip<'perm, N, M>
+    where M: 'perm + Clone {
+        assert!(self.len == other.len);
+        NnzZip {
+            left: self,
+            right: other
+        }
+    }
+}
+
 
 /// An iterator the iterates over the matching non-zeros of two
 /// vector iterators, hence enabling eg computing their dot-product
@@ -156,19 +171,9 @@ DStorage: Deref<Target=[N]> {
 
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
+            len: self.len,
             ind_data: self.indices.iter().zip(self.data.iter()),
             perm: self.perm.borrowed()
-        }
-    }
-
-    pub fn nnz_zip<M>(&'perm self,
-                     other: &'perm CsVec<M, &[usize], &[M]>
-                     ) -> NnzZip<'perm, N, M>
-    where M: 'perm + Clone {
-        assert!(self.len == other.len);
-        NnzZip {
-            left: self.iter(),
-            right: other.iter()
         }
     }
 
@@ -211,8 +216,7 @@ mod test {
     fn test_nnz_zip_iter() {
         let vec1 = test_vec1();
         let vec2 = test_vec2();
-        let borrowed2 = vec2.borrowed(); // FIXME: bad interface
-        let mut iter = vec1.nnz_zip(&borrowed2);
+        let mut iter = vec1.iter().nnz_zip(vec2.iter());
         assert_eq!(iter.next().unwrap(), (0, 0., 0.5));
         assert_eq!(iter.next().unwrap(), (4, 4., 4.5));
         assert_eq!(iter.next().unwrap(), (7, 7., 7.5));
