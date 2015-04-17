@@ -7,13 +7,14 @@ use std::slice::{Iter};
 
 use sparse::permutation::Permutation;
 
-pub struct CsVec<'perm, N, IStorage, DStorage>
-where N: 'perm + Clone,
+pub struct CsVec<N, IStorage, DStorage>
+where N: Clone,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
+    len: usize,
     indices : IStorage,
     data : DStorage,
-    perm: Permutation<&'perm [usize]>,
+    perm: Permutation<IStorage>,
 }
 
 pub struct VectorIterator<'perm, N: 'perm> {
@@ -41,14 +42,17 @@ for VectorIterator<'perm, N> {
 }
 
 
-impl<'perm, N: 'perm + Clone> CsVec<'perm, N, &'perm[usize], &'perm[N]> {
+
+impl<'perm, N: 'perm + Clone> CsVec<N, &'perm[usize], &'perm[N]> {
 
     pub fn new_borrowed(
+        n: usize,
         indices: &'perm [usize],
         data: &'perm [N],
         perm: Permutation<&'perm [usize]>)
-    -> CsVec<'perm, N, &'perm[usize], &'perm[N]> {
+    -> CsVec<N, &'perm[usize], &'perm[N]> {
         CsVec {
+            len: n,
             indices: indices,
             data: data,
             perm: perm,
@@ -56,9 +60,39 @@ impl<'perm, N: 'perm + Clone> CsVec<'perm, N, &'perm[usize], &'perm[N]> {
     }
 }
 
-impl<'perm, N, IStorage, DStorage> CsVec<'perm, N, IStorage, DStorage>
-where N: 'perm + Clone,
+impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
+    pub fn new_owned(n: usize,
+                     indices: Vec<usize>,
+                     data: Vec<N>,
+                     perm: Permutation<Vec<usize>>
+                    ) -> CsVec<N, Vec<usize>, Vec<N>> {
+        CsVec {
+            len: n,
+            indices: indices,
+            data: data,
+            perm: perm
+        }
+    }
+}
+
+impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where N:  Clone,
 IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+
+    fn borrowed(&self) -> CsVec<N, &[usize], &[N]> {
+        CsVec {
+            len: self.len,
+            indices: &self.indices[..],
+            data: &self.data[..],
+            perm: self.perm.borrowed()
+        }
+    }
+}
+
+impl<'perm, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where N: 'perm + Clone,
+IStorage: 'perm + Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
     pub fn iter(&self) -> VectorIterator<N> {

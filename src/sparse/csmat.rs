@@ -26,6 +26,7 @@ use self::CompressedStorage::*;
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
 pub struct OuterIterator<'iter, 'perm: 'iter, N: 'iter> {
+    inner_len: usize,
     indptr_iter: Enumerate<Windows<'iter, usize>>,
     indices: &'iter [usize],
     data: &'iter [N],
@@ -38,7 +39,7 @@ pub struct OuterIterator<'iter, 'perm: 'iter, N: 'iter> {
 impl <'res, 'iter: 'res, 'perm: 'iter, N: 'iter + Clone>
 Iterator
 for OuterIterator<'iter, 'perm, N> {
-    type Item = (usize, CsVec<'res, N, &'res[usize], &'res[N]>);
+    type Item = (usize, CsVec<N, &'res[usize], &'res[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
@@ -50,7 +51,7 @@ for OuterIterator<'iter, 'perm, N> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 let vec = CsVec::new_borrowed(
-                    indices, data, self.perm.borrowed());
+                    self.inner_len, indices, data, self.perm.borrowed());
                 Some((outer_ind_perm, vec))
             }
         }
@@ -82,7 +83,7 @@ for OuterIterator<'iter, 'perm, N> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 let vec = CsVec::new_borrowed(
-                    indices, data, self.perm.borrowed());
+                    self.inner_len, indices, data, self.perm.borrowed());
                 Some((outer_ind_perm, vec))
             }
         }
@@ -171,11 +172,12 @@ CsMat<N, IndStorage, DataStorage> {
     pub fn outer_iterator_papt<'a, 'perm: 'a>(
         &'a self, perm: &'perm Permutation<&'perm [usize]>)
     -> OuterIterator<'a, 'perm, N> {
-        let oriented_perm = match self.storage {
-            CSR => perm.borrowed(),
-            CSC => Permutation::inv(perm)
+        let (inner_len, oriented_perm) = match self.storage {
+            CSR => (self.ncols, perm.borrowed()),
+            CSC => (self.nrows, Permutation::inv(perm))
         };
         OuterIterator {
+            inner_len: inner_len,
             indptr_iter: self.indptr.windows(2).enumerate(),
             indices: &self.indices[..],
             data: &self.data[..],
