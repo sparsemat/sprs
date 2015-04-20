@@ -36,6 +36,51 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
     }
 }
 
+/// Perform a matrix multiplication for matrices sharing the same storage order.
+///
+/// For brevity, this method assumes a CSR storage order, transposition should
+/// be used for the CSC-CSC case.
+/// Accumulates the result line by line.
+///
+/// lhs: left hand size matrix
+/// rhs: right hand size matrix
+/// workspace: used to accumulate the line values. Should be of length
+///            rhs.cols()
+pub fn csr_mul_csr<N>(lhs: &CsMat<N, &[usize], &[N]>,
+                      rhs: &CsMat<N, &[usize], &[N]>,
+                      workspace: &mut[Option<N>]
+                     ) -> CsMat<N, Vec<usize>, Vec<N>>
+where N: Num + Copy {
+    let res_rows = lhs.rows();
+    let res_cols = rhs.cols();
+    assert_eq!(lhs.cols(), rhs.rows());
+    assert_eq!(res_cols, workspace.len());
+    assert_eq!(lhs.storage_type(), rhs.storage_type());
+    assert_eq!(CSR, rhs.storage_type());
+
+    let mut res = CsMat::empty(lhs.storage_type(), res_cols);
+    for (_, lvec) in lhs.outer_iterator() {
+        // reset the accumulators
+        for wval in workspace.iter_mut() {
+            *wval = None;
+        }
+        // accumulate the row values
+        for (_, rvec) in rhs.outer_iterator() {
+            for (col_ind, lval, rval) in lvec.iter().nnz_zip(rvec.iter()) {
+                let wval = &mut workspace[col_ind];
+                let prod = lval * rval;
+                match wval {
+                    &mut None => *wval = Some(prod),
+                    &mut Some(ref mut acc) => *acc = *acc + prod
+                }
+            }
+        }
+        // compress the row into the resulting matrix
+        res = res.append_outer(&workspace);
+    }
+    assert_eq!(res_rows, res.rows());
+    res
+}
 
 #[cfg(test)]
 mod test {

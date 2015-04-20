@@ -154,7 +154,7 @@ where N:  Clone,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
-    fn borrowed(&self) -> CsVec<N, &[usize], &[N]> {
+    pub fn borrowed(&self) -> CsVec<N, &[usize], &[N]> {
         CsVec {
             len: self.len,
             indices: &self.indices[..],

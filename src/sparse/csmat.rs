@@ -15,7 +15,7 @@ use std::ops::{Deref};
 use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressedStorage {
     CSR,
     CSC
@@ -135,7 +135,26 @@ impl<'a, N:'a + Clone> CsMat<N, &'a[usize], &'a[N]> {
     }
 }
 
-impl<N: Clone> CsMat<N, Vec<usize>, Vec<N>> {
+impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
+    /// Create an empty CsMat for building purposes
+    pub fn empty(storage: CompressedStorage, inner_size: usize
+                ) -> CsMat<N, Vec<usize>, Vec<N>> {
+        let (nrows, ncols) = match storage {
+            CSR => (0, inner_size),
+            CSC => (inner_size, 0)
+        };
+        CsMat {
+            storage: storage,
+            nrows: nrows,
+            ncols: ncols,
+            nnz: 0,
+            indptr: Vec::new(),
+            indices: Vec::new(),
+            data: Vec::new(),
+            perm_identity: Permutation::identity()
+        }
+    }
+
     /// Create an owned CsMat matrix from moved data,
     /// checking their validity
     pub fn from_vecs(
@@ -157,6 +176,26 @@ impl<N: Clone> CsMat<N, Vec<usize>, Vec<N>> {
             None => None,
             _ => Some(m)
         }
+    }
+
+    /// Append an outer dim to an existing matrix, compressing it in the process
+    pub fn append_outer(mut self, data: &[Option<N>]) -> Self {
+        for (inner_ind, val) in data.iter().enumerate() {
+            match *val {
+                None => (),
+                Some(ref scalar) => {
+                    self.indices.push(inner_ind);
+                    self.data.push(*scalar);
+                    self.nnz += 1;
+                }
+            }
+        }
+        match self.storage {
+            CSR => self.nrows += 1,
+            CSC => self.ncols += 1
+        }
+        self.indptr.push(self.nnz);
+        self
     }
 }
 
