@@ -150,7 +150,7 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
 }
 
 impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where N:  Clone,
+where N:  Copy,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 

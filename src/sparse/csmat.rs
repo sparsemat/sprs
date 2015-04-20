@@ -11,6 +11,7 @@
 use std::iter::{Enumerate};
 use std::slice::{Windows};
 use std::ops::{Deref};
+use num::traits::Num;
 
 use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec};
@@ -110,7 +111,7 @@ where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
     perm_identity: Permutation<&'static [usize]>
 }
 
-impl<'a, N:'a + Clone> CsMat<N, &'a[usize], &'a[N]> {
+impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
     pub fn from_slices(
@@ -148,7 +149,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
             nrows: nrows,
             ncols: ncols,
             nnz: 0,
-            indptr: Vec::new(),
+            indptr: vec![0; 1],
             indices: Vec::new(),
             data: Vec::new(),
             perm_identity: Permutation::identity()
@@ -199,7 +200,29 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
     }
 }
 
-impl<N: Clone, IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]>>
+impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
+    /// Identity matrix
+    pub fn eye(storage: CompressedStorage, dim: usize
+              ) -> CsMat<N, Vec<usize>, Vec<N>> {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
+        CsMat {
+            storage: storage,
+            nrows: n,
+            ncols: n,
+            nnz: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
+            perm_identity: Permutation::identity()
+        }
+    }
+
+}
+
+impl<N: Copy, IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]>>
 CsMat<N, IndStorage, DataStorage> {
 
     /// Return an outer iterator for the matrix
@@ -244,6 +267,18 @@ CsMat<N, IndStorage, DataStorage> {
             CSR => self.at_outer_inner(&(i,j)),
             CSC => self.at_outer_inner(&(j,i))
         }
+    }
+
+    pub fn indptr(&self) -> &[usize] {
+        &self.indptr[..]
+    }
+
+    pub fn indices(&self) -> &[usize] {
+        &self.indices[..]
+    }
+
+    pub fn data(&self) -> &[N] {
+        &self.data[..]
     }
 
     pub fn at_outer_inner(&self, &(outer_ind, inner_ind): &(usize, usize))
@@ -310,6 +345,20 @@ CsMat<N, IndStorage, DataStorage> {
         }
 
         Some(nnz)
+    }
+
+    /// Return a view into the current matrix
+    pub fn borrowed(&self) -> CsMat<N, &[usize], &[N]> {
+        CsMat {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            nnz: self.nnz,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+            perm_identity: Permutation::identity()
+        }
     }
 }
 

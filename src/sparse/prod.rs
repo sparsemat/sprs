@@ -36,6 +36,7 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
     }
 }
 
+
 /// Perform a matrix multiplication for matrices sharing the same storage order.
 ///
 /// For brevity, this method assumes a CSR storage order, transposition should
@@ -46,7 +47,20 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
 /// rhs: right hand size matrix
 /// workspace: used to accumulate the line values. Should be of length
 ///            rhs.cols()
-pub fn csr_mul_csr<N>(lhs: &CsMat<N, &[usize], &[N]>,
+pub fn csr_mul_csr<N, IStorage, DStorage>(lhs: &CsMat<N, IStorage, DStorage>,
+                                          rhs: &CsMat<N, IStorage, DStorage>,
+                                          workspace: &mut[Option<N>]
+                                         ) -> CsMat<N, Vec<usize>, Vec<N>>
+where
+N: Num + Copy,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+    let lhs_ = lhs.borrowed();
+    let rhs_ = rhs.borrowed();
+    csr_mul_csr_impl(&lhs_, &rhs_, workspace)
+}
+
+pub fn csr_mul_csr_impl<N>(lhs: &CsMat<N, &[usize], &[N]>,
                       rhs: &CsMat<N, &[usize], &[N]>,
                       workspace: &mut[Option<N>]
                      ) -> CsMat<N, Vec<usize>, Vec<N>>
@@ -86,7 +100,7 @@ where N: Num + Copy {
 mod test {
     use sparse::csmat::{CsMat};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
-    use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr};
+    use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
 
     #[test]
     fn mul_csc_vec() {
@@ -130,5 +144,15 @@ mod test {
 
         assert!(res_vec.iter().zip(expected_output.iter()).all(
             |(x,y)| (*x-*y).abs() < epsilon));
+    }
+
+    #[test]
+    fn mul_csr_csr_identity() {
+        let eye: CsMat<i32, Vec<usize>, Vec<i32>> = CsMat::eye(CSR, 10);
+        let mut workspace = [None; 10];
+        let res = csr_mul_csr(&eye, &eye, &mut workspace);
+        assert_eq!(eye.indptr(), res.indptr());
+        assert_eq!(eye.indices(), res.indices());
+        assert_eq!(eye.data(), res.data());
     }
 }
