@@ -4,6 +4,8 @@ sprs, a sparse matrix library written in Rust
 sprs implements some sparse matrix data structures and linear algebra
 algorithms.
 
+WARNING: experimental lib, neither API nor functionality stable
+
 License
 -------
 
@@ -23,6 +25,7 @@ Algorithms
 - Outer iterator on compressed sparse matrices
 - CSC/dense vector product
 - CSR/dense vector product
+- sparse Cholesky decomposition
 
 TODO
 ----
@@ -41,7 +44,6 @@ Algorithms
 - tests on the CSC/vector product
 - sparse triangular solve
 - sparse LU decomposition
-- sparse Cholesky decomposition
 
 Misc
 ....
