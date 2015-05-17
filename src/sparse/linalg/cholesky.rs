@@ -37,13 +37,16 @@ PStorage: Deref<Target=[usize]> {
 
     let n = mat.rows();
 
-    for (k, (outer_ind, vec)) in mat.outer_iterator_papt(&perm.borrowed()).enumerate() {
+    let perm_borrowed = perm.borrowed();
+    let outer_it = mat.outer_iterator_perm(&perm_borrowed);
+    for (k, (outer_ind, vec)) in outer_it.enumerate() {
 
         flag_workspace[k] = k; // this node is visited
         parents[k] = -1;
         l_nz[k] = 0;
 
-        for (inner_ind, _) in vec.iter() {
+        // FIXME: perm might not be good, maybe inv() needed
+        for (inner_ind, _) in vec.iter_perm(&perm_borrowed) {
             let mut i = inner_ind;
 
             // FIXME: the article tests inner_ind versus k, but this looks
@@ -93,8 +96,9 @@ PStorage: Deref<Target=[usize]> {
 
     let n = mat.rows();
 
-    for (k, (outer_ind, vec))
-    in mat.outer_iterator_papt(&perm.borrowed()).enumerate() {
+    let perm_borrowed = perm.borrowed();
+    let outer_it = mat.outer_iterator_perm(&perm_borrowed);
+    for (k, (outer_ind, vec)) in outer_it.enumerate() {
 
         // compute the nonzero pattern of the kth row of L
         // in topological order
@@ -104,7 +108,8 @@ PStorage: Deref<Target=[usize]> {
         l_nz[k] = 0;
         let mut top = n;
 
-        for (inner_ind, val) in vec.iter().filter(|&(i,_)| i <= k) {
+        // FIXME: perm might not be good, maybe inv() needed
+        for (inner_ind, val) in vec.iter_perm(&perm_borrowed).filter(|&(i,_)| i <= k) {
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             let mut len = 0;

@@ -14,20 +14,41 @@ IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
     len: usize,
     indices : IStorage,
-    data : DStorage,
-    perm: Permutation<IStorage>,
+    data : DStorage
 }
 
-pub struct VectorIterator<'perm, N: 'perm> {
+pub struct VectorIterator<'a, N: 'a> {
     len: usize,
-    ind_data: Zip<Iter<'perm,usize>, Iter<'perm,N>>,
-    perm: Permutation<&'perm [usize]>,
+    ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
+}
+
+pub struct VectorIteratorPerm<'a, N: 'a> {
+    len: usize,
+    ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
+    perm: Permutation<&'a [usize]>,
 }
 
 
-impl <'perm, N: 'perm + Copy>
+impl <'a, N: 'a + Copy>
 Iterator
-for VectorIterator<'perm, N> {
+for VectorIterator<'a, N> {
+    type Item = (usize, N);
+
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        match self.ind_data.next() {
+            None => None,
+            Some((inner_ind, data)) => Some((*inner_ind, *data))
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.ind_data.size_hint()
+    }
+}
+
+impl <'a, N: 'a + Copy>
+Iterator
+for VectorIteratorPerm<'a, N> {
     type Item = (usize, N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
@@ -43,11 +64,12 @@ for VectorIterator<'perm, N> {
     }
 }
 
-impl<'perm, N: 'perm + Copy> VectorIterator<'perm, N> {
+
+impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
     pub fn nnz_zip<M>(self,
-                     other: VectorIterator<'perm, M>
-                     ) -> NnzZip<'perm, N, M>
-    where M: 'perm + Clone {
+                     other: VectorIterator<'a, M>
+                     ) -> NnzZip<'a, N, M>
+    where M: 'a + Clone {
         assert!(self.len == other.len);
         NnzZip {
             left: self,
@@ -59,14 +81,14 @@ impl<'perm, N: 'perm + Copy> VectorIterator<'perm, N> {
 
 /// An iterator the iterates over the matching non-zeros of two
 /// vector iterators, hence enabling eg computing their dot-product
-pub struct NnzZip<'perm, N1: 'perm, N2: 'perm> {
-    left: VectorIterator<'perm, N1>,
-    right: VectorIterator<'perm, N2>
+pub struct NnzZip<'a, N1: 'a, N2: 'a> {
+    left: VectorIterator<'a, N1>,
+    right: VectorIterator<'a, N2>
 }
 
-impl <'perm, N1: 'perm + Copy, N2: 'perm + Copy>
+impl <'a, N1: 'a + Copy, N2: 'a + Copy>
 Iterator
-for NnzZip<'perm, N1, N2> {
+for NnzZip<'a, N1, N2> {
     type Item = (usize, N1, N2);
 
     fn next(&mut self) -> Option<(usize, N1, N2)> {
@@ -117,19 +139,17 @@ for NnzZip<'perm, N1, N2> {
 }
 
 
-impl<'perm, N: 'perm + Clone> CsVec<N, &'perm[usize], &'perm[N]> {
+impl<'a, N: 'a + Clone> CsVec<N, &'a[usize], &'a[N]> {
 
     pub fn new_borrowed(
         n: usize,
-        indices: &'perm [usize],
-        data: &'perm [N],
-        perm: Permutation<&'perm [usize]>)
-    -> CsVec<N, &'perm[usize], &'perm[N]> {
+        indices: &'a [usize],
+        data: &'a [N])
+    -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             len: n,
             indices: indices,
             data: data,
-            perm: perm,
         }
     }
 }
@@ -137,14 +157,12 @@ impl<'perm, N: 'perm + Clone> CsVec<N, &'perm[usize], &'perm[N]> {
 impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
     pub fn new_owned(n: usize,
                      indices: Vec<usize>,
-                     data: Vec<N>,
-                     perm: Permutation<Vec<usize>>
+                     data: Vec<N>
                     ) -> CsVec<N, Vec<usize>, Vec<N>> {
         CsVec {
             len: n,
             indices: indices,
-            data: data,
-            perm: perm
+            data: data
         }
     }
 }
@@ -159,21 +177,29 @@ DStorage: Deref<Target=[N]> {
             len: self.len,
             indices: &self.indices[..],
             data: &self.data[..],
-            perm: self.perm.borrowed()
         }
     }
 }
 
-impl<'perm, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where N: 'perm + Clone,
-IStorage: 'perm + Deref<Target=[usize]>,
+impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where N: 'a + Clone,
+IStorage: 'a + Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
             len: self.len,
             ind_data: self.indices.iter().zip(self.data.iter()),
-            perm: self.perm.borrowed()
+        }
+    }
+
+    pub fn iter_perm<'perm: 'a>(&'a self,
+                                perm: &'perm Permutation<&'perm [usize]>)
+                               -> VectorIteratorPerm<'a, N> {
+        VectorIteratorPerm {
+            len: self.len,
+            ind_data: self.indices.iter().zip(self.data.iter()),
+            perm: perm.borrowed()
         }
     }
 
@@ -185,6 +211,10 @@ DStorage: Deref<Target=[N]> {
         &self.data
     }
 
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
     pub fn check_structure(&self) -> bool {
         self.indices.windows(2).all(|x| x[0] < x[1])
     }
@@ -193,15 +223,13 @@ DStorage: Deref<Target=[N]> {
 #[cfg(test)]
 mod test {
     use super::CsVec;
-    use super::NnzZip;
-    use sparse::permutation::Permutation;
 
     fn test_vec1() -> CsVec<f64, Vec<usize>, Vec<f64>> {
         let n = 8;
         let indices = vec![0, 1, 4, 5, 7];
         let data = vec![0., 1., 4., 5., 7.];
 
-        return CsVec::new_owned(n, indices, data, Permutation::identity());
+        return CsVec::new_owned(n, indices, data);
     }
 
     fn test_vec2() -> CsVec<f64, Vec<usize>, Vec<f64>> {
@@ -209,7 +237,7 @@ mod test {
         let indices = vec![0, 2, 4, 6, 7];
         let data = vec![0.5, 1.5, 4.5, 6.5, 7.5];
 
-        return CsVec::new_owned(n, indices, data, Permutation::identity());
+        return CsVec::new_owned(n, indices, data);
     }
 
     #[test]
