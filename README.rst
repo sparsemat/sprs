@@ -1,7 +1,7 @@
-CSRust, a sparse matrix library written in Rust
-===============================================
+sprs, a sparse matrix library written in Rust
+=============================================
 
-CSRust implements some sparse matrix data structures and linear algebra
+sprs implements some sparse matrix data structures and linear algebra
 algorithms.
 
 License

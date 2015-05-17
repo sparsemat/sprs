@@ -1,8 +1,8 @@
 /*!
-CSRust
-======
+sprs
+====
 
-CSRust is a sparse linear algebra library for Rust.
+sprs is a sparse linear algebra library for Rust.
 
 */
 
