@@ -95,65 +95,6 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
 }
 
 
-/// An iterator the iterates over the matching non-zeros of two
-/// vector iterators, hence enabling eg computing their dot-product
-pub struct NnzZip<'a, N1: 'a, N2: 'a> {
-    left: VectorIterator<'a, N1>,
-    right: VectorIterator<'a, N2>
-}
-
-impl <'a, N1: 'a + Copy, N2: 'a + Copy>
-Iterator
-for NnzZip<'a, N1, N2> {
-    type Item = (usize, N1, N2);
-
-    fn next(&mut self) -> Option<(usize, N1, N2)> {
-        match (self.left.next(), self.right.next()) {
-            (None, _) => None,
-            (_, None) => None,
-            (Some((mut lind, mut lval)), Some((mut rind, mut rval))) => {
-                loop {
-                    if lind < rind {
-                        let lnext = self.left.next();
-                        if lnext.is_none() {
-                            return None;
-                        }
-                        let (lind_, lval_) = lnext.unwrap();
-                        lind = lind_;
-                        lval = lval_;
-                    }
-                    else if rind < lind {
-                        let rnext = self.right.next();
-                        if rnext.is_none() {
-                            return None;
-                        }
-                        let (rind_, rval_) = rnext.unwrap();
-                        rind = rind_;
-                        rval = rval_;
-                    }
-                    else {
-                        println!("{} {}", lind, rind);
-                        return Some((lind, lval, rval));
-                    }
-                }
-            }
-        }
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let (_, left_upper) = self.left.size_hint();
-        let (_, right_upper) = self.right.size_hint();
-        let upper = match (left_upper, right_upper) {
-            (Some(x), Some(y)) => Some(cmp::min(x,y)),
-            (Some(x), None) => Some(x),
-            (None, Some(y)) => Some(y),
-            (None, None) => None
-        };
-        (0, upper)
-    }
-}
-
 /// An iterator over the non zeros of either of two vector iterators, ordered, 
 /// such that the sum of the vectors may be computed
 pub struct NnzOrZip<'a, N1: 'a + Copy, N2: 'a + Copy> {
