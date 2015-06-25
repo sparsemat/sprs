@@ -72,11 +72,21 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
     pub fn nnz_zip<M>(self,
                      other: VectorIterator<'a, M>
                      ) -> NnzZip<'a, N, M>
-    where M: 'a + Clone {
+    where M: 'a + Copy {
         assert!(self.len == other.len);
         NnzZip {
             left: self,
             right: other
+        }
+    }
+
+    pub fn nnz_or_zip<M>(self,
+                         other: VectorIterator<'a, M>) -> NnzOrZip<'a, N, M>
+    where M: 'a + Copy {
+        assert!(self.len == other.len);
+        NnzOrZip {
+            left: self.peekable(),
+            right: other.peekable(),
         }
     }
 }
@@ -148,6 +158,7 @@ pub struct NnzOrZip<'a, N1: 'a + Copy, N2: 'a + Copy> {
     right: Peekable<VectorIterator<'a, N2>>
 }
 
+#[derive(PartialEq, Debug)]
 pub enum NnzEither<N1, N2> {
     Both((usize, N1, N2)),
     Left((usize, N1)),
@@ -285,7 +296,7 @@ mod test {
     fn test_vec2() -> CsVec<f64, Vec<usize>, Vec<f64>> {
         let n = 8;
         let indices = vec![0, 2, 4, 6, 7];
-        let data = vec![0.5, 1.5, 4.5, 6.5, 7.5];
+        let data = vec![0.5, 2.5, 4.5, 6.5, 7.5];
 
         return CsVec::new_owned(n, indices, data);
     }
@@ -299,5 +310,20 @@ mod test {
         assert_eq!(iter.next().unwrap(), (4, 4., 4.5));
         assert_eq!(iter.next().unwrap(), (7, 7., 7.5));
         assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn test_nnz_or_zip_iter() {
+        use super::NnzEither::*;
+        let vec1 = test_vec1();
+        let vec2 = test_vec2();
+        let mut iter = vec1.iter().nnz_or_zip(vec2.iter());
+        assert_eq!(iter.next().unwrap(), Both((0, 0., 0.5)));
+        assert_eq!(iter.next().unwrap(), Left((1, 1.)));
+        assert_eq!(iter.next().unwrap(), Right((2, 2.5)));
+        assert_eq!(iter.next().unwrap(), Both((4, 4., 4.5)));
+        assert_eq!(iter.next().unwrap(), Left((5, 5.)));
+        assert_eq!(iter.next().unwrap(), Right((6, 6.5)));
+        assert_eq!(iter.next().unwrap(), Both((7, 7., 7.5)));
     }
 }
