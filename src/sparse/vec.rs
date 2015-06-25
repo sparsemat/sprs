@@ -209,6 +209,19 @@ for NnzOrZip<'a, N1, N2> {
             }
         }
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (left_lower, left_upper) = self.left.size_hint();
+        let (right_lower, right_upper) = self.right.size_hint();
+        let upper = match (left_upper, right_upper) {
+            (Some(x), Some(y)) => Some(x + y),
+            (Some(x), None) => Some(x),
+            (None, Some(y)) => Some(y),
+            (None, None) => None
+        };
+        (cmp::max(left_lower, right_lower), upper)
+    }
 }
 
 impl<'a, N: 'a + Clone> CsVec<N, &'a[usize], &'a[N]> {
