@@ -1,7 +1,7 @@
 /// A sparse vector, which can be extracted from a sparse matrix
 ///
 
-use std::iter::{Zip, Peekable};
+use std::iter::{Zip, Peekable, FilterMap};
 use std::ops::{Deref};
 use std::cmp;
 use std::slice::{Iter};
@@ -67,17 +67,20 @@ for VectorIteratorPerm<'a, N> {
 
 impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
 
+
     /// Iterate over the matching non-zero elements of both vectors
     /// Useful for vector dot product
     pub fn nnz_zip<M>(self,
                      other: VectorIterator<'a, M>
-                     ) -> NnzZip<'a, N, M>
+                     )
+     -> FilterMap<NnzOrZip<'a, N, M>, fn(NnzEither<N,M>) -> Option<(usize,N,M)>>
     where M: 'a + Copy {
         assert!(self.len == other.len);
-        NnzZip {
-            left: self,
-            right: other
-        }
+        let nnz_or_iter = NnzOrZip {
+            left: self.peekable(),
+            right: other.peekable(),
+        };
+        nnz_or_iter.filter_map(filter_both_nnz)
     }
 
     pub fn nnz_or_zip<M>(self,
@@ -163,6 +166,14 @@ pub enum NnzEither<N1, N2> {
     Both((usize, N1, N2)),
     Left((usize, N1)),
     Right((usize, N2))
+}
+
+fn filter_both_nnz<N: Copy, M: Copy>(elem: NnzEither<N,M>)
+-> Option<(usize, N, M)> {
+    match elem {
+        NnzEither::Both((ind, lval, rval)) => Some((ind, lval, rval)),
+        _ => None
+    }
 }
 
 impl <'a, N1: 'a + Copy, N2: 'a + Copy>
