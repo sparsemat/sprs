@@ -1,7 +1,7 @@
 /// A sparse vector, which can be extracted from a sparse matrix
 ///
 
-use std::iter::{Zip};
+use std::iter::{Zip, Peekable};
 use std::ops::{Deref};
 use std::cmp;
 use std::slice::{Iter};
@@ -66,6 +66,9 @@ for VectorIteratorPerm<'a, N> {
 
 
 impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
+
+    /// Iterate over the matching non-zero elements of both vectors
+    /// Useful for vector dot product
     pub fn nnz_zip<M>(self,
                      other: VectorIterator<'a, M>
                      ) -> NnzZip<'a, N, M>
@@ -138,6 +141,53 @@ for NnzZip<'a, N1, N2> {
     }
 }
 
+/// An iterator over the non zeros of either of two vector iterators, ordered, 
+/// such that the sum of the vectors may be computed
+pub struct NnzOrZip<'a, N1: 'a + Copy, N2: 'a + Copy> {
+    left: Peekable<VectorIterator<'a, N1>>,
+    right: Peekable<VectorIterator<'a, N2>>
+}
+
+pub enum NnzEither<N1, N2> {
+    Both((usize, N1, N2)),
+    Left((usize, N1)),
+    Right((usize, N2))
+}
+
+impl <'a, N1: 'a + Copy, N2: 'a + Copy>
+Iterator
+for NnzOrZip<'a, N1, N2> {
+    type Item = NnzEither<N1, N2>;
+
+    fn next(&mut self) -> Option<(NnzEither<N1, N2>)> {
+        match (self.left.peek(), self.right.peek()) {
+            (None, Some(&(_, _))) => {
+                let (rind, rval) = self.right.next().unwrap();
+                Some(NnzEither::Right((rind, rval)))
+            }
+            (Some(&(_,_)), None) => {
+                let (lind, lval) = self.left.next().unwrap();
+                Some(NnzEither::Left((lind, lval)))
+            }
+            (None, None) => None,
+            (Some(&(lind, _)), Some(&(rind, _))) => {
+                if lind < rind {
+                    let (lind, lval) = self.left.next().unwrap();
+                    Some(NnzEither::Left((lind, lval)))
+                }
+                else if rind < lind {
+                    let (rind, rval) = self.right.next().unwrap();
+                    Some(NnzEither::Right((rind, rval)))
+                }
+                else {
+                    let (lind, lval) = self.left.next().unwrap();
+                    let (_, rval) = self.right.next().unwrap();
+                    Some(NnzEither::Both((lind, lval, rval)))
+                }
+            }
+        }
+    }
+}
 
 impl<'a, N: 'a + Clone> CsVec<N, &'a[usize], &'a[N]> {
 
