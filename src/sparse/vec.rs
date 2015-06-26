@@ -186,21 +186,34 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
                      data: Vec<N>
                     ) -> CsVec<N, Vec<usize>, Vec<N>> {
         CsVec {
-            len: n,
+            dim: n,
             indices: indices,
             data: data
         }
     }
 
-    pub fn empty(dim: usize) {
+    pub fn empty(dim: usize) -> CsVec<N, Vec<usize>, Vec<N>> {
         CsVec {
-            len: dim,
+            dim: dim,
             indices: Vec::new(),
             data: Vec::new(),
         }
     }
 
+    /// Append an element to the sparse vector. Used for incremental
+    /// building of the CsVec. The append should preserve the structure
+    /// of the vector, ie the newly added index should be strictly greater
+    /// than the last element of indices.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `ind` is lower or equal to the last
+    /// element of `self.indices()`
     pub fn append(&mut self, ind: usize, val: N) {
+        match self.indices.last() {
+            None => (),
+            Some(&last_ind) => assert!(ind > last_ind)
+        }
         self.indices.push(ind);
         self.data.push(val);
     }
