@@ -191,6 +191,29 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
             data: data
         }
     }
+
+    pub fn empty(dim: usize) {
+        CsVec {
+            len: dim,
+            indices: Vec::new(),
+            data: Vec::new(),
+        }
+    }
+
+    pub fn append(&mut self, ind: usize, val: N) {
+        self.indices.push(ind);
+        self.data.push(val);
+    }
+
+    pub fn reserve(&mut self, size: usize) {
+        self.indices.reserve(size);
+        self.data.reserve(size);
+    }
+
+    pub fn reserve_exact(&mut self, exact_size: usize) {
+        self.indices.reserve_exact(exact_size);
+        self.data.reserve_exact(exact_size);
+    }
 }
 
 impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
@@ -239,6 +262,10 @@ DStorage: Deref<Target=[N]> {
 
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    pub fn nnz(&self) -> usize {
+        self.data.len()
     }
 
     pub fn check_structure(&self) -> bool {

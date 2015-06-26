@@ -187,6 +187,28 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         }
     }
 
+    /// Reserve the storage for the given additional number of nonzero data
+    pub fn reserve_outer_dim(&mut self, outer_dim_additional: usize) {
+        self.indptr.reserve(outer_dim_additional);
+    }
+
+    /// Reserve the storage for the given additional number of nonzero data
+    pub fn reserve_nnz(&mut self, nnz_additional: usize) {
+        self.indices.reserve(nnz_additional);
+        self.data.reserve(nnz_additional);
+    }
+
+    /// Reserve the storage for the given number of nonzero data
+    pub fn reserve_outer_dim_exact(&mut self, outer_dim_lim: usize) {
+        self.indptr.reserve_exact(outer_dim_lim + 1);
+    }
+
+    /// Reserve the storage for the given number of nonzero data
+    pub fn reserve_nnz_exact(&mut self, nnz_lim: usize) {
+        self.indices.reserve_exact(nnz_lim);
+        self.data.reserve_exact(nnz_lim);
+    }
+
     /// Create an owned CsMat matrix from moved data,
     /// checking their validity
     pub fn from_vecs(
@@ -225,6 +247,19 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
             CSR => self.nrows += 1,
             CSC => self.ncols += 1
         }
+        self.indptr.push(self.nnz);
+        self
+    }
+
+    /// Append an outer dim to an existing matrix, provided by a sparse vector
+    pub fn append_outer_csvec(mut self, vec: &CsVec<N,&[usize],&[N]>) -> Self {
+        self.data.push_all(vec.data()[..]);
+        self.indices.push_all(vec.indices()[..]);
+        match self.storage {
+            CSR => self.nrows += 1,
+            CSC => self.ncols += 1
+        }
+        self.nnz += vec.nnz();
         self.indptr.push(self.nnz);
         self
     }
@@ -296,6 +331,20 @@ CsMat<N, IndStorage, DataStorage> {
 
     pub fn cols(&self) -> usize {
         self.ncols
+    }
+
+    pub fn outer_dims(&self) -> usize {
+        match self.storage {
+            CSR => self.nrows,
+            CSC => self.ncols
+        }
+    }
+
+    pub fn inner_dims(&self) -> usize {
+        match self.storage {
+            CSC => self.ncols,
+            CSR => self.nrows
+        }
     }
 
     pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N> {
