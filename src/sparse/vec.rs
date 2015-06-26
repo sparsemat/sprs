@@ -209,11 +209,13 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
     ///
     /// Panics if `ind` is lower or equal to the last
     /// element of `self.indices()`
+    /// Panics if `ind` is greater than `self.dim()`
     pub fn append(&mut self, ind: usize, val: N) {
         match self.indices.last() {
             None => (),
             Some(&last_ind) => assert!(ind > last_ind)
         }
+        assert!(ind <= self.dim);
         self.indices.push(ind);
         self.data.push(val);
     }
