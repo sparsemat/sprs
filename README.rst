@@ -9,7 +9,7 @@ WARNING: experimental lib, neither API nor functionality stable
 License
 -------
 
-BSD license. See LICENSE.txt
+MIT license. See LICENSE.txt
 
 Features
 --------
