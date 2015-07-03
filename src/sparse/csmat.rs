@@ -252,7 +252,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: &CsVec<N,&[usize],&[N]>) -> Self {
+    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[usize],&[N]>) -> Self {
         assert_eq!(self.inner_dims(), vec.dim());
         for (ind, val) in vec.indices().iter().zip(vec.data()) {
             self.indices.push(*ind);
@@ -336,6 +336,10 @@ CsMat<N, IndStorage, DataStorage> {
         self.ncols
     }
 
+    pub fn nb_nonzero(&self) -> usize {
+        self.nnz
+    }
+
     pub fn outer_dims(&self) -> usize {
         match self.storage {
             CSR => self.nrows,
@@ -345,8 +349,8 @@ CsMat<N, IndStorage, DataStorage> {
 
     pub fn inner_dims(&self) -> usize {
         match self.storage {
-            CSC => self.ncols,
-            CSR => self.nrows
+            CSC => self.nrows,
+            CSR => self.ncols
         }
     }
 

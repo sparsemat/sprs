@@ -229,6 +229,11 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
         self.indices.reserve_exact(exact_size);
         self.data.reserve_exact(exact_size);
     }
+
+    pub fn clear(&mut self) {
+        self.indices.clear();
+        self.data.clear();
+    }
 }
 
 impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
