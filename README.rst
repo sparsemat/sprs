@@ -19,6 +19,13 @@ Structures
 
 - CSR/CSC matrix, able to operate on borrowed or owned data
 
+Operations
+..........
+
+- sparse matrix vector product
+- sparse matrix matrix product
+- sparse matrix matrix addition
+
 Algorithms
 ..........
 
@@ -36,6 +43,11 @@ Structures
 - CSC/CSR tests with more trickier shapes/data
 - lower/upper triangular CSC/CSR matrices
 - block-sparse matrices
+
+Operations
+..........
+
+- rebind operations with the corresponding traits
 
 Algorithms
 ..........
