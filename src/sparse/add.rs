@@ -18,26 +18,62 @@ DStorage: Deref<Target=[N]> {
     assert_eq!(lhs.rows(), rhs.rows());
     assert_eq!(lhs.storage_type(), rhs.storage_type());
 
-    // TODO: do we want to expose the workspace?
-    let mut res = CsMat::empty(lhs.storage_type(), lhs.inner_dims());
-    res.reserve_nnz_exact(lhs.nb_nonzero() + rhs.nb_nonzero());
-    res.reserve_outer_dim_exact(lhs.outer_dims());
-    let mut bufvec = CsVec::empty(lhs.inner_dims());
-    bufvec.reserve(lhs.inner_dims());
+    let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
+    let mut out_indptr = vec![0; lhs.outer_dims() + 1];
+    let mut out_indices = vec![0; max_nnz];
+    let mut out_data = vec![N::zero(); max_nnz];
+    let binop = |x, y| x + y;
+    let nnz = csmat_binop_same_storage_raw(lhs, rhs, binop,
+                                           &mut out_indptr[..],
+                                           &mut out_indices[..],
+                                           &mut out_data[..]);
+    out_indices.truncate(nnz);
+    out_data.truncate(nnz);
+    CsMat::from_vecs(lhs.storage_type(), lhs.rows(), lhs.cols(),
+                     out_indptr, out_indices, out_data).unwrap()
+}
 
-    for ((_, lv), (_, rv)) in lhs.outer_iterator().zip(rhs.outer_iterator()) {
+/// Raw implementation of scalar binary operation for compressed sparse matrices
+/// sharing the same storage. The output arrays are assumed to be preallocated
+///
+/// Returns the nnz count
+pub fn csmat_binop_same_storage_raw<N, IStorage, DStorage, F>(
+    lhs: &CsMat<N, IStorage, DStorage>,
+    rhs: &CsMat<N, IStorage, DStorage>,
+    binop: F,
+    out_indptr: &mut [usize],
+    out_indices: &mut [usize],
+    out_data: &mut [N]) -> usize
+where
+N: Num + Copy,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]>,
+F: Fn(N, N) -> N {
+    assert_eq!(lhs.cols(), rhs.cols());
+    assert_eq!(lhs.rows(), rhs.rows());
+    assert_eq!(lhs.storage_type(), rhs.storage_type());
+    assert_eq!(out_indptr.len(), rhs.outer_dims() + 1);
+    let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
+    assert!(out_data.len() >= max_nnz);
+    assert!(out_indices.len() >= max_nnz);
+    let mut nnz = 0;
+    out_indptr[0] = 0;
+    for ((dim, lv), (_, rv)) in lhs.outer_iterator().zip(rhs.outer_iterator()) {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
-            match elem {
-                Left((ind, val)) => bufvec.append(ind, val),
-                Right((ind, val)) => bufvec.append(ind, val),
-                Both((ind, lval, rval)) => bufvec.append(ind, lval + rval)
+            let (ind, binop_val) = match elem {
+                Left((ind, val)) => (ind, binop(val, N::zero())),
+                Right((ind, val)) => (ind, binop(N::zero(), val)),
+                Both((ind, lval, rval)) => (ind, binop(lval, rval)),
+            };
+            if binop_val != N::zero() {
+                out_indices[nnz] = ind;
+                out_data[nnz] = binop_val;
+                nnz += 1;
             }
         }
-        res = res.append_outer_csvec(bufvec.borrowed());
-        bufvec.clear();
+        out_indptr[dim+1] = nnz;
     }
-    assert_eq!(lhs.rows(), res.rows());
-    res
+    nnz
 }
 
 #[cfg(test)]
