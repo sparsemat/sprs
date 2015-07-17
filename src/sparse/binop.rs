@@ -44,20 +44,6 @@ DStorage: Deref<Target=[N]> {
                                           binop);
 }
 
-/// Sparse matrix scalar division, with same storage type
-pub fn div_mat_same_storage<N, IStorage, DStorage>(
-    lhs: &CsMat<N, IStorage, DStorage>,
-    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
-where
-N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
-    let binop = |x, y| x / y;
-    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
-                                          binop);
-}
-
-
 fn csmat_binop_same_storage_alloc<N, F>(
     lhs: CsMat<N, &[usize], &[N]>,
     rhs: CsMat<N, &[usize], &[N]>,
