@@ -118,7 +118,6 @@ F: Fn(N, N) -> N {
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMat;
-    use super::add_mat_same_storage;
     use sparse::csmat::CompressedStorage::{CSC, CSR};
 
     fn mat1() -> CsMat<f64, Vec<usize>, Vec<f64>> {
@@ -138,20 +137,60 @@ mod test {
     fn mat1_plus_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
         let indices = vec![0, 1, 2, 3, 4, 0, 3, 4, 2, 1, 2, 3, 1, 2, 3];
-        let data = vec![
-            6.,  7.,  6.,  4.,  3.,
-            8.,  11.,  5.,  5.,  8.,
-            2.,  4.,  4.,  4.,  7.];
+        let data = vec![6.,  7.,  6.,  4.,  3.,
+                        8.,  11.,  5.,  5.,  8.,
+                        2.,  4.,  4.,  4.,  7.];
         CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
     }
+
+    fn mat1_minus_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+        let indptr = vec![0,  4,  7,  8, 11, 14];
+        let indices = vec![0, 1, 3, 4, 0, 3, 4, 2, 1, 2, 3, 1, 2, 3];
+        let data = vec![-6., -7.,  4., -3., -8.,
+                        -7.,  5.,  5.,  8., -2.,
+                        -4., -4., -4.,  7.];
+        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+    }
+
+    fn mat1_times_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+        let indptr = vec![0,  1,  2,  2, 2, 2];
+        let indices = vec![2, 3];
+        let data = vec![9., 18.];
+        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+    }
+
 
     #[test]
     fn test_add1() {
         let a = mat1();
         let b = mat2();
 
-        let c = add_mat_same_storage(&a, &b);
+        let c = super::add_mat_same_storage(&a, &b);
         let c_true = mat1_plus_mat2();
+        assert_eq!(c.indptr(), c_true.indptr());
+        assert_eq!(c.indices(), c_true.indices());
+        assert_eq!(c.data(), c_true.data());
+    }
+
+    #[test]
+    fn test_sub1() {
+        let a = mat1();
+        let b = mat2();
+
+        let c = super::sub_mat_same_storage(&a, &b);
+        let c_true = mat1_minus_mat2();
+        assert_eq!(c.indptr(), c_true.indptr());
+        assert_eq!(c.indices(), c_true.indices());
+        assert_eq!(c.data(), c_true.data());
+    }
+
+    #[test]
+    fn test_mul1() {
+        let a = mat1();
+        let b = mat2();
+
+        let c = super::mul_mat_same_storage(&a, &b);
+        let c_true = mat1_times_mat2();
         assert_eq!(c.indptr(), c_true.indptr());
         assert_eq!(c.indices(), c_true.indices());
         assert_eq!(c.data(), c_true.data());
