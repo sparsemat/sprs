@@ -44,6 +44,51 @@ DStorage: Deref<Target=[N]> {
                                           binop);
 }
 
+/// Sparse matrix multiplication by a scalar
+pub fn scalar_mul_mat<N, IStorage, DStorage>(
+    mat: &CsMat<N, IStorage, DStorage>,
+    val: N) -> CsMat<N, Vec<usize>, Vec<N>>
+where
+N: Num + Copy,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+    let mut out_indptr = vec![0; mat.outer_dims() + 1];
+    let mut out_indices = vec![0; mat.nb_nonzero()];
+    let mut out_data = vec![N::zero(); mat.nb_nonzero()];
+    let nrows = mat.rows();
+    let ncols = mat.cols();
+    let storage_type = mat.storage_type();
+    scalar_mul_mat_raw(mat.borrowed(), val, &mut out_indptr[..],
+                       &mut out_indices[..], &mut out_data[..]);
+    CsMat::from_vecs(storage_type, nrows, ncols,
+                     out_indptr, out_indices, out_data).unwrap()
+}
+
+/// Sparse matrix multiplication by a scalar, raw version
+/// 
+/// Writes into the provided output.
+/// Panics if the sizes don't match
+pub fn scalar_mul_mat_raw<N>(
+    mat: CsMat<N, &[usize], &[N]>,
+    val: N,
+    out_indptr: &mut [usize],
+    out_indices: &mut [usize],
+    out_data: &mut [N])
+where N: Num + Copy {
+    assert_eq!(out_indptr.len(), mat.outer_dims() + 1);
+    assert!(out_data.len() >= mat.nb_nonzero());
+    assert!(out_indices.len() >= mat.nb_nonzero());
+    for (optr, iptr) in out_indptr.iter_mut().zip(mat.indptr()) {
+        *optr = *iptr;
+    }
+    for (oind, iind) in out_indices.iter_mut().zip(mat.indices()) {
+        *oind = *iind;
+    }
+    for (odata, idata) in out_data.iter_mut().zip(mat.data()) {
+        *odata = *idata * val;
+    }
+}
+
 fn csmat_binop_same_storage_alloc<N, F>(
     lhs: CsMat<N, &[usize], &[N]>,
     rhs: CsMat<N, &[usize], &[N]>,
@@ -127,6 +172,13 @@ mod test {
         CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
     }
 
+    fn mat1_times_2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+        let indptr = vec![0, 2, 4, 5, 6, 7];
+        let indices = vec![2, 3, 3, 4, 2, 1, 3];
+        let data = vec![6., 8., 4., 10., 10., 16., 14.];
+        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+    }
+
     fn mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
         let indptr = vec![0,  4,  6,  6,  8, 10];
         let indices = vec![0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
@@ -195,4 +247,15 @@ mod test {
         assert_eq!(c.indices(), c_true.indices());
         assert_eq!(c.data(), c_true.data());
     }
+
+    #[test]
+    fn test_smul() {
+        let a = mat1();
+        let c = super::scalar_mul_mat(&a, 2.);
+        let c_true = mat1_times_2();
+        assert_eq!(c.indptr(), c_true.indptr());
+        assert_eq!(c.indices(), c_true.indices());
+        assert_eq!(c.data(), c_true.data());
+    }
+    
 }
