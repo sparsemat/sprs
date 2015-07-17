@@ -10,7 +10,7 @@
 
 use std::iter::{Enumerate};
 use std::slice::{Windows};
-use std::ops::{Deref};
+use std::ops::{Deref, DerefMut};
 use num::traits::Num;
 
 use sparse::permutation::{Permutation};
@@ -454,6 +454,18 @@ CsMat<N, IndStorage, DataStorage> {
             data: &self.data[..],
         }
     }
+}
+
+impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
+where
+N: Copy,
+IndStorage: DerefMut<Target=[usize]>,
+DataStorage: DerefMut<Target=[N]> {
+
+    pub fn data_mut(&mut self) -> &mut [N] {
+        &mut self.data[..]
+    }
+
 }
 
 

@@ -1,6 +1,6 @@
 ///! Sparse matrix addition, subtraction
 
-use std::ops::{Deref};
+use std::ops::{Deref, DerefMut};
 use sparse::csmat::{CsMat};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
@@ -62,6 +62,19 @@ DStorage: Deref<Target=[N]> {
                        &mut out_indices[..], &mut out_data[..]);
     CsMat::from_vecs(storage_type, nrows, ncols,
                      out_indptr, out_indices, out_data).unwrap()
+}
+
+/// Sparse matrix self-multiplication by a scalar
+pub fn scalar_self_mul_mat<N, IStorage, DStorage>(
+    mat: &mut CsMat<N, IStorage, DStorage>,
+    val: N)
+where
+N: Num + Copy,
+IStorage: DerefMut<Target=[usize]>,
+DStorage: DerefMut<Target=[N]> {
+    for data in mat.data_mut() {
+        *data = *data * val;
+    }
 }
 
 /// Sparse matrix multiplication by a scalar, raw version
@@ -256,6 +269,16 @@ mod test {
         assert_eq!(c.indptr(), c_true.indptr());
         assert_eq!(c.indices(), c_true.indices());
         assert_eq!(c.data(), c_true.data());
+    }
+
+    #[test]
+    fn test_self_smul() {
+        let mut a = mat1();
+        super::scalar_self_mul_mat(&mut a, 2.);
+        let c_true = mat1_times_2();
+        assert_eq!(a.indptr(), c_true.indptr());
+        assert_eq!(a.indices(), c_true.indices());
+        assert_eq!(a.data(), c_true.data());
     }
     
 }
