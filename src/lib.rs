@@ -11,4 +11,5 @@ extern crate num;
 pub mod sparse;
 pub mod errors;
 
+#[cfg(test)]
 mod test_data;
