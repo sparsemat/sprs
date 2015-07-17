@@ -4,8 +4,8 @@ use std::ops::{Deref};
 use sparse::csmat::{CsMat};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
-use sparse::vec::CsVec;
 
+/// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, IStorage, DStorage>(
     lhs: &CsMat<N, IStorage, DStorage>,
     rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
@@ -13,23 +13,77 @@ where
 N: Num + Copy,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
+    let binop = |x, y| x + y;
+    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
+                                          binop);
+}
+
+/// Sparse matrix subtraction, with same storage type
+pub fn sub_mat_same_storage<N, IStorage, DStorage>(
+    lhs: &CsMat<N, IStorage, DStorage>,
+    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
+where
+N: Num + Copy,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+    let binop = |x, y| x - y;
+    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
+                                          binop);
+}
+
+/// Sparse matrix scalar multiplication, with same storage type
+pub fn mul_mat_same_storage<N, IStorage, DStorage>(
+    lhs: &CsMat<N, IStorage, DStorage>,
+    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
+where
+N: Num + Copy,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+    let binop = |x, y| x * y;
+    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
+                                          binop);
+}
+
+/// Sparse matrix scalar division, with same storage type
+pub fn div_mat_same_storage<N, IStorage, DStorage>(
+    lhs: &CsMat<N, IStorage, DStorage>,
+    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
+where
+N: Num + Copy,
+IStorage: Deref<Target=[usize]>,
+DStorage: Deref<Target=[N]> {
+    let binop = |x, y| x / y;
+    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
+                                          binop);
+}
+
+
+fn csmat_binop_same_storage_alloc<N, F>(
+    lhs: CsMat<N, &[usize], &[N]>,
+    rhs: CsMat<N, &[usize], &[N]>,
+    binop: F) -> CsMat<N, Vec<usize>, Vec<N>>
+where
+N: Num + Copy,
+F: Fn(N, N) -> N {
     // TODO: return a Result<CsMat, SprsError> ?
-    assert_eq!(lhs.cols(), rhs.cols());
-    assert_eq!(lhs.rows(), rhs.rows());
-    assert_eq!(lhs.storage_type(), rhs.storage_type());
+    let nrows = lhs.rows();
+    let ncols = lhs.cols();
+    let storage_type = lhs.storage_type();
+    assert_eq!(nrows, rhs.cols());
+    assert_eq!(ncols, rhs.rows());
+    assert_eq!(storage_type, rhs.storage_type());
 
     let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
     let mut out_indptr = vec![0; lhs.outer_dims() + 1];
     let mut out_indices = vec![0; max_nnz];
     let mut out_data = vec![N::zero(); max_nnz];
-    let binop = |x, y| x + y;
     let nnz = csmat_binop_same_storage_raw(lhs, rhs, binop,
                                            &mut out_indptr[..],
                                            &mut out_indices[..],
                                            &mut out_data[..]);
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
-    CsMat::from_vecs(lhs.storage_type(), lhs.rows(), lhs.cols(),
+    CsMat::from_vecs(storage_type, nrows, ncols,
                      out_indptr, out_indices, out_data).unwrap()
 }
 
@@ -37,17 +91,16 @@ DStorage: Deref<Target=[N]> {
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
 /// Returns the nnz count
-pub fn csmat_binop_same_storage_raw<N, IStorage, DStorage, F>(
-    lhs: &CsMat<N, IStorage, DStorage>,
-    rhs: &CsMat<N, IStorage, DStorage>,
+pub fn csmat_binop_same_storage_raw<N, F>(
+    lhs: CsMat<N, &[usize], &[N]>,
+    rhs: CsMat<N, &[usize], &[N]>,
     binop: F,
     out_indptr: &mut [usize],
     out_indices: &mut [usize],
-    out_data: &mut [N]) -> usize
+    out_data: &mut [N]
+    ) -> usize
 where
 N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]>,
 F: Fn(N, N) -> N {
     assert_eq!(lhs.cols(), rhs.cols());
     assert_eq!(lhs.rows(), rhs.rows());
