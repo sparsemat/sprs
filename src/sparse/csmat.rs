@@ -133,6 +133,7 @@ impl <'iter, N: 'iter + Clone> ExactSizeIterator for OuterIterator<'iter, N> {
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub struct CsMat<N, IndStorage, DataStorage>
 where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
     storage: CompressedStorage,

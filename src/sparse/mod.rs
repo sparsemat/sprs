@@ -10,6 +10,7 @@ pub mod vec;
 pub mod permutation;
 pub mod prod;
 pub mod binop;
+pub mod construct;
 pub mod linalg;
 pub mod symmetric;
 
