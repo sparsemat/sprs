@@ -44,12 +44,23 @@ where N: Copy {
 mod test {
     use sparse::csmat::CsMat;
     use sparse::CompressedStorage::{CSR};
-    use test_data::{mat1, mat2, mat3};
+    use test_data::{mat1, mat2, mat3, mat4};
     use errors::SprsError::*;
 
     #[test]
     fn same_storage_fast_stack_failures() {
-        let res: Result<CsMat<f64, _, _>, _> = super::same_storage_fast_stack(&[]);
+        let res: Result<CsMat<f64, _, _>, _> =
+            super::same_storage_fast_stack(&[]);
         assert_eq!(res, Err(EmptyStackingList));
+        let a = mat1();
+        let b = mat2();
+        let c = mat3();
+        let d = mat4();
+        let res: Result<CsMat<f64, _, _>, _> =
+            super::same_storage_fast_stack(&[]);
+        let res = super::same_storage_fast_stack(&[a.borrowed(), c.borrowed()]);
+        assert_eq!(res, Err(IncompatibleDimensions));
+        let res = super::same_storage_fast_stack(&[a.borrowed(), d.borrowed()]);
+        assert_eq!(res, Err(IncompatibleStorages));
     }
 }
