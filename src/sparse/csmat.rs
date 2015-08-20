@@ -22,6 +22,15 @@ pub enum CompressedStorage {
     CSC
 }
 
+impl CompressedStorage {
+    pub fn other_storage(&self) -> CompressedStorage {
+        match *self {
+            CSR => CSC,
+            CSC => CSR,
+        }
+    }
+}
+
 use self::CompressedStorage::*;
 
 /// Iterator on the matrix' outer dimension
@@ -290,8 +299,10 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
 
 }
 
-impl<N: Copy, IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]>>
-CsMat<N, IndStorage, DataStorage> {
+impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
+where N: Copy,
+      IndStorage: Deref<Target=[usize]>,
+      DataStorage: Deref<Target=[N]> {
 
     /// Return an outer iterator for the matrix
     pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N> {
@@ -458,6 +469,26 @@ CsMat<N, IndStorage, DataStorage> {
 }
 
 impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
+where N: Copy + Num,
+      IndStorage: Deref<Target=[usize]>,
+      DataStorage: Deref<Target=[N]> {
+
+    /// Create a matrix mathematically equal to this one, but with the
+    /// opposed storage.
+    pub fn to_other_storage(&self) -> CsMat<N, Vec<usize>, Vec<N>> {
+        let mut indptr = vec![0; self.outer_dims() + 1];
+        let mut indices = vec![0; self.nb_nonzero()];
+        let mut data = vec![N::zero(); self.nb_nonzero()];
+        let borrowed = self.borrowed();
+        raw::convert_mat_storage(borrowed,
+                                 &mut indptr, &mut indices, &mut data);
+        CsMat::from_vecs(self.storage_type().other_storage(),
+                         self.rows(), self.cols(),
+                         indptr, indices, data).unwrap()
+    }
+}
+
+impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
 where
 N: Copy,
 IndStorage: DerefMut<Target=[usize]>,
@@ -469,11 +500,66 @@ DataStorage: DerefMut<Target=[N]> {
 
 }
 
+mod raw {
+    use super::CsMat;
+    use std::mem::swap;
+
+    /// Copy-convert a CsMat into the oppposite storage.
+    /// Can be used to implement CSC <-> CSR conversions, or to implement
+    /// same-storage (copy) transposition.
+    ///
+    /// # Panics
+    /// Panics if indptr contains non-zero values
+    ///
+    /// Panics if the output slices don't match the input matrices'
+    /// corresponding slices.
+    pub fn convert_mat_storage<N: Copy>(mat: CsMat<N, &[usize], &[N]>,
+                                        indptr: &mut [usize],
+                                        indices: &mut[usize],
+                                        data: &mut [N]) {
+        assert_eq!(indptr.len(), mat.indptr().len());
+        assert_eq!(indices.len(), mat.indices().len());
+        assert_eq!(data.len(), mat.data().len());
+
+        assert!(indptr.iter().all(|x| *x == 0));
+
+        for (_, vec) in mat.outer_iterator() {
+            for (inner_dim, _) in vec.iter() {
+                indptr[inner_dim] += 1;
+            }
+        }
+
+        let mut cumsum = 0;
+        for iptr in indptr.iter_mut() {
+            let tmp = *iptr;
+            *iptr = cumsum;
+            cumsum += tmp;
+        }
+        if let Some(last_iptr) = indptr.last() {
+            assert_eq!(*last_iptr, mat.nb_nonzero());
+        }
+
+        for (outer_dim, vec) in mat.outer_iterator() {
+            for (inner_dim, val) in vec.iter() {
+                let dest = indptr[inner_dim];
+                data[dest] = val;
+                indices[dest] = outer_dim;
+                indptr[inner_dim] += 1;
+            }
+        }
+
+        let mut last = 0;
+        for iptr in indptr.iter_mut() {
+            swap(iptr, &mut last);
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
     use super::{CsMat};
     use super::CompressedStorage::{CSC, CSR};
+    use test_data::{mat1, mat1_csc};
 
     #[test]
     fn test_new_csr_success() {
@@ -610,5 +696,13 @@ mod test {
             Some(_) => assert!(true),
             None => assert!(false)
         }
+    }
+
+    #[test]
+    fn csr_to_csc() {
+        let a = mat1();
+        let a_csc_ground_truth = mat1_csc();
+        let a_csc = a.to_other_storage();
+        assert_eq!(a_csc, a_csc_ground_truth);
     }
 }

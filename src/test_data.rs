@@ -10,6 +10,13 @@ pub fn mat1() -> CsMat<f64, Vec<usize>, Vec<f64>> {
     CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
 }
 
+pub fn mat1_csc() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+    let indptr = vec![0, 0, 1, 3, 6, 7];
+    let indices = vec![3, 0, 2, 0, 1, 4, 1];
+    let data = vec![8.,  3.,  5.,  4.,  2.,  7.,  5.];
+    CsMat::from_vecs(CSC, 5, 5, indptr, indices, data).unwrap()
+}
+
 pub fn mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
     let indptr = vec![0,  4,  6,  6,  8, 10];
     let indices = vec![0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
