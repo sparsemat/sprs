@@ -1,6 +1,7 @@
 //! High level construction of sparse matrices by stacking, by block, ...
 
 use std::ops::{Deref};
+use std::default::Default;
 use sparse::csmat::{CsMatVec, CsMatView, CompressedStorage};
 use errors::SprsError;
 
@@ -36,7 +37,27 @@ where N: Copy {
     Ok(res)
 }
 
+pub fn vstack<N>(mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
+where N: Copy + Default {
+    if mats.iter().all(|x| x.is_csr()) {
+        return same_storage_fast_stack(mats);
+    }
 
+    let mats_csr: Vec<_> = mats.iter().map(|x| x.to_csr()).collect();
+    let mats_csr_views: Vec<_> = mats_csr.iter().map(|x| x.borrowed()).collect();
+    same_storage_fast_stack(&mats_csr_views)
+}
+
+pub fn hstack<N>(mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
+where N: Copy + Default {
+    if mats.iter().all(|x| x.is_csc()) {
+        return same_storage_fast_stack(mats);
+    }
+
+    let mats_csc: Vec<_> = mats.iter().map(|x| x.to_csc()).collect();
+    let mats_csc_views: Vec<_> = mats_csc.iter().map(|x| x.borrowed()).collect();
+    same_storage_fast_stack(&mats_csc_views)
+}
 
 
 #[cfg(test)]

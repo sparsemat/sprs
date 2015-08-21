@@ -9,6 +9,7 @@
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
 use std::iter::{Enumerate};
+use std::default::Default;
 use std::slice::{Windows};
 use std::ops::{Deref, DerefMut};
 use num::traits::Num;
@@ -391,6 +392,26 @@ where N: Copy,
         &self.data[..]
     }
 
+    pub fn is_csc(&self) -> bool {
+        self.storage == CSC
+    }
+
+    pub fn is_csr(&self) -> bool {
+        self.storage == CSR
+    }
+
+    pub fn to_owned(&self) -> CsMatVec<N> {
+        CsMatVec {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            nnz: self.nnz,
+            indptr: self.indptr.to_vec(),
+            indices: self.indices.to_vec(),
+            data: self.data.to_vec(),
+        }
+    }
+
     pub fn at_outer_inner(&self, &(outer_ind, inner_ind): &(usize, usize))
     -> Option<N> {
         let begin = self.indptr[outer_ind];
@@ -472,7 +493,7 @@ where N: Copy,
 }
 
 impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
-where N: Copy + Num,
+where N: Copy + Default,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
@@ -481,7 +502,7 @@ where N: Copy + Num,
     pub fn to_other_storage(&self) -> CsMat<N, Vec<usize>, Vec<N>> {
         let mut indptr = vec![0; self.outer_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
-        let mut data = vec![N::zero(); self.nb_nonzero()];
+        let mut data = vec![N::default(); self.nb_nonzero()];
         let borrowed = self.borrowed();
         raw::convert_mat_storage(borrowed,
                                  &mut indptr, &mut indices, &mut data);
@@ -489,6 +510,21 @@ where N: Copy + Num,
                          self.rows(), self.cols(),
                          indptr, indices, data).unwrap()
     }
+
+    pub fn to_csc(&self) -> CsMatVec<N> {
+        match self.storage {
+            CSR => self.to_owned(),
+            CSC => self.to_other_storage()
+        }
+    }
+
+    pub fn to_csr(&self) -> CsMatVec<N> {
+        match self.storage {
+            CSR => self.to_owned(),
+            CSC => self.to_other_storage()
+        }
+    }
+
 }
 
 impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
