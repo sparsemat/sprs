@@ -336,7 +336,7 @@ where N: Copy,
         }
     }
 
-    pub fn storage_type(&self) -> CompressedStorage {
+    pub fn storage(&self) -> CompressedStorage {
         self.storage
     }
 
@@ -482,7 +482,7 @@ where N: Copy + Num,
         let borrowed = self.borrowed();
         raw::convert_mat_storage(borrowed,
                                  &mut indptr, &mut indices, &mut data);
-        CsMat::from_vecs(self.storage_type().other_storage(),
+        CsMat::from_vecs(self.storage().other_storage(),
                          self.rows(), self.cols(),
                          indptr, indices, data).unwrap()
     }

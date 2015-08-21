@@ -57,7 +57,7 @@ DStorage: Deref<Target=[N]> {
     let mut out_data = vec![N::zero(); mat.nb_nonzero()];
     let nrows = mat.rows();
     let ncols = mat.cols();
-    let storage_type = mat.storage_type();
+    let storage_type = mat.storage();
     scalar_mul_mat_raw(mat.borrowed(), val, &mut out_indptr[..],
                        &mut out_indices[..], &mut out_data[..]);
     CsMat::from_vecs(storage_type, nrows, ncols,
@@ -112,10 +112,10 @@ F: Fn(N, N) -> N {
     // TODO: return a Result<CsMat, SprsError> ?
     let nrows = lhs.rows();
     let ncols = lhs.cols();
-    let storage_type = lhs.storage_type();
+    let storage_type = lhs.storage();
     assert_eq!(nrows, rhs.cols());
     assert_eq!(ncols, rhs.rows());
-    assert_eq!(storage_type, rhs.storage_type());
+    assert_eq!(storage_type, rhs.storage());
 
     let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
     let mut out_indptr = vec![0; lhs.outer_dims() + 1];
@@ -148,7 +148,7 @@ N: Num + Copy,
 F: Fn(N, N) -> N {
     assert_eq!(lhs.cols(), rhs.cols());
     assert_eq!(lhs.rows(), rhs.rows());
-    assert_eq!(lhs.storage_type(), rhs.storage_type());
+    assert_eq!(lhs.storage(), rhs.storage());
     assert_eq!(out_indptr.len(), rhs.outer_dims() + 1);
     let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
     assert!(out_data.len() >= max_nnz);

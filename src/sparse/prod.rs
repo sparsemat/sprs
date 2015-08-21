@@ -9,7 +9,7 @@ pub fn mul_acc_mat_vec_csc<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
     mat: CsMat<N, IStorage, DStorage>, in_vec: &[N], res_vec: &mut[N]) {
     assert!(mat.cols() == in_vec.len(), "Matrix and vector dims must agree");
     assert!(mat.rows() == res_vec.len(), "Matrix and res vector dims must agree");
-    assert!(mat.storage_type() == CSC, "Matrix must be in CSC format");
+    assert!(mat.storage() == CSC, "Matrix must be in CSC format");
 
     for (col_ind, vec) in mat.outer_iterator() {
         let multiplier = &in_vec[col_ind];
@@ -25,7 +25,7 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
     mat: CsMat<N, IStorage, DStorage>, in_vec: &[N], res_vec: &mut[N]) {
     assert!(mat.cols() == in_vec.len(), "Matrix and vector dims must agree");
     assert!(mat.rows() == res_vec.len(), "Matrix and res vector dims must agree");
-    assert!(mat.storage_type() == CSR, "Matrix must be in CSR format");
+    assert!(mat.storage() == CSR, "Matrix must be in CSR format");
 
     for (row_ind, vec) in mat.outer_iterator() {
         for (col_ind, value) in vec.iter() {
@@ -69,10 +69,10 @@ where N: Num + Copy {
     let res_cols = rhs.cols();
     assert_eq!(lhs.cols(), rhs.rows());
     assert_eq!(res_cols, workspace.len());
-    assert_eq!(lhs.storage_type(), rhs.storage_type());
-    assert_eq!(CSR, rhs.storage_type());
+    assert_eq!(lhs.storage(), rhs.storage());
+    assert_eq!(CSR, rhs.storage());
 
-    let mut res = CsMat::empty(lhs.storage_type(), res_cols);
+    let mut res = CsMat::empty(lhs.storage(), res_cols);
     for (_, lvec) in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {

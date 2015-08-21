@@ -17,8 +17,8 @@ where N: Copy {
     if ! mats.iter().all(|x| x.inner_dims() == inner_dim) {
         return Err(SprsError::IncompatibleDimensions);
     }
-    let storage_type = mats[0].storage_type();
-    if ! mats.iter().all(|x| x.storage_type() == storage_type) {
+    let storage_type = mats[0].storage();
+    if ! mats.iter().all(|x| x.storage() == storage_type) {
         return Err(SprsError::IncompatibleStorages);
     }
 
