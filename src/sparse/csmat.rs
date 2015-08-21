@@ -16,6 +16,9 @@ use num::traits::Num;
 use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec};
 
+pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
+pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressedStorage {
     CSR,

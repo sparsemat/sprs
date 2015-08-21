@@ -1,14 +1,13 @@
 //! High level construction of sparse matrices by stacking, by block, ...
 
 use std::ops::{Deref};
-use sparse::csmat::{CsMat, CompressedStorage};
+use sparse::csmat::{CsMatVec, CsMatView, CompressedStorage};
 use errors::SprsError;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
 pub fn same_storage_fast_stack<N>(
-    mats: &[CsMat<N, &[usize], &[N]>]
-    ) -> Result<CsMat<N, Vec<usize>, Vec<N>>, SprsError>
+    mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
 where N: Copy {
     if mats.len() == 0 {
         return Err(SprsError::EmptyStackingList);
@@ -25,7 +24,7 @@ where N: Copy {
     let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
     let nnz = mats.iter().map(|x| x.nb_nonzero()).fold(0, |x, y| x + y);
 
-    let mut res = CsMat::empty(storage_type, inner_dim);
+    let mut res = CsMatVec::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);
     res.reserve_nnz_exact(nnz);
     for mat in mats {
