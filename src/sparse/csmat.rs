@@ -12,6 +12,7 @@ use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{Windows};
 use std::ops::{Deref, DerefMut};
+use std::mem;
 use num::traits::Num;
 
 use sparse::permutation::{Permutation};
@@ -398,6 +399,20 @@ where N: Copy,
 
     pub fn is_csr(&self) -> bool {
         self.storage == CSR
+    }
+
+    /// Transpose a matrix in place
+    /// No allocation required (this is simply a storage order change)
+    pub fn transpose_mut(&mut self) {
+        mem::swap(&mut self.nrows, &mut self.ncols);
+        self.storage = self.storage.other_storage();
+    }
+
+    /// Transpose a matrix in place
+    /// No allocation required (this is simply a storage order change)
+    pub fn transpose_into(mut self) -> Self {
+        self.transpose_mut();
+        self
     }
 
     pub fn to_owned(&self) -> CsMatVec<N> {

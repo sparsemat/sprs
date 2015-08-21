@@ -99,4 +99,31 @@ mod test {
         let expected = mat1_vstack_mat2();
         assert_eq!(res, Ok(expected));
     }
+
+    #[test]
+    fn vstack_trivial() {
+        let a = mat1();
+        let b = mat2();
+        let res = super::vstack(&[a.borrowed(), b.borrowed()]);
+        let expected = mat1_vstack_mat2();
+        assert_eq!(res, Ok(expected));
+    }
+
+    #[test]
+    fn hstack_trivial() {
+        let a = mat1().transpose_into();
+        let b = mat2().transpose_into();
+        let res = super::hstack(&[a.borrowed(), b.borrowed()]);
+        let expected = mat1_vstack_mat2().transpose_into();
+        assert_eq!(res, Ok(expected));
+    }
+
+    #[test]
+    fn vstack_with_conversion() {
+        let a = mat1().to_csc();
+        let b = mat2();
+        let res = super::vstack(&[a.borrowed(), b.borrowed()]);
+        let expected = mat1_vstack_mat2();
+        assert_eq!(res, Ok(expected));
+    }
 }
