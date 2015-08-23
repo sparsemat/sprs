@@ -37,6 +37,7 @@ where N: Copy {
     Ok(res)
 }
 
+/// Construct a sparse matrix by vertically stacking other matrices
 pub fn vstack<N>(mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
 where N: Copy + Default {
     if mats.iter().all(|x| x.is_csr()) {
@@ -48,6 +49,7 @@ where N: Copy + Default {
     same_storage_fast_stack(&mats_csr_views)
 }
 
+/// Construct a sparse matrix by horizontally stacking other matrices
 pub fn hstack<N>(mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
 where N: Copy + Default {
     if mats.iter().all(|x| x.is_csc()) {
@@ -59,6 +61,20 @@ where N: Copy + Default {
     same_storage_fast_stack(&mats_csc_views)
 }
 
+/// Specify a sparse matrix by constructing it from blocks of other matrices
+/// 
+/// # Examples
+/// ```
+/// // a and b are sparse matrices
+/// let c = bmat(&[[Some(a), None], [None, Some(b)]]);
+pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray)
+-> Result<CsMatVec<N>, SprsError>
+where N: 'a + Copy + Default,
+      OuterArray: 'a + AsRef<[InnerArray]>,
+      InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]> {
+    // start by checking if our input is well formed (no column or line of None)
+    unimplemented!();
+}
 
 #[cfg(test)]
 mod test {
