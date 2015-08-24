@@ -11,7 +11,8 @@ extern crate num;
 pub mod sparse;
 pub mod errors;
 
-pub use sparse::construct::{vstack, hstack};
+pub use sparse::{CsMatVec, CsMatView};
+pub use sparse::construct::{vstack, hstack, bmat};
 
 #[cfg(test)]
 mod test_data;
