@@ -2,14 +2,17 @@
 
 use std::ops::{Deref};
 use std::default::Default;
+use std::cmp;
 use sparse::csmat::{CsMatVec, CsMatView, CompressedStorage};
 use errors::SprsError;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
-pub fn same_storage_fast_stack<N>(
-    mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
-where N: Copy {
+pub fn same_storage_fast_stack<'a, N, MatArray>(
+    mats: &MatArray) -> Result<CsMatVec<N>, SprsError>
+where N: 'a + Copy,
+      MatArray: AsRef<[CsMatView<'a, N>]> {
+    let mats = mats.as_ref();
     if mats.len() == 0 {
         return Err(SprsError::EmptyStackingList);
     }
@@ -38,10 +41,12 @@ where N: Copy {
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<N>(mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
-where N: Copy + Default {
+pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatVec<N>, SprsError>
+where N: 'a + Copy + Default,
+      MatArray: AsRef<[CsMatView<'a, N>]> {
+    let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csr()) {
-        return same_storage_fast_stack(mats);
+        return same_storage_fast_stack(&mats);
     }
 
     let mats_csr: Vec<_> = mats.iter().map(|x| x.to_csr()).collect();
@@ -50,10 +55,12 @@ where N: Copy + Default {
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<N>(mats: &[CsMatView<N>]) -> Result<CsMatVec<N>, SprsError>
-where N: Copy + Default {
+pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatVec<N>, SprsError>
+where N: 'a + Copy + Default,
+      MatArray: AsRef<[CsMatView<'a, N>]> {
+    let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csc()) {
-        return same_storage_fast_stack(mats);
+        return same_storage_fast_stack(&mats);
     }
 
     let mats_csc: Vec<_> = mats.iter().map(|x| x.to_csc()).collect();
@@ -79,27 +86,52 @@ where N: 'a + Copy + Default,
       OuterArray: 'a + AsRef<[InnerArray]>,
       InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]> {
     let mats = mats.as_ref();
-    let rows = mats.len();
-    if rows == 0 {
+    let super_rows = mats.len();
+    if super_rows == 0 {
         return Err(SprsError::EmptyStackingList);
     }
-    let cols = mats[0].as_ref().len();
-    if cols == 0 {
+    let super_cols = mats[0].as_ref().len();
+    if super_cols == 0 {
         return Err(SprsError::EmptyStackingList);
     }
+
     // check input has matrix shape
-    if ! mats.iter().all(|x| x.as_ref().len() == cols) {
+    if ! mats.iter().all(|x| x.as_ref().len() == super_cols) {
         return Err(SprsError::IncompatibleDimensions);
     }
 
     if mats.iter().any(|x| x.as_ref().iter().all(|y| y.is_none())) {
         return Err(SprsError::EmptyBmatRow);
     }
-    if (0..cols).any(|i| mats.iter().all(|x| x.as_ref()[i].is_none())) {
+    if (0..super_cols).any(|j| mats.iter().all(|x| x.as_ref()[j].is_none())) {
         return Err(SprsError::EmptyBmatCol);
     }
-    // start by checking if our input is well formed (no column or line of None)
-    unimplemented!();
+
+    // find out the shapes of the None elements
+    let rows_per_row: Vec<_> = mats.iter().map(|row| {
+        row.as_ref().iter().fold(0, |nrows, mopt| {
+            mopt.as_ref().map_or(nrows, |m| cmp::max(nrows, m.rows()))
+        })
+    }).collect();
+    let cols_per_col: Vec<_> = (0..super_cols).map(|j| {
+        mats.iter().fold(0, |ncols, row| {
+            row.as_ref()[j].as_ref()
+                           .map_or(ncols, |m| cmp::max(ncols, m.cols()))
+        })
+    }).collect();
+    let mut to_vstack = Vec::new();
+    to_vstack.reserve(super_rows);
+    for (i, row) in mats.iter().enumerate() {
+        let with_zeros: Vec<_> = row.as_ref().iter().enumerate().map(|(j, m)| {
+            m.as_ref().map_or(CsMatVec::zero(rows_per_row[i], cols_per_col[j]),
+                              |x| x.to_owned())
+        }).collect();
+        let borrows: Vec<_> = with_zeros.iter().map(|x| x.borrowed()).collect();
+        let stacked = try!(hstack(&borrows));
+        to_vstack.push(stacked);
+    }
+    let borrows: Vec<_> = to_vstack.iter().map(|x| x.borrowed()).collect();
+    vstack(&borrows)
 }
 
 #[cfg(test)]

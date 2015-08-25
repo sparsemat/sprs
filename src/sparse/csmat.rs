@@ -202,6 +202,18 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         }
     }
 
+    pub fn zero(rows: usize, cols: usize) -> CsMatVec<N> {
+        CsMat {
+            storage: CSR,
+            nrows: rows,
+            ncols: cols,
+            nnz: 0,
+            indptr: vec![0; rows + 1],
+            indices: Vec::new(),
+            data: Vec::new(),
+        }
+    }
+
     /// Reserve the storage for the given additional number of nonzero data
     pub fn reserve_outer_dim(&mut self, outer_dim_additional: usize) {
         self.indptr.reserve(outer_dim_additional);
