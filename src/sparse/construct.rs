@@ -220,4 +220,14 @@ mod test {
                           [Some(a.borrowed()), None]]);
         assert_eq!(res, Err(EmptyBmatCol));
     }
+
+    #[test]
+    fn bmat_simple() {
+        let a = CsMatVec::<f64>::eye(CSR, 5);
+        let b = CsMatVec::<f64>::eye(CSR, 4);
+        let c = super::bmat(&[[Some(a.borrowed()), None],
+                              [None, Some(b.borrowed())]]);
+        println!("{:?}", c);
+        assert!(c.is_ok());
+    }
 }

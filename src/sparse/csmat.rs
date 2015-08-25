@@ -540,8 +540,8 @@ where N: Copy + Default,
 
     pub fn to_csc(&self) -> CsMatVec<N> {
         match self.storage {
-            CSR => self.to_owned(),
-            CSC => self.to_other_storage()
+            CSR => self.to_other_storage(),
+            CSC => self.to_owned()
         }
     }
 
