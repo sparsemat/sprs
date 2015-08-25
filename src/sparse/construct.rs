@@ -78,7 +78,7 @@ where N: 'a + Copy + Default,
 /// let b = CsMatVec::<f64>::eye(CSR, 4);
 /// let c = sprs::bmat(&[[Some(a.borrowed()), None],
 ///                      [None, Some(b.borrowed())]]).unwrap();
-/// assert_eq!(c.rows(), 5);
+/// assert_eq!(c.rows(), 7);
 /// ```
 pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray)
 -> Result<CsMatVec<N>, SprsError>
