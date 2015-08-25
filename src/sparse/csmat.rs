@@ -484,7 +484,7 @@ where N: Copy,
             println!("CsMat indptr values incoherent with nnz");
             return None;
         }
-        if self.indices.iter().max().unwrap() >= &inner {
+        if self.indices.iter().max().unwrap_or(&0) >= &inner {
             println!("CsMat indices values incoherent with ncols");
             return None;
         }
