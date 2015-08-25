@@ -527,7 +527,7 @@ where N: Copy + Default,
     /// Create a matrix mathematically equal to this one, but with the
     /// opposed storage.
     pub fn to_other_storage(&self) -> CsMat<N, Vec<usize>, Vec<N>> {
-        let mut indptr = vec![0; self.outer_dims() + 1];
+        let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
         let borrowed = self.borrowed();
@@ -583,7 +583,7 @@ mod raw {
                                         indptr: &mut [usize],
                                         indices: &mut[usize],
                                         data: &mut [N]) {
-        assert_eq!(indptr.len(), mat.indptr().len());
+        assert_eq!(indptr.len(), mat.inner_dims() + 1);
         assert_eq!(indices.len(), mat.indices().len());
         assert_eq!(data.len(), mat.data().len());
 
