@@ -226,8 +226,42 @@ mod test {
         let a = CsMatVec::<f64>::eye(CSR, 5);
         let b = CsMatVec::<f64>::eye(CSR, 4);
         let c = super::bmat(&[[Some(a.borrowed()), None],
-                              [None, Some(b.borrowed())]]);
-        println!("{:?}", c);
-        assert!(c.is_ok());
+                              [None, Some(b.borrowed())]]).unwrap();
+        let expected = CsMatVec::from_vecs(
+            CSR, 9, 9,
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+            vec![1.; 9]).unwrap();
+        assert_eq!(c, expected);
+    }
+
+    #[test]
+    fn bmat_complex() {
+        let a = mat1();
+        let b = mat2();
+        let c = super::bmat(&[[Some(a.borrowed()), Some(b.borrowed())],
+                              [Some(b.borrowed()), None]]).unwrap();
+        let expected = CsMatVec::from_vecs(
+            CSR, 10, 10,
+            vec![0,  6, 10, 11, 14, 17, 21, 23, 23, 25, 27],
+            vec![2, 3, 5, 6, 7, 9, 3, 4, 5, 8, 2, 1, 7, 8, 3,
+                 6, 7, 0, 1, 2, 4, 0, 3, 2, 3, 1, 2],
+            vec![3., 4., 6., 7., 3., 3., 2., 5., 8., 9., 5., 8., 2., 4.,
+                 7., 4., 4., 6., 7., 3., 3., 8., 9., 2., 4., 4., 4.]).unwrap();
+        assert_eq!(c, expected);
+
+        let d = mat3();
+        let e = mat4();
+        let f = super::bmat(&[[Some(d.borrowed()), Some(a.borrowed())],
+                              [None, Some(e.borrowed())]]
+                           ).unwrap();
+        let expected = CsMatVec::from_vecs(
+            CSR, 10, 9,
+            vec![0,  4,  8, 10, 12, 14, 18, 20, 20, 22, 24],
+            vec![2, 3, 6, 7, 2, 3, 7, 8, 2, 6, 1, 5, 3, 7, 4, 5,
+                 6, 8, 4, 7, 6, 7, 5, 6],
+            vec![3., 4., 3., 4., 2., 5., 2., 5., 5., 5., 8., 8.,
+                 7., 7., 6., 7., 3., 3., 8., 9., 2., 4., 4., 4.]).unwrap();
+        assert_eq!(f, expected);
     }
 }
