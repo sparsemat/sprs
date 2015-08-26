@@ -6,4 +6,6 @@ pub enum SprsError {
     IncompatibleStorages,
     EmptyStackingList,
     NotImplemented,
+    EmptyBmatRow,
+    EmptyBmatCol,
 }

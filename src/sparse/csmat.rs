@@ -202,6 +202,18 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         }
     }
 
+    pub fn zero(rows: usize, cols: usize) -> CsMatVec<N> {
+        CsMat {
+            storage: CSR,
+            nrows: rows,
+            ncols: cols,
+            nnz: 0,
+            indptr: vec![0; rows + 1],
+            indices: Vec::new(),
+            data: Vec::new(),
+        }
+    }
+
     /// Reserve the storage for the given additional number of nonzero data
     pub fn reserve_outer_dim(&mut self, outer_dim_additional: usize) {
         self.indptr.reserve(outer_dim_additional);
@@ -472,7 +484,7 @@ where N: Copy,
             println!("CsMat indptr values incoherent with nnz");
             return None;
         }
-        if self.indices.iter().max().unwrap() >= &inner {
+        if self.indices.iter().max().unwrap_or(&0) >= &inner {
             println!("CsMat indices values incoherent with ncols");
             return None;
         }
@@ -515,7 +527,7 @@ where N: Copy + Default,
     /// Create a matrix mathematically equal to this one, but with the
     /// opposed storage.
     pub fn to_other_storage(&self) -> CsMat<N, Vec<usize>, Vec<N>> {
-        let mut indptr = vec![0; self.outer_dims() + 1];
+        let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
         let borrowed = self.borrowed();
@@ -528,8 +540,8 @@ where N: Copy + Default,
 
     pub fn to_csc(&self) -> CsMatVec<N> {
         match self.storage {
-            CSR => self.to_owned(),
-            CSC => self.to_other_storage()
+            CSR => self.to_other_storage(),
+            CSC => self.to_owned()
         }
     }
 
@@ -571,7 +583,7 @@ mod raw {
                                         indptr: &mut [usize],
                                         indices: &mut[usize],
                                         data: &mut [N]) {
-        assert_eq!(indptr.len(), mat.indptr().len());
+        assert_eq!(indptr.len(), mat.inner_dims() + 1);
         assert_eq!(indices.len(), mat.indices().len());
         assert_eq!(data.len(), mat.data().len());
 
