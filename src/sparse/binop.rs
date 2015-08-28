@@ -1,88 +1,58 @@
 ///! Sparse matrix addition, subtraction
 
-use std::ops::{Deref, DerefMut};
-use sparse::csmat::{CsMat};
+use sparse::csmat::{CsMat, CsMatVec, CsMatView};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
+use sparse::compressed::SpMatView;
+use errors::SprsError;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
-pub fn add_mat_same_storage<N, IStorage, DStorage>(
-    lhs: &CsMat<N, IStorage, DStorage>,
-    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
-where
-N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+pub fn add_mat_same_storage<N, Mat1, Mat2>(
+    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatVec<N>, SprsError>
+where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     let binop = |x, y| x + y;
-    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
-                                          binop);
+    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
 }
 
 /// Sparse matrix subtraction, with same storage type
-pub fn sub_mat_same_storage<N, IStorage, DStorage>(
-    lhs: &CsMat<N, IStorage, DStorage>,
-    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
-where
-N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+pub fn sub_mat_same_storage<N, Mat1, Mat2>(
+    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatVec<N>, SprsError>
+where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     let binop = |x, y| x - y;
-    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
-                                          binop);
+    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
-pub fn mul_mat_same_storage<N, IStorage, DStorage>(
-    lhs: &CsMat<N, IStorage, DStorage>,
-    rhs: &CsMat<N, IStorage, DStorage>) -> CsMat<N, Vec<usize>, Vec<N>>
-where
-N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+pub fn mul_mat_same_storage<N, Mat1, Mat2>(
+    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatVec<N>, SprsError>
+where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     let binop = |x, y| x * y;
-    return csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(),
-                                          binop);
+    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
 }
 
 /// Sparse matrix multiplication by a scalar
-pub fn scalar_mul_mat<N, IStorage, DStorage>(
-    mat: &CsMat<N, IStorage, DStorage>,
-    val: N) -> CsMat<N, Vec<usize>, Vec<N>>
-where
-N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+pub fn scalar_mul_mat<N, Mat>(
+    mat: &Mat, val: N) -> CsMat<N, Vec<usize>, Vec<N>>
+where N: Num + Copy, Mat: SpMatView<N> {
+    let mat = mat.borrowed();
     let mut out_indptr = vec![0; mat.outer_dims() + 1];
     let mut out_indices = vec![0; mat.nb_nonzero()];
     let mut out_data = vec![N::zero(); mat.nb_nonzero()];
     let nrows = mat.rows();
     let ncols = mat.cols();
     let storage_type = mat.storage();
-    scalar_mul_mat_raw(mat.borrowed(), val, &mut out_indptr[..],
+    scalar_mul_mat_raw(mat, val, &mut out_indptr[..],
                        &mut out_indices[..], &mut out_data[..]);
     CsMat::from_vecs(storage_type, nrows, ncols,
                      out_indptr, out_indices, out_data).unwrap()
 }
 
-/// Sparse matrix self-multiplication by a scalar
-pub fn scalar_self_mul_mat<N, IStorage, DStorage>(
-    mat: &mut CsMat<N, IStorage, DStorage>,
-    val: N)
-where
-N: Num + Copy,
-IStorage: DerefMut<Target=[usize]>,
-DStorage: DerefMut<Target=[N]> {
-    for data in mat.data_mut() {
-        *data = *data * val;
-    }
-}
-
 /// Sparse matrix multiplication by a scalar, raw version
-/// 
+///
 /// Writes into the provided output.
 /// Panics if the sizes don't match
 pub fn scalar_mul_mat_raw<N>(
-    mat: CsMat<N, &[usize], &[N]>,
+    mat: CsMatView<N>,
     val: N,
     out_indptr: &mut [usize],
     out_indices: &mut [usize],
@@ -103,19 +73,19 @@ where N: Num + Copy {
 }
 
 fn csmat_binop_same_storage_alloc<N, F>(
-    lhs: CsMat<N, &[usize], &[N]>,
-    rhs: CsMat<N, &[usize], &[N]>,
-    binop: F) -> CsMat<N, Vec<usize>, Vec<N>>
+    lhs: CsMatView<N>, rhs: CsMatView<N>, binop: F) -> Result<CsMatVec<N>, SprsError>
 where
 N: Num + Copy,
 F: Fn(N, N) -> N {
-    // TODO: return a Result<CsMat, SprsError> ?
     let nrows = lhs.rows();
     let ncols = lhs.cols();
     let storage_type = lhs.storage();
-    assert_eq!(nrows, rhs.cols());
-    assert_eq!(ncols, rhs.rows());
-    assert_eq!(storage_type, rhs.storage());
+    if nrows != rhs.rows() || ncols != rhs.cols() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if storage_type != rhs.storage() {
+        return Err(SprsError::IncompatibleStorages);
+    }
 
     let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
     let mut out_indptr = vec![0; lhs.outer_dims() + 1];
@@ -127,8 +97,8 @@ F: Fn(N, N) -> N {
                                            &mut out_data[..]);
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
-    CsMat::from_vecs(storage_type, nrows, ncols,
-                     out_indptr, out_indices, out_data).unwrap()
+    Ok(CsMat::from_vecs(storage_type, nrows, ncols,
+                        out_indptr, out_indices, out_data).unwrap())
 }
 
 /// Raw implementation of scalar binary operation for compressed sparse matrices
@@ -177,14 +147,7 @@ F: Fn(N, N) -> N {
 mod test {
     use sparse::csmat::CsMat;
     use sparse::CompressedStorage::{CSR};
-    use test_data::{mat1, mat2};
-
-    fn mat1_times_2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
-        let indptr = vec![0, 2, 4, 5, 6, 7];
-        let indices = vec![2, 3, 3, 4, 2, 1, 3];
-        let data = vec![6., 8., 4., 10., 10., 16., 14.];
-        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
-    }
+    use test_data::{mat1, mat2, mat1_times_2};
 
     fn mat1_plus_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
@@ -217,7 +180,7 @@ mod test {
         let a = mat1();
         let b = mat2();
 
-        let c = super::add_mat_same_storage(&a, &b);
+        let c = super::add_mat_same_storage(&a, &b).unwrap();
         let c_true = mat1_plus_mat2();
         assert_eq!(c.indptr(), c_true.indptr());
         assert_eq!(c.indices(), c_true.indices());
@@ -229,7 +192,7 @@ mod test {
         let a = mat1();
         let b = mat2();
 
-        let c = super::sub_mat_same_storage(&a, &b);
+        let c = super::sub_mat_same_storage(&a, &b).unwrap();
         let c_true = mat1_minus_mat2();
         assert_eq!(c.indptr(), c_true.indptr());
         assert_eq!(c.indices(), c_true.indices());
@@ -241,7 +204,7 @@ mod test {
         let a = mat1();
         let b = mat2();
 
-        let c = super::mul_mat_same_storage(&a, &b);
+        let c = super::mul_mat_same_storage(&a, &b).unwrap();
         let c_true = mat1_times_mat2();
         assert_eq!(c.indptr(), c_true.indptr());
         assert_eq!(c.indices(), c_true.indices());
@@ -258,14 +221,5 @@ mod test {
         assert_eq!(c.data(), c_true.data());
     }
 
-    #[test]
-    fn test_self_smul() {
-        let mut a = mat1();
-        super::scalar_self_mul_mat(&mut a, 2.);
-        let c_true = mat1_times_2();
-        assert_eq!(a.indptr(), c_true.indptr());
-        assert_eq!(a.indices(), c_true.indices());
-        assert_eq!(a.data(), c_true.data());
-    }
-    
+
 }

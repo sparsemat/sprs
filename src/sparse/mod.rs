@@ -15,4 +15,5 @@ pub mod binop;
 pub mod construct;
 pub mod linalg;
 pub mod symmetric;
+pub mod compressed;
 

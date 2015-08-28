@@ -1,9 +1,8 @@
 //! High level construction of sparse matrices by stacking, by block, ...
 
-use std::ops::{Deref};
 use std::default::Default;
 use std::cmp;
-use sparse::csmat::{CsMatVec, CsMatView, CompressedStorage};
+use sparse::csmat::{CsMatVec, CsMatView};
 use errors::SprsError;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
