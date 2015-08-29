@@ -1,15 +1,22 @@
 ///! Sparse matrix product
 
 use std::ops::{Deref};
-use sparse::csmat::CompressedStorage::{CSC, CSR};
-use sparse::csmat::{CsMat};
+use sparse::csmat::{CsMatVec, CsMatView};
 use num::traits::Num;
+use sparse::compressed::SpMatView;
+use errors::SprsError;
 
-pub fn mul_acc_mat_vec_csc<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
-    mat: CsMat<N, IStorage, DStorage>, in_vec: &[N], res_vec: &mut[N]) {
-    assert!(mat.cols() == in_vec.len(), "Matrix and vector dims must agree");
-    assert!(mat.rows() == res_vec.len(), "Matrix and res vector dims must agree");
-    assert!(mat.storage() == CSC, "Matrix must be in CSC format");
+pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
+                              in_vec: &[N],
+                              res_vec: &mut[N]) -> Result<(), SprsError>
+where N: Num + Copy {
+    let mat = mat.borrowed();
+    if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !mat.is_csc() {
+        return Err(SprsError::IncompatibleStorages);
+    }
 
     for (col_ind, vec) in mat.outer_iterator() {
         let multiplier = &in_vec[col_ind];
@@ -19,13 +26,19 @@ pub fn mul_acc_mat_vec_csc<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
                 res_vec[row_ind] + *multiplier * value;
         }
     }
+    Ok(())
 }
 
-pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]>, DStorage: Deref<Target=[N]>>(
-    mat: CsMat<N, IStorage, DStorage>, in_vec: &[N], res_vec: &mut[N]) {
-    assert!(mat.cols() == in_vec.len(), "Matrix and vector dims must agree");
-    assert!(mat.rows() == res_vec.len(), "Matrix and res vector dims must agree");
-    assert!(mat.storage() == CSR, "Matrix must be in CSR format");
+pub fn mul_acc_mat_vec_csr<N>(mat: CsMatView<N>,
+                              in_vec: &[N],
+                              res_vec: &mut[N]) -> Result<(), SprsError>
+where N: Num + Copy {
+    if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !mat.is_csr() {
+        return Err(SprsError::IncompatibleStorages);
+    }
 
     for (row_ind, vec) in mat.outer_iterator() {
         for (col_ind, value) in vec.iter() {
@@ -34,6 +47,7 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
                 res_vec[row_ind] + in_vec[col_ind] * value;
         }
     }
+    Ok(())
 }
 
 
@@ -47,32 +61,38 @@ pub fn mul_acc_mat_vec_csr<N: Num + Clone + Copy, IStorage: Deref<Target=[usize]
 /// rhs: right hand size matrix
 /// workspace: used to accumulate the line values. Should be of length
 ///            rhs.cols()
-pub fn csr_mul_csr<N, IStorage, DStorage>(lhs: &CsMat<N, IStorage, DStorage>,
-                                          rhs: &CsMat<N, IStorage, DStorage>,
-                                          workspace: &mut[Option<N>]
-                                         ) -> CsMat<N, Vec<usize>, Vec<N>>
+pub fn csr_mul_csr<N, Mat1, Mat2>(lhs: &Mat1,
+                                  rhs: &Mat2,
+                                  workspace: &mut[Option<N>]
+                                 ) -> Result<CsMatVec<N>, SprsError>
 where
 N: Num + Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
-    let lhs_ = lhs.borrowed();
-    let rhs_ = rhs.borrowed();
-    csr_mul_csr_impl(&lhs_, &rhs_, workspace)
+Mat1: SpMatView<N>,
+Mat2: SpMatView<N> {
+    csr_mul_csr_impl(lhs.borrowed(), rhs.borrowed(), workspace)
 }
 
-pub fn csr_mul_csr_impl<N>(lhs: &CsMat<N, &[usize], &[N]>,
-                      rhs: &CsMat<N, &[usize], &[N]>,
-                      workspace: &mut[Option<N>]
-                     ) -> CsMat<N, Vec<usize>, Vec<N>>
+pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
+                           rhs: CsMatView<N>,
+                           workspace: &mut[Option<N>]
+                          ) -> Result<CsMatVec<N>, SprsError>
 where N: Num + Copy {
     let res_rows = lhs.rows();
     let res_cols = rhs.cols();
-    assert_eq!(lhs.cols(), rhs.rows());
-    assert_eq!(res_cols, workspace.len());
-    assert_eq!(lhs.storage(), rhs.storage());
-    assert_eq!(CSR, rhs.storage());
+    if lhs.cols() != rhs.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if res_cols !=  workspace.len() {
+        return Err(SprsError::BadWorkspaceDimensions);
+    }
+    if lhs.storage() != rhs.storage() {
+        return Err(SprsError::IncompatibleStorages);
+    }
+    if !rhs.is_csr() {
+        return Err(SprsError::BadStorageType);
+    }
 
-    let mut res = CsMat::empty(lhs.storage(), res_cols);
+    let mut res = CsMatVec::empty(lhs.storage(), res_cols);
     for (_, lvec) in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
@@ -93,7 +113,7 @@ where N: Num + Copy {
         res = res.append_outer(&workspace);
     }
     assert_eq!(res_rows, res.rows());
-    res
+    Ok(res)
 }
 
 #[cfg(test)]
@@ -113,7 +133,7 @@ mod test {
         let mat = CsMat::from_slices(CSC, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csc(mat, &vector, &mut res_vec);
+        mul_acc_mat_vec_csc(mat, &vector, &mut res_vec).unwrap();
 
         let expected_output =
             vec![ 0., 0.26439869, -0.01803924, 0.75120319, 0.11616419];
@@ -135,7 +155,7 @@ mod test {
         let mat = CsMat::from_slices(CSR, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec);
+        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec).unwrap();
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
@@ -150,7 +170,7 @@ mod test {
     fn mul_csr_csr_identity() {
         let eye: CsMat<i32, Vec<usize>, Vec<i32>> = CsMat::eye(CSR, 10);
         let mut workspace = [None; 10];
-        let res = csr_mul_csr(&eye, &eye, &mut workspace);
+        let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
         assert_eq!(eye.indptr(), res.indptr());
         assert_eq!(eye.indices(), res.indices());
         assert_eq!(eye.data(), res.data());

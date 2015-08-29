@@ -38,3 +38,10 @@ pub fn mat4() -> CsMat<f64, Vec<usize>, Vec<f64>> {
     CsMat::from_vecs(CSC, 5, 5, indptr, indices, data).unwrap()
 }
 
+pub fn mat1_times_2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+    let indptr = vec![0, 2, 4, 5, 6, 7];
+    let indices = vec![2, 3, 3, 4, 2, 1, 3];
+    let data = vec![6., 8., 4., 10., 10., 16., 14.];
+    CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+}
+

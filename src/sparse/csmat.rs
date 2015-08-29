@@ -564,6 +564,13 @@ DataStorage: DerefMut<Target=[N]> {
         &mut self.data[..]
     }
 
+    /// Sparse matrix self-multiplication by a scalar
+    pub fn scale(&mut self, val: N) where N: Num + Copy {
+        for data in self.data_mut() {
+            *data = *data * val;
+        }
+    }
+
 }
 
 mod raw {
@@ -625,7 +632,7 @@ mod raw {
 mod test {
     use super::{CsMat};
     use super::CompressedStorage::{CSC, CSR};
-    use test_data::{mat1, mat1_csc};
+    use test_data::{mat1, mat1_csc, mat1_times_2};
 
     #[test]
     fn test_new_csr_success() {
@@ -770,5 +777,15 @@ mod test {
         let a_csc_ground_truth = mat1_csc();
         let a_csc = a.to_other_storage();
         assert_eq!(a_csc, a_csc_ground_truth);
+    }
+
+    #[test]
+    fn test_self_smul() {
+        let mut a = mat1();
+        a.scale(2.);
+        let c_true = mat1_times_2();
+        assert_eq!(a.indptr(), c_true.indptr());
+        assert_eq!(a.indices(), c_true.indices());
+        assert_eq!(a.data(), c_true.data());
     }
 }
