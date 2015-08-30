@@ -11,12 +11,14 @@
 use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{Windows};
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Add, Sub, Mul};
 use std::mem;
 use num::traits::Num;
 
 use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec};
+use sparse::compressed::SpMatView;
+use sparse::binop;
 
 pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
@@ -627,6 +629,54 @@ mod raw {
         }
     }
 }
+
+impl<'a, 'b, N, IStorage, DStorage, Mat> Add<&'b Mat>
+for &'a CsMat<N, IStorage, DStorage>
+where N: 'a + Copy + Num + Default,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: 'a + Deref<Target=[N]>,
+      Mat: SpMatView<N> {
+    type Output = CsMatVec<N>;
+
+    fn add(self, rhs: &'b Mat) -> CsMatVec<N> {
+        if self.storage() != rhs.borrowed().storage() {
+            return binop::add_mat_same_storage(
+                self, &rhs.borrowed().to_other_storage()).unwrap()
+        }
+        binop::add_mat_same_storage(self, rhs).unwrap()
+    }
+}
+
+impl<'a, 'b, N, IStorage, DStorage, Mat> Sub<&'b Mat>
+for &'a CsMat<N, IStorage, DStorage>
+where N: 'a + Copy + Num + Default,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: 'a + Deref<Target=[N]>,
+      Mat: SpMatView<N> {
+    type Output = CsMatVec<N>;
+
+    fn sub(self, rhs: &'b Mat) -> CsMatVec<N> {
+        if self.storage() != rhs.borrowed().storage() {
+            return binop::sub_mat_same_storage(
+                self, &rhs.borrowed().to_other_storage()).unwrap()
+        }
+        binop::sub_mat_same_storage(self, rhs).unwrap()
+    }
+}
+
+impl<'a,N, IStorage, DStorage> Mul<N>
+for &'a CsMat<N, IStorage, DStorage>
+where N: 'a + Copy + Num,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: 'a + Deref<Target=[N]> {
+    type Output = CsMatVec<N>;
+
+    fn mul(self, rhs: N) -> CsMatVec<N> {
+        binop::scalar_mul_mat(self, rhs)
+    }
+}
+
+
 
 #[cfg(test)]
 mod test {
