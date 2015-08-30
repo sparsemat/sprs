@@ -1,6 +1,5 @@
 ///! Sparse matrix product
 
-use std::ops::{Deref};
 use sparse::csmat::{CsMatVec, CsMatView};
 use num::traits::Num;
 use sparse::compressed::SpMatView;

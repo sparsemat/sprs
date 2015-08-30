@@ -1,7 +1,7 @@
 ///! Traits to generalize over compressed sparse matrices storages
 
 
-use sparse::csmat::{CsMat, CsMatVec, CsMatView};
+use sparse::csmat::{CsMat, CsMatView};
 use std::ops::{Deref};
 
 /// The SpMatView trait describes data that can be seen as a view
