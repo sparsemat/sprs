@@ -720,7 +720,12 @@ where N: 'a + Copy + Num + Default,
         else if self.is_csr() {
             let mut workspace = prod::workspace_csr(self, rhs);
             prod::csr_mul_csr(self,
-                              &rhs.borrowed().to_other_storage(),
+                              &rhs.to_other_storage(),
+                              &mut workspace).unwrap()
+        }
+        else if self.is_csc() {
+            let mut workspace = prod::workspace_csc(self, rhs);
+            prod::csc_mul_csc(&self.to_other_storage(), rhs,
                               &mut workspace).unwrap()
         }
         else {
