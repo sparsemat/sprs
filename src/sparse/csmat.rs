@@ -19,6 +19,7 @@ use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec};
 use sparse::compressed::SpMatView;
 use sparse::binop;
+use sparse::prod;
 
 pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
@@ -429,6 +430,20 @@ where N: Copy,
         self
     }
 
+    /// Transposed view of this matrix
+    /// No allocation required (this is simply a storage order change)
+    pub fn transpose_view(&self) -> CsMatView<N> {
+        CsMatView {
+            storage: self.storage.other_storage(),
+            nrows: self.ncols,
+            ncols: self.nrows,
+            nnz: self.nnz,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
+    }
+
     pub fn to_owned(&self) -> CsMatVec<N> {
         CsMatVec {
             storage: self.storage,
@@ -676,7 +691,32 @@ where N: 'a + Copy + Num,
     }
 }
 
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsMat<N, IS2, DS2>>
+for &'a CsMat<N, IS1, DS1>
+where N: 'a + Copy + Num + Default,
+      IS1: 'a + Deref<Target=[usize]>,
+      DS1: 'a + Deref<Target=[N]>,
+      IS2: 'b + Deref<Target=[usize]>,
+      DS2: 'b + Deref<Target=[N]> {
+    type Output = CsMatVec<N>;
 
+    fn mul(self, rhs: &'b CsMat<N, IS2, DS2>) -> CsMatVec<N> {
+        if self.is_csr() && rhs.borrowed().is_csr() {
+            let mut workspace = prod::workspace_csr(self, rhs);
+            prod::csr_mul_csr(self, rhs, &mut workspace).unwrap()
+        }
+        else if self.is_csr() {
+            let mut workspace = prod::workspace_csr(self, rhs);
+            prod::csr_mul_csr(self,
+                              &rhs.borrowed().to_other_storage(),
+                              &mut workspace).unwrap()
+        }
+        else {
+            let mut workspace = prod::workspace_csc(self, rhs);
+            prod::csc_mul_csc(self, rhs, &mut workspace).unwrap()
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {

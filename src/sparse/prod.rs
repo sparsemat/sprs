@@ -71,6 +71,46 @@ Mat2: SpMatView<N> {
     csr_mul_csr_impl(lhs.borrowed(), rhs.borrowed(), workspace)
 }
 
+/// Perform a matrix multiplication for matrices sharing the same storage order.
+///
+/// This method assumes a CSC storage order, and uses free transposition to
+/// invoke the CSR method
+///
+/// lhs: left hand size matrix
+/// rhs: right hand size matrix
+/// workspace: used to accumulate the line values. Should be of length
+///            lhs.lines()
+pub fn csc_mul_csc<N, Mat1, Mat2>(lhs: &Mat1,
+                                  rhs: &Mat2,
+                                  workspace: &mut[Option<N>]
+                                 ) -> Result<CsMatVec<N>, SprsError>
+where
+N: Num + Copy,
+Mat1: SpMatView<N>,
+Mat2: SpMatView<N> {
+    csr_mul_csr_impl(rhs.transpose_view(),
+                     lhs.transpose_view(),
+                     workspace).map(|x| x.transpose_into())
+}
+
+/// Allocate the appropriate workspace for a CSR-CSR product
+pub fn workspace_csr<N, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<Option<N>>
+where N: Copy,
+      Mat1: SpMatView<N>,
+      Mat2: SpMatView<N> {
+    let len = rhs.borrowed().cols();
+    vec![None; len]
+}
+
+/// Allocate the appropriate workspace for a CSC-CSC product
+pub fn workspace_csc<N, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<Option<N>>
+where N: Copy,
+      Mat1: SpMatView<N>,
+      Mat2: SpMatView<N> {
+    let len = lhs.borrowed().rows();
+    vec![None; len]
+}
+
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
                            workspace: &mut[Option<N>]
