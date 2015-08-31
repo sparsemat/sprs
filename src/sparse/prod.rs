@@ -161,7 +161,8 @@ mod test {
     use sparse::csmat::{CsMat};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
-    use test_data::{mat1, mat1_self_matprod};
+    use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
+                    mat1_csc, mat4, mat1_csc_matprod_mat4};
 
     #[test]
     fn mul_csc_vec() {
@@ -224,5 +225,20 @@ mod test {
         let res = &a * &a;
         let expected_output = mat1_self_matprod();
         assert_eq!(expected_output, res);
+
+        let b = mat2();
+        let res = &a * &b;
+        let expected_output = mat1_matprod_mat2();
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csc_csc() {
+        let a = mat1_csc();
+        let b = mat4();
+        let res = &a * &b;
+        let expected_output = mat1_csc_matprod_mat4();
+        assert_eq!(expected_output, res);
+
     }
 }
