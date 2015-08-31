@@ -710,24 +710,26 @@ where N: 'a + Copy + Num + Default,
     type Output = CsMatVec<N>;
 
     fn mul(self, rhs: &'b CsMat<N, IS2, DS2>) -> CsMatVec<N> {
-        if self.is_csr() && rhs.borrowed().is_csr() {
-            let mut workspace = prod::workspace_csr(self, rhs);
-            prod::csr_mul_csr(self, rhs, &mut workspace).unwrap()
-        }
-        else if self.is_csr() {
-            let mut workspace = prod::workspace_csr(self, rhs);
-            prod::csr_mul_csr(self,
-                              &rhs.to_other_storage(),
-                              &mut workspace).unwrap()
-        }
-        else if self.is_csc() {
-            let mut workspace = prod::workspace_csc(self, rhs);
-            prod::csc_mul_csc(&self.to_other_storage(), rhs,
-                              &mut workspace).unwrap()
-        }
-        else {
-            let mut workspace = prod::workspace_csc(self, rhs);
-            prod::csc_mul_csc(self, rhs, &mut workspace).unwrap()
+        match (self.storage(), rhs.storage()) {
+            (CSR, CSR) => {
+                let mut workspace = prod::workspace_csr(self, rhs);
+                prod::csr_mul_csr(self, rhs, &mut workspace).unwrap()
+            }
+            (CSR, CSC) => {
+                let mut workspace = prod::workspace_csr(self, rhs);
+                prod::csr_mul_csr(self,
+                                  &rhs.to_other_storage(),
+                                  &mut workspace).unwrap()
+            }
+            (CSC, CSR) => {
+                let mut workspace = prod::workspace_csc(self, rhs);
+                prod::csc_mul_csc(&self.to_other_storage(), rhs,
+                                  &mut workspace).unwrap()
+            }
+            (CSC, CSC) => {
+                let mut workspace = prod::workspace_csc(self, rhs);
+                prod::csc_mul_csc(self, rhs, &mut workspace).unwrap()
+            }
         }
     }
 }
