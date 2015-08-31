@@ -17,6 +17,8 @@ DStorage: Deref<Target=[N]> {
     data : DStorage
 }
 
+pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
+
 pub struct VectorIterator<'a, N: 'a> {
     dim: usize,
     ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,

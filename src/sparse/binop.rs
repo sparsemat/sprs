@@ -182,9 +182,10 @@ mod test {
 
         let c = super::add_mat_same_storage(&a, &b).unwrap();
         let c_true = mat1_plus_mat2();
-        assert_eq!(c.indptr(), c_true.indptr());
-        assert_eq!(c.indices(), c_true.indices());
-        assert_eq!(c.data(), c_true.data());
+        assert_eq!(c, c_true);
+
+        let c = &a + &b;
+        assert_eq!(c, c_true);
     }
 
     #[test]
@@ -194,9 +195,10 @@ mod test {
 
         let c = super::sub_mat_same_storage(&a, &b).unwrap();
         let c_true = mat1_minus_mat2();
-        assert_eq!(c.indptr(), c_true.indptr());
-        assert_eq!(c.indices(), c_true.indices());
-        assert_eq!(c.data(), c_true.data());
+        assert_eq!(c, c_true);
+
+        let c = &a - &b;
+        assert_eq!(c, c_true);
     }
 
     #[test]

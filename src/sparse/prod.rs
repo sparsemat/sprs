@@ -137,10 +137,13 @@ where N: Num + Copy {
         for wval in workspace.iter_mut() {
             *wval = None;
         }
-        // accumulate the row values
-        for (_, rvec) in rhs.outer_iterator() {
-            for (col_ind, lval, rval) in lvec.iter().nnz_zip(rvec.iter()) {
-                let wval = &mut workspace[col_ind];
+        for (lcol, lval) in lvec.iter() {
+            // we can't be out of bounds thanks to the checks of dimension
+            // compatibility and the structure check of CsMat. Therefore it
+            // should be safe to call into an unsafe version of outer_view
+            let rvec = rhs.outer_view(lcol).unwrap();
+            for (rcol, rval) in rvec.iter() {
+                let wval = &mut workspace[rcol];
                 let prod = lval * rval;
                 match wval {
                     &mut None => *wval = Some(prod),
@@ -160,6 +163,7 @@ mod test {
     use sparse::csmat::{CsMat};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
+    use test_data::{mat1, mat1_self_matprod};
 
     #[test]
     fn mul_csc_vec() {
@@ -210,8 +214,17 @@ mod test {
         let eye: CsMat<i32, Vec<usize>, Vec<i32>> = CsMat::eye(CSR, 10);
         let mut workspace = [None; 10];
         let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
-        assert_eq!(eye.indptr(), res.indptr());
-        assert_eq!(eye.indices(), res.indices());
-        assert_eq!(eye.data(), res.data());
+        assert_eq!(eye, res);
+
+        let res = &eye * &eye;
+        assert_eq!(eye, res);
+    }
+
+    #[test]
+    fn mul_csr_csr() {
+        let a = mat1();
+        let res = &a * &a;
+        let expected_output = mat1_self_matprod();
+        assert_eq!(expected_output, res);
     }
 }

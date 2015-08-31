@@ -16,7 +16,7 @@ use std::mem;
 use num::traits::Num;
 
 use sparse::permutation::{Permutation};
-use sparse::vec::{CsVec};
+use sparse::vec::{CsVec, CsVecView};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
@@ -394,6 +394,18 @@ where N: Copy,
             CSR => self.at_outer_inner(&(i,j)),
             CSC => self.at_outer_inner(&(j,i))
         }
+    }
+
+    /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
+    pub fn outer_view(&self, i: usize) -> Option<CsVecView<N>> {
+        if i >= self.outer_dims() {
+            return None;
+        }
+        let start = self.indptr[i];
+        let stop = self.indptr[i+1];
+        Some(CsVecView::new_borrowed(self.inner_dims(),
+                                     &self.indices[start..stop],
+                                     &self.data[start..stop]))
     }
 
     pub fn indptr(&self) -> &[usize] {
