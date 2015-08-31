@@ -262,15 +262,12 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
-    pub fn append_outer(mut self, data: &[Option<N>]) -> Self {
+    pub fn append_outer(mut self, data: &[N]) -> Self where N: Num {
         for (inner_ind, val) in data.iter().enumerate() {
-            match *val {
-                None => (),
-                Some(ref scalar) => {
-                    self.indices.push(inner_ind);
-                    self.data.push(*scalar);
-                    self.nnz += 1;
-                }
+            if *val != N::zero() {
+                self.indices.push(inner_ind);
+                self.data.push(*val);
+                self.nnz += 1;
             }
         }
         match self.storage {

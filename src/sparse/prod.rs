@@ -62,7 +62,7 @@ where N: Num + Copy {
 ///            rhs.cols()
 pub fn csr_mul_csr<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
-                                  workspace: &mut[Option<N>]
+                                  workspace: &mut[N]
                                  ) -> Result<CsMatVec<N>, SprsError>
 where
 N: Num + Copy,
@@ -82,7 +82,7 @@ Mat2: SpMatView<N> {
 ///            lhs.lines()
 pub fn csc_mul_csc<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
-                                  workspace: &mut[Option<N>]
+                                  workspace: &mut[N]
                                  ) -> Result<CsMatVec<N>, SprsError>
 where
 N: Num + Copy,
@@ -94,26 +94,26 @@ Mat2: SpMatView<N> {
 }
 
 /// Allocate the appropriate workspace for a CSR-CSR product
-pub fn workspace_csr<N, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<Option<N>>
-where N: Copy,
+pub fn workspace_csr<N, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
+where N: Copy + Num,
       Mat1: SpMatView<N>,
       Mat2: SpMatView<N> {
     let len = rhs.borrowed().cols();
-    vec![None; len]
+    vec![N::zero(); len]
 }
 
 /// Allocate the appropriate workspace for a CSC-CSC product
-pub fn workspace_csc<N, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<Option<N>>
-where N: Copy,
+pub fn workspace_csc<N, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<N>
+where N: Copy + Num,
       Mat1: SpMatView<N>,
       Mat2: SpMatView<N> {
     let len = lhs.borrowed().rows();
-    vec![None; len]
+    vec![N::zero(); len]
 }
 
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
-                           workspace: &mut[Option<N>]
+                           workspace: &mut[N]
                           ) -> Result<CsMatVec<N>, SprsError>
 where N: Num + Copy {
     let res_rows = lhs.rows();
@@ -135,8 +135,9 @@ where N: Num + Copy {
     for (_, lvec) in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
-            *wval = None;
+            *wval = N::zero();
         }
+        // accumulate the resulting row
         for (lcol, lval) in lvec.iter() {
             // we can't be out of bounds thanks to the checks of dimension
             // compatibility and the structure check of CsMat. Therefore it
@@ -145,10 +146,7 @@ where N: Num + Copy {
             for (rcol, rval) in rvec.iter() {
                 let wval = &mut workspace[rcol];
                 let prod = lval * rval;
-                match wval {
-                    &mut None => *wval = Some(prod),
-                    &mut Some(ref mut acc) => *acc = *acc + prod
-                }
+                *wval = *wval + prod;
             }
         }
         // compress the row into the resulting matrix
@@ -212,7 +210,7 @@ mod test {
     #[test]
     fn mul_csr_csr_identity() {
         let eye: CsMat<i32, Vec<usize>, Vec<i32>> = CsMat::eye(CSR, 10);
-        let mut workspace = [None; 10];
+        let mut workspace = [0; 10];
         let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
         assert_eq!(eye, res);
 
