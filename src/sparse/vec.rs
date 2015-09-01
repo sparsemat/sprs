@@ -2,22 +2,31 @@
 ///
 
 use std::iter::{Zip, Peekable, FilterMap};
-use std::ops::{Deref};
+use std::ops::{Deref, Mul};
 use std::cmp;
 use std::slice::{Iter};
 
+use num::traits::Num;
+
 use sparse::permutation::Permutation;
+use sparse::csmat::{CsMat, CsMatView};
+use sparse::csmat::CompressedStorage::{CSR, CSC};
 
 pub struct CsVec<N, IStorage, DStorage>
 where N: Clone,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
     dim: usize,
+    // FIXME: maybe CsMat could be more generic over its storage types
+    // to avoid having to allocate extra fields to CsVec only to be able to
+    // convert...
+    indptr: [usize; 2],
     indices : IStorage,
     data : DStorage
 }
 
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
+pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 pub struct VectorIterator<'a, N: 'a> {
     dim: usize,
@@ -176,6 +185,7 @@ impl<'a, N: 'a + Clone> CsVec<N, &'a[usize], &'a[N]> {
     -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             dim: n,
+            indptr: [0, indices.len()],
             indices: indices,
             data: data,
         }
@@ -187,8 +197,10 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
                      indices: Vec<usize>,
                      data: Vec<N>
                     ) -> CsVec<N, Vec<usize>, Vec<N>> {
+        // FIXME: should check its structure
         CsVec {
             dim: n,
+            indptr: [0, indices.len()],
             indices: indices,
             data: data
         }
@@ -197,6 +209,7 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
     pub fn empty(dim: usize) -> CsVec<N, Vec<usize>, Vec<N>> {
         CsVec {
             dim: dim,
+            indptr: [0, 0],
             indices: Vec::new(),
             data: Vec::new(),
         }
@@ -218,6 +231,7 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
             Some(&last_ind) => assert!(ind > last_ind)
         }
         assert!(ind <= self.dim);
+        self.indptr[1] += 1;
         self.indices.push(ind);
         self.data.push(val);
     }
@@ -246,6 +260,7 @@ DStorage: Deref<Target=[N]> {
     pub fn borrowed(&self) -> CsVec<N, &[usize], &[N]> {
         CsVec {
             dim: self.dim,
+            indptr: self.indptr,
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -253,7 +268,7 @@ DStorage: Deref<Target=[N]> {
 }
 
 impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where N: 'a + Clone,
+where N: 'a + Copy,
 IStorage: 'a + Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
@@ -293,7 +308,73 @@ DStorage: Deref<Target=[N]> {
     pub fn check_structure(&self) -> bool {
         self.indices.windows(2).all(|x| x[0] < x[1])
     }
+
+    pub fn to_owned(&self) -> CsVecOwned<N> {
+        CsVec {
+            dim: self.dim,
+            indptr: self.indptr,
+            indices: self.indices.to_vec(),
+            data: self.data.to_vec(),
+        }
+    }
+
+    pub fn row_view(&self) -> CsMatView<N> {
+        // TODO: don't check the structure (requires a structure check at
+        // vec creation)
+        CsMatView::from_slices(CSR, 1, self.dim,
+                               &self.indptr[..],
+                               &self.indices[..],
+                               &self.data[..]).unwrap()
+    }
+
+    pub fn col_view(&self) -> CsMatView<N> {
+        // TODO: don't check the structure (requires a structure check at
+        // vec creation)
+        CsMatView::from_slices(CSC, self.dim, 1,
+                               &self.indptr[..],
+                               &self.indices[..],
+                               &self.data[..]).unwrap()
+    }
 }
+
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsMat<N, IS2, DS2>>
+for &'a CsVec<N, IS1, DS1>
+where N: 'a + Copy + Num + Default,
+      IS1: 'a + Deref<Target=[usize]>,
+      DS1: 'a + Deref<Target=[N]>,
+      IS2: 'b + Deref<Target=[usize]>,
+      DS2: 'b + Deref<Target=[N]> {
+
+    type Output = CsVecOwned<N>;
+
+    fn mul(self, rhs: &CsMat<N, IS2, DS2>) -> CsVecOwned<N> {
+        (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
+    }
+}
+
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsVec<N, IS2, DS2>>
+for &'a CsMat<N, IS1, DS1>
+where N: Copy + Num + Default,
+      IS1: Deref<Target=[usize]>,
+      DS1: Deref<Target=[N]>,
+      IS2: Deref<Target=[usize]>,
+      DS2: Deref<Target=[N]> {
+
+    type Output = CsVecOwned<N>;
+
+    fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
+        if self.is_csr() {
+            // FIXME: a specialized CSR-vec multiply algorithm would be more
+            // efficient
+            (&self.to_other_storage()
+             * &rhs.col_view()).outer_view(0).unwrap().to_owned()
+        }
+        else {
+            (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod test {
