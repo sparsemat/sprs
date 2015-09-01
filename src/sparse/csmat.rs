@@ -723,7 +723,7 @@ where N: 'a + Copy + Num + Default,
             }
             (CSC, CSR) => {
                 let mut workspace = prod::workspace_csc(self, rhs);
-                prod::csc_mul_csc(&self.to_other_storage(), rhs,
+                prod::csc_mul_csc(self, &rhs.to_other_storage(),
                                   &mut workspace).unwrap()
             }
             (CSC, CSC) => {

@@ -241,4 +241,17 @@ mod test {
         assert_eq!(expected_output, res);
 
     }
+
+    #[test]
+    fn mul_csc_csr() {
+        let a = mat1();
+        let a_ = mat1_csc();
+        let expected_output = mat1_self_matprod();
+
+        let res = &a * &a_;
+        assert_eq!(expected_output, res);
+
+        let res = (&a_ * &a).to_other_storage();
+        assert_eq!(expected_output, res);
+    }
 }
