@@ -9,6 +9,7 @@ use std::slice::{Iter};
 use num::traits::Num;
 
 use sparse::permutation::Permutation;
+use sparse::prod;
 use sparse::csmat::{CsMat, CsMatView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 
@@ -370,10 +371,7 @@ where N: Copy + Num + Default,
 
     fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
         if self.is_csr() {
-            // FIXME: a specialized CSR-vec multiply algorithm would be more
-            // efficient
-            (&self.to_other_storage()
-             * &rhs.col_view()).outer_view(0).unwrap().to_owned()
+            prod::csr_mul_csvec(self.borrowed(), rhs.borrowed())
         }
         else {
             (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
