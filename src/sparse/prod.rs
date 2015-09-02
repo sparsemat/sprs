@@ -1,7 +1,7 @@
 ///! Sparse matrix product
 
-use std::ops::{Deref};
 use sparse::csmat::{CsMatVec, CsMatView};
+use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
 use errors::SprsError;
@@ -63,7 +63,7 @@ where N: Num + Copy {
 ///            rhs.cols()
 pub fn csr_mul_csr<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
-                                  workspace: &mut[Option<N>]
+                                  workspace: &mut[N]
                                  ) -> Result<CsMatVec<N>, SprsError>
 where
 N: Num + Copy,
@@ -72,9 +72,49 @@ Mat2: SpMatView<N> {
     csr_mul_csr_impl(lhs.borrowed(), rhs.borrowed(), workspace)
 }
 
+/// Perform a matrix multiplication for matrices sharing the same storage order.
+///
+/// This method assumes a CSC storage order, and uses free transposition to
+/// invoke the CSR method
+///
+/// lhs: left hand size matrix
+/// rhs: right hand size matrix
+/// workspace: used to accumulate the line values. Should be of length
+///            lhs.lines()
+pub fn csc_mul_csc<N, Mat1, Mat2>(lhs: &Mat1,
+                                  rhs: &Mat2,
+                                  workspace: &mut[N]
+                                 ) -> Result<CsMatVec<N>, SprsError>
+where
+N: Num + Copy,
+Mat1: SpMatView<N>,
+Mat2: SpMatView<N> {
+    csr_mul_csr_impl(rhs.transpose_view(),
+                     lhs.transpose_view(),
+                     workspace).map(|x| x.transpose_into())
+}
+
+/// Allocate the appropriate workspace for a CSR-CSR product
+pub fn workspace_csr<N, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
+where N: Copy + Num,
+      Mat1: SpMatView<N>,
+      Mat2: SpMatView<N> {
+    let len = rhs.borrowed().cols();
+    vec![N::zero(); len]
+}
+
+/// Allocate the appropriate workspace for a CSC-CSC product
+pub fn workspace_csc<N, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<N>
+where N: Copy + Num,
+      Mat1: SpMatView<N>,
+      Mat2: SpMatView<N> {
+    let len = lhs.borrowed().rows();
+    vec![N::zero(); len]
+}
+
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
-                           workspace: &mut[Option<N>]
+                           workspace: &mut[N]
                           ) -> Result<CsMatVec<N>, SprsError>
 where N: Num + Copy {
     let res_rows = lhs.rows();
@@ -96,17 +136,18 @@ where N: Num + Copy {
     for (_, lvec) in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
-            *wval = None;
+            *wval = N::zero();
         }
-        // accumulate the row values
-        for (_, rvec) in rhs.outer_iterator() {
-            for (col_ind, lval, rval) in lvec.iter().nnz_zip(rvec.iter()) {
-                let wval = &mut workspace[col_ind];
+        // accumulate the resulting row
+        for (lcol, lval) in lvec.iter() {
+            // we can't be out of bounds thanks to the checks of dimension
+            // compatibility and the structure check of CsMat. Therefore it
+            // should be safe to call into an unsafe version of outer_view
+            let rvec = rhs.outer_view(lcol).unwrap();
+            for (rcol, rval) in rvec.iter() {
+                let wval = &mut workspace[rcol];
                 let prod = lval * rval;
-                match wval {
-                    &mut None => *wval = Some(prod),
-                    &mut Some(ref mut acc) => *acc = *acc + prod
-                }
+                *wval = *wval + prod;
             }
         }
         // compress the row into the resulting matrix
@@ -116,11 +157,31 @@ where N: Num + Copy {
     Ok(res)
 }
 
+/// CSR-vector multiplication
+pub fn csr_mul_csvec<N>(lhs: CsMatView<N>,
+                        rhs: CsVecView<N>) -> Result<CsVecOwned<N>, SprsError>
+where N: Copy + Num {
+    if lhs.cols() != rhs.dim() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    let mut res = CsVecOwned::empty(lhs.rows());
+    for (row_ind, lvec) in lhs.outer_iterator() {
+        let val = lvec.dot(&rhs);
+        if val != N::zero() {
+            res.append(row_ind, val);
+        }
+    }
+    Ok(res)
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::{CsMat};
+    use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
+    use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
+                    mat1_csc, mat4, mat1_csc_matprod_mat4};
 
     #[test]
     fn mul_csc_vec() {
@@ -169,10 +230,91 @@ mod test {
     #[test]
     fn mul_csr_csr_identity() {
         let eye: CsMat<i32, Vec<usize>, Vec<i32>> = CsMat::eye(CSR, 10);
-        let mut workspace = [None; 10];
+        let mut workspace = [0; 10];
         let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
-        assert_eq!(eye.indptr(), res.indptr());
-        assert_eq!(eye.indices(), res.indices());
-        assert_eq!(eye.data(), res.data());
+        assert_eq!(eye, res);
+
+        let res = &eye * &eye;
+        assert_eq!(eye, res);
+    }
+
+    #[test]
+    fn mul_csr_csr() {
+        let a = mat1();
+        let res = &a * &a;
+        let expected_output = mat1_self_matprod();
+        assert_eq!(expected_output, res);
+
+        let b = mat2();
+        let res = &a * &b;
+        let expected_output = mat1_matprod_mat2();
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csc_csc() {
+        let a = mat1_csc();
+        let b = mat4();
+        let res = &a * &b;
+        let expected_output = mat1_csc_matprod_mat4();
+        assert_eq!(expected_output, res);
+
+    }
+
+    #[test]
+    fn mul_csc_csr() {
+        let a = mat1();
+        let a_ = mat1_csc();
+        let expected_output = mat1_self_matprod();
+
+        let res = &a * &a_;
+        assert_eq!(expected_output, res);
+
+        let res = (&a_ * &a).to_other_storage();
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csr_csvec() {
+        let a = mat1();
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let res = &a * &v;
+        let expected_output = CsVec::new_owned(5,
+                                               vec![0, 1, 2],
+                                               vec![3., 5., 5.]);
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csvec_csr() {
+        let a = mat1();
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let res = &v * &a;
+        let expected_output = CsVec::new_owned(5,
+                                               vec![2, 3],
+                                               vec![8., 11.]);
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csc_csvec() {
+        let a = mat1_csc();
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let res = &a * &v;
+        let expected_output = CsVec::new_owned(5,
+                                               vec![0, 1, 2],
+                                               vec![3., 5., 5.]);
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csvec_csc() {
+        let a = mat1_csc();
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let res = &v * &a;
+        let expected_output = CsVec::new_owned(5,
+                                               vec![2, 3],
+                                               vec![8., 11.]);
+        assert_eq!(expected_output, res);
     }
 }

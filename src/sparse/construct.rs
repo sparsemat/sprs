@@ -156,8 +156,7 @@ mod test {
         let a = mat1();
         let c = mat3();
         let d = mat4();
-        let res: Result<CsMatVec<f64>, _> =
-            super::same_storage_fast_stack(&[]);
+        let _: Result<CsMatVec<f64>, _> = super::same_storage_fast_stack(&[]);
         let res = super::same_storage_fast_stack(&[a.borrowed(), c.borrowed()]);
         assert_eq!(res, Err(IncompatibleDimensions));
         let res = super::same_storage_fast_stack(&[a.borrowed(), d.borrowed()]);

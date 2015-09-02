@@ -11,12 +11,15 @@
 use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{Windows};
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Add, Sub, Mul};
 use std::mem;
 use num::traits::Num;
 
 use sparse::permutation::{Permutation};
-use sparse::vec::{CsVec};
+use sparse::vec::{CsVec, CsVecView};
+use sparse::compressed::SpMatView;
+use sparse::binop;
+use sparse::prod;
 
 pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
@@ -259,15 +262,12 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
-    pub fn append_outer(mut self, data: &[Option<N>]) -> Self {
+    pub fn append_outer(mut self, data: &[N]) -> Self where N: Num {
         for (inner_ind, val) in data.iter().enumerate() {
-            match *val {
-                None => (),
-                Some(ref scalar) => {
-                    self.indices.push(inner_ind);
-                    self.data.push(*scalar);
-                    self.nnz += 1;
-                }
+            if *val != N::zero() {
+                self.indices.push(inner_ind);
+                self.data.push(*val);
+                self.nnz += 1;
             }
         }
         match self.storage {
@@ -393,6 +393,18 @@ where N: Copy,
         }
     }
 
+    /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
+    pub fn outer_view(&self, i: usize) -> Option<CsVecView<N>> {
+        if i >= self.outer_dims() {
+            return None;
+        }
+        let start = self.indptr[i];
+        let stop = self.indptr[i+1];
+        Some(CsVecView::new_borrowed(self.inner_dims(),
+                                     &self.indices[start..stop],
+                                     &self.data[start..stop]))
+    }
+
     pub fn indptr(&self) -> &[usize] {
         &self.indptr[..]
     }
@@ -425,6 +437,20 @@ where N: Copy,
     pub fn transpose_into(mut self) -> Self {
         self.transpose_mut();
         self
+    }
+
+    /// Transposed view of this matrix
+    /// No allocation required (this is simply a storage order change)
+    pub fn transpose_view(&self) -> CsMatView<N> {
+        CsMatView {
+            storage: self.storage.other_storage(),
+            nrows: self.ncols,
+            ncols: self.nrows,
+            nnz: self.nnz,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
     }
 
     pub fn to_owned(&self) -> CsMatVec<N> {
@@ -624,6 +650,86 @@ mod raw {
         let mut last = 0;
         for iptr in indptr.iter_mut() {
             swap(iptr, &mut last);
+        }
+    }
+}
+
+impl<'a, 'b, N, IStorage, DStorage, Mat> Add<&'b Mat>
+for &'a CsMat<N, IStorage, DStorage>
+where N: 'a + Copy + Num + Default,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: 'a + Deref<Target=[N]>,
+      Mat: SpMatView<N> {
+    type Output = CsMatVec<N>;
+
+    fn add(self, rhs: &'b Mat) -> CsMatVec<N> {
+        if self.storage() != rhs.borrowed().storage() {
+            return binop::add_mat_same_storage(
+                self, &rhs.borrowed().to_other_storage()).unwrap()
+        }
+        binop::add_mat_same_storage(self, rhs).unwrap()
+    }
+}
+
+impl<'a, 'b, N, IStorage, DStorage, Mat> Sub<&'b Mat>
+for &'a CsMat<N, IStorage, DStorage>
+where N: 'a + Copy + Num + Default,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: 'a + Deref<Target=[N]>,
+      Mat: SpMatView<N> {
+    type Output = CsMatVec<N>;
+
+    fn sub(self, rhs: &'b Mat) -> CsMatVec<N> {
+        if self.storage() != rhs.borrowed().storage() {
+            return binop::sub_mat_same_storage(
+                self, &rhs.borrowed().to_other_storage()).unwrap()
+        }
+        binop::sub_mat_same_storage(self, rhs).unwrap()
+    }
+}
+
+impl<'a,N, IStorage, DStorage> Mul<N>
+for &'a CsMat<N, IStorage, DStorage>
+where N: 'a + Copy + Num,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: 'a + Deref<Target=[N]> {
+    type Output = CsMatVec<N>;
+
+    fn mul(self, rhs: N) -> CsMatVec<N> {
+        binop::scalar_mul_mat(self, rhs)
+    }
+}
+
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsMat<N, IS2, DS2>>
+for &'a CsMat<N, IS1, DS1>
+where N: 'a + Copy + Num + Default,
+      IS1: 'a + Deref<Target=[usize]>,
+      DS1: 'a + Deref<Target=[N]>,
+      IS2: 'b + Deref<Target=[usize]>,
+      DS2: 'b + Deref<Target=[N]> {
+    type Output = CsMatVec<N>;
+
+    fn mul(self, rhs: &'b CsMat<N, IS2, DS2>) -> CsMatVec<N> {
+        match (self.storage(), rhs.storage()) {
+            (CSR, CSR) => {
+                let mut workspace = prod::workspace_csr(self, rhs);
+                prod::csr_mul_csr(self, rhs, &mut workspace).unwrap()
+            }
+            (CSR, CSC) => {
+                let mut workspace = prod::workspace_csr(self, rhs);
+                prod::csr_mul_csr(self,
+                                  &rhs.to_other_storage(),
+                                  &mut workspace).unwrap()
+            }
+            (CSC, CSR) => {
+                let mut workspace = prod::workspace_csc(self, rhs);
+                prod::csc_mul_csc(self, &rhs.to_other_storage(),
+                                  &mut workspace).unwrap()
+            }
+            (CSC, CSC) => {
+                let mut workspace = prod::workspace_csc(self, rhs);
+                prod::csc_mul_csc(self, rhs, &mut workspace).unwrap()
+            }
         }
     }
 }

@@ -9,6 +9,9 @@ use std::ops::{Deref};
 pub trait SpMatView<N> {
     /// Return a view into the current matrix
     fn borrowed(&self) -> CsMatView<N>;
+
+    /// Return a view into the current matrix
+    fn transpose_view(&self) -> CsMatView<N>;
 }
 
 
@@ -21,4 +24,9 @@ where N: Copy,
     fn borrowed(&self) -> CsMatView<N> {
         self.borrowed()
     }
+
+    fn transpose_view(&self) -> CsMatView<N> {
+        self.transpose_view()
+    }
 }
+
