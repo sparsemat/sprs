@@ -1,15 +1,10 @@
-sprs, a sparse matrix library written in Rust
-=============================================
+sprs, sparse matrices for Rust
+==============================
 
 sprs implements some sparse matrix data structures and linear algebra
 algorithms.
 
-WARNING: experimental lib, neither API nor functionality stable
-
-License
--------
-
-MIT license. See LICENSE.txt
+WARNING: this library is still in development, its API is not stable yet.
 
 Features
 --------
@@ -17,56 +12,33 @@ Features
 Structures
 ..........
 
-- CSR/CSC matrix, able to operate on borrowed or owned data
+- CSR/CSC matrix
+- Sparse vector
 
 Operations
 ..........
 
-- sparse matrix vector product
-- sparse matrix matrix product
-- sparse matrix matrix addition
+- sparse matrix / sparse vector product
+- sparse matrix / sparse matrix product
+- sparse matrix / sparse matrix addition, subtraction
+- sparse vector / sparse vector addition, subtraction, dot product
 
 Algorithms
 ..........
 
 - Outer iterator on compressed sparse matrices
-- CSC/dense vector product
-- CSR/dense vector product
-- sparse Cholesky decomposition
+- sparse vector iteration
+- sparse vectors joint non zero iterations
+- simple sparse Cholesky decomposition
+
+
+Examples
+--------
 
 TODO
-----
 
-Structures
-..........
+License
+-------
 
-- CSC/CSR tests with more trickier shapes/data
-- lower/upper triangular CSC/CSR matrices
-- block-sparse matrices
+MIT license. See LICENSE.txt
 
-Operations
-..........
-
-- rebind operations with the corresponding traits
-
-Algorithms
-..........
-
-- tests on the outer iterator
-- tests on the CSC/vector product
-- sparse triangular solve
-- sparse LU decomposition
-
-Misc
-....
-
-- Python bindings
-
-
-API guidelines
---------------
-
-Each exposed functionality should, if deemed necessary for performance reasons,
-be exposed as a low-level C-style function (similar to BLAS API), and also
-exposed as a high level API with good defaults for the performance related
-arguments.
