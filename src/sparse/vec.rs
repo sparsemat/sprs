@@ -372,7 +372,7 @@ where N: Copy + Num + Default,
 
     fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
         if self.is_csr() {
-            prod::csr_mul_csvec(self.borrowed(), rhs.borrowed())
+            prod::csr_mul_csvec(self.borrowed(), rhs.borrowed()).unwrap()
         }
         else {
             (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()

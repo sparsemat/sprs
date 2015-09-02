@@ -158,8 +158,12 @@ where N: Num + Copy {
 }
 
 /// CSR-vector multiplication
-pub fn csr_mul_csvec<N>(lhs: CsMatView<N>, rhs: CsVecView<N>) -> CsVecOwned<N>
+pub fn csr_mul_csvec<N>(lhs: CsMatView<N>,
+                        rhs: CsVecView<N>) -> Result<CsVecOwned<N>, SprsError>
 where N: Copy + Num {
+    if lhs.cols() != rhs.dim() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
     let mut res = CsVecOwned::empty(lhs.rows());
     for (row_ind, lvec) in lhs.outer_iterator() {
         let val = lvec.dot(&rhs);
@@ -167,7 +171,7 @@ where N: Copy + Num {
             res.append(row_ind, val);
         }
     }
-    res
+    Ok(res)
 }
 
 #[cfg(test)]
