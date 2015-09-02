@@ -173,6 +173,7 @@ where N: Copy + Num {
 #[cfg(test)]
 mod test {
     use sparse::csmat::{CsMat};
+    use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
@@ -266,6 +267,17 @@ mod test {
         assert_eq!(expected_output, res);
 
         let res = (&a_ * &a).to_other_storage();
+        assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csr_csvec() {
+        let a = mat1();
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let res = &a * &v;
+        let expected_output = CsVec::new_owned(5,
+                                               vec![0, 1, 2],
+                                               vec![3., 5., 5.]);
         assert_eq!(expected_output, res);
     }
 }

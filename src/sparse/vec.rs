@@ -13,6 +13,7 @@ use sparse::prod;
 use sparse::csmat::{CsMat, CsMatView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 
+#[derive(PartialEq, Debug)]
 pub struct CsVec<N, IStorage, DStorage>
 where N: Clone,
 IStorage: Deref<Target=[usize]>,
