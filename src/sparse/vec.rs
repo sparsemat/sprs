@@ -427,4 +427,17 @@ mod test {
         assert_eq!(iter.next().unwrap(), Right((6, 6.5)));
         assert_eq!(iter.next().unwrap(), Both((7, 7., 7.5)));
     }
+
+    #[test]
+    fn dot_product() {
+        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let vec2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]);
+        let vec3 = CsVec::new_owned(8, vec![1, 2, 5, 6], vec![3.; 4]);
+
+        assert_eq!(0., vec1.dot(&vec2));
+        assert_eq!(4., vec1.dot(&vec1));
+        assert_eq!(16., vec2.dot(&vec2));
+        assert_eq!(6., vec1.dot(&vec3));
+        assert_eq!(12., vec2.dot(&vec3));
+    }
 }
