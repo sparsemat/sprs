@@ -3,6 +3,7 @@
 use sparse::csmat::{CsMat, CsMatVec, CsMatView};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
+use sparse::vec::{CsVec, CsVecView, CsVecOwned};
 use sparse::compressed::SpMatView;
 use errors::SprsError;
 
@@ -101,6 +102,7 @@ F: Fn(N, N) -> N {
                         out_indptr, out_indices, out_data).unwrap())
 }
 
+
 /// Raw implementation of scalar binary operation for compressed sparse matrices
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
@@ -143,9 +145,31 @@ F: Fn(N, N) -> N {
     nnz
 }
 
+pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
+                         rhs: CsVecView<N>, binop: F
+                        ) -> Result<CsVecOwned<N>, SprsError>
+where N: Num + Copy, F: Fn(N, N) -> N {
+    if lhs.dim() != rhs.dim() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    let mut res = CsVec::empty(lhs.dim());
+    let max_nnz = lhs.nnz() + rhs.nnz();
+    res.reserve_exact(max_nnz);
+    for elem in lhs.iter().nnz_or_zip(rhs.iter()) {
+        let (ind, binop_val) = match elem {
+            Left((ind, val)) => (ind, binop(val, N::zero())),
+            Right((ind, val)) => (ind, binop(N::zero(), val)),
+            Both((ind, lval, rval)) => (ind, binop(lval, rval)),
+        };
+        res.append(ind, binop_val);
+    }
+    Ok(res)
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMat;
+    use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
     use test_data::{mat1, mat2, mat1_times_2};
 
@@ -223,5 +247,23 @@ mod test {
         assert_eq!(c.data(), c_true.data());
     }
 
+    #[test]
+    fn csvec_binops() {
+        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let vec2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]);
+        let vec3 = CsVec::new_owned(8, vec![1, 2, 5, 6], vec![3.; 4]);
+
+        let res = &vec1 + &vec2;
+        let expected_output = CsVec::new_owned(
+            8, vec![0, 1, 2, 3, 4, 5, 6, 7],
+            vec![1., 2., 1., 2., 1., 2., 1., 2.]);
+        assert_eq!(expected_output, res);
+
+        let res = &vec1 + &vec3;
+        let expected_output = CsVec::new_owned(8,
+                                               vec![0, 1, 2, 4, 5, 6],
+                                               vec![1., 3., 4., 1., 3., 4.]);
+        assert_eq!(expected_output, res);
+    }
 
 }

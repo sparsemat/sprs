@@ -2,14 +2,14 @@
 ///
 
 use std::iter::{Zip, Peekable, FilterMap};
-use std::ops::{Deref, Mul};
+use std::ops::{Deref, Mul, Add, Sub};
 use std::cmp;
 use std::slice::{Iter};
 
 use num::traits::Num;
 
 use sparse::permutation::Permutation;
-use sparse::prod;
+use sparse::{prod, binop};
 use sparse::csmat::{CsMat, CsMatView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 
@@ -377,6 +377,38 @@ where N: Copy + Num + Default,
         else {
             (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
         }
+    }
+}
+
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Add<&'b CsVec<N, IS2, DS2>>
+for &'a CsVec<N, IS1, DS1>
+where N: Copy + Num,
+      IS1: Deref<Target=[usize]>,
+      DS1: Deref<Target=[N]>,
+      IS2: Deref<Target=[usize]>,
+      DS2: Deref<Target=[N]> {
+
+    type Output = CsVecOwned<N>;
+
+    fn add(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
+        let binop = |x, y| x + y;
+        binop::csvec_binop(self.borrowed(), rhs.borrowed(), binop).unwrap()
+    }
+}
+
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Sub<&'b CsVec<N, IS2, DS2>>
+for &'a CsVec<N, IS1, DS1>
+where N: Copy + Num,
+      IS1: Deref<Target=[usize]>,
+      DS1: Deref<Target=[N]>,
+      IS2: Deref<Target=[usize]>,
+      DS2: Deref<Target=[N]> {
+
+    type Output = CsVecOwned<N>;
+
+    fn sub(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
+        let binop = |x, y| x - y;
+        binop::csvec_binop(self.borrowed(), rhs.borrowed(), binop).unwrap()
     }
 }
 
