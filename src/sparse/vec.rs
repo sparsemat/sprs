@@ -335,6 +335,12 @@ DStorage: Deref<Target=[N]> {
                                &self.indices[..],
                                &self.data[..]).unwrap()
     }
+
+    pub fn dot<IS2, DS2>(&self, rhs: &CsVec<N, IS2, DS2>) -> N
+    where N: Num, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
+        self.iter().nnz_zip(rhs.iter()).map(|(_, lval, rval)| lval * rval)
+                                       .fold(N::zero(), |x, y| x + y)
+    }
 }
 
 impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsMat<N, IS2, DS2>>
