@@ -1,6 +1,7 @@
 ///! Sparse matrix product
 
 use sparse::csmat::{CsMatVec, CsMatView};
+use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
 use errors::SprsError;
@@ -154,6 +155,19 @@ where N: Num + Copy {
     }
     assert_eq!(res_rows, res.rows());
     Ok(res)
+}
+
+/// CSR-vector multiplication
+pub fn csr_mul_csvec<N>(lhs: CsMatView<N>, rhs: CsVecView<N>) -> CsVecOwned<N>
+where N: Copy + Num {
+    let mut res = CsVecOwned::empty(lhs.rows());
+    for (row_ind, lvec) in lhs.outer_iterator() {
+        let val = lvec.dot(&rhs);
+        if val != N::zero() {
+            res.append(row_ind, val);
+        }
+    }
+    res
 }
 
 #[cfg(test)]
