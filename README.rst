@@ -1,8 +1,8 @@
 sprs, sparse matrices for Rust
 ==============================
 
-[![Build Status](https://travis-ci.org/vbarrielle/sprs.svg?branch=master)](https://travis-ci.org/vbarrielle/sprs)
-
+.. image:: https://travis-ci.org/vbarrielle/sprs.svg?branch=master
+    :target: https://travis-ci.org/vbarrielle/sprs
 
 sprs implements some sparse matrix data structures and linear algebra
 algorithms.
