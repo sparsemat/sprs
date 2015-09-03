@@ -1,6 +1,5 @@
 /*!
-sprs
-====
+# sprs
 
 sprs is a sparse linear algebra library for Rust.
 
@@ -11,7 +10,9 @@ extern crate num;
 pub mod sparse;
 pub mod errors;
 
-pub use sparse::{CsMatVec, CsMatView};
+pub use sparse::{CsMat, CsMatVec, CsMatView};
+pub use sparse::vec::{CsVec, CsVecView, CsVecOwned};
+pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
 
 #[cfg(test)]

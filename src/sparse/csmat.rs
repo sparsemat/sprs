@@ -24,6 +24,9 @@ use sparse::prod;
 pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
 
+/// Describe the storage of a CsMat
+/// CSR: compressed row storage
+/// CSC: compressed column storage
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressedStorage {
     CSR,
@@ -150,6 +153,7 @@ impl <'iter, N: 'iter + Clone> ExactSizeIterator for OuterIterator<'iter, N> {
     }
 }
 
+/// Compressed matrix in the CSR or CSC format.
 #[derive(PartialEq, Debug)]
 pub struct CsMat<N, IndStorage, DataStorage>
 where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
@@ -205,6 +209,8 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         }
     }
 
+    /// Create a new CsMat representing the zero matrix.
+    /// Hence it has no non-zero elements.
     pub fn zero(rows: usize, cols: usize) -> CsMatVec<N> {
         CsMat {
             storage: CSR,
@@ -297,6 +303,14 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
 
 impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
     /// Identity matrix
+    ///
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
     pub fn eye(storage: CompressedStorage, dim: usize
               ) -> CsMat<N, Vec<usize>, Vec<N>> {
         let n = dim;
