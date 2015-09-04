@@ -364,6 +364,7 @@ where N: Copy,
 
     /// Return an outer iterator over P*A, as well as the proper permutation
     /// for iterating over the inner dimension of P*A*P^T
+    /// Unstable
     pub fn outer_iterator_perm<'a, 'perm: 'a>(
         &'a self, perm: &'perm Permutation<&'perm [usize]>)
     -> OuterIteratorPerm<'a, 'perm, N> {
@@ -380,22 +381,30 @@ where N: Copy,
         }
     }
 
+    /// The underlying storage of this matrix
     pub fn storage(&self) -> CompressedStorage {
         self.storage
     }
 
+    /// The number of rows of this matrix
     pub fn rows(&self) -> usize {
         self.nrows
     }
 
+    /// The number of cols of this matrix
     pub fn cols(&self) -> usize {
         self.ncols
     }
 
+    /// The number of non-zero elements this matrix stores.
+    /// This is often relevant for the complexity of most sparse matrix
+    /// algorithms, which are often linear in the number of non-zeros.
     pub fn nb_nonzero(&self) -> usize {
         self.nnz
     }
 
+    /// Number of outer dimensions, that ie equal to self.rows() for a CSR
+    /// matrix, and equal to self.cols() for a CSC matrix
     pub fn outer_dims(&self) -> usize {
         match self.storage {
             CSR => self.nrows,
@@ -403,6 +412,8 @@ where N: Copy,
         }
     }
 
+    /// Number of inner dimensions, that ie equal to self.cols() for a CSR
+    /// matrix, and equal to self.rows() for a CSC matrix
     pub fn inner_dims(&self) -> usize {
         match self.storage {
             CSC => self.nrows,
@@ -410,6 +421,13 @@ where N: Copy,
         }
     }
 
+    /// Access the element located at row i and column j.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator() which accesses
+    /// elements in storage order.
     pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N> {
         assert!(i < self.nrows);
         assert!(j < self.ncols);
@@ -432,22 +450,47 @@ where N: Copy,
                                      &self.data[start..stop]))
     }
 
+    /// The array of offsets in the indices() and data() slices.
+    /// The elements of the slice at outer dimension i
+    /// are available between the elements indptr[i] and indptr[i+1]
+    /// in the indices() and data() slices.
+    ///
+    /// # Example
+    /// 
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let eye : CsMat<f64, _, _> = CsMat::eye(sprs::CSR, 5);
+    /// // get the element of row 3
+    /// // there is only one element in this row, with a column index of 3
+    /// // and a value of 1.
+    /// let loc = eye.indptr()[3];
+    /// assert_eq!(eye.indptr()[4], loc + 1);
+    /// assert_eq!(loc, 3);
+    /// assert_eq!(eye.indices()[loc], 3);
+    /// assert_eq!(eye.data()[loc], 1.);
+    /// ```
     pub fn indptr(&self) -> &[usize] {
         &self.indptr[..]
     }
 
+    /// The inner dimension location for each non-zero value. See
+    /// the documentation of indptr() for more explanations.
     pub fn indices(&self) -> &[usize] {
         &self.indices[..]
     }
 
+    /// The non-zero values. See the documentation of indptr()
+    /// for more explanations.
     pub fn data(&self) -> &[N] {
         &self.data[..]
     }
 
+    /// Test whether the matrix is in CSC storage
     pub fn is_csc(&self) -> bool {
         self.storage == CSC
     }
 
+    /// Test whether the matrix is in CSR storage
     pub fn is_csr(&self) -> bool {
         self.storage == CSR
     }
@@ -480,6 +523,8 @@ where N: Copy,
         }
     }
 
+    /// Get an owned version of this matrix. If the matrix was already
+    /// owned, this will make a deep copy.
     pub fn to_owned(&self) -> CsMatVec<N> {
         CsMatVec {
             storage: self.storage,
@@ -492,6 +537,13 @@ where N: Copy,
         }
     }
 
+    /// Access an element given its outer_ind and inner_ind.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator() which accesses
+    /// elements in storage order.
     pub fn at_outer_inner(&self, &(outer_ind, inner_ind): &(usize, usize))
     -> Option<N> {
         let begin = self.indptr[outer_ind];
