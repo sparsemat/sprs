@@ -336,6 +336,19 @@ where N: Copy,
       DataStorage: Deref<Target=[N]> {
 
     /// Return an outer iterator for the matrix
+    /// 
+    /// This can be used for iterating over the rows (resp. cols) of
+    /// a CSR (resp. CSC) matrix.
+    /// 
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// for (row_ind, row_vec) in eye.outer_iterator() {
+    ///     let (col_ind, val): (_, f64) = row_vec.iter().next().unwrap();
+    ///     assert_eq!(row_ind, col_ind);
+    ///     assert_eq!(val, 1.);
+    /// }
+    /// ```
     pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N> {
         let inner_len = match self.storage {
             CSR => self.ncols,
