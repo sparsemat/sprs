@@ -20,6 +20,7 @@ use sparse::vec::{CsVec, CsVecView};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
+use errors::SprsError;
 
 pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
@@ -173,7 +174,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         )
-    -> Option<CsMat<N, &'a[usize], &'a[N]>> {
+    -> Result<CsMat<N, &'a[usize], &'a[N]>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : nrows,
@@ -183,10 +184,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
             indices : indices,
             data : data,
         };
-        match m.check_compressed_structure() {
-            None => None,
-            _ => Some(m)
-        }
+        m.check_compressed_structure().and(Ok(m))
     }
 }
 
@@ -251,7 +249,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
         )
-    -> Option<CsMat<N, Vec<usize>, Vec<N>>> {
+    -> Result<CsMat<N, Vec<usize>, Vec<N>>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : nrows,
@@ -261,10 +259,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
             indices : indices,
             data : data,
         };
-        match m.check_compressed_structure() {
-            None => None,
-            _ => Some(m)
-        }
+        m.check_compressed_structure().and(Ok(m))
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
@@ -563,7 +558,13 @@ where N: Copy,
     }
 
     /// Check the structure of CsMat components
-    fn check_compressed_structure(&self) -> Option<usize> {
+    /// This will ensure that:
+    /// - indptr is of length outer_dim() + 1
+    /// - indices and data have the same length, nnz == indptr[outer_dims()]
+    /// - indptr is sorted
+    /// - indices is sorted for each outer slice
+    /// - indices are lower than inner_dims()
+    pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
         let inner = match self.storage {
             CompressedStorage::CSR => self.ncols,
             CompressedStorage::CSC => self.nrows
@@ -573,41 +574,29 @@ where N: Copy,
             CompressedStorage::CSC => self.ncols
         };
         if self.indptr.len() != outer + 1 {
-            println!("CsMat indptr length incorrect");
-            return None;
+            return Err(SprsError::BadIndptrLength);
         }
         if self.indices.len() != self.data.len() {
-            println!("CsMat indices/data length incorrect");
-            return None;
+            return Err(SprsError::DataIndicesMismatch);
         }
         let nnz = self.indices.len();
         if nnz != self.nnz {
-            println!("CsMat nnz count incorrect");
-            return None;
+            return Err(SprsError::BadNnzCount);
         }
         if self.indptr.iter().max().unwrap() > &nnz {
-            println!("CsMat indptr values incoherent with nnz");
-            return None;
-        }
-        if self.indices.iter().max().unwrap_or(&0) >= &inner {
-            println!("CsMat indices values incoherent with ncols");
-            return None;
+            return Err(SprsError::OutOfBoundsIndptr);
         }
 
         if ! self.indptr.deref().windows(2).all(|x| x[0] <= x[1]) {
-            println!("CsMat indptr not sorted");
-            return None;
+            return Err(SprsError::UnsortedIndptr);
         }
 
         // check that the indices are sorted for each row
-        if ! self.outer_iterator().all(
-            | (_, vec) | { vec.check_structure() })
-        {
-            println!("CsMat indices not sorted for each outer ind");
-            return None;
+        for (_, vec) in self.outer_iterator() {
+            try!(vec.check_structure());
         }
 
-        Some(nnz)
+        Ok(())
     }
 
     /// Return a view into the current matrix
@@ -817,6 +806,7 @@ where N: 'a + Copy + Num + Default,
 mod test {
     use super::{CsMat};
     use super::CompressedStorage::{CSC, CSR};
+    use errors::SprsError;
     use test_data::{mat1, mat1_csc, mat1_times_2};
 
     #[test]
@@ -824,10 +814,8 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        let m = CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
+        assert!(m.is_ok());
     }
 
     #[test]
@@ -842,34 +830,27 @@ mod test {
         let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        match CsMat::from_slices(CSR, 3, 3, indptr_fail1, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_fail2, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_fail3, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_fail1, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_fail2, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_fail1) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_fail2) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
+        assert_eq!(CsMat::from_slices(CSR, 3, 3, indptr_fail1,
+                                      indices_ok, data_ok),
+                   Err(SprsError::BadIndptrLength));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_fail2, indices_ok, data_ok),
+                   Err(SprsError::OutOfBoundsIndptr));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_fail3, indices_ok, data_ok),
+                   Err(SprsError::UnsortedIndptr));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_fail1, data_ok),
+                   Err(SprsError::DataIndicesMismatch));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_fail2, data_ok),
+                   Err(SprsError::OutOfBoundsIndex));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_ok, data_fail1),
+                   Err(SprsError::DataIndicesMismatch));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_ok, data_fail2),
+                   Err(SprsError::DataIndicesMismatch));
     }
 
     #[test]
@@ -880,10 +861,9 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        match CsMat::from_slices(CSR, 5, 5, indptr, indices, data) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
+        assert_eq!(CsMat::from_slices(CSR, 5, 5,
+                                      indptr, indices, data),
+                   Err(SprsError::NonSortedIndices));
     }
 
     #[test]
@@ -893,14 +873,10 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        match CsMat::from_slices(CSR, 3, 4, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
-        match CsMat::from_slices(CSC, 4, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_slices(CSR, 3, 4,
+                                   indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::from_slices(CSC, 4, 3,
+                                   indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -910,14 +886,12 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        match CsMat::from_slices(CSR, 4, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSC, 3, 4, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
+        assert_eq!(CsMat::from_slices(CSR, 4, 3,
+                                      indptr_ok, indices_ok, data_ok),
+                   Err(SprsError::BadIndptrLength));
+        assert_eq!(CsMat::from_slices(CSC, 3, 4,
+                                      indptr_ok, indices_ok, data_ok),
+                   Err(SprsError::BadIndptrLength));
     }
 
 
@@ -926,10 +900,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match CsMat::from_slices(CSR, 3, 3, &indptr_ok, &indices_ok, &data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_slices(CSR, 3, 3,
+                                   &indptr_ok, &indices_ok, &data_ok).is_ok());
     }
 
     #[test]
@@ -937,10 +909,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match CsMat::from_vecs(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_vecs(CSR, 3, 3,
+                                 indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -950,10 +920,7 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        match CsMat::from_slices(CSR, 5, 5, indptr, indices, data) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_slices(CSR, 5, 5, indptr, indices, data).is_ok());
     }
 
     #[test]

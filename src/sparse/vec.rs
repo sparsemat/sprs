@@ -12,6 +12,7 @@ use sparse::permutation::Permutation;
 use sparse::{prod, binop};
 use sparse::csmat::{CsMat, CsMatView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
+use errors::SprsError;
 
 #[derive(PartialEq, Debug)]
 pub struct CsVec<N, IStorage, DStorage>
@@ -307,8 +308,19 @@ DStorage: Deref<Target=[N]> {
         self.data.len()
     }
 
-    pub fn check_structure(&self) -> bool {
-        self.indices.windows(2).all(|x| x[0] < x[1])
+    /// Check the sparse structure, namely that:
+    /// - indices is sorted
+    /// - indices are lower than dims()
+    pub fn check_structure(&self) -> Result<(), SprsError> {
+        if ! self.indices.windows(2).all(|x| x[0] < x[1]) {
+            return Err(SprsError::NonSortedIndices);
+        }
+
+        if self.indices.iter().max().unwrap_or(&0) >= &self.dim {
+            return Err(SprsError::OutOfBoundsIndex);
+        }
+
+        Ok(())
     }
 
     pub fn to_owned(&self) -> CsVecOwned<N> {

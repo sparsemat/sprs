@@ -10,4 +10,11 @@ pub enum SprsError {
     NotImplemented,
     EmptyBmatRow,
     EmptyBmatCol,
+    NonSortedIndices,
+    OutOfBoundsIndex,
+    BadIndptrLength,
+    DataIndicesMismatch,
+    BadNnzCount,
+    OutOfBoundsIndptr,
+    UnsortedIndptr,
 }
