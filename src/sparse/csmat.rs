@@ -26,15 +26,16 @@ pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
 
 /// Describe the storage of a CsMat
-/// CSR: compressed row storage
-/// CSC: compressed column storage
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressedStorage {
+    /// Compressed row storage
     CSR,
+    /// Compressed column storage
     CSC
 }
 
 impl CompressedStorage {
+    /// Get the other storage, ie return CSC if we were CSR, and vice versa
     pub fn other_storage(&self) -> CompressedStorage {
         match *self {
             CSR => CSC,
@@ -565,14 +566,8 @@ where N: Copy,
     /// - indices is sorted for each outer slice
     /// - indices are lower than inner_dims()
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
-        let inner = match self.storage {
-            CompressedStorage::CSR => self.ncols,
-            CompressedStorage::CSC => self.nrows
-        };
-        let outer = match self.storage {
-            CompressedStorage::CSR => self.nrows,
-            CompressedStorage::CSC => self.ncols
-        };
+        let outer = self.outer_dims();
+
         if self.indptr.len() != outer + 1 {
             return Err(SprsError::BadIndptrLength);
         }
@@ -600,7 +595,7 @@ where N: Copy,
     }
 
     /// Return a view into the current matrix
-    pub fn borrowed(&self) -> CsMat<N, &[usize], &[N]> {
+    pub fn borrowed(&self) -> CsMatView<N> {
         CsMat {
             storage: self.storage,
             nrows: self.nrows,
@@ -619,8 +614,8 @@ where N: Copy + Default,
       DataStorage: Deref<Target=[N]> {
 
     /// Create a matrix mathematically equal to this one, but with the
-    /// opposed storage.
-    pub fn to_other_storage(&self) -> CsMat<N, Vec<usize>, Vec<N>> {
+    /// opposed storage (a CSC matrix will be converted to CSR, and vice versa)
+    pub fn to_other_storage(&self) -> CsMatVec<N> {
         let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
@@ -632,6 +627,8 @@ where N: Copy + Default,
                          indptr, indices, data).unwrap()
     }
 
+    /// Create a new CSC matrix equivalent to this one.
+    /// A new matrix will be created even if this matrix was already CSC.
     pub fn to_csc(&self) -> CsMatVec<N> {
         match self.storage {
             CSR => self.to_other_storage(),
@@ -639,6 +636,8 @@ where N: Copy + Default,
         }
     }
 
+    /// Create a new CSR matrix equivalent to this one.
+    /// A new matrix will be created even if this matrix was already CSR.
     pub fn to_csr(&self) -> CsMatVec<N> {
         match self.storage {
             CSR => self.to_owned(),
@@ -654,6 +653,7 @@ N: Copy,
 IndStorage: DerefMut<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
 
+    /// Mutable access to the non zero values
     pub fn data_mut(&mut self) -> &mut [N] {
         &mut self.data[..]
     }
