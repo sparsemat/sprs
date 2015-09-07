@@ -6,6 +6,8 @@ use num::traits::Num;
 use sparse::compressed::SpMatView;
 use errors::SprsError;
 
+/// Multiply a sparse CSC matrix with a dense vector and accumulate the result
+/// into another dense vector
 pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
                               in_vec: &[N],
                               res_vec: &mut[N]) -> Result<(), SprsError>
@@ -29,6 +31,8 @@ where N: Num + Copy {
     Ok(())
 }
 
+/// Multiply a sparse CSR matrix with a dense vector and accumulate the result
+/// into another dense vector
 pub fn mul_acc_mat_vec_csr<N>(mat: CsMatView<N>,
                               in_vec: &[N],
                               res_vec: &mut[N]) -> Result<(), SprsError>
@@ -112,6 +116,8 @@ where N: Copy + Num,
     vec![N::zero(); len]
 }
 
+/// Actual implementation of CSR-CSR multiplication
+/// All other matrix products are implemented in terms of this one.
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
                            workspace: &mut[N]

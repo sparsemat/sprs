@@ -145,6 +145,7 @@ F: Fn(N, N) -> N {
     nnz
 }
 
+/// Binary operations for CsVec
 pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
                          rhs: CsVecView<N>, binop: F
                         ) -> Result<CsVecOwned<N>, SprsError>
