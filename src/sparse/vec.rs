@@ -436,6 +436,18 @@ DStorage: Deref<Target=[N]> {
         }
     }
 
+    /// Vector dot product
+    /// 
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsVec;
+    /// let v1 = CsVec::new_owned(8, vec![1, 2, 4, 6], vec![1.; 4]).unwrap();
+    /// let v2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
+    /// assert_eq!(2., v1.dot(&v2));
+    /// assert_eq!(4., v1.dot(&v1));
+    /// assert_eq!(16., v2.dot(&v2));
+    /// ```
     pub fn dot<IS2, DS2>(&self, rhs: &CsVec<N, IS2, DS2>) -> N
     where N: Num, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
         self.iter().nnz_zip(rhs.iter()).map(|(_, lval, rval)| lval * rval)
