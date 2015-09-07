@@ -10,7 +10,7 @@
 
 use std::iter::{Enumerate};
 use std::default::Default;
-use std::slice::{Windows};
+use std::slice::{self, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul};
 use std::mem;
 use num::traits::Num;
@@ -69,7 +69,7 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, N: 'iter + Clone>
+impl <'iter, N: 'iter + Copy>
 Iterator
 for OuterIterator<'iter, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -82,7 +82,7 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::new_borrowed(
+                let vec = CsVec::_new_borrowed_unchecked(
                     self.inner_len, indices, data);
                 Some((outer_ind, vec))
             }
@@ -97,7 +97,7 @@ for OuterIterator<'iter, N> {
 /// Permuted outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, 'perm: 'iter, N: 'iter + Clone>
+impl <'iter, 'perm: 'iter, N: 'iter + Copy>
 Iterator
 for OuterIteratorPerm<'iter, 'perm, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -111,7 +111,7 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let outer_ind_perm = self.perm.at(outer_ind);
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::new_borrowed(
+                let vec = CsVec::_new_borrowed_unchecked(
                     self.inner_len, indices, data);
                 Some((outer_ind_perm, vec))
             }
@@ -130,7 +130,7 @@ for OuterIteratorPerm<'iter, 'perm, N> {
 /// Only the outer dimension iteration is reverted. If you wish to also
 /// revert the inner dimension, you should call rev() again when iterating
 /// the vector.
-impl <'iter, N: 'iter + Clone>
+impl <'iter, N: 'iter + Copy>
 DoubleEndedIterator
 for OuterIterator<'iter, N> {
     #[inline]
@@ -142,14 +142,14 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::new_borrowed(self.inner_len, indices, data);
+                let vec = CsVec::_new_borrowed_unchecked(self.inner_len, indices, data);
                 Some((outer_ind, vec))
             }
         }
     }
 }
 
-impl <'iter, N: 'iter + Clone> ExactSizeIterator for OuterIterator<'iter, N> {
+impl <'iter, N: 'iter + Copy> ExactSizeIterator for OuterIterator<'iter, N> {
     fn len(&self) -> usize {
         self.indptr_iter.len()
     }
@@ -186,6 +186,35 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
             data : data,
         };
         m.check_compressed_structure().and(Ok(m))
+    }
+
+    /// Create a borrowed CsMat matrix from raw data,
+    /// without checking their validity
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn from_raw_data(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : *const usize, indices : *const usize, data : *const N
+        )
+    -> CsMat<N, &'a[usize], &'a[N]> {
+        let outer = match storage {
+            CSR => nrows,
+            CSC => ncols,
+        };
+        let indptr = slice::from_raw_parts(indptr, outer + 1);
+        let nnz = *indptr.get_unchecked(outer);
+        CsMat {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            nnz : nnz,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
+        }
     }
 }
 
@@ -303,7 +332,7 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
     /// ```rust
     /// use sprs::{CsMat, CsVec};
     /// let eye = CsMat::eye(sprs::CSR, 5);
-    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
@@ -332,10 +361,10 @@ where N: Copy,
       DataStorage: Deref<Target=[N]> {
 
     /// Return an outer iterator for the matrix
-    /// 
+    ///
     /// This can be used for iterating over the rows (resp. cols) of
     /// a CSR (resp. CSC) matrix.
-    /// 
+    ///
     /// ```rust
     /// use sprs::{CsMat};
     /// let eye = CsMat::eye(sprs::CSR, 5);
@@ -441,9 +470,9 @@ where N: Copy,
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        Some(CsVecView::new_borrowed(self.inner_dims(),
-                                     &self.indices[start..stop],
-                                     &self.data[start..stop]))
+        Some(CsVecView::_new_borrowed_unchecked(self.inner_dims(),
+                                                &self.indices[start..stop],
+                                                &self.data[start..stop]))
     }
 
     /// The array of offsets in the indices() and data() slices.
@@ -452,7 +481,7 @@ where N: Copy,
     /// in the indices() and data() slices.
     ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use sprs::{CsMat};
     /// let eye : CsMat<f64, _, _> = CsMat::eye(sprs::CSR, 5);
