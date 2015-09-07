@@ -82,9 +82,13 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::_new_borrowed_unchecked(
-                    self.inner_len, indices, data);
-                Some((outer_ind, vec))
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_borrowed_unchecked(
+                        self.inner_len, indices.len(),
+                        indices.as_ptr(), data.as_ptr());
+                    Some((outer_ind, vec))
+                }
             }
         }
     }
@@ -111,9 +115,13 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let outer_ind_perm = self.perm.at(outer_ind);
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::_new_borrowed_unchecked(
-                    self.inner_len, indices, data);
-                Some((outer_ind_perm, vec))
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_borrowed_unchecked(
+                        self.inner_len, indices.len(),
+                        indices.as_ptr(), data.as_ptr());
+                    Some((outer_ind_perm, vec))
+                }
             }
         }
     }
@@ -142,8 +150,13 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::_new_borrowed_unchecked(self.inner_len, indices, data);
-                Some((outer_ind, vec))
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_borrowed_unchecked(
+                        self.inner_len, indices.len(),
+                        indices.as_ptr(), data.as_ptr());
+                    Some((outer_ind, vec))
+                }
             }
         }
     }
@@ -470,9 +483,13 @@ where N: Copy,
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        Some(CsVecView::_new_borrowed_unchecked(self.inner_dims(),
-                                                &self.indices[start..stop],
-                                                &self.data[start..stop]))
+        // safety derives from the structure checks in the constructors
+        unsafe {
+            Some(CsVec::new_borrowed_unchecked(
+                    self.inner_dims(), self.indices[start..stop].len(),
+                    self.indices[start..stop].as_ptr(),
+                    self.data[start..stop].as_ptr()))
+        }
     }
 
     /// The array of offsets in the indices() and data() slices.

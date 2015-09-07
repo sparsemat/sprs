@@ -4,7 +4,7 @@
 use std::iter::{Zip, Peekable, FilterMap};
 use std::ops::{Deref, Mul, Add, Sub};
 use std::cmp;
-use std::slice::{Iter};
+use std::slice::{self, Iter};
 
 use num::traits::Num;
 
@@ -230,19 +230,21 @@ impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
         v.check_structure().and(Ok(v))
     }
 
-    /// Create a borrowed CsVec over slice data without whcking the structure
-    /// For internal use only
-    /// FIXME: consider making this unsafe instead?
-    #[doc(hidden)]
-    pub fn _new_borrowed_unchecked(n: usize,
-                                   indices: &'a [usize],
-                                   data: &'a [N]
-                                  ) -> CsVec<N, &'a[usize], &'a[N]> {
+    /// Create a borrowed CsVec over slice data without checking the structure
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_borrowed_unchecked(n: usize,
+                                         nnz: usize,
+                                         indices: *const usize,
+                                         data: *const N,
+                                        ) -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             dim: n,
-            indptr: [0, indices.len()],
-            indices: indices,
-            data: data,
+            indptr: [0, nnz],
+            indices: slice::from_raw_parts(indices, nnz),
+            data: slice::from_raw_parts(data, nnz),
         }
     }
 }
