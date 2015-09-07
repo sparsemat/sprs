@@ -1,5 +1,20 @@
 /// A sparse vector, which can be extracted from a sparse matrix
 ///
+/// # Example
+/// ```rust
+/// use sprs::CsVec;
+/// let vec1 = CsVec::new_owned(8, vec![0, 2, 5, 6], vec![1.; 4]).unwrap();
+/// let vec2 = CsVec::new_owned(8, vec![1, 3, 5], vec![2.; 3]).unwrap();
+/// let res = &vec1 + &vec2;
+/// let mut iter = res.iter();
+/// assert_eq!(iter.next(), Some((0, 1.)));
+/// assert_eq!(iter.next(), Some((1, 2.)));
+/// assert_eq!(iter.next(), Some((2, 1.)));
+/// assert_eq!(iter.next(), Some((3, 2.)));
+/// assert_eq!(iter.next(), Some((5, 3.)));
+/// assert_eq!(iter.next(), Some((6, 1.)));
+/// assert_eq!(iter.next(), None);
+/// ```
 
 use std::iter::{Zip, Peekable, FilterMap};
 use std::ops::{Deref, Mul, Add, Sub};
