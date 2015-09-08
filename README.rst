@@ -38,6 +38,43 @@ Algorithms
 Examples
 --------
 
+Matrix construction
+
+.. code-block:: rust
+
+  use sprs::{CsMat, CsMatVec, CsVec};
+  let eye : CsMatVec<f64> = CsMat::eye(sprs::CSR, 3);
+  let a = CsMat::from_vecs(sprs::CSC, 3, 3,
+  vec![0, 2, 4, 5],
+  vec![0, 1, 0, 2, 2],
+  vec![1., 2., 3., 4., 5.]).unwrap();
+
+Matrix vector multiplication
+
+
+.. code-block:: rust
+
+  use sprs::{CsMat, CsVec};
+  let eye = CsMat::eye(sprs::CSR, 5);
+  let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+  let y = &eye * &x;
+  assert_eq!(x, y);
+
+Matrix matrix multiplication, addition
+.. code-block:: rust
+
+>use sprs::{CsMat, CsVec};
+>let eye = CsMat::eye(sprs::CSR, 3);
+>let a = CsMat::from_vecs(sprs::CSC, 3, 3,
+>                         vec![0, 2, 4],
+>                         vec![0, 1, 0, 2, 2],
+>                         vec![1., 2., 3., 4., 5.]).unwrap();
+>let b = &eye * &a:
+>assert_eq!(a, b);
+
+Documentation
+-------------
+
 TODO
 
 License
