@@ -1,10 +1,25 @@
 /// A sparse vector, which can be extracted from a sparse matrix
 ///
+/// # Example
+/// ```rust
+/// use sprs::CsVec;
+/// let vec1 = CsVec::new_owned(8, vec![0, 2, 5, 6], vec![1.; 4]).unwrap();
+/// let vec2 = CsVec::new_owned(8, vec![1, 3, 5], vec![2.; 3]).unwrap();
+/// let res = &vec1 + &vec2;
+/// let mut iter = res.iter();
+/// assert_eq!(iter.next(), Some((0, 1.)));
+/// assert_eq!(iter.next(), Some((1, 2.)));
+/// assert_eq!(iter.next(), Some((2, 1.)));
+/// assert_eq!(iter.next(), Some((3, 2.)));
+/// assert_eq!(iter.next(), Some((5, 3.)));
+/// assert_eq!(iter.next(), Some((6, 1.)));
+/// assert_eq!(iter.next(), None);
+/// ```
 
 use std::iter::{Zip, Peekable, FilterMap};
 use std::ops::{Deref, Mul, Add, Sub};
 use std::cmp;
-use std::slice::{Iter};
+use std::slice::{self, Iter};
 
 use num::traits::Num;
 
@@ -12,7 +27,10 @@ use sparse::permutation::Permutation;
 use sparse::{prod, binop};
 use sparse::csmat::{CsMat, CsMatView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
+use errors::SprsError;
 
+/// A sparse vector, storing the indices of its non-zero data.
+/// The indices should be sorted.
 #[derive(PartialEq, Debug)]
 pub struct CsVec<N, IStorage, DStorage>
 where N: Clone,
@@ -30,6 +48,7 @@ DStorage: Deref<Target=[N]> {
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
 pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
+/// An iterator over the non-zero elements of a sparse vector
 pub struct VectorIterator<'a, N: 'a> {
     dim: usize,
     ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
@@ -82,7 +101,19 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
 
 
     /// Iterate over the matching non-zero elements of both vectors
-    /// Useful for vector dot product
+    /// Useful for vector dot product.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsVec;
+    /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
+    ///                          ).unwrap();
+    /// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());
+    /// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));
+    /// assert_eq!(nnz_zip.next(), None);
+    /// ```
     pub fn nnz_zip<M>(self,
                      other: VectorIterator<'a, M>
                      )
@@ -96,6 +127,25 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
         nnz_or_iter.filter_map(filter_both_nnz)
     }
 
+    /// Iterate over non-zero elements of eiither of two vectors.
+    /// This is useful for implementing eg addition of vectors.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsVec;
+    /// use sprs::sparse::vec::NnzEither;
+    /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
+    ///                          ).unwrap();
+    /// let mut nnz_or_iter = v0.iter().nnz_or_zip(v1.iter());
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((0, 1.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((1, -1.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Both((2, 2., -2.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((3, -3.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, 3.))));
+    /// assert_eq!(nnz_or_iter.next(), None);
+    /// ```
     pub fn nnz_or_zip<M>(self,
                          other: VectorIterator<'a, M>) -> NnzOrZip<'a, N, M>
     where M: 'a + Copy {
@@ -108,7 +158,7 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
 }
 
 
-/// An iterator over the non zeros of either of two vector iterators, ordered, 
+/// An iterator over the non zeros of either of two vector iterators, ordered,
 /// such that the sum of the vectors may be computed
 pub struct NnzOrZip<'a, N1: 'a + Copy, N2: 'a + Copy> {
     left: Peekable<VectorIterator<'a, N1>>,
@@ -178,36 +228,58 @@ for NnzOrZip<'a, N1, N2> {
     }
 }
 
-impl<'a, N: 'a + Clone> CsVec<N, &'a[usize], &'a[N]> {
+impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
 
+    /// Create a borrowed CsVec over slice data.
     pub fn new_borrowed(
         n: usize,
         indices: &'a [usize],
         data: &'a [N])
-    -> CsVec<N, &'a[usize], &'a[N]> {
-        CsVec {
+    -> Result<CsVec<N, &'a[usize], &'a[N]>, SprsError> {
+        let v = CsVec {
             dim: n,
             indptr: [0, indices.len()],
             indices: indices,
             data: data,
+        };
+        v.check_structure().and(Ok(v))
+    }
+
+    /// Create a borrowed CsVec over slice data without checking the structure
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_borrowed_unchecked(n: usize,
+                                         nnz: usize,
+                                         indices: *const usize,
+                                         data: *const N,
+                                        ) -> CsVec<N, &'a[usize], &'a[N]> {
+        CsVec {
+            dim: n,
+            indptr: [0, nnz],
+            indices: slice::from_raw_parts(indices, nnz),
+            data: slice::from_raw_parts(data, nnz),
         }
     }
 }
 
-impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
+impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
+    /// Create an owning CsVec from vector data.
     pub fn new_owned(n: usize,
                      indices: Vec<usize>,
                      data: Vec<N>
-                    ) -> CsVec<N, Vec<usize>, Vec<N>> {
-        // FIXME: should check its structure
-        CsVec {
+                    ) -> Result<CsVec<N, Vec<usize>, Vec<N>>, SprsError> {
+        let v = CsVec {
             dim: n,
             indptr: [0, indices.len()],
             indices: indices,
             data: data
-        }
+        };
+        v.check_structure().and(Ok(v))
     }
 
+    /// Create an empty CsVec, which can be used for incremental construction
     pub fn empty(dim: usize) -> CsVec<N, Vec<usize>, Vec<N>> {
         CsVec {
             dim: dim,
@@ -238,16 +310,19 @@ impl<N: Clone> CsVec<N, Vec<usize>, Vec<N>> {
         self.data.push(val);
     }
 
+    /// Reserve `size` additional non-zero values.
     pub fn reserve(&mut self, size: usize) {
         self.indices.reserve(size);
         self.data.reserve(size);
     }
 
+    /// Reserve exactly `exact_size` non-zero values.
     pub fn reserve_exact(&mut self, exact_size: usize) {
         self.indices.reserve_exact(exact_size);
         self.data.reserve_exact(exact_size);
     }
 
+    /// Clear the underlying storage
     pub fn clear(&mut self) {
         self.indices.clear();
         self.data.clear();
@@ -259,7 +334,8 @@ where N:  Copy,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
-    pub fn borrowed(&self) -> CsVec<N, &[usize], &[N]> {
+    /// Get a view of this vector.
+    pub fn borrowed(&self) -> CsVecView<N> {
         CsVec {
             dim: self.dim,
             indptr: self.indptr,
@@ -274,6 +350,19 @@ where N: 'a + Copy,
 IStorage: 'a + Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
 
+    /// Iterate over the non zero values.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsVec;
+    /// let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let mut iter = v.iter();
+    /// assert_eq!(iter.next(), Some((0, 1.)));
+    /// assert_eq!(iter.next(), Some((2, 2.)));
+    /// assert_eq!(iter.next(), Some((4, 3.)));
+    /// assert_eq!(iter.next(), None);
+    /// ```
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
             dim: self.dim,
@@ -281,6 +370,8 @@ DStorage: Deref<Target=[N]> {
         }
     }
 
+    /// Permuted iteration. Not finished
+    #[doc(hidden)]
     pub fn iter_perm<'perm: 'a>(&'a self,
                                 perm: &'perm Permutation<&'perm [usize]>)
                                -> VectorIteratorPerm<'a, N> {
@@ -291,26 +382,42 @@ DStorage: Deref<Target=[N]> {
         }
     }
 
+    /// The underlying indices.
     pub fn indices(&self) -> &[usize] {
         &self.indices
     }
 
+    /// The underlying non zero values.
     pub fn data(&self) -> &[N] {
         &self.data
     }
 
+    /// The dimension of this vector.
     pub fn dim(&self) -> usize {
         self.dim
     }
 
+    /// The non zero count of this vector.
     pub fn nnz(&self) -> usize {
         self.data.len()
     }
 
-    pub fn check_structure(&self) -> bool {
-        self.indices.windows(2).all(|x| x[0] < x[1])
+    /// Check the sparse structure, namely that:
+    /// - indices is sorted
+    /// - indices are lower than dims()
+    pub fn check_structure(&self) -> Result<(), SprsError> {
+        if ! self.indices.windows(2).all(|x| x[0] < x[1]) {
+            return Err(SprsError::NonSortedIndices);
+        }
+
+        if self.indices.iter().max().unwrap_or(&0) >= &self.dim {
+            return Err(SprsError::OutOfBoundsIndex);
+        }
+
+        Ok(())
     }
 
+    /// Allocate a new vector equal to this one.
     pub fn to_owned(&self) -> CsVecOwned<N> {
         CsVec {
             dim: self.dim,
@@ -320,24 +427,42 @@ DStorage: Deref<Target=[N]> {
         }
     }
 
+    /// View this vector as a matrix with only one row.
     pub fn row_view(&self) -> CsMatView<N> {
-        // TODO: don't check the structure (requires a structure check at
-        // vec creation)
-        CsMatView::from_slices(CSR, 1, self.dim,
-                               &self.indptr[..],
-                               &self.indices[..],
-                               &self.data[..]).unwrap()
+        // Safe because we're taking a view into a vector that has
+        // necessarily been checked
+        unsafe {
+            CsMatView::from_raw_data(CSR, 1, self.dim,
+                                     self.indptr.as_ptr(),
+                                     self.indices.as_ptr(),
+                                     self.data.as_ptr())
+        }
     }
 
+    /// View this vector as a matrix with only one column.
     pub fn col_view(&self) -> CsMatView<N> {
-        // TODO: don't check the structure (requires a structure check at
-        // vec creation)
-        CsMatView::from_slices(CSC, self.dim, 1,
-                               &self.indptr[..],
-                               &self.indices[..],
-                               &self.data[..]).unwrap()
+        // Safe because we're taking a view into a vector that has
+        // necessarily been checked
+        unsafe {
+            CsMatView::from_raw_data(CSC, self.dim, 1,
+                                    self.indptr.as_ptr(),
+                                    self.indices.as_ptr(),
+                                    self.data.as_ptr())
+        }
     }
 
+    /// Vector dot product
+    /// 
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsVec;
+    /// let v1 = CsVec::new_owned(8, vec![1, 2, 4, 6], vec![1.; 4]).unwrap();
+    /// let v2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
+    /// assert_eq!(2., v1.dot(&v2));
+    /// assert_eq!(4., v1.dot(&v1));
+    /// assert_eq!(16., v2.dot(&v2));
+    /// ```
     pub fn dot<IS2, DS2>(&self, rhs: &CsVec<N, IS2, DS2>) -> N
     where N: Num, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
         self.iter().nnz_zip(rhs.iter()).map(|(_, lval, rval)| lval * rval)
@@ -422,7 +547,7 @@ mod test {
         let indices = vec![0, 1, 4, 5, 7];
         let data = vec![0., 1., 4., 5., 7.];
 
-        return CsVec::new_owned(n, indices, data);
+        return CsVec::new_owned(n, indices, data).unwrap();
     }
 
     fn test_vec2() -> CsVec<f64, Vec<usize>, Vec<f64>> {
@@ -430,7 +555,7 @@ mod test {
         let indices = vec![0, 2, 4, 6, 7];
         let data = vec![0.5, 2.5, 4.5, 6.5, 7.5];
 
-        return CsVec::new_owned(n, indices, data);
+        return CsVec::new_owned(n, indices, data).unwrap();
     }
 
     #[test]
@@ -461,9 +586,9 @@ mod test {
 
     #[test]
     fn dot_product() {
-        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]);
-        let vec2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]);
-        let vec3 = CsVec::new_owned(8, vec![1, 2, 5, 6], vec![3.; 4]);
+        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        let vec2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
+        let vec3 = CsVec::new_owned(8, vec![1, 2, 5, 6], vec![3.; 4]).unwrap();
 
         assert_eq!(0., vec1.dot(&vec2));
         assert_eq!(4., vec1.dot(&vec1));

@@ -6,6 +6,8 @@ use num::traits::Num;
 use sparse::compressed::SpMatView;
 use errors::SprsError;
 
+/// Multiply a sparse CSC matrix with a dense vector and accumulate the result
+/// into another dense vector
 pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
                               in_vec: &[N],
                               res_vec: &mut[N]) -> Result<(), SprsError>
@@ -29,6 +31,8 @@ where N: Num + Copy {
     Ok(())
 }
 
+/// Multiply a sparse CSR matrix with a dense vector and accumulate the result
+/// into another dense vector
 pub fn mul_acc_mat_vec_csr<N>(mat: CsMatView<N>,
                               in_vec: &[N],
                               res_vec: &mut[N]) -> Result<(), SprsError>
@@ -112,6 +116,8 @@ where N: Copy + Num,
     vec![N::zero(); len]
 }
 
+/// Actual implementation of CSR-CSR multiplication
+/// All other matrix products are implemented in terms of this one.
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
                            workspace: &mut[N]
@@ -277,44 +283,44 @@ mod test {
     #[test]
     fn mul_csr_csvec() {
         let a = mat1();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
         let res = &a * &v;
         let expected_output = CsVec::new_owned(5,
                                                vec![0, 1, 2],
-                                               vec![3., 5., 5.]);
+                                               vec![3., 5., 5.]).unwrap();
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csvec_csr() {
         let a = mat1();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
         let res = &v * &a;
         let expected_output = CsVec::new_owned(5,
                                                vec![2, 3],
-                                               vec![8., 11.]);
+                                               vec![8., 11.]).unwrap();
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csc_csvec() {
         let a = mat1_csc();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
         let res = &a * &v;
         let expected_output = CsVec::new_owned(5,
                                                vec![0, 1, 2],
-                                               vec![3., 5., 5.]);
+                                               vec![3., 5., 5.]).unwrap();
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csvec_csc() {
         let a = mat1_csc();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]);
+        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
         let res = &v * &a;
         let expected_output = CsVec::new_owned(5,
                                                vec![2, 3],
-                                               vec![8., 11.]);
+                                               vec![8., 11.]).unwrap();
         assert_eq!(expected_output, res);
     }
 }

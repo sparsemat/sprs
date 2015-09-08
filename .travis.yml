@@ -6,3 +6,8 @@ script:
     - cargo build --verbose
     - cargo test --verbose
 
+notifications:
+  email:
+    - on_success: change
+    - on_failure: always
+

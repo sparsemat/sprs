@@ -10,7 +10,7 @@
 
 use std::iter::{Enumerate};
 use std::default::Default;
-use std::slice::{Windows};
+use std::slice::{self, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul};
 use std::mem;
 use num::traits::Num;
@@ -20,17 +20,22 @@ use sparse::vec::{CsVec, CsVecView};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
+use errors::SprsError;
 
 pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
 
+/// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressedStorage {
+    /// Compressed row storage
     CSR,
+    /// Compressed column storage
     CSC
 }
 
 impl CompressedStorage {
+    /// Get the other storage, ie return CSC if we were CSR, and vice versa
     pub fn other_storage(&self) -> CompressedStorage {
         match *self {
             CSR => CSC,
@@ -64,7 +69,7 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, N: 'iter + Clone>
+impl <'iter, N: 'iter + Copy>
 Iterator
 for OuterIterator<'iter, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -77,9 +82,13 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::new_borrowed(
-                    self.inner_len, indices, data);
-                Some((outer_ind, vec))
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_borrowed_unchecked(
+                        self.inner_len, indices.len(),
+                        indices.as_ptr(), data.as_ptr());
+                    Some((outer_ind, vec))
+                }
             }
         }
     }
@@ -92,7 +101,7 @@ for OuterIterator<'iter, N> {
 /// Permuted outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, 'perm: 'iter, N: 'iter + Clone>
+impl <'iter, 'perm: 'iter, N: 'iter + Copy>
 Iterator
 for OuterIteratorPerm<'iter, 'perm, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -106,9 +115,13 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let outer_ind_perm = self.perm.at(outer_ind);
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::new_borrowed(
-                    self.inner_len, indices, data);
-                Some((outer_ind_perm, vec))
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_borrowed_unchecked(
+                        self.inner_len, indices.len(),
+                        indices.as_ptr(), data.as_ptr());
+                    Some((outer_ind_perm, vec))
+                }
             }
         }
     }
@@ -125,7 +138,7 @@ for OuterIteratorPerm<'iter, 'perm, N> {
 /// Only the outer dimension iteration is reverted. If you wish to also
 /// revert the inner dimension, you should call rev() again when iterating
 /// the vector.
-impl <'iter, N: 'iter + Clone>
+impl <'iter, N: 'iter + Copy>
 DoubleEndedIterator
 for OuterIterator<'iter, N> {
     #[inline]
@@ -137,19 +150,25 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                let vec = CsVec::new_borrowed(self.inner_len, indices, data);
-                Some((outer_ind, vec))
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_borrowed_unchecked(
+                        self.inner_len, indices.len(),
+                        indices.as_ptr(), data.as_ptr());
+                    Some((outer_ind, vec))
+                }
             }
         }
     }
 }
 
-impl <'iter, N: 'iter + Clone> ExactSizeIterator for OuterIterator<'iter, N> {
+impl <'iter, N: 'iter + Copy> ExactSizeIterator for OuterIterator<'iter, N> {
     fn len(&self) -> usize {
         self.indptr_iter.len()
     }
 }
 
+/// Compressed matrix in the CSR or CSC format.
 #[derive(PartialEq, Debug)]
 pub struct CsMat<N, IndStorage, DataStorage>
 where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
@@ -169,7 +188,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         )
-    -> Option<CsMat<N, &'a[usize], &'a[N]>> {
+    -> Result<CsMat<N, &'a[usize], &'a[N]>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : nrows,
@@ -179,9 +198,35 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
             indices : indices,
             data : data,
         };
-        match m.check_compressed_structure() {
-            None => None,
-            _ => Some(m)
+        m.check_compressed_structure().and(Ok(m))
+    }
+
+    /// Create a borrowed CsMat matrix from raw data,
+    /// without checking their validity
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn from_raw_data(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : *const usize, indices : *const usize, data : *const N
+        )
+    -> CsMat<N, &'a[usize], &'a[N]> {
+        let outer = match storage {
+            CSR => nrows,
+            CSC => ncols,
+        };
+        let indptr = slice::from_raw_parts(indptr, outer + 1);
+        let nnz = *indptr.get_unchecked(outer);
+        CsMat {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            nnz : nnz,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
         }
     }
 }
@@ -205,6 +250,8 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         }
     }
 
+    /// Create a new CsMat representing the zero matrix.
+    /// Hence it has no non-zero elements.
     pub fn zero(rows: usize, cols: usize) -> CsMatVec<N> {
         CsMat {
             storage: CSR,
@@ -245,7 +292,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
         )
-    -> Option<CsMat<N, Vec<usize>, Vec<N>>> {
+    -> Result<CsMat<N, Vec<usize>, Vec<N>>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : nrows,
@@ -255,10 +302,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
             indices : indices,
             data : data,
         };
-        match m.check_compressed_structure() {
-            None => None,
-            _ => Some(m)
-        }
+        m.check_compressed_structure().and(Ok(m))
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
@@ -297,6 +341,14 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
 
 impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
     /// Identity matrix
+    ///
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
     pub fn eye(storage: CompressedStorage, dim: usize
               ) -> CsMat<N, Vec<usize>, Vec<N>> {
         let n = dim;
@@ -322,6 +374,19 @@ where N: Copy,
       DataStorage: Deref<Target=[N]> {
 
     /// Return an outer iterator for the matrix
+    ///
+    /// This can be used for iterating over the rows (resp. cols) of
+    /// a CSR (resp. CSC) matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// for (row_ind, row_vec) in eye.outer_iterator() {
+    ///     let (col_ind, val): (_, f64) = row_vec.iter().next().unwrap();
+    ///     assert_eq!(row_ind, col_ind);
+    ///     assert_eq!(val, 1.);
+    /// }
+    /// ```
     pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N> {
         let inner_len = match self.storage {
             CSR => self.ncols,
@@ -337,6 +402,7 @@ where N: Copy,
 
     /// Return an outer iterator over P*A, as well as the proper permutation
     /// for iterating over the inner dimension of P*A*P^T
+    /// Unstable
     pub fn outer_iterator_perm<'a, 'perm: 'a>(
         &'a self, perm: &'perm Permutation<&'perm [usize]>)
     -> OuterIteratorPerm<'a, 'perm, N> {
@@ -353,22 +419,30 @@ where N: Copy,
         }
     }
 
+    /// The underlying storage of this matrix
     pub fn storage(&self) -> CompressedStorage {
         self.storage
     }
 
+    /// The number of rows of this matrix
     pub fn rows(&self) -> usize {
         self.nrows
     }
 
+    /// The number of cols of this matrix
     pub fn cols(&self) -> usize {
         self.ncols
     }
 
+    /// The number of non-zero elements this matrix stores.
+    /// This is often relevant for the complexity of most sparse matrix
+    /// algorithms, which are often linear in the number of non-zeros.
     pub fn nb_nonzero(&self) -> usize {
         self.nnz
     }
 
+    /// Number of outer dimensions, that ie equal to self.rows() for a CSR
+    /// matrix, and equal to self.cols() for a CSC matrix
     pub fn outer_dims(&self) -> usize {
         match self.storage {
             CSR => self.nrows,
@@ -376,6 +450,8 @@ where N: Copy,
         }
     }
 
+    /// Number of inner dimensions, that ie equal to self.cols() for a CSR
+    /// matrix, and equal to self.rows() for a CSC matrix
     pub fn inner_dims(&self) -> usize {
         match self.storage {
             CSC => self.nrows,
@@ -383,6 +459,13 @@ where N: Copy,
         }
     }
 
+    /// Access the element located at row i and column j.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator() which accesses
+    /// elements in storage order.
     pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N> {
         assert!(i < self.nrows);
         assert!(j < self.ncols);
@@ -400,27 +483,56 @@ where N: Copy,
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        Some(CsVecView::new_borrowed(self.inner_dims(),
-                                     &self.indices[start..stop],
-                                     &self.data[start..stop]))
+        // safety derives from the structure checks in the constructors
+        unsafe {
+            Some(CsVec::new_borrowed_unchecked(
+                    self.inner_dims(), self.indices[start..stop].len(),
+                    self.indices[start..stop].as_ptr(),
+                    self.data[start..stop].as_ptr()))
+        }
     }
 
+    /// The array of offsets in the indices() and data() slices.
+    /// The elements of the slice at outer dimension i
+    /// are available between the elements indptr[i] and indptr[i+1]
+    /// in the indices() and data() slices.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let eye : CsMat<f64, _, _> = CsMat::eye(sprs::CSR, 5);
+    /// // get the element of row 3
+    /// // there is only one element in this row, with a column index of 3
+    /// // and a value of 1.
+    /// let loc = eye.indptr()[3];
+    /// assert_eq!(eye.indptr()[4], loc + 1);
+    /// assert_eq!(loc, 3);
+    /// assert_eq!(eye.indices()[loc], 3);
+    /// assert_eq!(eye.data()[loc], 1.);
+    /// ```
     pub fn indptr(&self) -> &[usize] {
         &self.indptr[..]
     }
 
+    /// The inner dimension location for each non-zero value. See
+    /// the documentation of indptr() for more explanations.
     pub fn indices(&self) -> &[usize] {
         &self.indices[..]
     }
 
+    /// The non-zero values. See the documentation of indptr()
+    /// for more explanations.
     pub fn data(&self) -> &[N] {
         &self.data[..]
     }
 
+    /// Test whether the matrix is in CSC storage
     pub fn is_csc(&self) -> bool {
         self.storage == CSC
     }
 
+    /// Test whether the matrix is in CSR storage
     pub fn is_csr(&self) -> bool {
         self.storage == CSR
     }
@@ -453,6 +565,8 @@ where N: Copy,
         }
     }
 
+    /// Get an owned version of this matrix. If the matrix was already
+    /// owned, this will make a deep copy.
     pub fn to_owned(&self) -> CsMatVec<N> {
         CsMatVec {
             storage: self.storage,
@@ -465,6 +579,13 @@ where N: Copy,
         }
     }
 
+    /// Access an element given its outer_ind and inner_ind.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator() which accesses
+    /// elements in storage order.
     pub fn at_outer_inner(&self, &(outer_ind, inner_ind): &(usize, usize))
     -> Option<N> {
         let begin = self.indptr[outer_ind];
@@ -484,55 +605,43 @@ where N: Copy,
     }
 
     /// Check the structure of CsMat components
-    fn check_compressed_structure(&self) -> Option<usize> {
-        let inner = match self.storage {
-            CompressedStorage::CSR => self.ncols,
-            CompressedStorage::CSC => self.nrows
-        };
-        let outer = match self.storage {
-            CompressedStorage::CSR => self.nrows,
-            CompressedStorage::CSC => self.ncols
-        };
+    /// This will ensure that:
+    /// - indptr is of length outer_dim() + 1
+    /// - indices and data have the same length, nnz == indptr[outer_dims()]
+    /// - indptr is sorted
+    /// - indices is sorted for each outer slice
+    /// - indices are lower than inner_dims()
+    pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
+        let outer = self.outer_dims();
+
         if self.indptr.len() != outer + 1 {
-            println!("CsMat indptr length incorrect");
-            return None;
+            return Err(SprsError::BadIndptrLength);
         }
         if self.indices.len() != self.data.len() {
-            println!("CsMat indices/data length incorrect");
-            return None;
+            return Err(SprsError::DataIndicesMismatch);
         }
         let nnz = self.indices.len();
         if nnz != self.nnz {
-            println!("CsMat nnz count incorrect");
-            return None;
+            return Err(SprsError::BadNnzCount);
         }
         if self.indptr.iter().max().unwrap() > &nnz {
-            println!("CsMat indptr values incoherent with nnz");
-            return None;
-        }
-        if self.indices.iter().max().unwrap_or(&0) >= &inner {
-            println!("CsMat indices values incoherent with ncols");
-            return None;
+            return Err(SprsError::OutOfBoundsIndptr);
         }
 
         if ! self.indptr.deref().windows(2).all(|x| x[0] <= x[1]) {
-            println!("CsMat indptr not sorted");
-            return None;
+            return Err(SprsError::UnsortedIndptr);
         }
 
         // check that the indices are sorted for each row
-        if ! self.outer_iterator().all(
-            | (_, vec) | { vec.check_structure() })
-        {
-            println!("CsMat indices not sorted for each outer ind");
-            return None;
+        for (_, vec) in self.outer_iterator() {
+            try!(vec.check_structure());
         }
 
-        Some(nnz)
+        Ok(())
     }
 
     /// Return a view into the current matrix
-    pub fn borrowed(&self) -> CsMat<N, &[usize], &[N]> {
+    pub fn borrowed(&self) -> CsMatView<N> {
         CsMat {
             storage: self.storage,
             nrows: self.nrows,
@@ -551,8 +660,8 @@ where N: Copy + Default,
       DataStorage: Deref<Target=[N]> {
 
     /// Create a matrix mathematically equal to this one, but with the
-    /// opposed storage.
-    pub fn to_other_storage(&self) -> CsMat<N, Vec<usize>, Vec<N>> {
+    /// opposed storage (a CSC matrix will be converted to CSR, and vice versa)
+    pub fn to_other_storage(&self) -> CsMatVec<N> {
         let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
@@ -564,6 +673,8 @@ where N: Copy + Default,
                          indptr, indices, data).unwrap()
     }
 
+    /// Create a new CSC matrix equivalent to this one.
+    /// A new matrix will be created even if this matrix was already CSC.
     pub fn to_csc(&self) -> CsMatVec<N> {
         match self.storage {
             CSR => self.to_other_storage(),
@@ -571,6 +682,8 @@ where N: Copy + Default,
         }
     }
 
+    /// Create a new CSR matrix equivalent to this one.
+    /// A new matrix will be created even if this matrix was already CSR.
     pub fn to_csr(&self) -> CsMatVec<N> {
         match self.storage {
             CSR => self.to_owned(),
@@ -586,6 +699,7 @@ N: Copy,
 IndStorage: DerefMut<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
 
+    /// Mutable access to the non zero values
     pub fn data_mut(&mut self) -> &mut [N] {
         &mut self.data[..]
     }
@@ -738,6 +852,7 @@ where N: 'a + Copy + Num + Default,
 mod test {
     use super::{CsMat};
     use super::CompressedStorage::{CSC, CSR};
+    use errors::SprsError;
     use test_data::{mat1, mat1_csc, mat1_times_2};
 
     #[test]
@@ -745,10 +860,8 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        let m = CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
+        assert!(m.is_ok());
     }
 
     #[test]
@@ -763,34 +876,27 @@ mod test {
         let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        match CsMat::from_slices(CSR, 3, 3, indptr_fail1, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_fail2, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_fail3, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_fail1, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_fail2, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_fail1) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_fail2) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
+        assert_eq!(CsMat::from_slices(CSR, 3, 3, indptr_fail1,
+                                      indices_ok, data_ok),
+                   Err(SprsError::BadIndptrLength));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_fail2, indices_ok, data_ok),
+                   Err(SprsError::OutOfBoundsIndptr));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_fail3, indices_ok, data_ok),
+                   Err(SprsError::UnsortedIndptr));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_fail1, data_ok),
+                   Err(SprsError::DataIndicesMismatch));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_fail2, data_ok),
+                   Err(SprsError::OutOfBoundsIndex));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_ok, data_fail1),
+                   Err(SprsError::DataIndicesMismatch));
+        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+                                      indptr_ok, indices_ok, data_fail2),
+                   Err(SprsError::DataIndicesMismatch));
     }
 
     #[test]
@@ -801,10 +907,9 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        match CsMat::from_slices(CSR, 5, 5, indptr, indices, data) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
+        assert_eq!(CsMat::from_slices(CSR, 5, 5,
+                                      indptr, indices, data),
+                   Err(SprsError::NonSortedIndices));
     }
 
     #[test]
@@ -814,14 +919,10 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        match CsMat::from_slices(CSR, 3, 4, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
-        match CsMat::from_slices(CSC, 4, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_slices(CSR, 3, 4,
+                                   indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::from_slices(CSC, 4, 3,
+                                   indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -831,14 +932,12 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        match CsMat::from_slices(CSR, 4, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
-        match CsMat::from_slices(CSC, 3, 4, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        }
+        assert_eq!(CsMat::from_slices(CSR, 4, 3,
+                                      indptr_ok, indices_ok, data_ok),
+                   Err(SprsError::BadIndptrLength));
+        assert_eq!(CsMat::from_slices(CSC, 3, 4,
+                                      indptr_ok, indices_ok, data_ok),
+                   Err(SprsError::BadIndptrLength));
     }
 
 
@@ -847,10 +946,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match CsMat::from_slices(CSR, 3, 3, &indptr_ok, &indices_ok, &data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_slices(CSR, 3, 3,
+                                   &indptr_ok, &indices_ok, &data_ok).is_ok());
     }
 
     #[test]
@@ -858,10 +955,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        match CsMat::from_vecs(CSR, 3, 3, indptr_ok, indices_ok, data_ok) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_vecs(CSR, 3, 3,
+                                 indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -871,10 +966,7 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        match CsMat::from_slices(CSR, 5, 5, indptr, indices, data) {
-            Some(_) => assert!(true),
-            None => assert!(false)
-        }
+        assert!(CsMat::from_slices(CSR, 5, 5, indptr, indices, data).is_ok());
     }
 
     #[test]
