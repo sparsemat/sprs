@@ -33,6 +33,7 @@ assert_eq!(x, y);
 ```
 
 Matrix matrix multiplication, addition
+
 ```rust
 use sprs::{CsMat, CsVec};
 let eye = CsMat::eye(sprs::CSR, 3);
