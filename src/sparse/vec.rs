@@ -25,7 +25,7 @@ use num::traits::Num;
 
 use sparse::permutation::Permutation;
 use sparse::{prod, binop};
-use sparse::csmat::{CsMat, CsMatView};
+use sparse::csmat::{CsMat, CsMatVecView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 use errors::SprsError;
 
@@ -37,10 +37,6 @@ where N: Clone,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
     dim: usize,
-    // FIXME: maybe CsMat could be more generic over its storage types
-    // to avoid having to allocate extra fields to CsVec only to be able to
-    // convert...
-    indptr: [usize; 2],
     indices : IStorage,
     data : DStorage
 }
@@ -238,7 +234,6 @@ impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
     -> Result<CsVec<N, &'a[usize], &'a[N]>, SprsError> {
         let v = CsVec {
             dim: n,
-            indptr: [0, indices.len()],
             indices: indices,
             data: data,
         };
@@ -257,7 +252,6 @@ impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
                                         ) -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             dim: n,
-            indptr: [0, nnz],
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts(data, nnz),
         }
@@ -272,7 +266,6 @@ impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
                     ) -> Result<CsVec<N, Vec<usize>, Vec<N>>, SprsError> {
         let v = CsVec {
             dim: n,
-            indptr: [0, indices.len()],
             indices: indices,
             data: data
         };
@@ -283,7 +276,6 @@ impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
     pub fn empty(dim: usize) -> CsVec<N, Vec<usize>, Vec<N>> {
         CsVec {
             dim: dim,
-            indptr: [0, 0],
             indices: Vec::new(),
             data: Vec::new(),
         }
@@ -305,7 +297,6 @@ impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
             Some(&last_ind) => assert!(ind > last_ind)
         }
         assert!(ind <= self.dim);
-        self.indptr[1] += 1;
         self.indices.push(ind);
         self.data.push(val);
     }
@@ -338,7 +329,6 @@ DStorage: Deref<Target=[N]> {
     pub fn borrowed(&self) -> CsVecView<N> {
         CsVec {
             dim: self.dim,
-            indptr: self.indptr,
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -421,33 +411,34 @@ DStorage: Deref<Target=[N]> {
     pub fn to_owned(&self) -> CsVecOwned<N> {
         CsVec {
             dim: self.dim,
-            indptr: self.indptr,
             indices: self.indices.to_vec(),
             data: self.data.to_vec(),
         }
     }
 
     /// View this vector as a matrix with only one row.
-    pub fn row_view(&self) -> CsMatView<N> {
+    pub fn row_view(&self) -> CsMatVecView<N> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
+        let indptr = vec![0, self.indices.len()];
         unsafe {
-            CsMatView::new_raw(CSR, 1, self.dim,
-                               self.indptr.as_ptr(),
-                               self.indices.as_ptr(),
-                               self.data.as_ptr())
+            CsMatVecView::new_vecview_raw(CSR, 1, self.dim,
+                                          indptr,
+                                          self.indices.as_ptr(),
+                                          self.data.as_ptr())
         }
     }
 
     /// View this vector as a matrix with only one column.
-    pub fn col_view(&self) -> CsMatView<N> {
+    pub fn col_view(&self) -> CsMatVecView<N> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
+        let indptr = vec![0, self.indices.len()];
         unsafe {
-            CsMatView::new_raw(CSC, self.dim, 1,
-                               self.indptr.as_ptr(),
-                               self.indices.as_ptr(),
-                               self.data.as_ptr())
+            CsMatVecView::new_vecview_raw(CSC, self.dim, 1,
+                                          indptr,
+                                          self.indices.as_ptr(),
+                                          self.data.as_ptr())
         }
     }
 

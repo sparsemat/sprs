@@ -25,6 +25,9 @@ use errors::SprsError;
 pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
 
+// FIXME: a fixed size array would be better, but no Deref impl
+pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
+
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompressedStorage {
@@ -178,6 +181,32 @@ where IptrStorage: Deref<Target=[usize]>,
     indptr : IptrStorage,
     indices : IndStorage,
     data : DataStorage
+}
+
+impl<'a, N:'a + Copy> CsMatVecView<'a, N> {
+    /// Create a borrowed row or column CsMat matrix from raw data,
+    /// without checking their validity
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_vecview_raw(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : Vec<usize>, indices : *const usize, data : *const N
+        )
+    -> CsMatVecView<'a, N> {
+        let nnz = indptr[1];
+        CsMat {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            nnz : nnz,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
+        }
+    }
 }
 
 impl<'a, N:'a + Copy> CsMatView<'a, N> {
