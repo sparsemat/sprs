@@ -182,7 +182,7 @@ where N: Copy + Num {
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{CsMat};
+    use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
@@ -235,7 +235,7 @@ mod test {
 
     #[test]
     fn mul_csr_csr_identity() {
-        let eye: CsMat<i32, Vec<usize>, Vec<i32>> = CsMat::eye(CSR, 10);
+        let eye: CsMatOwned<i32> = CsMat::eye(CSR, 10);
         let mut workspace = [0; 10];
         let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
         assert_eq!(eye, res);

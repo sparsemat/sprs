@@ -22,8 +22,11 @@ use sparse::binop;
 use sparse::prod;
 use errors::SprsError;
 
-pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<N>>;
-pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
+pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
+pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
+
+// FIXME: a fixed size array would be better, but no Deref impl
+pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
 
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -167,25 +170,53 @@ impl <'iter, N: 'iter + Copy> ExactSizeIterator for OuterIterator<'iter, N> {
 
 /// Compressed matrix in the CSR or CSC format.
 #[derive(PartialEq, Debug)]
-pub struct CsMat<N, IndStorage, DataStorage>
-where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
+pub struct CsMat<N, IptrStorage, IndStorage, DataStorage>
+where IptrStorage: Deref<Target=[usize]>,
+      IndStorage: Deref<Target=[usize]>,
+      DataStorage: Deref<Target=[N]> {
     storage: CompressedStorage,
     nrows : usize,
     ncols : usize,
     nnz : usize,
-    indptr : IndStorage,
+    indptr : IptrStorage,
     indices : IndStorage,
     data : DataStorage
 }
 
-impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
+impl<'a, N:'a + Copy> CsMatVecView<'a, N> {
+    /// Create a borrowed row or column CsMat matrix from raw data,
+    /// without checking their validity
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_vecview_raw(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : Vec<usize>, indices : *const usize, data : *const N
+        )
+    -> CsMatVecView<'a, N> {
+        let nnz = indptr[1];
+        CsMat {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            nnz : nnz,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
+        }
+    }
+}
+
+impl<'a, N:'a + Copy> CsMatView<'a, N> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
     pub fn new_borrowed(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         )
-    -> Result<CsMat<N, &'a[usize], &'a[N]>, SprsError> {
+    -> Result<CsMatView<'a, N>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : nrows,
@@ -209,7 +240,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : *const usize, indices : *const usize, data : *const N
         )
-    -> CsMat<N, &'a[usize], &'a[N]> {
+    -> CsMatView<'a, N> {
         let outer = match storage {
             CSR => nrows,
             CSC => ncols,
@@ -228,10 +259,10 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
     }
 }
 
-impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
+impl<N: Copy> CsMatOwned<N> {
     /// Create an empty CsMat for building purposes
     pub fn empty(storage: CompressedStorage, inner_size: usize
-                ) -> CsMat<N, Vec<usize>, Vec<N>> {
+                ) -> CsMatOwned<N> {
         let (nrows, ncols) = match storage {
             CSR => (0, inner_size),
             CSC => (inner_size, 0)
@@ -289,7 +320,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
         )
-    -> Result<CsMat<N, Vec<usize>, Vec<N>>, SprsError> {
+    -> Result<CsMatOwned<N>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : nrows,
@@ -336,7 +367,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
     }
 }
 
-impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
+impl<N: Num + Copy> CsMatOwned<N> {
     /// Identity matrix
     ///
     /// ```rust
@@ -347,7 +378,7 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
     /// assert_eq!(x, y);
     /// ```
     pub fn eye(storage: CompressedStorage, dim: usize
-              ) -> CsMat<N, Vec<usize>, Vec<N>> {
+              ) -> CsMatOwned<N> {
         let n = dim;
         let indptr = (0..n+1).collect();
         let indices = (0..n).collect();
@@ -365,8 +396,10 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<N>> {
 
 }
 
-impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
+impl<N, IptrStorage, IndStorage, DataStorage>
+CsMat<N, IptrStorage, IndStorage, DataStorage>
 where N: Copy,
+      IptrStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
@@ -497,8 +530,8 @@ where N: Copy,
     /// # Example
     ///
     /// ```rust
-    /// use sprs::{CsMat};
-    /// let eye : CsMat<f64, _, _> = CsMat::eye(sprs::CSR, 5);
+    /// use sprs::{CsMat, CsMatOwned};
+    /// let eye : CsMatOwned<f64> = CsMat::eye(sprs::CSR, 5);
     /// // get the element of row 3
     /// // there is only one element in this row, with a column index of 3
     /// // and a value of 1.
@@ -651,8 +684,10 @@ where N: Copy,
     }
 }
 
-impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
+impl<N, IptrStorage, IndStorage, DataStorage>
+CsMat<N, IptrStorage, IndStorage, DataStorage>
 where N: Copy + Default,
+      IptrStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
@@ -690,9 +725,11 @@ where N: Copy + Default,
 
 }
 
-impl<N, IndStorage, DataStorage> CsMat<N, IndStorage, DataStorage>
+impl<N, IptrStorage, IndStorage, DataStorage>
+CsMat<N, IptrStorage, IndStorage, DataStorage>
 where
 N: Copy,
+IptrStorage: DerefMut<Target=[usize]>,
 IndStorage: DerefMut<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
 
@@ -711,7 +748,7 @@ DataStorage: DerefMut<Target=[N]> {
 }
 
 mod raw {
-    use super::CsMat;
+    use super::{CsMatView};
     use std::mem::swap;
 
     /// Copy-convert a CsMat into the oppposite storage.
@@ -723,7 +760,7 @@ mod raw {
     ///
     /// Panics if the output slices don't match the input matrices'
     /// corresponding slices.
-    pub fn convert_mat_storage<N: Copy>(mat: CsMat<N, &[usize], &[N]>,
+    pub fn convert_mat_storage<N: Copy>(mat: CsMatView<N>,
                                         indptr: &mut [usize],
                                         indices: &mut[usize],
                                         data: &mut [N]) {
@@ -765,9 +802,10 @@ mod raw {
     }
 }
 
-impl<'a, 'b, N, IStorage, DStorage, Mat> Add<&'b Mat>
-for &'a CsMat<N, IStorage, DStorage>
+impl<'a, 'b, N, IpStorage, IStorage, DStorage, Mat> Add<&'b Mat>
+for &'a CsMat<N, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
+      IpStorage: 'a + Deref<Target=[usize]>,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]>,
       Mat: SpMatView<N> {
@@ -782,9 +820,10 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, IStorage, DStorage, Mat> Sub<&'b Mat>
-for &'a CsMat<N, IStorage, DStorage>
+impl<'a, 'b, N, IpStorage, IStorage, DStorage, Mat> Sub<&'b Mat>
+for &'a CsMat<N, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
+      IpStorage: 'a + Deref<Target=[usize]>,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]>,
       Mat: SpMatView<N> {
@@ -799,9 +838,10 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a,N, IStorage, DStorage> Mul<N>
-for &'a CsMat<N, IStorage, DStorage>
+impl<'a, N, IpStorage, IStorage, DStorage> Mul<N>
+for &'a CsMat<N, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num,
+      IpStorage: 'a + Deref<Target=[usize]>,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]> {
     type Output = CsMatOwned<N>;
@@ -811,16 +851,19 @@ where N: 'a + Copy + Num,
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsMat<N, IS2, DS2>>
-for &'a CsMat<N, IS1, DS1>
+impl<'a, 'b, N, IpS1, IS1, DS1, IpS2, IS2, DS2>
+Mul<&'b CsMat<N, IpS2, IS2, DS2>>
+for &'a CsMat<N, IpS1, IS1, DS1>
 where N: 'a + Copy + Num + Default,
+      IpS1: 'a + Deref<Target=[usize]>,
       IS1: 'a + Deref<Target=[usize]>,
       DS1: 'a + Deref<Target=[N]>,
+      IpS2: 'b + Deref<Target=[usize]>,
       IS2: 'b + Deref<Target=[usize]>,
       DS2: 'b + Deref<Target=[N]> {
     type Output = CsMatOwned<N>;
 
-    fn mul(self, rhs: &'b CsMat<N, IS2, DS2>) -> CsMatOwned<N> {
+    fn mul(self, rhs: &'b CsMat<N, IpS2, IS2, DS2>) -> CsMatOwned<N> {
         match (self.storage(), rhs.storage()) {
             (CSR, CSR) => {
                 let mut workspace = prod::workspace_csr(self, rhs);

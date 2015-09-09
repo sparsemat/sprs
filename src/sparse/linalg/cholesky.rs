@@ -4,7 +4,7 @@ use std::ops::{Deref};
 
 use num::traits::Num;
 
-use sparse::csmat::{CsMat, CompressedStorage};
+use sparse::csmat::{CsMat, CsMatView, CompressedStorage};
 use sparse::symmetric::{is_symmetric};
 use sparse::permutation::Permutation;
 
@@ -14,8 +14,8 @@ pub enum SymmetryCheck {
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-pub fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
-    mat: &CsMat<N, IStorage, DStorage>,
+pub fn ldl_symbolic<N, PStorage>(
+    mat: CsMatView<N>,
     perm: &Permutation<PStorage>,
     l_colptr: &mut [usize],
     parents: &mut [isize],
@@ -24,13 +24,11 @@ pub fn ldl_symbolic<N, IStorage, DStorage, PStorage>(
     check_symmetry: SymmetryCheck)
 where
 N: Clone + Copy + PartialEq,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]>,
 PStorage: Deref<Target=[usize]> {
 
     match check_symmetry {
         SymmetryCheck::DontCheckSymmetry => (),
-        SymmetryCheck::CheckSymmetry => if ! is_symmetric(mat) {
+        SymmetryCheck::CheckSymmetry => if ! is_symmetric(&mat) {
             panic!("Matrix is not symmetric")
         }
     }
@@ -76,8 +74,8 @@ PStorage: Deref<Target=[usize]> {
 
 }
 
-pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
-    mat: &CsMat<N, IStorage, DStorage>,
+pub fn ldl_numeric<N, PStorage>(
+    mat: CsMatView<N>,
     l_colptr: &[usize],
     parents: &[isize],
     perm: &Permutation<PStorage>,
@@ -90,8 +88,6 @@ pub fn ldl_numeric<N, IStorage, DStorage, PStorage>(
     flag_workspace: &mut [usize])
 where
 N: Clone + Copy + PartialEq + Num + PartialOrd,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]>,
 PStorage: Deref<Target=[usize]> {
 
     let n = mat.rows();
@@ -204,12 +200,12 @@ N: Clone + Copy + Num {
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::CsMat;
+    use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::csmat::CompressedStorage::{CSC};
     use sparse::permutation::Permutation;
     use super::{SymmetryCheck};
 
-    fn test_mat1() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+    fn test_mat1() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
         let indices = vec![
             0, 8,
@@ -286,7 +282,7 @@ mod test {
         let mut flag_workspace = [0; 10];
         let perm : Permutation<&[usize]> = Permutation::identity();
         let mat = test_mat1();
-        super::ldl_symbolic(&mat, &perm, &mut l_colptr, &mut parents,
+        super::ldl_symbolic(mat.borrowed(), &perm, &mut l_colptr, &mut parents,
                             &mut l_nz, &mut flag_workspace,
                             SymmetryCheck::CheckSymmetry);
 
@@ -296,7 +292,7 @@ mod test {
         let mut diag = [0.; 10];
         let mut y_workspace = [0.; 10];
         let mut pattern_workspace = [0; 10];
-        super::ldl_numeric(&mat, &l_colptr, &parents, &perm, &mut l_nz,
+        super::ldl_numeric(mat.borrowed(), &l_colptr, &parents, &perm, &mut l_nz,
                            &mut l_indices, &mut l_data, &mut diag,
                            &mut y_workspace, &mut pattern_workspace,
                            &mut flag_workspace);
@@ -335,7 +331,7 @@ mod test {
         let mut flag_workspace = [0; 10];
         let perm : Permutation<&[usize]> = Permutation::identity();
         let mat = test_mat1();
-        super::ldl_symbolic(&mat, &perm, &mut l_colptr, &mut parents,
+        super::ldl_symbolic(mat.borrowed(), &perm, &mut l_colptr, &mut parents,
                             &mut l_nz, &mut flag_workspace,
                             SymmetryCheck::CheckSymmetry);
 
@@ -345,7 +341,7 @@ mod test {
         let mut diag = [0.; 10];
         let mut y_workspace = [0.; 10];
         let mut pattern_workspace = [0; 10];
-        super::ldl_numeric(&mat, &l_colptr, &parents, &perm, &mut l_nz,
+        super::ldl_numeric(mat.borrowed(), &l_colptr, &parents, &perm, &mut l_nz,
                            &mut l_indices, &mut l_data, &mut diag,
                            &mut y_workspace, &mut pattern_workspace,
                            &mut flag_workspace);

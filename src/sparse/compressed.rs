@@ -15,9 +15,10 @@ pub trait SpMatView<N> {
 }
 
 
-impl<N, IndStorage, DataStorage> SpMatView<N>
-for CsMat<N, IndStorage, DataStorage>
+impl<N, IpStorage, IndStorage, DataStorage> SpMatView<N>
+for CsMat<N, IpStorage, IndStorage, DataStorage>
 where N: Copy,
+      IpStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
