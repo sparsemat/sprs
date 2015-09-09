@@ -4,10 +4,11 @@ use std::ops::{Deref};
 
 use sparse::csmat::CsMat;
 
-pub fn is_symmetric<N, IStorage, DStorage>(
-    mat: &CsMat<N, IStorage, DStorage>) -> bool
+pub fn is_symmetric<N, IpStorage, IStorage, DStorage>(
+    mat: &CsMat<N, IpStorage, IStorage, DStorage>) -> bool
 where
 N: Clone + Copy + PartialEq,
+IpStorage: Deref<Target=[usize]>,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
     if mat.rows() != mat.cols() {

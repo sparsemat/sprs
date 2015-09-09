@@ -470,24 +470,26 @@ DStorage: Deref<Target=[N]> {
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsMat<N, IS2, DS2>>
+impl<'a, 'b, N, IS1, DS1, IpS2, IS2, DS2> Mul<&'b CsMat<N, IpS2, IS2, DS2>>
 for &'a CsVec<N, IS1, DS1>
 where N: 'a + Copy + Num + Default,
       IS1: 'a + Deref<Target=[usize]>,
       DS1: 'a + Deref<Target=[N]>,
+      IpS2: 'b + Deref<Target=[usize]>,
       IS2: 'b + Deref<Target=[usize]>,
       DS2: 'b + Deref<Target=[N]> {
 
     type Output = CsVecOwned<N>;
 
-    fn mul(self, rhs: &CsMat<N, IS2, DS2>) -> CsVecOwned<N> {
+    fn mul(self, rhs: &CsMat<N, IpS2, IS2, DS2>) -> CsVecOwned<N> {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Mul<&'b CsVec<N, IS2, DS2>>
-for &'a CsMat<N, IS1, DS1>
+impl<'a, 'b, N, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVec<N, IS2, DS2>>
+for &'a CsMat<N, IpS1, IS1, DS1>
 where N: Copy + Num + Default,
+      IpS1: Deref<Target=[usize]>,
       IS1: Deref<Target=[usize]>,
       DS1: Deref<Target=[N]>,
       IS2: Deref<Target=[usize]>,

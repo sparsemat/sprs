@@ -33,7 +33,7 @@ where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
 
 /// Sparse matrix multiplication by a scalar
 pub fn scalar_mul_mat<N, Mat>(
-    mat: &Mat, val: N) -> CsMat<N, Vec<usize>, Vec<N>>
+    mat: &Mat, val: N) -> CsMatOwned<N>
 where N: Num + Copy, Mat: SpMatView<N> {
     let mat = mat.borrowed();
     let mut out_indptr = vec![0; mat.outer_dims() + 1];
@@ -108,8 +108,8 @@ F: Fn(N, N) -> N {
 ///
 /// Returns the nnz count
 pub fn csmat_binop_same_storage_raw<N, F>(
-    lhs: CsMat<N, &[usize], &[N]>,
-    rhs: CsMat<N, &[usize], &[N]>,
+    lhs: CsMatView<N>,
+    rhs: CsMatView<N>,
     binop: F,
     out_indptr: &mut [usize],
     out_indices: &mut [usize],
@@ -169,12 +169,12 @@ where N: Num + Copy, F: Fn(N, N) -> N {
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::CsMat;
+    use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
     use test_data::{mat1, mat2, mat1_times_2};
 
-    fn mat1_plus_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+    fn mat1_plus_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
         let indices = vec![0, 1, 2, 3, 4, 0, 3, 4, 2, 1, 2, 3, 1, 2, 3];
         let data = vec![6.,  7.,  6.,  4.,  3.,
@@ -183,7 +183,7 @@ mod test {
         CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
     }
 
-    fn mat1_minus_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+    fn mat1_minus_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  4,  7,  8, 11, 14];
         let indices = vec![0, 1, 3, 4, 0, 3, 4, 2, 1, 2, 3, 1, 2, 3];
         let data = vec![-6., -7.,  4., -3., -8.,
@@ -192,7 +192,7 @@ mod test {
         CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
     }
 
-    fn mat1_times_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
+    fn mat1_times_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  1,  2,  2, 2, 2];
         let indices = vec![2, 3];
         let data = vec![9., 18.];
