@@ -76,7 +76,7 @@ Matrix matrix multiplication, addition
 Documentation
 -------------
 
-TODO
+https://vbarrielle.github.io/sprs/doc/sprs/
 
 License
 -------
