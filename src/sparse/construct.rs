@@ -2,13 +2,13 @@
 
 use std::default::Default;
 use std::cmp;
-use sparse::csmat::{CsMatVec, CsMatView};
+use sparse::csmat::{CsMatOwned, CsMatView};
 use errors::SprsError;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
 pub fn same_storage_fast_stack<'a, N, MatArray>(
-    mats: &MatArray) -> Result<CsMatVec<N>, SprsError>
+    mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
 where N: 'a + Copy,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -27,7 +27,7 @@ where N: 'a + Copy,
     let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
     let nnz = mats.iter().map(|x| x.nb_nonzero()).fold(0, |x, y| x + y);
 
-    let mut res = CsMatVec::empty(storage_type, inner_dim);
+    let mut res = CsMatOwned::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);
     res.reserve_nnz_exact(nnz);
     for mat in mats {
@@ -40,7 +40,7 @@ where N: 'a + Copy,
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatVec<N>, SprsError>
+pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
 where N: 'a + Copy + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -54,7 +54,7 @@ where N: 'a + Copy + Default,
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatVec<N>, SprsError>
+pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
 where N: 'a + Copy + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -72,15 +72,15 @@ where N: 'a + Copy + Default,
 /// # Examples
 /// ```
 /// use sprs::sparse::CompressedStorage::CSR;
-/// use sprs::CsMatVec;
-/// let a = CsMatVec::<f64>::eye(CSR, 3);
-/// let b = CsMatVec::<f64>::eye(CSR, 4);
+/// use sprs::CsMatOwned;
+/// let a = CsMatOwned::<f64>::eye(CSR, 3);
+/// let b = CsMatOwned::<f64>::eye(CSR, 4);
 /// let c = sprs::bmat(&[[Some(a.borrowed()), None],
 ///                      [None, Some(b.borrowed())]]).unwrap();
 /// assert_eq!(c.rows(), 7);
 /// ```
 pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray)
--> Result<CsMatVec<N>, SprsError>
+-> Result<CsMatOwned<N>, SprsError>
 where N: 'a + Copy + Default,
       OuterArray: 'a + AsRef<[InnerArray]>,
       InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]> {
@@ -122,7 +122,7 @@ where N: 'a + Copy + Default,
     to_vstack.reserve(super_rows);
     for (i, row) in mats.iter().enumerate() {
         let with_zeros: Vec<_> = row.as_ref().iter().enumerate().map(|(j, m)| {
-            m.as_ref().map_or(CsMatVec::zero(rows_per_row[i], cols_per_col[j]),
+            m.as_ref().map_or(CsMatOwned::zero(rows_per_row[i], cols_per_col[j]),
                               |x| x.to_owned())
         }).collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.borrowed()).collect();
@@ -135,28 +135,28 @@ where N: 'a + Copy + Default,
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::CsMatVec;
+    use sparse::csmat::CsMatOwned;
     use sparse::CompressedStorage::{CSR};
     use test_data::{mat1, mat2, mat3, mat4};
     use errors::SprsError::*;
 
-    fn mat1_vstack_mat2() -> CsMatVec<f64> {
+    fn mat1_vstack_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 4, 5, 6, 7, 11, 13, 13, 15, 17];
         let indices = vec![2, 3, 3, 4, 2, 1, 3, 0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
         let data = vec![3., 4., 2., 5., 5., 8., 7., 6., 7., 3., 3.,
                         8., 9., 2., 4., 4., 4.];
-        CsMatVec::from_vecs(CSR, 10, 5, indptr, indices, data).unwrap()
+        CsMatOwned::new_owned(CSR, 10, 5, indptr, indices, data).unwrap()
     }
 
     #[test]
     fn same_storage_fast_stack_failures() {
-        let res: Result<CsMatVec<f64>, _> =
+        let res: Result<CsMatOwned<f64>, _> =
             super::same_storage_fast_stack(&[]);
         assert_eq!(res, Err(EmptyStackingList));
         let a = mat1();
         let c = mat3();
         let d = mat4();
-        let _: Result<CsMatVec<f64>, _> = super::same_storage_fast_stack(&[]);
+        let _: Result<CsMatOwned<f64>, _> = super::same_storage_fast_stack(&[]);
         let res = super::same_storage_fast_stack(&[a.borrowed(), c.borrowed()]);
         assert_eq!(res, Err(IncompatibleDimensions));
         let res = super::same_storage_fast_stack(&[a.borrowed(), d.borrowed()]);
@@ -201,19 +201,19 @@ mod test {
 
     #[test]
     fn bmat_failures() {
-        let res: Result<CsMatVec<f64>, _> =
+        let res: Result<CsMatOwned<f64>, _> =
             super::bmat(&[[]]);
         assert_eq!(res, Err(EmptyStackingList));
         let a = mat1();
         let c = mat3();
-        let res: Result<CsMatVec<f64>,_> = super::bmat(
+        let res: Result<CsMatOwned<f64>,_> = super::bmat(
             &vec![vec![None, None], vec![None]]);
         assert_eq!(res, Err(IncompatibleDimensions));
-        let res: Result<CsMatVec<f64>, _> =
+        let res: Result<CsMatOwned<f64>, _> =
             super::bmat(&[[None, None],
                           [Some(a.borrowed()), Some(c.borrowed())]]);
         assert_eq!(res, Err(EmptyBmatRow));
-        let res: Result<CsMatVec<f64>, _> =
+        let res: Result<CsMatOwned<f64>, _> =
             super::bmat(&[[Some(c.borrowed()), None],
                           [Some(a.borrowed()), None]]);
         assert_eq!(res, Err(EmptyBmatCol));
@@ -221,11 +221,11 @@ mod test {
 
     #[test]
     fn bmat_simple() {
-        let a = CsMatVec::<f64>::eye(CSR, 5);
-        let b = CsMatVec::<f64>::eye(CSR, 4);
+        let a = CsMatOwned::<f64>::eye(CSR, 5);
+        let b = CsMatOwned::<f64>::eye(CSR, 4);
         let c = super::bmat(&[[Some(a.borrowed()), None],
                               [None, Some(b.borrowed())]]).unwrap();
-        let expected = CsMatVec::from_vecs(
+        let expected = CsMatOwned::new_owned(
             CSR, 9, 9,
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
@@ -239,7 +239,7 @@ mod test {
         let b = mat2();
         let c = super::bmat(&[[Some(a.borrowed()), Some(b.borrowed())],
                               [Some(b.borrowed()), None]]).unwrap();
-        let expected = CsMatVec::from_vecs(
+        let expected = CsMatOwned::new_owned(
             CSR, 10, 10,
             vec![0,  6, 10, 11, 14, 17, 21, 23, 23, 25, 27],
             vec![2, 3, 5, 6, 7, 9, 3, 4, 5, 8, 2, 1, 7, 8, 3,
@@ -253,7 +253,7 @@ mod test {
         let f = super::bmat(&[[Some(d.borrowed()), Some(a.borrowed())],
                               [None, Some(e.borrowed())]]
                            ).unwrap();
-        let expected = CsMatVec::from_vecs(
+        let expected = CsMatOwned::new_owned(
             CSR, 10, 9,
             vec![0, 4, 8, 10, 12, 14, 16, 18, 21, 23, 24],
             vec![2, 3, 6, 7, 2, 3, 7, 8, 2, 6, 1, 5, 3, 7, 4,

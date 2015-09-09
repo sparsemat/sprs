@@ -1,6 +1,6 @@
 ///! Sparse matrix product
 
-use sparse::csmat::{CsMatVec, CsMatView};
+use sparse::csmat::{CsMatOwned, CsMatView};
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
@@ -68,7 +68,7 @@ where N: Num + Copy {
 pub fn csr_mul_csr<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
                                   workspace: &mut[N]
-                                 ) -> Result<CsMatVec<N>, SprsError>
+                                 ) -> Result<CsMatOwned<N>, SprsError>
 where
 N: Num + Copy,
 Mat1: SpMatView<N>,
@@ -88,7 +88,7 @@ Mat2: SpMatView<N> {
 pub fn csc_mul_csc<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
                                   workspace: &mut[N]
-                                 ) -> Result<CsMatVec<N>, SprsError>
+                                 ) -> Result<CsMatOwned<N>, SprsError>
 where
 N: Num + Copy,
 Mat1: SpMatView<N>,
@@ -121,7 +121,7 @@ where N: Copy + Num,
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
                            workspace: &mut[N]
-                          ) -> Result<CsMatVec<N>, SprsError>
+                          ) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy {
     let res_rows = lhs.rows();
     let res_cols = rhs.cols();
@@ -138,7 +138,7 @@ where N: Num + Copy {
         return Err(SprsError::BadStorageType);
     }
 
-    let mut res = CsMatVec::empty(lhs.storage(), res_cols);
+    let mut res = CsMatOwned::empty(lhs.storage(), res_cols);
     for (_, lvec) in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
@@ -197,7 +197,7 @@ mod test {
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
 
-        let mat = CsMat::from_slices(CSC, 5, 5, indptr, indices, data).unwrap();
+        let mat = CsMat::new_borrowed(CSC, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csc(mat, &vector, &mut res_vec).unwrap();
@@ -219,7 +219,7 @@ mod test {
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
 
-        let mat = CsMat::from_slices(CSR, 5, 5, indptr, indices, data).unwrap();
+        let mat = CsMat::new_borrowed(CSR, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csr(mat, &vector, &mut res_vec).unwrap();

@@ -22,7 +22,7 @@ use sparse::binop;
 use sparse::prod;
 use errors::SprsError;
 
-pub type CsMatVec<N> = CsMat<N, Vec<usize>, Vec<N>>;
+pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [N]>;
 
 /// Describe the storage of a CsMat
@@ -84,9 +84,8 @@ for OuterIterator<'iter, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_borrowed_unchecked(
-                        self.inner_len, indices.len(),
-                        indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
+                                             indices.as_ptr(), data.as_ptr());
                     Some((outer_ind, vec))
                 }
             }
@@ -117,9 +116,8 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_borrowed_unchecked(
-                        self.inner_len, indices.len(),
-                        indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
+                                             indices.as_ptr(), data.as_ptr());
                     Some((outer_ind_perm, vec))
                 }
             }
@@ -152,9 +150,8 @@ for OuterIterator<'iter, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_borrowed_unchecked(
-                        self.inner_len, indices.len(),
-                        indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
+                                             indices.as_ptr(), data.as_ptr());
                     Some((outer_ind, vec))
                 }
             }
@@ -184,7 +181,7 @@ where IndStorage: Deref<Target=[usize]>, DataStorage: Deref<Target=[N]> {
 impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
-    pub fn from_slices(
+    pub fn new_borrowed(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         )
@@ -208,7 +205,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a[usize], &'a[N]> {
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn from_raw_data(
+    pub unsafe fn new_raw(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : *const usize, indices : *const usize, data : *const N
         )
@@ -252,7 +249,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(rows: usize, cols: usize) -> CsMatVec<N> {
+    pub fn zero(rows: usize, cols: usize) -> CsMatOwned<N> {
         CsMat {
             storage: CSR,
             nrows: rows,
@@ -288,7 +285,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<N>> {
 
     /// Create an owned CsMat matrix from moved data,
     /// checking their validity
-    pub fn from_vecs(
+    pub fn new_owned(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
         )
@@ -485,10 +482,10 @@ where N: Copy,
         let stop = self.indptr[i+1];
         // safety derives from the structure checks in the constructors
         unsafe {
-            Some(CsVec::new_borrowed_unchecked(
-                    self.inner_dims(), self.indices[start..stop].len(),
-                    self.indices[start..stop].as_ptr(),
-                    self.data[start..stop].as_ptr()))
+            Some(CsVec::new_raw(self.inner_dims(),
+                                self.indices[start..stop].len(),
+                                self.indices[start..stop].as_ptr(),
+                                self.data[start..stop].as_ptr()))
         }
     }
 
@@ -567,8 +564,8 @@ where N: Copy,
 
     /// Get an owned version of this matrix. If the matrix was already
     /// owned, this will make a deep copy.
-    pub fn to_owned(&self) -> CsMatVec<N> {
-        CsMatVec {
+    pub fn to_owned(&self) -> CsMatOwned<N> {
+        CsMatOwned {
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
@@ -661,21 +658,21 @@ where N: Copy + Default,
 
     /// Create a matrix mathematically equal to this one, but with the
     /// opposed storage (a CSC matrix will be converted to CSR, and vice versa)
-    pub fn to_other_storage(&self) -> CsMatVec<N> {
+    pub fn to_other_storage(&self) -> CsMatOwned<N> {
         let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
         let borrowed = self.borrowed();
         raw::convert_mat_storage(borrowed,
                                  &mut indptr, &mut indices, &mut data);
-        CsMat::from_vecs(self.storage().other_storage(),
+        CsMat::new_owned(self.storage().other_storage(),
                          self.rows(), self.cols(),
                          indptr, indices, data).unwrap()
     }
 
     /// Create a new CSC matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSC.
-    pub fn to_csc(&self) -> CsMatVec<N> {
+    pub fn to_csc(&self) -> CsMatOwned<N> {
         match self.storage {
             CSR => self.to_other_storage(),
             CSC => self.to_owned()
@@ -684,7 +681,7 @@ where N: Copy + Default,
 
     /// Create a new CSR matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSR.
-    pub fn to_csr(&self) -> CsMatVec<N> {
+    pub fn to_csr(&self) -> CsMatOwned<N> {
         match self.storage {
             CSR => self.to_owned(),
             CSC => self.to_other_storage()
@@ -774,9 +771,9 @@ where N: 'a + Copy + Num + Default,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]>,
       Mat: SpMatView<N> {
-    type Output = CsMatVec<N>;
+    type Output = CsMatOwned<N>;
 
-    fn add(self, rhs: &'b Mat) -> CsMatVec<N> {
+    fn add(self, rhs: &'b Mat) -> CsMatOwned<N> {
         if self.storage() != rhs.borrowed().storage() {
             return binop::add_mat_same_storage(
                 self, &rhs.borrowed().to_other_storage()).unwrap()
@@ -791,9 +788,9 @@ where N: 'a + Copy + Num + Default,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]>,
       Mat: SpMatView<N> {
-    type Output = CsMatVec<N>;
+    type Output = CsMatOwned<N>;
 
-    fn sub(self, rhs: &'b Mat) -> CsMatVec<N> {
+    fn sub(self, rhs: &'b Mat) -> CsMatOwned<N> {
         if self.storage() != rhs.borrowed().storage() {
             return binop::sub_mat_same_storage(
                 self, &rhs.borrowed().to_other_storage()).unwrap()
@@ -807,9 +804,9 @@ for &'a CsMat<N, IStorage, DStorage>
 where N: 'a + Copy + Num,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]> {
-    type Output = CsMatVec<N>;
+    type Output = CsMatOwned<N>;
 
-    fn mul(self, rhs: N) -> CsMatVec<N> {
+    fn mul(self, rhs: N) -> CsMatOwned<N> {
         binop::scalar_mul_mat(self, rhs)
     }
 }
@@ -821,9 +818,9 @@ where N: 'a + Copy + Num + Default,
       DS1: 'a + Deref<Target=[N]>,
       IS2: 'b + Deref<Target=[usize]>,
       DS2: 'b + Deref<Target=[N]> {
-    type Output = CsMatVec<N>;
+    type Output = CsMatOwned<N>;
 
-    fn mul(self, rhs: &'b CsMat<N, IS2, DS2>) -> CsMatVec<N> {
+    fn mul(self, rhs: &'b CsMat<N, IS2, DS2>) -> CsMatOwned<N> {
         match (self.storage(), rhs.storage()) {
             (CSR, CSR) => {
                 let mut workspace = prod::workspace_csr(self, rhs);
@@ -860,7 +857,7 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let m = CsMat::from_slices(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
+        let m = CsMat::new_borrowed(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
         assert!(m.is_ok());
     }
 
@@ -876,25 +873,25 @@ mod test {
         let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        assert_eq!(CsMat::from_slices(CSR, 3, 3, indptr_fail1,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3, indptr_fail1,
                                       indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
                                       indptr_fail2, indices_ok, data_ok),
                    Err(SprsError::OutOfBoundsIndptr));
-        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
                                       indptr_fail3, indices_ok, data_ok),
                    Err(SprsError::UnsortedIndptr));
-        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
                                       indptr_ok, indices_fail1, data_ok),
                    Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
                                       indptr_ok, indices_fail2, data_ok),
                    Err(SprsError::OutOfBoundsIndex));
-        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
                                       indptr_ok, indices_ok, data_fail1),
                    Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::from_slices(CSR, 3, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
                                       indptr_ok, indices_ok, data_fail2),
                    Err(SprsError::DataIndicesMismatch));
     }
@@ -907,7 +904,7 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        assert_eq!(CsMat::from_slices(CSR, 5, 5,
+        assert_eq!(CsMat::new_borrowed(CSR, 5, 5,
                                       indptr, indices, data),
                    Err(SprsError::NonSortedIndices));
     }
@@ -919,9 +916,9 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert!(CsMat::from_slices(CSR, 3, 4,
+        assert!(CsMat::new_borrowed(CSR, 3, 4,
                                    indptr_ok, indices_ok, data_ok).is_ok());
-        assert!(CsMat::from_slices(CSC, 4, 3,
+        assert!(CsMat::new_borrowed(CSC, 4, 3,
                                    indptr_ok, indices_ok, data_ok).is_ok());
     }
 
@@ -932,10 +929,10 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert_eq!(CsMat::from_slices(CSR, 4, 3,
+        assert_eq!(CsMat::new_borrowed(CSR, 4, 3,
                                       indptr_ok, indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::from_slices(CSC, 3, 4,
+        assert_eq!(CsMat::new_borrowed(CSC, 3, 4,
                                       indptr_ok, indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
     }
@@ -946,7 +943,7 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::from_slices(CSR, 3, 3,
+        assert!(CsMat::new_borrowed(CSR, 3, 3,
                                    &indptr_ok, &indices_ok, &data_ok).is_ok());
     }
 
@@ -955,7 +952,7 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::from_vecs(CSR, 3, 3,
+        assert!(CsMat::new_owned(CSR, 3, 3,
                                  indptr_ok, indices_ok, data_ok).is_ok());
     }
 
@@ -966,7 +963,7 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        assert!(CsMat::from_slices(CSR, 5, 5, indptr, indices, data).is_ok());
+        assert!(CsMat::new_borrowed(CSR, 5, 5, indptr, indices, data).is_ok());
     }
 
     #[test]

@@ -14,9 +14,9 @@ solvers is planned.
 Matrix construction
 
 ```rust
-use sprs::{CsMat, CsMatVec, CsVec};
-let eye : CsMatVec<f64> = CsMat::eye(sprs::CSR, 3);
-let a = CsMat::from_vecs(sprs::CSC, 3, 3,
+use sprs::{CsMat, CsMatOwned, CsVec};
+let eye : CsMatOwned<f64> = CsMat::eye(sprs::CSR, 3);
+let a = CsMat::new_owned(sprs::CSC, 3, 3,
                          vec![0, 2, 4, 5],
                          vec![0, 1, 0, 2, 2],
                          vec![1., 2., 3., 4., 5.]).unwrap();
@@ -36,7 +36,7 @@ Matrix matrix multiplication, addition
 ```rust
 use sprs::{CsMat, CsVec};
 let eye = CsMat::eye(sprs::CSR, 3);
-let a = CsMat::from_vecs(sprs::CSC, 3, 3,
+let a = CsMat::new_owned(sprs::CSC, 3, 3,
                          vec![0, 2, 4],
                          vec![0, 1, 0, 2, 2],
                          vec![1., 2., 3., 4., 5.]).unwrap();
@@ -51,7 +51,7 @@ extern crate num;
 pub mod sparse;
 pub mod errors;
 
-pub use sparse::{CsMat, CsMatVec, CsMatView};
+pub use sparse::{CsMat, CsMatOwned, CsMatView};
 pub use sparse::vec::{CsVec, CsVecView, CsVecOwned};
 pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};

@@ -165,7 +165,7 @@ where
 N: Clone + Copy + Num {
 
     let n = l_colptr.len() - 1;
-    let l = CsMat::from_slices(
+    let l = CsMat::new_borrowed(
         CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
     for (col_ind, vec) in l.outer_iterator() {
         for (row_ind, value) in vec.iter() {
@@ -182,7 +182,7 @@ pub fn ldl_ltsolve<N>(
 where
 N: Clone + Copy + Num {
     let n = l_colptr.len() - 1;
-    let l = CsMat::from_slices(
+    let l = CsMat::new_borrowed(
         CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
     for (outer_ind, vec) in l.outer_iterator().rev() {
         for (inner_ind, value) in vec.iter() {
@@ -233,7 +233,7 @@ mod test {
             0.09, 1.6, 0.11,
             0.13, 0.52, 0.11, 1.4,
             0.01, 0.53, 0.56, 3.1];
-        CsMat::from_vecs(CSC, 10, 10, indptr, indices, data).unwrap()
+        CsMat::new_owned(CSC, 10, 10, indptr, indices, data).unwrap()
     }
 
     fn test_vec1() -> Vec<f64> {

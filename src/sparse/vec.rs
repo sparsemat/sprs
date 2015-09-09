@@ -250,7 +250,7 @@ impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_borrowed_unchecked(n: usize,
+    pub unsafe fn new_raw(n: usize,
                                          nnz: usize,
                                          indices: *const usize,
                                          data: *const N,
@@ -432,10 +432,10 @@ DStorage: Deref<Target=[N]> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         unsafe {
-            CsMatView::from_raw_data(CSR, 1, self.dim,
-                                     self.indptr.as_ptr(),
-                                     self.indices.as_ptr(),
-                                     self.data.as_ptr())
+            CsMatView::new_raw(CSR, 1, self.dim,
+                               self.indptr.as_ptr(),
+                               self.indices.as_ptr(),
+                               self.data.as_ptr())
         }
     }
 
@@ -444,15 +444,15 @@ DStorage: Deref<Target=[N]> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         unsafe {
-            CsMatView::from_raw_data(CSC, self.dim, 1,
-                                    self.indptr.as_ptr(),
-                                    self.indices.as_ptr(),
-                                    self.data.as_ptr())
+            CsMatView::new_raw(CSC, self.dim, 1,
+                               self.indptr.as_ptr(),
+                               self.indices.as_ptr(),
+                               self.data.as_ptr())
         }
     }
 
     /// Vector dot product
-    /// 
+    ///
     /// # Example
     ///
     /// ```rust

@@ -2,7 +2,7 @@
 pub use self::csmat::{
     CompressedStorage,
     CsMat,
-    CsMatVec,
+    CsMatOwned,
     CsMatView
 };
 

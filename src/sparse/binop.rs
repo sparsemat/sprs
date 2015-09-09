@@ -1,6 +1,6 @@
 ///! Sparse matrix addition, subtraction
 
-use sparse::csmat::{CsMat, CsMatVec, CsMatView};
+use sparse::csmat::{CsMat, CsMatOwned, CsMatView};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned};
@@ -9,7 +9,7 @@ use errors::SprsError;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatVec<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     let binop = |x, y| x + y;
     csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
@@ -17,7 +17,7 @@ where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
 
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatVec<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     let binop = |x, y| x - y;
     csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
@@ -25,7 +25,7 @@ where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
 
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatVec<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     let binop = |x, y| x * y;
     csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
@@ -44,7 +44,7 @@ where N: Num + Copy, Mat: SpMatView<N> {
     let storage_type = mat.storage();
     scalar_mul_mat_raw(mat, val, &mut out_indptr[..],
                        &mut out_indices[..], &mut out_data[..]);
-    CsMat::from_vecs(storage_type, nrows, ncols,
+    CsMat::new_owned(storage_type, nrows, ncols,
                      out_indptr, out_indices, out_data).unwrap()
 }
 
@@ -74,7 +74,7 @@ where N: Num + Copy {
 }
 
 fn csmat_binop_same_storage_alloc<N, F>(
-    lhs: CsMatView<N>, rhs: CsMatView<N>, binop: F) -> Result<CsMatVec<N>, SprsError>
+    lhs: CsMatView<N>, rhs: CsMatView<N>, binop: F) -> Result<CsMatOwned<N>, SprsError>
 where
 N: Num + Copy,
 F: Fn(N, N) -> N {
@@ -98,7 +98,7 @@ F: Fn(N, N) -> N {
                                            &mut out_data[..]);
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
-    Ok(CsMat::from_vecs(storage_type, nrows, ncols,
+    Ok(CsMat::new_owned(storage_type, nrows, ncols,
                         out_indptr, out_indices, out_data).unwrap())
 }
 
@@ -180,7 +180,7 @@ mod test {
         let data = vec![6.,  7.,  6.,  4.,  3.,
                         8.,  11.,  5.,  5.,  8.,
                         2.,  4.,  4.,  4.,  7.];
-        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+        CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
     }
 
     fn mat1_minus_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
@@ -189,14 +189,14 @@ mod test {
         let data = vec![-6., -7.,  4., -3., -8.,
                         -7.,  5.,  5.,  8., -2.,
                         -4., -4., -4.,  7.];
-        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+        CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
     }
 
     fn mat1_times_mat2() -> CsMat<f64, Vec<usize>, Vec<f64>> {
         let indptr = vec![0,  1,  2,  2, 2, 2];
         let indices = vec![2, 3];
         let data = vec![9., 18.];
-        CsMat::from_vecs(CSR, 5, 5, indptr, indices, data).unwrap()
+        CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
     }
 
 

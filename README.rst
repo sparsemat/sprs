@@ -42,9 +42,9 @@ Matrix construction
 
 .. code-block:: rust
 
-  use sprs::{CsMat, CsMatVec, CsVec};
-  let eye : CsMatVec<f64> = CsMat::eye(sprs::CSR, 3);
-  let a = CsMat::from_vecs(sprs::CSC, 3, 3,
+  use sprs::{CsMat, CsMatOwned, CsVec};
+  let eye : CsMatOwned<f64> = CsMat::eye(sprs::CSR, 3);
+  let a = CsMat::new_owned(sprs::CSC, 3, 3,
   vec![0, 2, 4, 5],
   vec![0, 1, 0, 2, 2],
   vec![1., 2., 3., 4., 5.]).unwrap();
@@ -66,7 +66,7 @@ Matrix matrix multiplication, addition
 
   use sprs::{CsMat, CsVec};
   let eye = CsMat::eye(sprs::CSR, 3);
-  let a = CsMat::from_vecs(sprs::CSC, 3, 3,
+  let a = CsMat::new_owned(sprs::CSC, 3, 3,
                            vec![0, 2, 4],
                            vec![0, 1, 0, 2, 2],
                            vec![1., 2., 3., 4., 5.]).unwrap();
