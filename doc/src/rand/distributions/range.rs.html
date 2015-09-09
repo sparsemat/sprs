@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.8/src/distributions/range.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.11/src/distributions/range.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>range.rs.html -- source</title>
@@ -271,6 +271,8 @@
 <span id="229">229</span>
 <span id="230">230</span>
 <span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -349,7 +351,7 @@
 <span class='doccomment'>/// The helper trait for types that have a sensible way to sample</span>
 <span class='doccomment'>/// uniformly between two values. This should not be used directly,</span>
 <span class='doccomment'>/// and is only to facilitate `Range`.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>SampleRange</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>SampleRange</span> : <span class='ident'>Sized</span> {
     <span class='doccomment'>/// Construct the `Range` object that `sample_range`</span>
     <span class='doccomment'>/// requires. This should not ever be called directly, only via</span>
     <span class='doccomment'>/// `Range::new`, which will check that `low &lt; high`, so this</span>
@@ -441,11 +443,13 @@
     <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>Range</span> <span class='kw'>as</span> <span class='ident'>Range</span>;
 
     <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+    <span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>target_env</span> <span class='op'>=</span> <span class='string'>&quot;msvc&quot;</span>, <span class='ident'>ignore</span>)]</span>
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_range_bad_limits_equal</span>() {
         <span class='ident'>Range</span>::<span class='ident'>new</span>(<span class='number'>10</span>, <span class='number'>10</span>);
     }
     <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+    <span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>target_env</span> <span class='op'>=</span> <span class='string'>&quot;msvc&quot;</span>, <span class='ident'>ignore</span>)]</span>
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_range_bad_limits_flipped</span>() {
         <span class='ident'>Range</span>::<span class='ident'>new</span>(<span class='number'>10</span>, <span class='number'>5</span>);

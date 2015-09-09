@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.8/src/rand_impls.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.11/src/rand_impls.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>rand_impls.rs.html -- source</title>
@@ -303,6 +303,26 @@
 <span id="261">261</span>
 <span id="262">262</span>
 <span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013-2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -504,6 +524,26 @@
 <span class='macro'>tuple_impl</span><span class='macro'>!</span>{<span class='ident'>A</span>, <span class='ident'>B</span>, <span class='ident'>C</span>, <span class='ident'>D</span>, <span class='ident'>E</span>, <span class='ident'>F</span>, <span class='ident'>G</span>, <span class='ident'>H</span>, <span class='ident'>I</span>, <span class='ident'>J</span>}
 <span class='macro'>tuple_impl</span><span class='macro'>!</span>{<span class='ident'>A</span>, <span class='ident'>B</span>, <span class='ident'>C</span>, <span class='ident'>D</span>, <span class='ident'>E</span>, <span class='ident'>F</span>, <span class='ident'>G</span>, <span class='ident'>H</span>, <span class='ident'>I</span>, <span class='ident'>J</span>, <span class='ident'>K</span>}
 <span class='macro'>tuple_impl</span><span class='macro'>!</span>{<span class='ident'>A</span>, <span class='ident'>B</span>, <span class='ident'>C</span>, <span class='ident'>D</span>, <span class='ident'>E</span>, <span class='ident'>F</span>, <span class='ident'>G</span>, <span class='ident'>H</span>, <span class='ident'>I</span>, <span class='ident'>J</span>, <span class='ident'>K</span>, <span class='ident'>L</span>}
+
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>array_impl</span> {
+    {<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span>:<span class='ident'>expr</span>, <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span>:<span class='ident'>ident</span>, $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>ts</span>:<span class='ident'>ident</span>,)<span class='op'>*</span>} <span class='op'>=&gt;</span> {
+        <span class='macro'>array_impl</span><span class='macro'>!</span>{(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span> <span class='op'>-</span> <span class='number'>1</span>), $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>ts</span>,)<span class='op'>*</span>}
+
+        <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='ident'>Rand</span> <span class='kw'>for</span> [<span class='ident'>T</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span>] <span class='kw'>where</span> <span class='ident'>T</span>: <span class='ident'>Rand</span> {
+            <span class='attribute'>#[<span class='ident'>inline</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>rand</span><span class='op'>&lt;</span><span class='ident'>R</span>: <span class='ident'>Rng</span><span class='op'>&gt;</span>(<span class='ident'>_rng</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>R</span>) <span class='op'>-&gt;</span> [<span class='ident'>T</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span>] {
+                [<span class='ident'>_rng</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span><span class='op'>&gt;</span>(), $(<span class='ident'>_rng</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>ts</span><span class='op'>&gt;</span>()),<span class='op'>*</span>]
+            }
+        }
+    };
+    {<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span>:<span class='ident'>expr</span>,} <span class='op'>=&gt;</span> {
+        <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='ident'>Rand</span> <span class='kw'>for</span> [<span class='ident'>T</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span>] {
+            <span class='kw'>fn</span> <span class='ident'>rand</span><span class='op'>&lt;</span><span class='ident'>R</span>: <span class='ident'>Rng</span><span class='op'>&gt;</span>(<span class='ident'>_rng</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>R</span>) <span class='op'>-&gt;</span> [<span class='ident'>T</span>; <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>n</span>] { [] }
+        }
+    };
+}
+
+<span class='macro'>array_impl</span><span class='macro'>!</span>{<span class='number'>32</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>, <span class='ident'>T</span>,}
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>:<span class='ident'>Rand</span><span class='op'>&gt;</span> <span class='ident'>Rand</span> <span class='kw'>for</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>

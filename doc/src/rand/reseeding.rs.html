@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.8/src/reseeding.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.11/src/reseeding.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>reseeding.rs.html -- source</title>
@@ -418,7 +418,7 @@
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>test</span> {
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>default</span>::<span class='ident'>Default</span>;
-    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::{<span class='ident'>order</span>, <span class='ident'>repeat</span>};
+    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::<span class='ident'>repeat</span>;
     <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>ReseedingRng</span>, <span class='ident'>ReseedWithDefault</span>};
     <span class='kw'>use</span> {<span class='ident'>SeedableRng</span>, <span class='ident'>Rng</span>};
 
@@ -463,8 +463,8 @@
     <span class='kw'>fn</span> <span class='ident'>test_rng_seeded</span>() {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ra</span>: <span class='ident'>MyRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>((<span class='ident'>ReseedWithDefault</span>, <span class='number'>2</span>));
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rb</span>: <span class='ident'>MyRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>((<span class='ident'>ReseedWithDefault</span>, <span class='number'>2</span>));
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>order</span>::<span class='ident'>equals</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
-                              <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
+        <span class='macro'>assert</span><span class='macro'>!</span>(::<span class='ident'>test</span>::<span class='ident'>iter_eq</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
+                                <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.8/src/distributions/normal.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.11/src/distributions/normal.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>normal.rs.html -- source</title>
@@ -241,19 +241,6 @@
 <span id="199">199</span>
 <span id="200">200</span>
 <span id="201">201</span>
-<span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
-<span id="212">212</span>
-<span id="213">213</span>
-<span id="214">214</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -273,9 +260,7 @@
 <span class='doccomment'>/// A wrapper around an `f64` to generate N(0, 1) random numbers</span>
 <span class='doccomment'>/// (a.k.a.  a standard normal, or Gaussian).</span>
 <span class='doccomment'>///</span>
-<span class='doccomment'>/// See `Normal` for the general normal distribution. That this has to</span>
-<span class='doccomment'>/// be unwrapped before use as an `f64` (using either `*` or</span>
-<span class='doccomment'>/// `mem::transmute` is safe).</span>
+<span class='doccomment'>/// See `Normal` for the general normal distribution.</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// Implemented via the ZIGNOR variant[1] of the Ziggurat method.</span>
 <span class='doccomment'>///</span>
@@ -283,6 +268,15 @@
 <span class='doccomment'>/// Generate Normal Random</span>
 <span class='doccomment'>/// Samples*](http://www.doornik.com/research/ziggurat.pdf). Nuffield</span>
 <span class='doccomment'>/// College, Oxford</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>/// # Example</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>/// ```rust</span>
+<span class='doccomment'>/// use rand::distributions::normal::StandardNormal;</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>/// let StandardNormal(x) = rand::random();</span>
+<span class='doccomment'>/// println!(&quot;{}&quot;, x);</span>
+<span class='doccomment'>/// ```</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>, <span class='ident'>Copy</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>StandardNormal</span>(<span class='kw'>pub</span> <span class='ident'>f64</span>);
 
@@ -427,6 +421,7 @@
     }
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+    <span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>target_env</span> <span class='op'>=</span> <span class='string'>&quot;msvc&quot;</span>, <span class='ident'>ignore</span>)]</span>
     <span class='kw'>fn</span> <span class='ident'>test_normal_invalid_sd</span>() {
         <span class='ident'>Normal</span>::<span class='ident'>new</span>(<span class='number'>10.0</span>, <span class='op'>-</span><span class='number'>1.0</span>);
     }
@@ -443,30 +438,9 @@
     }
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+    <span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>target_env</span> <span class='op'>=</span> <span class='string'>&quot;msvc&quot;</span>, <span class='ident'>ignore</span>)]</span>
     <span class='kw'>fn</span> <span class='ident'>test_log_normal_invalid_sd</span>() {
         <span class='ident'>LogNormal</span>::<span class='ident'>new</span>(<span class='number'>10.0</span>, <span class='op'>-</span><span class='number'>1.0</span>);
-    }
-}
-
-<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
-<span class='kw'>mod</span> <span class='ident'>bench</span> {
-    <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>test</span>;
-    <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>test</span>::<span class='ident'>Bencher</span>;
-    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>size_of</span>;
-    <span class='kw'>use</span> <span class='ident'>distributions</span>::{<span class='ident'>Sample</span>};
-    <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>Normal</span>;
-
-    <span class='attribute'>#[<span class='ident'>bench</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>rand_normal</span>(<span class='ident'>b</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Bencher</span>) {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span> <span class='op'>=</span> ::<span class='ident'>test</span>::<span class='ident'>weak_rng</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>normal</span> <span class='op'>=</span> <span class='ident'>Normal</span>::<span class='ident'>new</span>(<span class='op'>-</span><span class='number'>2.71828</span>, <span class='number'>3.14159</span>);
-
-        <span class='ident'>b</span>.<span class='ident'>iter</span>(<span class='op'>||</span> {
-            <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='number'>0</span>..::<span class='ident'>RAND_BENCH_N</span> {
-                <span class='ident'>normal</span>.<span class='ident'>sample</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>rng</span>);
-            }
-        });
-        <span class='ident'>b</span>.<span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span>() <span class='kw'>as</span> <span class='ident'>u64</span> <span class='op'>*</span> ::<span class='ident'>RAND_BENCH_N</span>;
     }
 }
 </pre>

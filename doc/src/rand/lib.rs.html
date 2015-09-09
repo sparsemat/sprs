@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.8/src/lib.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.11/src/lib.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>lib.rs.html -- source</title>
@@ -1217,6 +1217,39 @@
 <span id="1175">1175</span>
 <span id="1176">1176</span>
 <span id="1177">1177</span>
+<span id="1178">1178</span>
+<span id="1179">1179</span>
+<span id="1180">1180</span>
+<span id="1181">1181</span>
+<span id="1182">1182</span>
+<span id="1183">1183</span>
+<span id="1184">1184</span>
+<span id="1185">1185</span>
+<span id="1186">1186</span>
+<span id="1187">1187</span>
+<span id="1188">1188</span>
+<span id="1189">1189</span>
+<span id="1190">1190</span>
+<span id="1191">1191</span>
+<span id="1192">1192</span>
+<span id="1193">1193</span>
+<span id="1194">1194</span>
+<span id="1195">1195</span>
+<span id="1196">1196</span>
+<span id="1197">1197</span>
+<span id="1198">1198</span>
+<span id="1199">1199</span>
+<span id="1200">1200</span>
+<span id="1201">1201</span>
+<span id="1202">1202</span>
+<span id="1203">1203</span>
+<span id="1204">1204</span>
+<span id="1205">1205</span>
+<span id="1206">1206</span>
+<span id="1207">1207</span>
+<span id="1208">1208</span>
+<span id="1209">1209</span>
+<span id="1210">1210</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013-2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -1238,6 +1271,22 @@
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! See the `distributions` submodule for sampling random numbers from</span>
 <span class='doccomment'>//! distributions like normal and exponential.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! # Usage</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! This crate is [on crates.io](https://crates.io/crates/rand) and can be</span>
+<span class='doccomment'>//! used by adding `rand` to the dependencies in your project&#39;s `Cargo.toml`.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```toml</span>
+<span class='doccomment'>//! [dependencies]</span>
+<span class='doccomment'>//! rand = &quot;0.3&quot;</span>
+<span class='doccomment'>//! ```</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! and this to your crate root:</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```rust</span>
+<span class='doccomment'>//! extern crate rand;</span>
+<span class='doccomment'>//! ```</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! # Thread-local RNG</span>
 <span class='doccomment'>//!</span>
@@ -1445,8 +1494,6 @@
        <span class='ident'>html_favicon_url</span> <span class='op'>=</span> <span class='string'>&quot;http://www.rust-lang.org/favicon.ico&quot;</span>,
        <span class='ident'>html_root_url</span> <span class='op'>=</span> <span class='string'>&quot;http://doc.rust-lang.org/rand/&quot;</span>)]</span>
 
-<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>cfg_attr</span>(<span class='ident'>test</span>, <span class='ident'>feature</span>(<span class='ident'>core</span>, <span class='ident'>test</span>))]</span>
-
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span> <span class='attribute'>#[<span class='ident'>macro_use</span>]</span> <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>log</span>;
 
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cell</span>::<span class='ident'>RefCell</span>;
@@ -1490,7 +1537,7 @@
 }
 
 <span class='doccomment'>/// A random number generator.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Rng</span> : <span class='ident'>Sized</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Rng</span> {
     <span class='doccomment'>/// Return the next random u32.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// This rarely needs to be called directly, prefer `r.gen()` to</span>
@@ -1612,7 +1659,7 @@
     <span class='doccomment'>/// println!(&quot;{:?}&quot;, rng.gen::&lt;(f64, bool)&gt;());</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>(<span class='ident'>always</span>)]</span>
-    <span class='kw'>fn</span> <span class='ident'>gen</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Rand</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>T</span> {
+    <span class='kw'>fn</span> <span class='ident'>gen</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Rand</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>T</span> <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='ident'>Rand</span>::<span class='ident'>rand</span>(<span class='self'>self</span>)
     }
 
@@ -1630,7 +1677,7 @@
     <span class='doccomment'>/// println!(&quot;{:?}&quot;, rng.gen_iter::&lt;(f64, bool)&gt;().take(5)</span>
     <span class='doccomment'>///                     .collect::&lt;Vec&lt;(f64, bool)&gt;&gt;());</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>gen_iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span>: <span class='ident'>Rand</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>Generator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span>, <span class='kw'>Self</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>gen_iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span>: <span class='ident'>Rand</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>Generator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span>, <span class='kw'>Self</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='ident'>Generator</span> { <span class='ident'>rng</span>: <span class='self'>self</span>, <span class='ident'>_marker</span>: <span class='ident'>marker</span>::<span class='ident'>PhantomData</span> }
     }
 
@@ -1657,7 +1704,7 @@
     <span class='doccomment'>/// let m: f64 = rng.gen_range(-40.0f64, 1.3e5f64);</span>
     <span class='doccomment'>/// println!(&quot;{}&quot;, m);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>gen_range</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>SampleRange</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>low</span>: <span class='ident'>T</span>, <span class='ident'>high</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>T</span> {
+    <span class='kw'>fn</span> <span class='ident'>gen_range</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>SampleRange</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>low</span>: <span class='ident'>T</span>, <span class='ident'>high</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>T</span> <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>low</span> <span class='op'>&lt;</span> <span class='ident'>high</span>, <span class='string'>&quot;Rng.gen_range called with low &gt;= high&quot;</span>);
         <span class='ident'>Range</span>::<span class='ident'>new</span>(<span class='ident'>low</span>, <span class='ident'>high</span>).<span class='ident'>ind_sample</span>(<span class='self'>self</span>)
     }
@@ -1672,7 +1719,7 @@
     <span class='doccomment'>/// let mut rng = thread_rng();</span>
     <span class='doccomment'>/// println!(&quot;{}&quot;, rng.gen_weighted_bool(3));</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>gen_weighted_bool</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>n</span>: <span class='ident'>u32</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
+    <span class='kw'>fn</span> <span class='ident'>gen_weighted_bool</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>n</span>: <span class='ident'>u32</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='ident'>n</span> <span class='op'>&lt;=</span> <span class='number'>1</span> <span class='op'>||</span> <span class='self'>self</span>.<span class='ident'>gen_range</span>(<span class='number'>0</span>, <span class='ident'>n</span>) <span class='op'>==</span> <span class='number'>0</span>
     }
 
@@ -1686,7 +1733,7 @@
     <span class='doccomment'>/// let s: String = thread_rng().gen_ascii_chars().take(10).collect();</span>
     <span class='doccomment'>/// println!(&quot;{}&quot;, s);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>gen_ascii_chars</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>AsciiGenerator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='kw'>Self</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>gen_ascii_chars</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>AsciiGenerator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='kw'>Self</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='ident'>AsciiGenerator</span> { <span class='ident'>rng</span>: <span class='self'>self</span> }
     }
 
@@ -1704,7 +1751,7 @@
     <span class='doccomment'>/// println!(&quot;{:?}&quot;, rng.choose(&amp;choices));</span>
     <span class='doccomment'>/// assert_eq!(rng.choose(&amp;choices[..0]), None);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>choose</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>values</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>T</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>T</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>choose</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>values</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>T</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>T</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='kw'>if</span> <span class='ident'>values</span>.<span class='ident'>is_empty</span>() {
             <span class='prelude-val'>None</span>
         } <span class='kw'>else</span> {
@@ -1726,7 +1773,7 @@
     <span class='doccomment'>/// rng.shuffle(&amp;mut y);</span>
     <span class='doccomment'>/// println!(&quot;{:?}&quot;, y);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>shuffle</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>values</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>T</span>]) {
+    <span class='kw'>fn</span> <span class='ident'>shuffle</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>values</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>T</span>]) <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Sized</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>i</span> <span class='op'>=</span> <span class='ident'>values</span>.<span class='ident'>len</span>();
         <span class='kw'>while</span> <span class='ident'>i</span> <span class='op'>&gt;=</span> <span class='number'>2</span> {
             <span class='comment'>// invariant: elements with index &gt;= i have been locked in place.</span>
@@ -1734,6 +1781,50 @@
             <span class='comment'>// lock element i in place.</span>
             <span class='ident'>values</span>.<span class='ident'>swap</span>(<span class='ident'>i</span>, <span class='self'>self</span>.<span class='ident'>gen_range</span>(<span class='number'>0</span>, <span class='ident'>i</span> <span class='op'>+</span> <span class='number'>1</span>));
         }
+    }
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>R</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span> <span class='ident'>Rng</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='ident'>R</span> <span class='kw'>where</span> <span class='ident'>R</span>: <span class='ident'>Rng</span> {
+    <span class='kw'>fn</span> <span class='ident'>next_u32</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_u32</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>next_u64</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>u64</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_u64</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>next_f32</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>f32</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_f32</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>next_f64</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>f64</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_f64</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>fill_bytes</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>dest</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>u8</span>]) {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>fill_bytes</span>(<span class='ident'>dest</span>)
+    }
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>R</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span> <span class='ident'>Rng</span> <span class='kw'>for</span> <span class='ident'>Box</span><span class='op'>&lt;</span><span class='ident'>R</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='ident'>R</span>: <span class='ident'>Rng</span> {
+    <span class='kw'>fn</span> <span class='ident'>next_u32</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_u32</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>next_u64</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>u64</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_u64</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>next_f32</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>f32</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_f32</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>next_f64</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>f64</span> {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>next_f64</span>()
+    }
+
+    <span class='kw'>fn</span> <span class='ident'>fill_bytes</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>dest</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>u8</span>]) {
+        (<span class='op'>*</span><span class='op'>*</span><span class='self'>self</span>).<span class='ident'>fill_bytes</span>(<span class='ident'>dest</span>)
     }
 }
 
@@ -2114,8 +2205,8 @@
     <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reservoir</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>iter</span>.<span class='ident'>by_ref</span>().<span class='ident'>take</span>(<span class='ident'>amount</span>).<span class='ident'>collect</span>();
     <span class='kw'>for</span> (<span class='ident'>i</span>, <span class='ident'>elem</span>) <span class='kw'>in</span> <span class='ident'>iter</span>.<span class='ident'>enumerate</span>() {
         <span class='kw'>let</span> <span class='ident'>k</span> <span class='op'>=</span> <span class='ident'>rng</span>.<span class='ident'>gen_range</span>(<span class='number'>0</span>, <span class='ident'>i</span> <span class='op'>+</span> <span class='number'>1</span> <span class='op'>+</span> <span class='ident'>amount</span>);
-        <span class='kw'>if</span> <span class='ident'>k</span> <span class='op'>&lt;</span> <span class='ident'>amount</span> {
-            <span class='ident'>reservoir</span>[<span class='ident'>k</span>] <span class='op'>=</span> <span class='ident'>elem</span>;
+        <span class='kw'>if</span> <span class='kw'>let</span> <span class='prelude-val'>Some</span>(<span class='ident'>spot</span>) <span class='op'>=</span> <span class='ident'>reservoir</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span>) {
+            <span class='op'>*</span><span class='ident'>spot</span> <span class='op'>=</span> <span class='ident'>elem</span>;
         }
     }
     <span class='kw'>return</span> <span class='ident'>reservoir</span>;
@@ -2124,7 +2215,7 @@
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>test</span> {
     <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>Rng</span>, <span class='ident'>thread_rng</span>, <span class='ident'>random</span>, <span class='ident'>SeedableRng</span>, <span class='ident'>StdRng</span>, <span class='ident'>sample</span>};
-    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::{<span class='ident'>order</span>, <span class='ident'>repeat</span>};
+    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::<span class='ident'>repeat</span>;
 
     <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>MyRng</span><span class='op'>&lt;</span><span class='ident'>R</span><span class='op'>&gt;</span> { <span class='ident'>inner</span>: <span class='ident'>R</span> }
 
@@ -2141,16 +2232,29 @@
         <span class='ident'>MyRng</span> { <span class='ident'>inner</span>: ::<span class='ident'>thread_rng</span>() }
     }
 
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>weak_rng</span>() <span class='op'>-&gt;</span> <span class='ident'>MyRng</span><span class='op'>&lt;</span>::<span class='ident'>XorShiftRng</span><span class='op'>&gt;</span> {
-        <span class='ident'>MyRng</span> { <span class='ident'>inner</span>: ::<span class='ident'>weak_rng</span>() }
-    }
-
     <span class='kw'>struct</span> <span class='ident'>ConstRng</span> { <span class='ident'>i</span>: <span class='ident'>u64</span> }
     <span class='kw'>impl</span> <span class='ident'>Rng</span> <span class='kw'>for</span> <span class='ident'>ConstRng</span> {
         <span class='kw'>fn</span> <span class='ident'>next_u32</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>u32</span> { <span class='self'>self</span>.<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>u32</span> }
         <span class='kw'>fn</span> <span class='ident'>next_u64</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>u64</span> { <span class='self'>self</span>.<span class='ident'>i</span> }
 
         <span class='comment'>// no fill_bytes on purpose</span>
+    }
+
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>iter_eq</span><span class='op'>&lt;</span><span class='ident'>I</span>, <span class='ident'>J</span><span class='op'>&gt;</span>(<span class='ident'>i</span>: <span class='ident'>I</span>, <span class='ident'>j</span>: <span class='ident'>J</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span>
+        <span class='kw'>where</span> <span class='ident'>I</span>: <span class='ident'>IntoIterator</span>,
+              <span class='ident'>J</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span><span class='ident'>I</span>::<span class='ident'>Item</span><span class='op'>&gt;</span>,
+              <span class='ident'>I</span>::<span class='ident'>Item</span>: <span class='ident'>Eq</span>
+    {
+        <span class='comment'>// make sure the iterators have equal length</span>
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>i</span> <span class='op'>=</span> <span class='ident'>i</span>.<span class='ident'>into_iter</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>j</span> <span class='op'>=</span> <span class='ident'>j</span>.<span class='ident'>into_iter</span>();
+        <span class='kw'>loop</span> {
+            <span class='kw'>match</span> (<span class='ident'>i</span>.<span class='ident'>next</span>(), <span class='ident'>j</span>.<span class='ident'>next</span>()) {
+                (<span class='prelude-val'>Some</span>(<span class='kw-2'>ref</span> <span class='ident'>ei</span>), <span class='prelude-val'>Some</span>(<span class='kw-2'>ref</span> <span class='ident'>ej</span>)) <span class='kw'>if</span> <span class='ident'>ei</span> <span class='op'>==</span> <span class='ident'>ej</span> <span class='op'>=&gt;</span> { }
+                (<span class='prelude-val'>None</span>, <span class='prelude-val'>None</span>) <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='boolval'>true</span>,
+                _ <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='boolval'>false</span>,
+            }
+        }
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -2194,6 +2298,7 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+    <span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>target_env</span> <span class='op'>=</span> <span class='string'>&quot;msvc&quot;</span>, <span class='ident'>ignore</span>)]</span>
     <span class='kw'>fn</span> <span class='ident'>test_gen_range_panic_int</span>() {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>r</span> <span class='op'>=</span> <span class='ident'>thread_rng</span>();
         <span class='ident'>r</span>.<span class='ident'>gen_range</span>(<span class='number'>5</span>, <span class='op'>-</span><span class='number'>2</span>);
@@ -2201,6 +2306,7 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+    <span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>target_env</span> <span class='op'>=</span> <span class='string'>&quot;msvc&quot;</span>, <span class='ident'>ignore</span>)]</span>
     <span class='kw'>fn</span> <span class='ident'>test_gen_range_panic_usize</span>() {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>r</span> <span class='op'>=</span> <span class='ident'>thread_rng</span>();
         <span class='ident'>r</span>.<span class='ident'>gen_range</span>(<span class='number'>5</span>, <span class='number'>2</span>);
@@ -2278,6 +2384,31 @@
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
+    <span class='kw'>fn</span> <span class='ident'>test_rng_trait_object</span>() {
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span> <span class='op'>=</span> <span class='ident'>thread_rng</span>();
+        {
+            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>r</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>rng</span> <span class='kw'>as</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Rng</span>;
+            <span class='ident'>r</span>.<span class='ident'>next_u32</span>();
+            (<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>r</span>).<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='ident'>i32</span><span class='op'>&gt;</span>();
+            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>v</span> <span class='op'>=</span> [<span class='number'>1</span>, <span class='number'>1</span>, <span class='number'>1</span>];
+            (<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>r</span>).<span class='ident'>shuffle</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>v</span>);
+            <span class='kw'>let</span> <span class='ident'>b</span>: <span class='kw-2'>&amp;</span>[_] <span class='op'>=</span> <span class='kw-2'>&amp;</span>[<span class='number'>1</span>, <span class='number'>1</span>, <span class='number'>1</span>];
+            <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, <span class='ident'>b</span>);
+            <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>r</span>).<span class='ident'>gen_range</span>(<span class='number'>0</span>, <span class='number'>1</span>), <span class='number'>0</span>);
+        }
+        {
+            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>r</span> <span class='op'>=</span> <span class='ident'>Box</span>::<span class='ident'>new</span>(<span class='ident'>rng</span>) <span class='kw'>as</span> <span class='ident'>Box</span><span class='op'>&lt;</span><span class='ident'>Rng</span><span class='op'>&gt;</span>;
+            <span class='ident'>r</span>.<span class='ident'>next_u32</span>();
+            <span class='ident'>r</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='ident'>i32</span><span class='op'>&gt;</span>();
+            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>v</span> <span class='op'>=</span> [<span class='number'>1</span>, <span class='number'>1</span>, <span class='number'>1</span>];
+            <span class='ident'>r</span>.<span class='ident'>shuffle</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>v</span>);
+            <span class='kw'>let</span> <span class='ident'>b</span>: <span class='kw-2'>&amp;</span>[_] <span class='op'>=</span> <span class='kw-2'>&amp;</span>[<span class='number'>1</span>, <span class='number'>1</span>, <span class='number'>1</span>];
+            <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, <span class='ident'>b</span>);
+            <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>r</span>.<span class='ident'>gen_range</span>(<span class='number'>0</span>, <span class='number'>1</span>), <span class='number'>0</span>);
+        }
+    }
+
+    <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_random</span>() {
         <span class='comment'>// not sure how to test this aside from just getting some values</span>
         <span class='kw'>let</span> <span class='ident'>_n</span> : <span class='ident'>usize</span> <span class='op'>=</span> <span class='ident'>random</span>();
@@ -2314,8 +2445,8 @@
         <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>thread_rng</span>().<span class='ident'>gen_iter</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>().<span class='ident'>take</span>(<span class='number'>256</span>).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;&gt;</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ra</span>: <span class='ident'>StdRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>[..]);
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rb</span>: <span class='ident'>StdRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>[..]);
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>order</span>::<span class='ident'>equals</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
-                              <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
+        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>iter_eq</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
+                        <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -2328,71 +2459,6 @@
 
         <span class='kw'>let</span> <span class='ident'>string2</span> <span class='op'>=</span> <span class='ident'>r</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>string1</span>, <span class='ident'>string2</span>);
-    }
-}
-
-<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
-<span class='kw'>const</span> <span class='ident'>RAND_BENCH_N</span>: <span class='ident'>u64</span> <span class='op'>=</span> <span class='number'>100</span>;
-
-<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
-<span class='kw'>mod</span> <span class='ident'>bench</span> {
-    <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>test</span>;
-    <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>test</span>::{<span class='ident'>black_box</span>, <span class='ident'>Bencher</span>};
-    <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>XorShiftRng</span>, <span class='ident'>StdRng</span>, <span class='ident'>IsaacRng</span>, <span class='ident'>Isaac64Rng</span>, <span class='ident'>Rng</span>, <span class='ident'>RAND_BENCH_N</span>};
-    <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>OsRng</span>, <span class='ident'>weak_rng</span>};
-    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>size_of</span>;
-
-    <span class='attribute'>#[<span class='ident'>bench</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>rand_xorshift</span>(<span class='ident'>b</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Bencher</span>) {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span>: <span class='ident'>XorShiftRng</span> <span class='op'>=</span> <span class='ident'>OsRng</span>::<span class='ident'>new</span>().<span class='ident'>unwrap</span>().<span class='ident'>gen</span>();
-        <span class='ident'>b</span>.<span class='ident'>iter</span>(<span class='op'>||</span> {
-            <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>RAND_BENCH_N</span> {
-                <span class='ident'>black_box</span>(<span class='ident'>rng</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>());
-            }
-        });
-        <span class='ident'>b</span>.<span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>() <span class='kw'>as</span> <span class='ident'>u64</span> <span class='op'>*</span> <span class='ident'>RAND_BENCH_N</span>;
-    }
-
-    <span class='attribute'>#[<span class='ident'>bench</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>rand_isaac</span>(<span class='ident'>b</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Bencher</span>) {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span>: <span class='ident'>IsaacRng</span> <span class='op'>=</span> <span class='ident'>OsRng</span>::<span class='ident'>new</span>().<span class='ident'>unwrap</span>().<span class='ident'>gen</span>();
-        <span class='ident'>b</span>.<span class='ident'>iter</span>(<span class='op'>||</span> {
-            <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>RAND_BENCH_N</span> {
-                <span class='ident'>black_box</span>(<span class='ident'>rng</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>());
-            }
-        });
-        <span class='ident'>b</span>.<span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>() <span class='kw'>as</span> <span class='ident'>u64</span> <span class='op'>*</span> <span class='ident'>RAND_BENCH_N</span>;
-    }
-
-    <span class='attribute'>#[<span class='ident'>bench</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>rand_isaac64</span>(<span class='ident'>b</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Bencher</span>) {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span>: <span class='ident'>Isaac64Rng</span> <span class='op'>=</span> <span class='ident'>OsRng</span>::<span class='ident'>new</span>().<span class='ident'>unwrap</span>().<span class='ident'>gen</span>();
-        <span class='ident'>b</span>.<span class='ident'>iter</span>(<span class='op'>||</span> {
-            <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>RAND_BENCH_N</span> {
-                <span class='ident'>black_box</span>(<span class='ident'>rng</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>());
-            }
-        });
-        <span class='ident'>b</span>.<span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>() <span class='kw'>as</span> <span class='ident'>u64</span> <span class='op'>*</span> <span class='ident'>RAND_BENCH_N</span>;
-    }
-
-    <span class='attribute'>#[<span class='ident'>bench</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>rand_std</span>(<span class='ident'>b</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Bencher</span>) {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span> <span class='op'>=</span> <span class='ident'>StdRng</span>::<span class='ident'>new</span>().<span class='ident'>unwrap</span>();
-        <span class='ident'>b</span>.<span class='ident'>iter</span>(<span class='op'>||</span> {
-            <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>RAND_BENCH_N</span> {
-                <span class='ident'>black_box</span>(<span class='ident'>rng</span>.<span class='ident'>gen</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>());
-            }
-        });
-        <span class='ident'>b</span>.<span class='ident'>bytes</span> <span class='op'>=</span> <span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>() <span class='kw'>as</span> <span class='ident'>u64</span> <span class='op'>*</span> <span class='ident'>RAND_BENCH_N</span>;
-    }
-
-    <span class='attribute'>#[<span class='ident'>bench</span>]</span>
-    <span class='kw'>fn</span> <span class='ident'>rand_shuffle_100</span>(<span class='ident'>b</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Bencher</span>) {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rng</span> <span class='op'>=</span> <span class='ident'>weak_rng</span>();
-        <span class='kw'>let</span> <span class='ident'>x</span> : <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>usize</span>] <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='number'>1</span>; <span class='number'>100</span>];
-        <span class='ident'>b</span>.<span class='ident'>iter</span>(<span class='op'>||</span> {
-            <span class='ident'>rng</span>.<span class='ident'>shuffle</span>(<span class='ident'>x</span>);
-        })
     }
 }
 </pre>

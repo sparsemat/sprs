@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.24/src/lib.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.27/src/lib.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>lib.rs.html -- source</title>
@@ -191,6 +191,19 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -213,6 +226,8 @@
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! ```</span>
 <span class='doccomment'>//! extern crate num;</span>
+<span class='doccomment'>//! # #[cfg(all(feature = &quot;bigint&quot;, feature=&quot;rational&quot;))]</span>
+<span class='doccomment'>//! # pub mod test {</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! use num::FromPrimitive;</span>
 <span class='doccomment'>//! use num::bigint::BigInt;</span>
@@ -229,41 +244,52 @@
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//!     approx</span>
 <span class='doccomment'>//! }</span>
+<span class='doccomment'>//! # }</span>
+<span class='doccomment'>//! # #[cfg(not(all(feature = &quot;bigint&quot;, feature=&quot;rational&quot;)))]</span>
+<span class='doccomment'>//! # fn approx_sqrt(n: u64, _: usize) -&gt; u64 { n }</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! fn main() {</span>
 <span class='doccomment'>//!     println!(&quot;{}&quot;, approx_sqrt(10, 4)); // prints 4057691201/1283082416</span>
 <span class='doccomment'>//! }</span>
+<span class='doccomment'>//!</span>
 <span class='doccomment'>//! ```</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! [newt]: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method</span>
-<span class='comment'>//#![cfg_attr(test, deny(warnings))]</span>
-<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>cfg_attr</span>(<span class='ident'>test</span>, <span class='ident'>feature</span>(<span class='ident'>test</span>))]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>doc</span>(<span class='ident'>html_logo_url</span> <span class='op'>=</span> <span class='string'>&quot;http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png&quot;</span>,
        <span class='ident'>html_favicon_url</span> <span class='op'>=</span> <span class='string'>&quot;http://www.rust-lang.org/favicon.ico&quot;</span>,
        <span class='ident'>html_root_url</span> <span class='op'>=</span> <span class='string'>&quot;http://doc.rust-lang.org/num/&quot;</span>,
        <span class='ident'>html_playground_url</span> <span class='op'>=</span> <span class='string'>&quot;http://play.rust-lang.org/&quot;</span>)]</span>
 
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;rustc-serialize&quot;</span>)]</span>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rustc_serialize</span>;
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;rand&quot;</span>)]</span>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rand</span>;
 
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;bigint&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>bigint</span>::{<span class='ident'>BigInt</span>, <span class='ident'>BigUint</span>};
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>rational</span>::{<span class='ident'>Rational</span>, <span class='ident'>BigRational</span>};
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;rational&quot;</span>)]</span>
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>rational</span>::<span class='ident'>Rational</span>;
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>all</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;rational&quot;</span>, <span class='ident'>feature</span><span class='op'>=</span><span class='string'>&quot;bigint&quot;</span>))]</span>
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>rational</span>::<span class='ident'>BigRational</span>;
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;complex&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>complex</span>::<span class='ident'>Complex</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>integer</span>::<span class='ident'>Integer</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>iter</span>::{<span class='ident'>range</span>, <span class='ident'>range_inclusive</span>, <span class='ident'>range_step</span>, <span class='ident'>range_step_inclusive</span>};
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>traits</span>::{<span class='ident'>Num</span>, <span class='ident'>Zero</span>, <span class='ident'>One</span>, <span class='ident'>Signed</span>, <span class='ident'>Unsigned</span>, <span class='ident'>Bounded</span>,
                  <span class='ident'>Saturating</span>, <span class='ident'>CheckedAdd</span>, <span class='ident'>CheckedSub</span>, <span class='ident'>CheckedMul</span>, <span class='ident'>CheckedDiv</span>,
-                 <span class='ident'>PrimInt</span>, <span class='ident'>Float</span>, <span class='ident'>ToPrimitive</span>, <span class='ident'>FromPrimitive</span>, <span class='ident'>NumCast</span>};
+                 <span class='ident'>PrimInt</span>, <span class='ident'>Float</span>, <span class='ident'>ToPrimitive</span>, <span class='ident'>FromPrimitive</span>, <span class='ident'>NumCast</span>, <span class='ident'>cast</span>};
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span> <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>hash</span>;
 
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::{<span class='ident'>Mul</span>};
 
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;bigint&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>bigint</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>complex</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>integer</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>iter</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>traits</span>;
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;rational&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>rational</span>;
 
 <span class='doccomment'>/// Returns the additive identity, `0`.</span>

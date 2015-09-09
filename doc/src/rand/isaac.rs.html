@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.8/src/isaac.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/rand-0.3.11/src/isaac.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>isaac.rs.html -- source</title>
@@ -663,7 +663,6 @@
 <span id="621">621</span>
 <span id="622">622</span>
 <span id="623">623</span>
-<span id="624">624</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -1173,7 +1172,6 @@
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>test</span> {
-    <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::<span class='ident'>order</span>;
     <span class='kw'>use</span> {<span class='ident'>Rng</span>, <span class='ident'>SeedableRng</span>};
     <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>IsaacRng</span>, <span class='ident'>Isaac64Rng</span>};
 
@@ -1182,16 +1180,16 @@
         <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> ::<span class='ident'>test</span>::<span class='ident'>rng</span>().<span class='ident'>gen_iter</span>::<span class='op'>&lt;</span><span class='ident'>u32</span><span class='op'>&gt;</span>().<span class='ident'>take</span>(<span class='number'>256</span>).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>u32</span><span class='op'>&gt;&gt;</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ra</span>: <span class='ident'>IsaacRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>[..]);
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rb</span>: <span class='ident'>IsaacRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>[..]);
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>order</span>::<span class='ident'>equals</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
-                              <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
+        <span class='macro'>assert</span><span class='macro'>!</span>(::<span class='ident'>test</span>::<span class='ident'>iter_eq</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
+                                <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
     }
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_rng_64_rand_seeded</span>() {
         <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> ::<span class='ident'>test</span>::<span class='ident'>rng</span>().<span class='ident'>gen_iter</span>::<span class='op'>&lt;</span><span class='ident'>u64</span><span class='op'>&gt;</span>().<span class='ident'>take</span>(<span class='number'>256</span>).<span class='ident'>collect</span>::<span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>u64</span><span class='op'>&gt;&gt;</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ra</span>: <span class='ident'>Isaac64Rng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>[..]);
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rb</span>: <span class='ident'>Isaac64Rng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='kw-2'>&amp;</span><span class='ident'>s</span>[..]);
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>order</span>::<span class='ident'>equals</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
-                              <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
+        <span class='macro'>assert</span><span class='macro'>!</span>(::<span class='ident'>test</span>::<span class='ident'>iter_eq</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
+                                <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1199,16 +1197,16 @@
         <span class='kw'>let</span> <span class='ident'>seed</span>: <span class='kw-2'>&amp;</span>[_] <span class='op'>=</span> <span class='kw-2'>&amp;</span>[<span class='number'>1</span>, <span class='number'>23</span>, <span class='number'>456</span>, <span class='number'>7890</span>, <span class='number'>12345</span>];
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ra</span>: <span class='ident'>IsaacRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='ident'>seed</span>);
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rb</span>: <span class='ident'>IsaacRng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='ident'>seed</span>);
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>order</span>::<span class='ident'>equals</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
-                              <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
+        <span class='macro'>assert</span><span class='macro'>!</span>(::<span class='ident'>test</span>::<span class='ident'>iter_eq</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
+                                <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
     }
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_rng_64_seeded</span>() {
         <span class='kw'>let</span> <span class='ident'>seed</span>: <span class='kw-2'>&amp;</span>[_] <span class='op'>=</span> <span class='kw-2'>&amp;</span>[<span class='number'>1</span>, <span class='number'>23</span>, <span class='number'>456</span>, <span class='number'>7890</span>, <span class='number'>12345</span>];
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ra</span>: <span class='ident'>Isaac64Rng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='ident'>seed</span>);
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>rb</span>: <span class='ident'>Isaac64Rng</span> <span class='op'>=</span> <span class='ident'>SeedableRng</span>::<span class='ident'>from_seed</span>(<span class='ident'>seed</span>);
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>order</span>::<span class='ident'>equals</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
-                              <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
+        <span class='macro'>assert</span><span class='macro'>!</span>(::<span class='ident'>test</span>::<span class='ident'>iter_eq</span>(<span class='ident'>ra</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>),
+                                <span class='ident'>rb</span>.<span class='ident'>gen_ascii_chars</span>().<span class='ident'>take</span>(<span class='number'>100</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>

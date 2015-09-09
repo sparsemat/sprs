@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.24/src/complex.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.27/src/complex.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>complex.rs.html -- source</title>
@@ -488,6 +488,7 @@
 <span id="446">446</span>
 <span id="447">447</span>
 <span id="448">448</span>
+<span id="449">449</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -511,7 +512,8 @@
 <span class='comment'>// probably doesn&#39;t map to C&#39;s _Complex correctly.</span>
 
 <span class='doccomment'>/// A complex number in Cartesian form.</span>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Copy</span>, <span class='ident'>Clone</span>, <span class='ident'>Hash</span>, <span class='ident'>RustcEncodable</span>, <span class='ident'>RustcDecodable</span>, <span class='ident'>Debug</span>)]</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Copy</span>, <span class='ident'>Clone</span>, <span class='ident'>Hash</span>, <span class='ident'>Debug</span>)]</span>
+<span class='attribute'>#[<span class='ident'>cfg_attr</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;rustc-serialize&quot;</span>, <span class='ident'>derive</span>(<span class='ident'>RustcEncodable</span>, <span class='ident'>RustcDecodable</span>))]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Complex</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Real portion of the complex number</span>
     <span class='kw'>pub</span> <span class='ident'>re</span>: <span class='ident'>T</span>,

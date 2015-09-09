@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.24/src/traits.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.27/src/traits.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>traits.rs.html -- source</title>
@@ -2444,6 +2444,52 @@
 <span id="2402">2402</span>
 <span id="2403">2403</span>
 <span id="2404">2404</span>
+<span id="2405">2405</span>
+<span id="2406">2406</span>
+<span id="2407">2407</span>
+<span id="2408">2408</span>
+<span id="2409">2409</span>
+<span id="2410">2410</span>
+<span id="2411">2411</span>
+<span id="2412">2412</span>
+<span id="2413">2413</span>
+<span id="2414">2414</span>
+<span id="2415">2415</span>
+<span id="2416">2416</span>
+<span id="2417">2417</span>
+<span id="2418">2418</span>
+<span id="2419">2419</span>
+<span id="2420">2420</span>
+<span id="2421">2421</span>
+<span id="2422">2422</span>
+<span id="2423">2423</span>
+<span id="2424">2424</span>
+<span id="2425">2425</span>
+<span id="2426">2426</span>
+<span id="2427">2427</span>
+<span id="2428">2428</span>
+<span id="2429">2429</span>
+<span id="2430">2430</span>
+<span id="2431">2431</span>
+<span id="2432">2432</span>
+<span id="2433">2433</span>
+<span id="2434">2434</span>
+<span id="2435">2435</span>
+<span id="2436">2436</span>
+<span id="2437">2437</span>
+<span id="2438">2438</span>
+<span id="2439">2439</span>
+<span id="2440">2440</span>
+<span id="2441">2441</span>
+<span id="2442">2442</span>
+<span id="2443">2443</span>
+<span id="2444">2444</span>
+<span id="2445">2445</span>
+<span id="2446">2446</span>
+<span id="2447">2447</span>
+<span id="2448">2448</span>
+<span id="2449">2449</span>
+<span id="2450">2450</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013-2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -2659,7 +2705,7 @@
 <span class='doccomment'>/// This trait can be automatically be derived using `#[deriving(Zero)]`</span>
 <span class='doccomment'>/// attribute. If you choose to use this, make sure that the laws outlined in</span>
 <span class='doccomment'>/// the documentation for `Zero::zero` still hold.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Zero</span>: <span class='ident'>Add</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Zero</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Add</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Returns the additive identity element of `Self`, `0`.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Laws</span>
@@ -2709,7 +2755,7 @@
 <span class='macro'>zero_impl</span><span class='macro'>!</span>(<span class='ident'>f64</span>, <span class='number'>0.0f64</span>);
 
 <span class='doccomment'>/// Defines a multiplicative identity element for `Self`.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>One</span>: <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>One</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Returns the multiplicative identity element of `Self`, `1`.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Laws</span>
@@ -2753,7 +2799,7 @@
 <span class='macro'>one_impl</span><span class='macro'>!</span>(<span class='ident'>f64</span>, <span class='number'>1.0f64</span>);
 
 <span class='doccomment'>/// Useful functions for signed numbers (i.e. numbers that can be negative).</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Signed</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Neg</span><span class='op'>&lt;</span><span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Signed</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Neg</span><span class='op'>&lt;</span><span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Computes the absolute value.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// For `f32` and `f64`, `NaN` will be returned if the number is `NaN`.</span>
@@ -2910,6 +2956,36 @@
 <span class='macro'>bounded_impl</span><span class='macro'>!</span>(<span class='ident'>f32</span>, <span class='ident'>f32</span>::<span class='ident'>MIN</span>, <span class='ident'>f32</span>::<span class='ident'>MAX</span>);
 <span class='macro'>bounded_impl</span><span class='macro'>!</span>(<span class='ident'>f64</span>, <span class='ident'>f64</span>::<span class='ident'>MIN</span>, <span class='ident'>f64</span>::<span class='ident'>MAX</span>);
 
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>for_each_tuple_</span> {
+    ( <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span>:<span class='ident'>ident</span> <span class='op'>!</span><span class='op'>!</span> ) <span class='op'>=&gt;</span> (
+        <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span><span class='op'>!</span> { }
+    );
+    ( <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span>:<span class='ident'>ident</span> <span class='op'>!</span><span class='op'>!</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>h</span>:<span class='ident'>ident</span>, $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span>:<span class='ident'>ident</span>,)<span class='op'>*</span> ) <span class='op'>=&gt;</span> (
+        <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span><span class='op'>!</span> { <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>h</span> $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span>)<span class='op'>*</span> }
+        <span class='macro'>for_each_tuple_</span><span class='macro'>!</span> { <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span> <span class='op'>!</span><span class='op'>!</span> $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>t</span>,)<span class='op'>*</span> }
+    );
+}
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>for_each_tuple</span> {
+    ( <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span>:<span class='ident'>ident</span> ) <span class='op'>=&gt;</span> (
+        <span class='macro'>for_each_tuple_</span><span class='macro'>!</span> { <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>m</span> <span class='op'>!</span><span class='op'>!</span> <span class='ident'>A</span>, <span class='ident'>B</span>, <span class='ident'>C</span>, <span class='ident'>D</span>, <span class='ident'>E</span>, <span class='ident'>F</span>, <span class='ident'>G</span>, <span class='ident'>H</span>, <span class='ident'>I</span>, <span class='ident'>J</span>, <span class='ident'>K</span>, <span class='ident'>L</span>, <span class='ident'>M</span>, <span class='ident'>N</span>, <span class='ident'>O</span>, <span class='ident'>P</span>, <span class='ident'>Q</span>, <span class='ident'>R</span>, <span class='ident'>S</span>, <span class='ident'>T</span>, }
+    );
+}
+
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>bounded_tuple</span> {
+    ( $(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>name</span>:<span class='ident'>ident</span>)<span class='op'>*</span> ) <span class='op'>=&gt;</span> (
+        <span class='kw'>impl</span><span class='op'>&lt;</span>$(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>name</span>: <span class='ident'>Bounded</span>,)<span class='op'>*</span><span class='op'>&gt;</span> <span class='ident'>Bounded</span> <span class='kw'>for</span> ($(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>name</span>,)<span class='op'>*</span>) {
+            <span class='kw'>fn</span> <span class='ident'>min_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
+                ($(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>name</span>::<span class='ident'>min_value</span>(),)<span class='op'>*</span>)
+            }
+            <span class='kw'>fn</span> <span class='ident'>max_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
+                ($(<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>name</span>::<span class='ident'>max_value</span>(),)<span class='op'>*</span>)
+            }
+        }
+    );
+}
+
+<span class='macro'>for_each_tuple</span><span class='macro'>!</span>(<span class='ident'>bounded_tuple</span>);
+
 <span class='doccomment'>/// Saturating math operations</span>
 <span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>Saturating</span> {
     <span class='doccomment'>/// Saturating addition operator.</span>
@@ -2949,7 +3025,7 @@
 
 <span class='doccomment'>/// Performs addition that returns `None` instead of wrapping around on</span>
 <span class='doccomment'>/// overflow.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedAdd</span>: <span class='ident'>Add</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedAdd</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Add</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Adds two numbers, checking for overflow. If overflow happens, `None` is</span>
     <span class='doccomment'>/// returned.</span>
     <span class='kw'>fn</span> <span class='ident'>checked_add</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>v</span>: <span class='kw-2'>&amp;</span><span class='kw'>Self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw'>Self</span><span class='op'>&gt;</span>;
@@ -2979,7 +3055,7 @@
 <span class='macro'>checked_impl</span><span class='macro'>!</span>(<span class='ident'>CheckedAdd</span>, <span class='ident'>checked_add</span>, <span class='ident'>isize</span>);
 
 <span class='doccomment'>/// Performs subtraction that returns `None` instead of wrapping around on underflow.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedSub</span>: <span class='ident'>Sub</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedSub</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Sub</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Subtracts two numbers, checking for underflow. If underflow happens,</span>
     <span class='doccomment'>/// `None` is returned.</span>
     <span class='kw'>fn</span> <span class='ident'>checked_sub</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>v</span>: <span class='kw-2'>&amp;</span><span class='kw'>Self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw'>Self</span><span class='op'>&gt;</span>;
@@ -2999,7 +3075,7 @@
 
 <span class='doccomment'>/// Performs multiplication that returns `None` instead of wrapping around on underflow or</span>
 <span class='doccomment'>/// overflow.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedMul</span>: <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedMul</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Multiplies two numbers, checking for underflow or overflow. If underflow</span>
     <span class='doccomment'>/// or overflow happens, `None` is returned.</span>
     <span class='kw'>fn</span> <span class='ident'>checked_mul</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>v</span>: <span class='kw-2'>&amp;</span><span class='kw'>Self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw'>Self</span><span class='op'>&gt;</span>;
@@ -3019,7 +3095,7 @@
 
 <span class='doccomment'>/// Performs division that returns `None` instead of panicking on division by zero and instead of</span>
 <span class='doccomment'>/// wrapping around on underflow and overflow.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedDiv</span>: <span class='ident'>Div</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>CheckedDiv</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>Div</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>Output</span> <span class='op'>=</span> <span class='kw'>Self</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Divides two numbers, checking for underflow, overflow and division by</span>
     <span class='doccomment'>/// zero. If any of that happens, `None` is returned.</span>
     <span class='kw'>fn</span> <span class='ident'>checked_div</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>v</span>: <span class='kw-2'>&amp;</span><span class='kw'>Self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw'>Self</span><span class='op'>&gt;</span>;
@@ -3710,7 +3786,7 @@
 <span class='doccomment'>/// ```</span>
 <span class='doccomment'>/// use num;</span>
 <span class='doccomment'>///</span>
-<span class='doccomment'>/// let twenty: f32 = num::traits::cast(0x14).unwrap();</span>
+<span class='doccomment'>/// let twenty: f32 = num::cast(0x14).unwrap();</span>
 <span class='doccomment'>/// assert_eq!(twenty, 20f32);</span>
 <span class='doccomment'>/// ```</span>
 <span class='doccomment'>///</span>
@@ -3720,7 +3796,7 @@
 }
 
 <span class='doccomment'>/// An interface for casting between machine scalars.</span>
-<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>NumCast</span>: <span class='ident'>ToPrimitive</span> {
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>NumCast</span>: <span class='ident'>Sized</span> <span class='op'>+</span> <span class='ident'>ToPrimitive</span> {
     <span class='doccomment'>/// Creates a number from another value that can be converted into</span>
     <span class='doccomment'>/// a primitive via the `ToPrimitive` trait.</span>
     <span class='kw'>fn</span> <span class='ident'>from</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>ToPrimitive</span><span class='op'>&gt;</span>(<span class='ident'>n</span>: <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw'>Self</span><span class='op'>&gt;</span>;
@@ -3822,6 +3898,18 @@
     <span class='doccomment'>/// assert_eq!(x, f64::MIN);</span>
     <span class='doccomment'>/// ```</span>
     <span class='kw'>fn</span> <span class='ident'>min_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span>;
+
+    <span class='doccomment'>/// Returns the smallest positive, normalized value that this type can represent.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// use num::traits::Float;</span>
+    <span class='doccomment'>/// use std::f64;</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// let x: f64 = Float::min_positive_value();</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// assert_eq!(x, f64::MIN_POSITIVE);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>fn</span> <span class='ident'>min_positive_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span>;
 
     <span class='doccomment'>/// Returns the largest finite value that this type can represent.</span>
     <span class='doccomment'>///</span>
@@ -4622,6 +4710,10 @@
 
             <span class='kw'>fn</span> <span class='ident'>min_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
                 ::<span class='ident'>std</span>::<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>::<span class='ident'>MIN</span>
+            }
+
+            <span class='kw'>fn</span> <span class='ident'>min_positive_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
+                ::<span class='ident'>std</span>::<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>::<span class='ident'>MIN_POSITIVE</span>
             }
 
             <span class='kw'>fn</span> <span class='ident'>max_value</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
