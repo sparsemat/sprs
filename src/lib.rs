@@ -52,8 +52,8 @@ extern crate num;
 pub mod sparse;
 pub mod errors;
 
-pub use sparse::{CsMat, CsMatOwned, CsMatView};
-pub use sparse::vec::{CsVec, CsVecView, CsVecOwned};
+pub use sparse::{CsMat, CsMatOwned, CsMatView,
+                 CsVec, CsVecView, CsVecOwned};
 pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
 

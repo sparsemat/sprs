@@ -183,7 +183,7 @@ where IptrStorage: Deref<Target=[usize]>,
     data : DataStorage
 }
 
-impl<'a, N:'a + Copy> CsMatVecView<'a, N> {
+impl<'a, N:'a + Copy> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     /// Create a borrowed row or column CsMat matrix from raw data,
     /// without checking their validity
     ///
@@ -209,7 +209,7 @@ impl<'a, N:'a + Copy> CsMatVecView<'a, N> {
     }
 }
 
-impl<'a, N:'a + Copy> CsMatView<'a, N> {
+impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
     pub fn new_borrowed(
@@ -259,7 +259,7 @@ impl<'a, N:'a + Copy> CsMatView<'a, N> {
     }
 }
 
-impl<N: Copy> CsMatOwned<N> {
+impl<N: Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// Create an empty CsMat for building purposes
     pub fn empty(storage: CompressedStorage, inner_size: usize
                 ) -> CsMatOwned<N> {
@@ -367,7 +367,7 @@ impl<N: Copy> CsMatOwned<N> {
     }
 }
 
-impl<N: Num + Copy> CsMatOwned<N> {
+impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// Identity matrix
     ///
     /// ```rust

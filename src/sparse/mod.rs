@@ -1,13 +1,17 @@
 
-pub use self::csmat::{
-    CompressedStorage,
-    CsMat,
-    CsMatOwned,
-    CsMatView
+pub use self::csmat::{CompressedStorage,
+                      CsMat,
+                      CsMatOwned,
+                      CsMatView,
+};
+
+pub use self::vec::{CsVec,
+                    CsVecOwned,
+                    CsVecView,
 };
 
 
-mod csmat;
+pub mod csmat;
 pub mod vec;
 pub mod permutation;
 pub mod prod;
