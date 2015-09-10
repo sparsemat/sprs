@@ -1255,7 +1255,7 @@
     <span class='ident'>data</span> : <span class='ident'>DataStorage</span>
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMatVecView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span> {
     <span class='doccomment'>/// Create a borrowed row or column CsMat matrix from raw data,</span>
     <span class='doccomment'>/// without checking their validity</span>
     <span class='doccomment'>///</span>
@@ -1281,7 +1281,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span> {
     <span class='doccomment'>/// Create a borrowed CsMat matrix from sliced data,</span>
     <span class='doccomment'>/// checking their validity</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new_borrowed</span>(
@@ -1331,7 +1331,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
     <span class='doccomment'>/// Create an empty CsMat for building purposes</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>empty</span>(<span class='ident'>storage</span>: <span class='ident'>CompressedStorage</span>, <span class='ident'>inner_size</span>: <span class='ident'>usize</span>
                 ) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
@@ -1439,7 +1439,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
     <span class='doccomment'>/// Identity matrix</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// ```rust</span>

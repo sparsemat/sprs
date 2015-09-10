@@ -59,17 +59,25 @@
 <span id="17">17</span>
 <span id="18">18</span>
 <span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
 </pre><pre class='rust '>
 
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>csmat</span>::{
-    <span class='ident'>CompressedStorage</span>,
-    <span class='ident'>CsMat</span>,
-    <span class='ident'>CsMatOwned</span>,
-    <span class='ident'>CsMatView</span>
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>csmat</span>::{<span class='ident'>CompressedStorage</span>,
+                      <span class='ident'>CsMat</span>,
+                      <span class='ident'>CsMatOwned</span>,
+                      <span class='ident'>CsMatView</span>,
+};
+
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>vec</span>::{<span class='ident'>CsVec</span>,
+                    <span class='ident'>CsVecOwned</span>,
+                    <span class='ident'>CsVecView</span>,
 };
 
 
-<span class='kw'>mod</span> <span class='ident'>csmat</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>csmat</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>vec</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>permutation</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>prod</span>;
