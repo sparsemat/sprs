@@ -48,8 +48,10 @@ assert_eq!(a, b.to_csc());
 */
 
 extern crate num;
+extern crate dense_mats;
 
 pub mod sparse;
+pub mod dense;
 pub mod errors;
 
 pub use sparse::{CsMat, CsMatOwned, CsMatView,
