@@ -9,6 +9,7 @@ use dense_mats::{DenseMatView, DenseMatViewMut, StorageOrder,
 use errors::SprsError;
 
 /// A simple dense matrix
+#[derive(PartialEq, Debug)]
 pub struct DMat<N, Storage>
 where Storage: Deref<Target=[N]> {
     data: Storage,
@@ -21,6 +22,7 @@ pub type DMatView<'a, N> = DMat<N, &'a [N]>;
 pub type DMatOwned<N> = DMat<N, Vec<N>>;
 
 /// A simple dense vector
+#[derive(PartialEq, Debug)]
 pub struct DVec<N, Storage>
 where Storage: Deref<Target=[N]> {
     data: Storage,
@@ -64,34 +66,7 @@ impl<N> DenseMatOwned<N> for DMat<N, Vec<N>> {
     }
 }
 
-impl<N, Storage> DMat<N, Storage>
-where Storage: Deref<Target=[N]> {
-
-    /// Create a view of a matrix implementing DenseMatView
-    pub fn wrap_view<'a, Mat: 'a + DenseMatView<N>>(m: &'a Mat)
-    -> DMatView<'a, N>
-    where N: 'a {
-        DMat {
-            data: m.data(),
-            rows: m.rows(),
-            cols: m.cols(),
-            strides: m.strides(),
-        }
-    }
-
-    /// Create from a matrix implementing DenseMatOwned
-    pub fn from_owned<Mat: DenseMatOwned<N>>(m: Mat) -> DMatOwned<N> {
-        let rows = m.rows();
-        let cols = m.cols();
-        let strides = m.strides();
-        DMat {
-            data: m.into_data(),
-            rows: rows,
-            cols: cols,
-            strides: strides,
-        }
-    }
-
+impl<N> DMat<N, Vec<N>> {
     /// Create a dense matrix from owned data
     pub fn new_owned(data: Vec<N>, rows: usize,
                      cols: usize, strides: [usize;2]) -> DMatOwned<N> {
@@ -119,9 +94,41 @@ where Storage: Deref<Target=[N]> {
         }
     }
 
+    /// Create from a matrix implementing DenseMatOwned
+    pub fn from_owned<Mat: DenseMatOwned<N>>(m: Mat) -> DMatOwned<N> {
+        let rows = m.rows();
+        let cols = m.cols();
+        let strides = m.strides();
+        DMat {
+            data: m.into_data(),
+            rows: rows,
+            cols: cols,
+            strides: strides,
+        }
+    }
+}
+
+impl<'a, N> DMat<N, &'a [N]> {
+
+    /// Create a view of a matrix implementing DenseMatView
+    pub fn wrap_view<Mat: 'a + DenseMatView<N>>(m: &'a Mat)
+    -> DMatView<'a, N>
+    where N: 'a {
+        DMat {
+            data: m.data(),
+            rows: m.rows(),
+            cols: m.cols(),
+            strides: m.strides(),
+        }
+    }
+}
+
+impl<N, Storage> DMat<N, Storage>
+where Storage: Deref<Target=[N]> {
+
     /// Get a view into the specified row
     pub fn row(&self, i: usize) -> Result<DVecView<N>, SprsError> {
-        if i > self.rows {
+        if i >= self.rows {
             return Err(SprsError::OutOfBoundsIndex);
         }
         let start = i * self.strides[0];
@@ -136,7 +143,7 @@ where Storage: Deref<Target=[N]> {
 
     /// Get a view into the specified column
     pub fn col(&self, j: usize) -> Result<DVecView<N>, SprsError> {
-        if j > self.cols {
+        if j >= self.cols {
             return Err(SprsError::OutOfBoundsIndex);
         }
         let start = j * self.strides[1];
@@ -166,6 +173,21 @@ where Storage: Deref<Target=[N]> {
     pub fn iter(&self) -> Map<Chunks<N>, fn(&[N]) -> &N> {
         self.data.chunks(self.stride).map(take_first)
     }
+
+    /// The underlying data
+    pub fn data(&self) -> &[N] {
+        &self.data[..]
+    }
+
+    /// The number of dimensions
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
+
+    /// The stride of this vector
+    pub fn stride(&self) -> usize {
+        self.stride
+    }
 }
 
 impl<N, Storage> DVec<N, Storage>
@@ -175,5 +197,37 @@ where Storage: DerefMut<Target=[N]> {
     pub fn iter_mut(&mut self) -> Map<ChunksMut<N>, fn(&mut [N]) -> &mut N> {
         self.data.chunks_mut(self.stride).map(take_first_mut)
     }
+
+    /// The underlying data as a mutable slice
+    pub fn data_mut(&mut self) -> &mut [N] {
+        &mut self.data[..]
+    }
 }
 
+#[cfg(test)]
+mod tests {
+
+    use super::{DMat};
+    use errors::SprsError;
+
+    #[test]
+    fn row_view() {
+
+        let mat = DMat::new_owned(vec![1., 0., 0., 0., 1., 0., 0., 0., 1.],
+                                  3, 3, [3, 1]);
+        let view = mat.row(0).unwrap();
+        assert_eq!(view.dim(), 3);
+        assert_eq!(view.stride(), 1);
+        assert_eq!(view.data(), &[1., 0., 0.]);
+        let view = mat.row(1).unwrap();
+        assert_eq!(view.dim(), 3);
+        assert_eq!(view.stride(), 1);
+        assert_eq!(view.data(), &[0., 1., 0.]);
+        let view = mat.row(2).unwrap();
+        assert_eq!(view.dim(), 3);
+        assert_eq!(view.stride(), 1);
+        assert_eq!(view.data(), &[0., 0., 1.]);
+        let res = mat.row(3);
+        assert_eq!(res, Err(SprsError::OutOfBoundsIndex));
+    }
+}
