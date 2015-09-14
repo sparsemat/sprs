@@ -1,6 +1,6 @@
 ///! Simple structures for interoperability with dense matrices
 
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Range};
 use std::iter::Map;
 use std::slice::{Chunks, ChunksMut};
 use num::traits::Num;
@@ -126,16 +126,43 @@ impl<'a, N> DMat<N, &'a [N]> {
 impl<N, Storage> DMat<N, Storage>
 where Storage: Deref<Target=[N]> {
 
+    fn row_range_rowmaj(&self, i: usize) -> Range<usize> {
+        let start = self.data_index(i, 0);
+        let stop = self.data_index(i + 1, 0);
+        start..stop
+    }
+
+    fn row_range_colmaj(&self, i: usize) -> Range<usize> {
+        let start = self.data_index(i, 0);
+        let stop = self.data_index(i + 1, self.cols() - 1);
+        start..stop
+    }
+
+    fn col_range_rowmaj(&self, j: usize) -> Range<usize> {
+        let start = self.data_index(0, j);
+        let stop = self.data_index(self.rows() - 1, j + 1);
+        start..stop
+    }
+
+    fn col_range_colmaj(&self, j: usize) -> Range<usize> {
+        let start = self.data_index(0, j);
+        let stop = self.data_index(0, j + 1);
+        start..stop
+    }
+
+
+
     /// Get a view into the specified row
     pub fn row(&self, i: usize) -> Result<DVecView<N>, SprsError> {
         if i >= self.rows {
             return Err(SprsError::OutOfBoundsIndex);
         }
-        let start = i * self.strides[0];
-        let stop = (i + 1) * self.strides[0];
-        let data = &self.data[start..stop];
+        let range = match self.ordering() {
+            StorageOrder::RowMaj => self.row_range_rowmaj(i),
+            StorageOrder::ColMaj => self.row_range_colmaj(i),
+        };
         Ok(DVec {
-            data: data,
+            data: &self.data[range],
             dim: self.cols,
             stride: self.strides[1],
         })
@@ -146,11 +173,12 @@ where Storage: Deref<Target=[N]> {
         if j >= self.cols {
             return Err(SprsError::OutOfBoundsIndex);
         }
-        let start = j * self.strides[1];
-        let stop = (j + 1) * self.strides[1];
-        let data = &self.data[start..stop];
+        let range = match self.ordering() {
+            StorageOrder::RowMaj => self.col_range_rowmaj(j),
+            StorageOrder::ColMaj => self.col_range_colmaj(j),
+        };
         Ok(DVec {
-            data: data,
+            data: &self.data[range],
             dim: self.cols,
             stride: self.strides[0],
         })
@@ -213,12 +241,12 @@ mod tests {
     #[test]
     fn row_view() {
 
-        let mat = DMat::new_owned(vec![1., 0., 0., 0., 1., 0., 0., 0., 1.],
+        let mat = DMat::new_owned(vec![1., 1., 0., 0., 1., 0., 0., 0., 1.],
                                   3, 3, [3, 1]);
         let view = mat.row(0).unwrap();
         assert_eq!(view.dim(), 3);
         assert_eq!(view.stride(), 1);
-        assert_eq!(view.data(), &[1., 0., 0.]);
+        assert_eq!(view.data(), &[1., 1., 0.]);
         let view = mat.row(1).unwrap();
         assert_eq!(view.dim(), 3);
         assert_eq!(view.stride(), 1);
@@ -228,6 +256,27 @@ mod tests {
         assert_eq!(view.stride(), 1);
         assert_eq!(view.data(), &[0., 0., 1.]);
         let res = mat.row(3);
+        assert_eq!(res, Err(SprsError::OutOfBoundsIndex));
+    }
+
+    #[test]
+    fn col_view() {
+
+        let mat = DMat::new_owned(vec![1., 1., 0., 0., 1., 0., 0., 0., 1.],
+                                  3, 3, [3, 1]);
+        let view = mat.col(0).unwrap();
+        assert_eq!(view.dim(), 3);
+        assert_eq!(view.stride(), 3);
+        assert_eq!(view.data(), &[1., 1., 0., 0., 1., 0., 0.]);
+        let view = mat.col(1).unwrap();
+        assert_eq!(view.dim(), 3);
+        assert_eq!(view.stride(), 3);
+        assert_eq!(view.data(), &[1., 0., 0., 1., 0., 0., 0.]);
+        let view = mat.col(2).unwrap();
+        assert_eq!(view.dim(), 3);
+        assert_eq!(view.stride(), 3);
+        assert_eq!(view.data(), &[0., 0., 1., 0., 0., 0., 1.]);
+        let res = mat.col(3);
         assert_eq!(res, Err(SprsError::OutOfBoundsIndex));
     }
 }
