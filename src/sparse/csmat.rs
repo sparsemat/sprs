@@ -522,6 +522,30 @@ where N: Copy,
         }
     }
 
+    /// Get a view into count contiguous outer dimensions, starting from i.
+    /// 
+    /// eg this gets the rows from i to i + count in a CSR matrix
+    pub fn middle_outer_views(&self,
+                              i: usize, count: usize) -> Option<CsMatView<N>> {
+        // TODO: check for potential overflow?
+        if count == 0 {
+            return None;
+        }
+        let iend = i + count + 1;
+        if i >= self.outer_dims() || iend >= self.outer_dims() {
+            return None;
+        }
+        CsMat {
+            storage: self.storage,
+            nrows: count,
+            ncols: self.cols(),
+            nnz: self.indptr[iend] - self.indptr[i],
+            indptr: &self.indptr[i..iend],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
+    }
+
     /// The array of offsets in the indices() and data() slices.
     /// The elements of the slice at outer dimension i
     /// are available between the elements indptr[i] and indptr[i+1]

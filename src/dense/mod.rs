@@ -19,6 +19,7 @@ where Storage: Deref<Target=[N]> {
 }
 
 pub type DMatView<'a, N> = DMat<N, &'a [N]>;
+pub type DMatViewMut<'a, N> = DMat<N, &'a mut [N]>;
 pub type DMatOwned<N> = DMat<N, Vec<N>>;
 
 /// A simple dense vector

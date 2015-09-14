@@ -4,6 +4,8 @@ use sparse::csmat::{CsMatOwned, CsMatView};
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
+use dense::{DMatView, DMatViewMut};
+use dense_mats::{DenseMatView};
 use errors::SprsError;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
@@ -178,6 +180,33 @@ where N: Copy + Num {
         }
     }
     Ok(res)
+}
+
+/// CSR-dense rowmaj multiplication
+/// 
+/// Performs better if out is rowmaj.
+pub fn csr_mulacc_dense_rowmaj<N: Num + Copy>(lhs: CsMatView<N>,
+                                              rhs: DMatView<N>,
+                                              out: DMatViewMut<N>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.cols() != out.cols() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csr() {
+        return Err(SprsError::BadStorageType);
+    }
+    // for now we implement a naive strategy, but later on it would
+    // be nice to pick a data dependent block-size to optimize caching effects
+    let oblock_size = 4;
+    let lblock_size = 4;
+    // TODO: impl outer_chunks_iter() on csmat, row_chunks_iter(_mut)() on DMat
+    unimplemented!();
 }
 
 #[cfg(test)]
