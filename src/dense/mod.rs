@@ -31,6 +31,7 @@ where Storage: Deref<Target=[N]> {
 }
 
 pub type DVecView<'a, N> = DVec<N, &'a [N]>;
+pub type DVecViewMut<'a, N> = DVec<N, &'a mut [N]>;
 pub type DVecOwned<N> = DVec<N, Vec<N>>;
 
 impl<N, Storage> DenseMatView<N> for DMat<N, Storage>
@@ -185,6 +186,42 @@ where Storage: Deref<Target=[N]> {
     }
 }
 
+impl<N, Storage> DMat<N, Storage>
+where Storage: DerefMut<Target=[N]> {
+    /// Get a mutable view into the specified row
+    pub fn row_mut(&mut self, i: usize) -> Result<DVecViewMut<N>, SprsError> {
+        if i >= self.rows {
+            return Err(SprsError::OutOfBoundsIndex);
+        }
+        let range = match self.ordering() {
+            StorageOrder::RowMaj => self.row_range_rowmaj(i),
+            StorageOrder::ColMaj => self.row_range_colmaj(i),
+        };
+        Ok(DVec {
+            data: &mut self.data[range],
+            dim: self.cols,
+            stride: self.strides[1],
+        })
+    }
+
+    /// Get a mutable view into the specified column
+    pub fn col_mut(&mut self, j: usize) -> Result<DVecViewMut<N>, SprsError> {
+        if j >= self.cols {
+            return Err(SprsError::OutOfBoundsIndex);
+        }
+        let range = match self.ordering() {
+            StorageOrder::RowMaj => self.col_range_rowmaj(j),
+            StorageOrder::ColMaj => self.col_range_colmaj(j),
+        };
+        Ok(DVec {
+            data: &mut self.data[range],
+            dim: self.cols,
+            stride: self.strides[0],
+        })
+    }
+}
+
+
 fn take_first<N>(chunk: &[N]) -> &N {
     &chunk[0]
 }
@@ -278,5 +315,87 @@ mod tests {
         assert_eq!(view.data(), &[0., 0., 1., 0., 0., 0., 1.]);
         let res = mat.col(3);
         assert_eq!(res, Err(SprsError::OutOfBoundsIndex));
+    }
+
+    #[test]
+    fn row_iter() {
+        let mat = DMat::new_owned(vec![1., 1., 0., 0., 1., 0., 0., 0., 1.],
+                                  3, 3, [1, 3]);
+
+        {
+            let row = mat.row(0).unwrap();
+            let mut iter = row.iter();
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), None);
+
+            let row = mat.row(1).unwrap();
+            let mut iter = row.iter();
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), None);
+
+            let row = mat.row(2).unwrap();
+            let mut iter = row.iter();
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), None);
+        }
+
+        let mut mat = mat;
+        let mut row = mat.row_mut(0).unwrap();
+        {
+            let mut iter = row.iter_mut();
+            *iter.next().unwrap() = 2.;
+        }
+        let mut iter = row.iter();
+        assert_eq!(iter.next(), Some(&2.));
+        assert_eq!(iter.next(), Some(&0.));
+        assert_eq!(iter.next(), Some(&0.));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn col_iter() {
+        let mat = DMat::new_owned(vec![1., 1., 0., 0., 1., 0., 0., 0., 1.],
+                                  3, 3, [1, 3]);
+
+        {
+            let col = mat.col(0).unwrap();
+            let mut iter = col.iter();
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), None);
+
+            let col = mat.col(1).unwrap();
+            let mut iter = col.iter();
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), None);
+
+            let col = mat.col(2).unwrap();
+            let mut iter = col.iter();
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), Some(&0.));
+            assert_eq!(iter.next(), Some(&1.));
+            assert_eq!(iter.next(), None);
+        }
+
+        let mut mat = mat;
+        let mut col = mat.col_mut(0).unwrap();
+        {
+            let mut iter = col.iter_mut();
+            *iter.next().unwrap() = 2.;
+        }
+        let mut iter = col.iter();
+        assert_eq!(iter.next(), Some(&2.));
+        assert_eq!(iter.next(), Some(&1.));
+        assert_eq!(iter.next(), Some(&0.));
+        assert_eq!(iter.next(), None);
     }
 }
