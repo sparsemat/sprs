@@ -4,8 +4,7 @@ use sparse::csmat::{CsMatOwned, CsMatView};
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
-use dense::{DMatView, DMatViewMut};
-use dense_mats::{DenseMatView};
+use dense_mats::{StridedMatView, StridedMatViewMut};
 use errors::SprsError;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
@@ -186,8 +185,8 @@ where N: Copy + Num {
 /// 
 /// Performs better if out is rowmaj.
 pub fn csr_mulacc_dense_rowmaj<N: Num + Copy>(lhs: CsMatView<N>,
-                                              rhs: DMatView<N>,
-                                              out: DMatViewMut<N>)
+                                              rhs: StridedMatView<N>,
+                                              out: StridedMatViewMut<N>)
 -> Result<(), SprsError> {
     if lhs.cols() != rhs.rows() {
         return Err(SprsError::IncompatibleDimensions);
