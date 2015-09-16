@@ -535,7 +535,7 @@ where N: Copy,
         if i >= self.outer_dims() || iend >= self.outer_dims() {
             return None;
         }
-        CsMat {
+        Some(CsMat {
             storage: self.storage,
             nrows: count,
             ncols: self.cols(),
@@ -543,7 +543,7 @@ where N: Copy,
             indptr: &self.indptr[i..iend],
             indices: &self.indices[..],
             data: &self.data[..],
-        }
+        })
     }
 
     /// The array of offsets in the indices() and data() slices.
