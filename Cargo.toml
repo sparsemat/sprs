@@ -18,4 +18,4 @@ exclude = [
 [dependencies]
 
 num = "*"
-dense_mats = "*"
+dense_mats = ">= 0.3.0"
