@@ -269,7 +269,6 @@ impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
             return Err(SprsError::EmptyBlock);
         }
         let iend = i + count;
-        println!("{}, {}, count: {}", i, iend, count);
         if i >= self.outer_dims() || iend > self.outer_dims() {
             return Err(SprsError::OutOfBoundsIndex);
         }
@@ -278,7 +277,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
             nrows: count,
             ncols: self.cols(),
             nnz: self.indptr[iend] - self.indptr[i],
-            indptr: &self.indptr[i..iend],
+            indptr: &self.indptr[i..(iend+1)],
             indices: &self.indices[..],
             data: &self.data[..],
         })
