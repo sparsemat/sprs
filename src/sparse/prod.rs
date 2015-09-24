@@ -239,7 +239,8 @@ mod test {
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr,
                 csr_mulacc_dense_rowmaj};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
-                    mat1_csc, mat4, mat1_csc_matprod_mat4};
+                    mat1_csc, mat4, mat1_csc_matprod_mat4,
+                    mat_dense1};
 
     #[test]
     fn mul_csc_vec() {
@@ -384,5 +385,18 @@ mod test {
         csr_mulacc_dense_rowmaj(e.borrowed(), a.borrowed(),
                                 res.borrowed_mut()).unwrap();
         assert_eq!(res, a);
+
+        let a = mat1();
+        let b = mat_dense1();
+        let mut res = MatOwned::zeros([5, 5], StorageOrder::C);
+        csr_mulacc_dense_rowmaj(a.borrowed(), b.borrowed(),
+                                res.borrowed_mut()).unwrap();
+        let expected_output = MatOwned::new_owned(vec![24., 31., 24., 17., 10.,
+                                                       11., 18., 11.,  9.,  2.,
+                                                       20., 25., 20., 15., 10.,
+                                                       40., 48., 40., 32., 24.,
+                                                       21., 28., 21., 14.,  7.],
+                                                  5, 5, [5, 1]);
+        assert_eq!(res, expected_output);
     }
 }

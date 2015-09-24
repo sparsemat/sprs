@@ -2,6 +2,7 @@
 
 use sparse::{CsMat, CsMatOwned};
 use sparse::CompressedStorage::{CSR, CSC};
+use dense_mats::{MatOwned};
 
 pub fn mat1() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];
@@ -67,4 +68,14 @@ pub fn mat1_csc_matprod_mat4() -> CsMatOwned<f64> {
     let data = vec![9., 15., 15., 56., 36., 18., 63., 22.,
                     8., 10., 28., 12., 20., 32.];
     CsMat::new_owned(CSC, 5, 5, indptr, indices, data).unwrap()
+}
+
+pub fn mat_dense1() -> MatOwned<f64> {
+    let m = MatOwned::new_owned(vec![0., 1., 2., 3., 4.,
+                                     5., 6., 5., 4., 3.,
+                                     4., 5., 4., 3., 2.,
+                                     3., 4., 3., 2., 1.,
+                                     1., 2., 1., 1., 0.],
+                                5, 5, [5, 1]);
+    m
 }

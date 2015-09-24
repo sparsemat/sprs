@@ -37,3 +37,10 @@ def mat4():
     indices = np.array([0, 1, 2, 4, 0, 3, 2, 3, 1, 2])
     data = np.array([6.,  7.,  3.,  3.,  8., 9.,  2.,  4.,  4.,  4.])
     return scipy.sparse.csc_matrix((data, indices, indptr), shape=(5,5))
+
+def mat_dense1():
+    return np.array([[0., 1., 2., 3., 4.],
+                     [5., 6., 5., 4., 3.],
+                     [4., 5., 4., 3., 2.],
+                     [3., 4., 3., 2., 1.],
+                     [1., 2., 1., 1., 0.]])
