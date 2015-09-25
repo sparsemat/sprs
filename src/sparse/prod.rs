@@ -5,6 +5,7 @@ use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
 use dense_mats::{StorageOrder, MatView, MatViewMut};
+use dense_mats::tensor;
 use errors::SprsError;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
@@ -204,15 +205,17 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     }
     // for now we implement a naive strategy, but later on it would
     // be nice to pick a data dependent block-size to optimize caching effects
-    let oblock_size = 4;
     let lblock_size = 4;
     let rblock_size = 4;
-    for (mut oblock, lblock) in out.outer_block_iter_mut(oblock_size)
+    for (mut oblock, lblock) in out.outer_block_iter_mut(lblock_size)
                                    .zip(lhs.outer_block_iter(lblock_size)) {
         for (rcount, rblock) in rhs.outer_block_iter(rblock_size).enumerate() {
             let col_start = rblock_size * rcount;
             let col_end = col_start + rblock_size;
-            for (line_ind, line) in lblock.outer_iterator() {
+
+            let axis0 = tensor::Axis(0);
+            for ((_, line), mut oline) in lblock.outer_iterator()
+                                          .zip(oblock.iter_axis_mut(axis0)) {
                 'col_block: for (col_ind, lval) in line.iter() {
                     if col_ind < col_start {
                         continue 'col_block;
@@ -220,9 +223,15 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
                     if col_ind >= col_end {
                         break 'col_block;
                     }
-                    let prev = oblock[[line_ind, col_ind]];
-                    let rval = rblock[[col_ind - col_start, line_ind]];
-                    oblock[[line_ind, col_ind]] = prev + lval * rval;
+                    //let i_inblock = line_ind;
+                    //let mut oline = oblock.slice_dim_mut(tensor::Axis(0), 
+                    //                                     i_inblock);
+                    let k_inblock = col_ind - col_start;
+                    let rline = rblock.slice_dim(axis0, k_inblock);
+                    for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
+                        let prev = *oval;
+                        *oval = prev + lval * rval;
+                    }
                 }
             }
         }
@@ -235,7 +244,7 @@ mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
-    use dense_mats::{StorageOrder, MatOwned};
+    use dense_mats::{MatOwned};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr,
                 csr_mulacc_dense_rowmaj};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
@@ -381,14 +390,14 @@ mod test {
     fn mul_csr_dense_rowmaj() {
         let a: MatOwned<f64> = MatOwned::eye(3);
         let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
-        let mut res = MatOwned::zeros([3, 3], StorageOrder::C);
+        let mut res = MatOwned::zeros([3, 3]);
         csr_mulacc_dense_rowmaj(e.borrowed(), a.borrowed(),
                                 res.borrowed_mut()).unwrap();
         assert_eq!(res, a);
 
         let a = mat1();
         let b = mat_dense1();
-        let mut res = MatOwned::zeros([5, 5], StorageOrder::C);
+        let mut res = MatOwned::zeros([5, 5]);
         csr_mulacc_dense_rowmaj(a.borrowed(), b.borrowed(),
                                 res.borrowed_mut()).unwrap();
         let expected_output = MatOwned::new_owned(vec![24., 31., 24., 17., 10.,
