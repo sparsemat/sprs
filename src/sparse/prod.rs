@@ -239,6 +239,41 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     Ok(())
 }
 
+/// CSC-dense rowmaj multiplication
+///
+/// Performs better if out is rowmaj
+pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
+    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.cols() != out.cols() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+    if rhs.ordering() != StorageOrder::C {
+        return Err(SprsError::BadStorageType);
+    }
+
+    let axis0 = tensor::Axis(0);
+    for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.iter_axis(axis0)) {
+        for (orow, lval) in lcol.iter() {
+            let mut oline = out.slice_dim_mut(axis0, orow);
+            for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
+                let prev = *oval;
+                *oval = prev + lval * rval;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
@@ -423,5 +458,21 @@ mod test {
         let eps = 1e-8;
         assert!(res.data().iter().zip(expected_output.data().iter())
                 .all(|(&x, &y)| (x - y).abs() <= eps));
+    }
+
+    #[test]
+    fn mul_csc_dense_rowmaj() {
+        let a = mat1_csc();
+        let b = mat_dense1();
+        let mut res = MatOwned::zeros([5, 5]);
+        super::csc_mulacc_dense_rowmaj(a.borrowed(), b.borrowed(),
+                                       res.borrowed_mut()).unwrap();
+        let expected_output = MatOwned::new_owned(vec![24., 31., 24., 17., 10.,
+                                                       11., 18., 11.,  9.,  2.,
+                                                       20., 25., 20., 15., 10.,
+                                                       40., 48., 40., 32., 24.,
+                                                       21., 28., 21., 14.,  7.],
+                                                  5, 5, [5, 1]);
+        assert_eq!(res, expected_output);
     }
 }
