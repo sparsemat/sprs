@@ -274,6 +274,39 @@ pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     Ok(())
 }
 
+/// CSC-dense colmaj multiplication
+/// 
+/// Performs better if out is colmaj
+pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
+    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.cols() != out.cols() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+    if rhs.ordering() != StorageOrder::F {
+        return Err(SprsError::BadStorageType);
+    }
+    let axis1 = tensor::Axis(1);
+    for (mut ocol, rcol) in out.iter_axis_mut(axis1).zip(rhs.iter_axis(axis1)) {
+        for (_, lcol) in lhs.outer_iterator() {
+            for (orow, lval) in lcol.iter() {
+                let prev = ocol[[orow]];
+                ocol[[orow]] = prev + lval * rcol[[orow]];
+            }
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
@@ -284,7 +317,7 @@ mod test {
                 csr_mulacc_dense_rowmaj};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
                     mat1_csc, mat4, mat1_csc_matprod_mat4,
-                    mat_dense1, mat5, mat_dense2};
+                    mat_dense1, mat5, mat_dense2, mat_dense1_colmaj};
 
     #[test]
     fn mul_csc_vec() {
@@ -474,5 +507,14 @@ mod test {
                                                        21., 28., 21., 14.,  7.],
                                                   5, 5, [5, 1]);
         assert_eq!(res, expected_output);
+    }
+
+    #[test]
+    fn mul_csc_dense_colmaj() {
+        let a = mat1_csc();
+        let b = mat_dense1_colmaj();
+        let mut res = MatOwned::zeros_f([5, 5]);
+        super::csc_mulacc_dense_colmaj(a.borrowed(), b.borrowed(),
+                                       res.borrowed_mut()).unwrap();
     }
 }
