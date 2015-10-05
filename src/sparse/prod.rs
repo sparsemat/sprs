@@ -297,10 +297,11 @@ pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     }
     let axis1 = tensor::Axis(1);
     for (mut ocol, rcol) in out.iter_axis_mut(axis1).zip(rhs.iter_axis(axis1)) {
-        for (_, lcol) in lhs.outer_iterator() {
+        for (rrow, lcol) in lhs.outer_iterator() {
+            let rval = rcol[[rrow]];
             for (orow, lval) in lcol.iter() {
                 let prev = ocol[[orow]];
-                ocol[[orow]] = prev + lval * rcol[[orow]];
+                ocol[[orow]] = prev + lval * rval;
             }
         }
     }
