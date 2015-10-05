@@ -20,6 +20,7 @@ pub enum SprsError {
     BadNnzCount,
     OutOfBoundsIndptr,
     UnsortedIndptr,
+    EmptyBlock,
 }
 
 use self::SprsError::*;
@@ -43,6 +44,7 @@ impl SprsError {
             BadNnzCount => "the nnz count and indptr do not agree",
             OutOfBoundsIndptr => "some indptr values are out of bounds",
             UnsortedIndptr => "indptr is not sorted",
+            EmptyBlock => "tried to create an empty block",
         }
     }
 }

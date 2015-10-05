@@ -48,6 +48,7 @@ assert_eq!(a, b.to_csc());
 */
 
 extern crate num;
+extern crate dense_mats;
 
 pub mod sparse;
 pub mod errors;

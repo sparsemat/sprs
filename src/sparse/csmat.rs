@@ -15,12 +15,15 @@ use std::ops::{Deref, DerefMut, Add, Sub, Mul};
 use std::mem;
 use num::traits::Num;
 
+use dense_mats::{StorageOrder, Tensor, MatOwned};
+
 use sparse::permutation::{Permutation};
 use sparse::vec::{CsVec, CsVecView};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
 use errors::SprsError;
+
 
 pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
@@ -257,6 +260,32 @@ impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
             data : slice::from_raw_parts(data, nnz),
         }
     }
+
+    /// Get a view into count contiguous outer dimensions, starting from i.
+    /// 
+    /// eg this gets the rows from i to i + count in a CSR matrix
+    pub fn middle_outer_views(&self,
+                              i: usize, count: usize
+                             ) -> Result<CsMatView<'a, N>, SprsError> {
+        // TODO: check for potential overflow?
+        if count == 0 {
+            return Err(SprsError::EmptyBlock);
+        }
+        let iend = i + count;
+        if i >= self.outer_dims() || iend > self.outer_dims() {
+            return Err(SprsError::OutOfBoundsIndex);
+        }
+        Ok(CsMat {
+            storage: self.storage,
+            nrows: count,
+            ncols: self.cols(),
+            nnz: self.indptr[iend] - self.indptr[i],
+            indptr: &self.indptr[i..(iend+1)],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        })
+    }
+
 }
 
 impl<N: Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
@@ -519,6 +548,25 @@ where N: Copy,
                                 self.indices[start..stop].len(),
                                 self.indices[start..stop].as_ptr(),
                                 self.data[start..stop].as_ptr()))
+        }
+    }
+
+    /// Iteration on outer blocks of size block_size
+    pub fn outer_block_iter(&self, block_size: usize
+                           ) -> ChunkOuterBlocks<N> {
+        let m = CsMatView {
+            storage: self.storage,
+            nrows: self.rows(),
+            ncols: self.cols(),
+            nnz: self.nnz,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        };
+        ChunkOuterBlocks {
+            mat: m,
+            dims_in_bloc: block_size,
+            bloc_count: 0,
         }
     }
 
@@ -888,9 +936,84 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
+impl<'a, 'b, N, IpS, IS, DS, DS2>
+Mul<&'b Tensor<N, [usize; 2], DS2>>
+for &'a CsMat<N, IpS, IS, DS>
+where N: 'a + Copy + Num + Default,
+      IpS: 'a + Deref<Target=[usize]>,
+      IS: 'a + Deref<Target=[usize]>,
+      DS: 'a + Deref<Target=[N]>,
+      DS2: 'b + Deref<Target=[N]> {
+    type Output = MatOwned<N>;
+
+    fn mul(self, rhs: &'b Tensor<N, [usize; 2], DS2>) -> MatOwned<N> {
+        let rows = self.rows();
+        let cols = rhs.cols();
+        match (self.storage(), rhs.ordering()) {
+            (CSR, StorageOrder::C) => {
+                let mut res = Tensor::zeros([rows, cols]);
+                prod::csr_mulacc_dense_rowmaj(self.borrowed(), rhs.borrowed(),
+                                              res.borrowed_mut()).unwrap();
+                res
+            }
+            (CSR, StorageOrder::F) => {
+                let mut res = Tensor::zeros_f([rows, cols]);
+                prod::csr_mulacc_dense_colmaj(self.borrowed(), rhs.borrowed(),
+                                              res.borrowed_mut()).unwrap();
+                res
+            }
+            (CSC, StorageOrder::C) => {
+                let mut res = Tensor::zeros([rows, cols]);
+                prod::csc_mulacc_dense_rowmaj(self.borrowed(), rhs.borrowed(),
+                                              res.borrowed_mut()).unwrap();
+                res
+            }
+            (CSC, StorageOrder::F) => {
+                let mut res = Tensor::zeros_f([rows, cols]);
+                prod::csc_mulacc_dense_colmaj(self.borrowed(), rhs.borrowed(),
+                                              res.borrowed_mut()).unwrap();
+                res
+            }
+            (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
+        }
+    }
+}
+
+/// An iterator over non-overlapping blocks of a matrix,
+/// along the least-varying dimension
+pub struct ChunkOuterBlocks<'a, N> {
+    mat: CsMatView<'a, N>,
+    dims_in_bloc: usize,
+    bloc_count: usize,
+}
+
+impl<'a, N: 'a + Copy> Iterator for ChunkOuterBlocks<'a, N> {
+    type Item = CsMatView<'a, N>;
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        let cur_dim = self.dims_in_bloc * self.bloc_count;
+        let end_dim = self.dims_in_bloc + cur_dim;
+        let count = if self.dims_in_bloc == 0 {
+            return None;
+        }
+        else if end_dim > self.mat.outer_dims() {
+            let count = self.mat.outer_dims() - cur_dim;
+            self.dims_in_bloc = 0;
+            count
+        }
+        else {
+            self.dims_in_bloc
+        };
+        let view = self.mat.middle_outer_views(cur_dim,
+                                               count).unwrap();
+        self.bloc_count += 1;
+        Some(view)
+    }
+}
+
+
 #[cfg(test)]
 mod test {
-    use super::{CsMat};
+    use super::{CsMat, CsMatOwned};
     use super::CompressedStorage::{CSC, CSR};
     use errors::SprsError;
     use test_data::{mat1, mat1_csc, mat1_times_2};
@@ -1025,5 +1148,22 @@ mod test {
         assert_eq!(a.indptr(), c_true.indptr());
         assert_eq!(a.indices(), c_true.indices());
         assert_eq!(a.data(), c_true.data());
+    }
+
+    #[test]
+    fn outer_block_iter() {
+        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+        let mut block_iter = mat.outer_block_iter(3);
+        assert_eq!(block_iter.next().unwrap().rows(), 3);
+        assert_eq!(block_iter.next().unwrap().rows(), 3);
+        assert_eq!(block_iter.next().unwrap().rows(), 3);
+        assert_eq!(block_iter.next().unwrap().rows(), 2);
+        assert_eq!(block_iter.next(), None);
+
+        let mut block_iter = mat.outer_block_iter(4);
+        assert_eq!(block_iter.next().unwrap().cols(), 11);
+        block_iter.next().unwrap();
+        block_iter.next().unwrap();
+        assert_eq!(block_iter.next(), None);
     }
 }
