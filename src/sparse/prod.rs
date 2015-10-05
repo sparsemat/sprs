@@ -308,6 +308,41 @@ pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     Ok(())
 }
 
+/// CSR-dense colmaj multiplication
+/// 
+/// Performs better if out is colmaj
+pub fn csr_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
+    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.cols() != out.cols() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csr() {
+        return Err(SprsError::BadStorageType);
+    }
+    if rhs.ordering() != StorageOrder::F {
+        return Err(SprsError::BadStorageType);
+    }
+    let axis1 = tensor::Axis(1);
+    for (mut ocol, rcol) in out.iter_axis_mut(axis1).zip(rhs.iter_axis(axis1)) {
+        for (orow, lrow) in lhs.outer_iterator() {
+            let mut prev = ocol[[orow]];
+            for (rrow, lval) in lrow.iter() {
+                let rval = rcol[[rrow]];
+                prev = prev + lval * rval;
+            }
+            ocol[[orow]] = prev;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
@@ -516,6 +551,22 @@ mod test {
         let b = mat_dense1_colmaj();
         let mut res = MatOwned::zeros_f([5, 5]);
         super::csc_mulacc_dense_colmaj(a.borrowed(), b.borrowed(),
+                                       res.borrowed_mut()).unwrap();
+        let expected_output = MatOwned::new_owned(vec![24., 11., 20., 40., 21.,
+                                                       31., 18., 25., 48., 28.,
+                                                       24., 11., 20., 40., 21.,
+                                                       17., 9., 15., 32., 14.,
+                                                       10., 2., 10., 24., 7.],
+                                                  5, 5, [1, 5]);
+        assert_eq!(res, expected_output);
+    }
+
+    #[test]
+    fn mul_csr_dense_colmaj() {
+        let a = mat1();
+        let b = mat_dense1_colmaj();
+        let mut res = MatOwned::zeros_f([5, 5]);
+        super::csr_mulacc_dense_colmaj(a.borrowed(), b.borrowed(),
                                        res.borrowed_mut()).unwrap();
         let expected_output = MatOwned::new_owned(vec![24., 11., 20., 40., 21.,
                                                        31., 18., 25., 48., 28.,
