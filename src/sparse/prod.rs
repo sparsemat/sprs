@@ -516,5 +516,12 @@ mod test {
         let mut res = MatOwned::zeros_f([5, 5]);
         super::csc_mulacc_dense_colmaj(a.borrowed(), b.borrowed(),
                                        res.borrowed_mut()).unwrap();
+        let expected_output = MatOwned::new_owned(vec![24., 11., 20., 40., 21.,
+                                                       31., 18., 25., 48., 28.,
+                                                       24., 11., 20., 40., 21.,
+                                                       17., 9., 15., 32., 14.,
+                                                       10., 2., 10., 24., 7.],
+                                                  5, 5, [1, 5]);
+        assert_eq!(res, expected_output);
     }
 }
