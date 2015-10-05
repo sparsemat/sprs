@@ -22,4 +22,3 @@ num = "*"
 
 [dependencies.dense_mats]
 version = ">= 0.3.0"
-git = "https://github.com/vbarrielle/dense_mats"
