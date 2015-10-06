@@ -512,6 +512,9 @@ mod test {
                                                   5, 5, [5, 1]);
         assert_eq!(res, expected_output);
 
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
+
         let a = mat5();
         let b = mat_dense2();
         let mut res = MatOwned::zeros([5, 7]);
@@ -543,6 +546,9 @@ mod test {
                                                        21., 28., 21., 14.,  7.],
                                                   5, 5, [5, 1]);
         assert_eq!(res, expected_output);
+
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
     }
 
     #[test]
@@ -559,6 +565,9 @@ mod test {
                                                        10., 2., 10., 24., 7.],
                                                   5, 5, [1, 5]);
         assert_eq!(res, expected_output);
+
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
     }
 
     #[test]
@@ -575,5 +584,8 @@ mod test {
                                                        10., 2., 10., 24., 7.],
                                                   5, 5, [1, 5]);
         assert_eq!(res, expected_output);
+
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
     }
 }
