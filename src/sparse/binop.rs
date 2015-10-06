@@ -1,10 +1,11 @@
 ///! Sparse matrix addition, subtraction
 
-use sparse::csmat::{CsMat, CsMatOwned, CsMatView};
+use sparse::csmat::{CsMat, CsMatOwned, CsMatView, CompressedStorage};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned};
 use sparse::compressed::SpMatView;
+use dense_mats::{StorageOrder, MatView, MatViewMut};
 use errors::SprsError;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
@@ -143,6 +144,25 @@ F: Fn(N, N) -> N {
         out_indptr[dim+1] = nnz;
     }
     nnz
+}
+
+/// Raw implementation of sparse/dense binary operations with the same
+/// ordering
+pub fn csmat_binop_dense_same_ordering_raw<N, F>(lhs: CsMatView<N>,
+                                                 rhs: MatView<N>,
+                                                 out: MatViewMut<N>
+                                                ) -> Result<(), SprsError>
+where N: Copy + Num {
+    if         lhs.cols() != rhs.cols() || lhs.cols() != out.cols() 
+            || lhs.rows() != rhs.rows() || lhs.rows() != out.rows() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    match (lhs.storage(), rhs.ordering(), out.ordering()) {
+        (CompressedStorage::CSR, StorageOrder::C, StorageOrder::C) => (),
+        (CompressedStorage::CSC, StorageOrder::F, StorageOrder::F) => (),
+        (_, _, _) => return Err(SprsError::IncompatibleStorages),
+    }
+    unimplemented!();
 }
 
 /// Binary operations for CsVec
