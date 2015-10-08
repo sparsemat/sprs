@@ -5,7 +5,7 @@ use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned};
 use sparse::compressed::SpMatView;
-use dense_mats::{StorageOrder, MatView, MatViewMut};
+use dense_mats::{StorageOrder, MatView, MatViewMut, tensor};
 use errors::SprsError;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
@@ -148,12 +148,14 @@ F: Fn(N, N) -> N {
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
-pub fn csmat_binop_dense_same_ordering_raw<N, F>(lhs: CsMatView<N>,
-                                                 rhs: MatView<N>,
-                                                 out: MatViewMut<N>
-                                                ) -> Result<(), SprsError>
-where N: Copy + Num {
-    if         lhs.cols() != rhs.cols() || lhs.cols() != out.cols() 
+pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
+                                                     rhs: MatView<'a, N>,
+                                                     binop: F,
+                                                     mut out: MatViewMut<'a, N>
+                                                    ) -> Result<(), SprsError>
+where N: 'a + Copy + Num,
+      F: Fn(N, N) -> N {
+    if         lhs.cols() != rhs.cols() || lhs.cols() != out.cols()
             || lhs.rows() != rhs.rows() || lhs.rows() != out.rows() {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -161,6 +163,12 @@ where N: Copy + Num {
         (CompressedStorage::CSR, StorageOrder::C, StorageOrder::C) => (),
         (CompressedStorage::CSC, StorageOrder::F, StorageOrder::F) => (),
         (_, _, _) => return Err(SprsError::IncompatibleStorages),
+    }
+    let outer_axis = tensor::Axis(rhs.outer_dim().unwrap());
+    for ((mut orow, lrow), rrow) in out.iter_axis_mut(outer_axis)
+                                       .zip(lhs.outer_iterator())
+                                       .zip(rhs.iter_axis(outer_axis)) {
+        // now some equivalent of nnz_or_zip is needed
     }
     unimplemented!();
 }
@@ -231,6 +239,22 @@ mod test {
 
         let c = &a + &b;
         assert_eq!(c, c_true);
+
+        // test with CSR matrices having differ row patterns
+        let a = CsMatOwned::new_owned(CSR, 3, 3,
+                                      vec![0, 1, 1, 2],
+                                      vec![0, 2],
+                                      vec![1., 1.]).unwrap();
+        let b = CsMatOwned::new_owned(CSR, 3, 3,
+                                      vec![0, 1, 2, 2],
+                                      vec![0, 1],
+                                      vec![1., 1.]).unwrap();
+        let c = CsMatOwned::new_owned(CSR, 3, 3,
+                                      vec![0, 1, 2, 3],
+                                      vec![0, 1, 2],
+                                      vec![2., 1., 1.]).unwrap();
+
+        assert_eq!(c, &a + &b);
     }
 
     #[test]
