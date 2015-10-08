@@ -3,7 +3,7 @@
 use sparse::csmat::{CsMat, CsMatOwned, CsMatView, CompressedStorage};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
-use sparse::vec::{CsVec, CsVecView, CsVecOwned};
+use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
 use dense_mats::{StorageOrder, MatView, MatViewMut, tensor};
 use errors::SprsError;
@@ -165,10 +165,13 @@ where N: 'a + Copy + Num,
         (_, _, _) => return Err(SprsError::IncompatibleStorages),
     }
     let outer_axis = tensor::Axis(rhs.outer_dim().unwrap());
-    for ((mut orow, lrow), rrow) in out.iter_axis_mut(outer_axis)
-                                       .zip(lhs.outer_iterator())
-                                       .zip(rhs.iter_axis(outer_axis)) {
+    for ((mut orow, (_, lrow)), rrow) in out.iter_axis_mut(outer_axis)
+                                            .zip(lhs.outer_iterator())
+                                            .zip(rhs.iter_axis(outer_axis)) {
         // now some equivalent of nnz_or_zip is needed
+        for items in rrow.iter().enumerate().nnz_or_zip(lrow.iter()) {
+            // do something
+        }
     }
     unimplemented!();
 }
