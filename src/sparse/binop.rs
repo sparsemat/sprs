@@ -1,11 +1,12 @@
 ///! Sparse matrix addition, subtraction
 
+use std::ops::Deref;
 use sparse::csmat::{CsMat, CsMatOwned, CsMatView, CompressedStorage};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
-use dense_mats::{StorageOrder, MatView, MatViewMut, tensor};
+use dense_mats::{StorageOrder, Tensor, MatOwned, MatView, MatViewMut, tensor};
 use errors::SprsError;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
@@ -146,6 +147,21 @@ F: Fn(N, N) -> N {
     nnz
 }
 
+pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
+    lhs: &Mat, rhs: &Tensor<N, [usize; 2], DenseStorage>)
+-> Result<MatOwned<N>, SprsError>
+where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: Deref<Target=[N]> {
+    let binop = |x, y| x + y;
+    let mut res = match rhs.ordering() {
+        StorageOrder::C => MatOwned::zeros(rhs.shape()),
+        StorageOrder::F => MatOwned::zeros_f(rhs.shape()),
+        _ => unreachable!(),
+    };
+    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(), rhs.borrowed(),
+                                             binop, res.borrowed_mut()));
+    Ok(res)
+}
+
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
 pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
@@ -211,6 +227,7 @@ mod test {
     use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
     use test_data::{mat1, mat2, mat1_times_2};
+    use dense_mats::MatOwned;
 
     fn mat1_plus_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
@@ -320,6 +337,21 @@ mod test {
                                                vec![1., 3., 4., 1., 3., 4.]
                                               ).unwrap();
         assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn csr_add_dense_rowmaj() {
+        let a = MatOwned::zeros([3,3]);
+        let b = CsMatOwned::eye(CSR, 3);
+
+        let c = super::add_dense_mat_same_ordering(&b, &a).unwrap();
+
+        let mut expected_output = MatOwned::zeros([3,3]);
+        expected_output[[0,0]] = 1.;
+        expected_output[[1,1]] = 1.;
+        expected_output[[2,2]] = 1.;
+
+        assert_eq!(c, expected_output);
     }
 
 }
