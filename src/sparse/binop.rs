@@ -147,11 +147,32 @@ F: Fn(N, N) -> N {
     nnz
 }
 
+/// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
+/// and alpha and beta scalars
 pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat, rhs: &Tensor<N, [usize; 2], DenseStorage>)
+    lhs: &Mat, rhs: &Tensor<N, [usize; 2], DenseStorage>,
+    alpha: N, beta: N)
 -> Result<MatOwned<N>, SprsError>
 where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: Deref<Target=[N]> {
-    let binop = |x, y| x + y;
+    let binop = |x, y| alpha * x + beta * y;
+    let mut res = match rhs.ordering() {
+        StorageOrder::C => MatOwned::zeros(rhs.shape()),
+        StorageOrder::F => MatOwned::zeros_f(rhs.shape()),
+        _ => unreachable!(),
+    };
+    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(), rhs.borrowed(),
+                                             binop, res.borrowed_mut()));
+    Ok(res)
+}
+
+/// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
+/// and alpha a scalar
+pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
+    lhs: &Mat, rhs: &Tensor<N, [usize; 2], DenseStorage>,
+    alpha: N)
+-> Result<MatOwned<N>, SprsError>
+where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: Deref<Target=[N]> {
+    let binop = |x, y| alpha * x * y;
     let mut res = match rhs.ordering() {
         StorageOrder::C => MatOwned::zeros(rhs.shape()),
         StorageOrder::F => MatOwned::zeros_f(rhs.shape()),
@@ -226,7 +247,7 @@ mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
-    use test_data::{mat1, mat2, mat1_times_2};
+    use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
     use dense_mats::MatOwned;
 
     fn mat1_plus_mat2() -> CsMatOwned<f64> {
@@ -344,12 +365,36 @@ mod test {
         let a = MatOwned::zeros([3,3]);
         let b = CsMatOwned::eye(CSR, 3);
 
-        let c = super::add_dense_mat_same_ordering(&b, &a).unwrap();
+        let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.).unwrap();
 
         let mut expected_output = MatOwned::zeros([3,3]);
         expected_output[[0,0]] = 1.;
         expected_output[[1,1]] = 1.;
         expected_output[[2,2]] = 1.;
+
+        assert_eq!(c, expected_output);
+
+        let a = mat1();
+        let b = mat_dense1();
+
+        let expected_output = MatOwned::new_owned(vec![0., 1., 5., 7., 4.,
+                                                       5., 6., 5., 6., 8.,
+                                                       4., 5., 9., 3., 2.,
+                                                       3., 12., 3., 2., 1.,
+                                                       1., 2., 1., 8., 0.],
+                                                  5, 5, [5,1]);
+        let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.).unwrap();
+        assert_eq!(c, expected_output);
+    }
+
+    #[test]
+    fn csr_mul_dense_rowmaj() {
+        let a = MatOwned::ones([3,3]);
+        let b = CsMatOwned::eye(CSR, 3);
+
+        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.).unwrap();
+
+        let expected_output = MatOwned::eye(3);
 
         assert_eq!(c, expected_output);
     }
