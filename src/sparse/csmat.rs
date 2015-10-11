@@ -850,16 +850,19 @@ mod raw {
     }
 }
 
-impl<'a, 'b, N, IpStorage, IStorage, DStorage, Mat> Add<&'b Mat>
+impl<'a, 'b, N, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
+Add<&'b CsMat<N, IpS2, IS2, DS2>>
 for &'a CsMat<N, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
       IpStorage: 'a + Deref<Target=[usize]>,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: 'a + Deref<Target=[N]>,
-      Mat: SpMatView<N> {
+      IpS2: 'a + Deref<Target=[usize]>,
+      IS2: 'a + Deref<Target=[usize]>,
+      DS2: 'a + Deref<Target=[N]> {
     type Output = CsMatOwned<N>;
 
-    fn add(self, rhs: &'b Mat) -> CsMatOwned<N> {
+    fn add(self, rhs: &'b CsMat<N, IpS2, IS2, DS2>) -> CsMatOwned<N> {
         if self.storage() != rhs.borrowed().storage() {
             return binop::add_mat_same_storage(
                 self, &rhs.borrowed().to_other_storage()).unwrap()
@@ -975,6 +978,49 @@ where N: 'a + Copy + Num + Default,
                 res
             }
             (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
+        }
+    }
+}
+
+impl<'a, 'b, N, IpS, IS, DS, DS2>
+Add<&'b Tensor<N, [usize; 2], DS2>>
+for &'a CsMat<N, IpS, IS, DS>
+where N: 'a + Copy + Num + Default,
+      IpS: 'a + Deref<Target=[usize]>,
+      IS: 'a + Deref<Target=[usize]>,
+      DS: 'a + Deref<Target=[N]>,
+      DS2: 'b + Deref<Target=[N]> {
+    type Output = MatOwned<N>;
+
+    fn add(self, rhs: &'b Tensor<N, [usize; 2], DS2>) -> MatOwned<N> {
+        match (self.storage(), rhs.ordering()) {
+            (CSR, StorageOrder::C) => {
+                    binop::add_dense_mat_same_ordering(self,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (CSR, StorageOrder::F) => {
+                    let lhs = self.to_other_storage(); 
+                    binop::add_dense_mat_same_ordering(&lhs,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (CSC, StorageOrder::C) => {
+                    let lhs = self.to_other_storage(); 
+                    binop::add_dense_mat_same_ordering(&lhs,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (CSC, StorageOrder::F) => {
+                    binop::add_dense_mat_same_ordering(self,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
         }
     }
 }

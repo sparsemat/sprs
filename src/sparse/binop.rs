@@ -385,6 +385,8 @@ mod test {
                                                   5, 5, [5,1]);
         let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.).unwrap();
         assert_eq!(c, expected_output);
+        let c = &a + &b;
+        assert_eq!(c, expected_output);
     }
 
     #[test]
