@@ -46,12 +46,10 @@ pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 /// An iterator over the non-zero elements of a sparse vector
 pub struct VectorIterator<'a, N: 'a> {
-    dim: usize,
     ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
 }
 
 pub struct VectorIteratorPerm<'a, N: 'a> {
-    dim: usize,
     ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
     perm: Permutation<&'a [usize]>,
 }
@@ -92,38 +90,8 @@ for VectorIteratorPerm<'a, N> {
     }
 }
 
-
-impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
-
-
-    /// Iterate over the matching non-zero elements of both vectors
-    /// Useful for vector dot product.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use sprs::CsVec;
-    /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
-    /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
-    ///                          ).unwrap();
-    /// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());
-    /// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));
-    /// assert_eq!(nnz_zip.next(), None);
-    /// ```
-    pub fn nnz_zip<M>(self,
-                     other: VectorIterator<'a, M>
-                     )
-     -> FilterMap<NnzOrZip<VectorIterator<'a, N>, VectorIterator<'a, M>, N, M>, fn(NnzEither<N,M>) -> Option<(usize,N,M)>>
-    where M: 'a + Copy {
-        assert!(self.dim == other.dim);
-        let nnz_or_iter = NnzOrZip {
-            left: self.peekable(),
-            right: other.peekable(),
-        };
-        nnz_or_iter.filter_map(filter_both_nnz)
-    }
-
-    /// Iterate over non-zero elements of eiither of two vectors.
+pub trait SparseIterTools: Iterator {
+    /// Iterate over non-zero elements of either of two vectors.
     /// This is useful for implementing eg addition of vectors.
     ///
     /// # Example
@@ -131,6 +99,7 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
     /// ```rust
     /// use sprs::CsVec;
     /// use sprs::sparse::vec::NnzEither;
+    /// use sprs::sparse::vec::SparseIterTools;
     /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
     /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
     ///                          ).unwrap();
@@ -142,19 +111,6 @@ impl<'a, N: 'a + Copy> VectorIterator<'a, N> {
     /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, 3.))));
     /// assert_eq!(nnz_or_iter.next(), None);
     /// ```
-    pub fn nnz_or_zip<M>(self,
-                         other: VectorIterator<'a, M>)
-    -> NnzOrZip<VectorIterator<'a, N>, VectorIterator<'a, M>, N, M>
-    where M: 'a + Copy {
-        assert!(self.dim == other.dim);
-        NnzOrZip {
-            left: self.peekable(),
-            right: other.peekable(),
-        }
-    }
-}
-
-pub trait SparseIterTools: Iterator {
     fn nnz_or_zip<I, N1: Copy, N2: Copy>(self, other: I)
     -> NnzOrZip<Self, I::IntoIter, N1, N2>
     where Self: Iterator<Item=(usize, N1)> + Sized,
@@ -164,10 +120,40 @@ pub trait SparseIterTools: Iterator {
             right: other.into_iter().peekable(),
         }
     }
+
+    /// Iterate over the matching non-zero elements of both vectors
+    /// Useful for vector dot product.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsVec;
+    /// use sprs::sparse::vec::SparseIterTools;
+    /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
+    ///                          ).unwrap();
+    /// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());
+    /// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));
+    /// assert_eq!(nnz_zip.next(), None);
+    /// ```
+    fn nnz_zip<I, N1: Copy, N2: Copy>(self, other: I)
+    -> FilterMap<NnzOrZip<Self, I::IntoIter, N1, N2>,
+                 fn(NnzEither<N1,N2>) -> Option<(usize,N1,N2)>>
+    where Self: Iterator<Item=(usize, N1)> + Sized,
+          I: IntoIterator<Item=(usize, N2)> {
+        let nnz_or_iter = NnzOrZip {
+            left: self.peekable(),
+            right: other.into_iter().peekable(),
+        };
+        nnz_or_iter.filter_map(filter_both_nnz)
+    }
 }
 
 impl<T: Iterator> SparseIterTools for Enumerate<T>
 where <T as Iterator>::Item : Copy {
+}
+
+impl<'a, N: 'a + Copy> SparseIterTools for VectorIterator<'a, N> {
 }
 
 /// An iterator over the non zeros of either of two vector iterators, ordered,
@@ -375,7 +361,6 @@ DStorage: Deref<Target=[N]> {
     /// ```
     pub fn iter(&self) -> VectorIterator<N> {
         VectorIterator {
-            dim: self.dim,
             ind_data: self.indices.iter().zip(self.data.iter()),
         }
     }
@@ -386,7 +371,6 @@ DStorage: Deref<Target=[N]> {
                                 perm: &'perm Permutation<&'perm [usize]>)
                                -> VectorIteratorPerm<'a, N> {
         VectorIteratorPerm {
-            dim: self.dim,
             ind_data: self.indices.iter().zip(self.data.iter()),
             perm: perm.borrowed()
         }
@@ -554,6 +538,7 @@ where N: Copy + Num,
 #[cfg(test)]
 mod test {
     use super::CsVec;
+    use super::SparseIterTools;
 
     fn test_vec1() -> CsVec<f64, Vec<usize>, Vec<f64>> {
         let n = 8;
