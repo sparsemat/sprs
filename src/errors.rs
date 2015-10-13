@@ -21,6 +21,7 @@ pub enum SprsError {
     OutOfBoundsIndptr,
     UnsortedIndptr,
     EmptyBlock,
+    SingularMatrix,
 }
 
 use self::SprsError::*;
@@ -45,6 +46,7 @@ impl SprsError {
             OutOfBoundsIndptr => "some indptr values are out of bounds",
             UnsortedIndptr => "indptr is not sorted",
             EmptyBlock => "tried to create an empty block",
+            SingularMatrix => "matrix is singular",
         }
     }
 }
