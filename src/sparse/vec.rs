@@ -446,6 +446,18 @@ DStorage: Deref<Target=[N]> {
         }
     }
 
+    /// Access element at given index, with logarithmic complexity
+    ///
+    /// TODO: use this for CsMat::at_outer_inner
+    pub fn at(&self, index: usize) -> Option<N> {
+        let position = match self.indices.binary_search(&index) {
+            Ok(ind) => ind,
+            _ => return None
+        };
+
+        Some(self.data[position])
+    }
+
     /// Vector dot product
     ///
     /// # Example
