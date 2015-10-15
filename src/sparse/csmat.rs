@@ -664,22 +664,10 @@ where N: Copy,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at_outer_inner(&self, &(outer_ind, inner_ind): &(usize, usize))
-    -> Option<N> {
-        let begin = self.indptr[outer_ind];
-        let end = self.indptr[outer_ind+1];
-        if begin >= end {
-            return None;
-        }
-        let indices = &self.indices[begin..end];
-        let data = &self.data[begin..end];
-
-        let position = match indices.binary_search(&inner_ind) {
-            Ok(ind) => ind,
-            _ => return None
-        };
-
-        Some(data[position].clone())
+    pub fn at_outer_inner(&self,
+                          &(outer_ind, inner_ind): &(usize, usize)
+                         ) -> Option<N> {
+        self.outer_view(outer_ind).and_then(|vec| vec.at(inner_ind))
     }
 
     /// Check the structure of CsMat components
