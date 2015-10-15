@@ -22,6 +22,7 @@ pub enum SprsError {
     UnsortedIndptr,
     EmptyBlock,
     SingularMatrix,
+    NonSquareMatrix,
 }
 
 use self::SprsError::*;
@@ -47,6 +48,7 @@ impl SprsError {
             UnsortedIndptr => "indptr is not sorted",
             EmptyBlock => "tried to create an empty block",
             SingularMatrix => "matrix is singular",
+            NonSquareMatrix => "matrix should be square",
         }
     }
 }

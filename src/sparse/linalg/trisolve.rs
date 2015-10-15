@@ -4,6 +4,19 @@ use num::traits::Num;
 use sparse::csmat;
 use errors::SprsError;
 
+fn check_solver_dimensions<N>(lower_tri_mat: &csmat::CsMatView<N>,
+                              rhs: &[N]) -> Result<(), SprsError>
+where N: Copy + Num {
+    let (cols, rows) = (lower_tri_mat.cols(),lower_tri_mat.rows());
+    if  cols != rows {
+        return Err(SprsError::NonSquareMatrix);
+    }
+    if  cols != rhs.len() {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    Ok(())
+}
+
 /// Solve a sparse lower triangular matrix system, with a csr matrix
 /// and a dense vector as inputs
 ///
@@ -14,6 +27,7 @@ use errors::SprsError;
 pub fn lsolve_csr_dense_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                rhs: &mut [N]) -> Result<(), SprsError>
 where N: Copy + Num {
+    try!(check_solver_dimensions(&lower_tri_mat, rhs));
     if ! lower_tri_mat.is_csr() {
         return Err(SprsError::BadStorageType);
     }
@@ -60,6 +74,7 @@ where N: Copy + Num {
 pub fn lsolve_csc_dense_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                rhs: &mut [N]) -> Result<(), SprsError>
 where N: Copy + Num {
+    try!(check_solver_dimensions(&lower_tri_mat, rhs));
     if ! lower_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
     }
