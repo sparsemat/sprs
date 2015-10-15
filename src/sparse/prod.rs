@@ -141,6 +141,7 @@ where N: Num + Copy {
     }
 
     let mut res = CsMatOwned::empty(lhs.storage(), res_cols);
+    res.reserve_nnz_exact(lhs.nb_nonzero() + rhs.nb_nonzero());
     for (_, lvec) in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
@@ -161,6 +162,7 @@ where N: Num + Copy {
         // compress the row into the resulting matrix
         res = res.append_outer(&workspace);
     }
+    // TODO: shrink res storage? would need methods on CsMatOwned
     assert_eq!(res_rows, res.rows());
     Ok(res)
 }
