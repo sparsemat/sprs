@@ -110,6 +110,56 @@ where N: Copy + Num {
     Ok(())
 }
 
+/// Solve a sparse upper triangular matrix system, with a csc matrix
+/// and a dense vector as inputs
+///
+/// The solve results are written into the provided values.
+///
+/// This method does not require the matrix to actually be lower triangular,
+/// but is most efficient if the last element of each column
+/// is the diagonal element (thus actual sorted lower triangular matrices work
+/// best). Otherwise, logarithmic search for the diagonal element
+/// has to be performed for each column.
+pub fn usolve_csc_dense_rhs<N>(upper_tri_mat: csmat::CsMatView<N>,
+                               rhs: &mut [N]) -> Result<(), SprsError>
+where N: Copy + Num {
+    try!(check_solver_dimensions(&upper_tri_mat, rhs));
+    if ! upper_tri_mat.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+    //
+    // we base our algorithm on the following decomposition:
+    // | U_0_0    u_0_1 | | x_0 |    | b_0 |
+    // |   0      u_1_1 | | x_1 |  = | b_1 |
+    //
+    // At each step of the algorithm, the x_1 part is computed as b_1 / u_1_1
+    // and the step can be propagated by solving the reduced system
+    // U_0_0 x0 = b_0 - x1*u_0_1
+
+    for (col_ind, col) in upper_tri_mat.outer_iterator().rev() {
+        if let Some(diag_val) = col.at(col_ind) {
+            if diag_val == N::zero() {
+                return Err(SprsError::SingularMatrix);
+            }
+            let b = rhs[col_ind];
+            let x = b / diag_val;
+            rhs[col_ind] = x;
+            for (row_ind, val) in col.iter() {
+                if row_ind >= col_ind {
+                    continue;
+                }
+                let b = rhs[row_ind];
+                rhs[row_ind] = b - val * x;
+            }
+        }
+        else {
+            return Err(SprsError::SingularMatrix);
+        }
+    }
+
+    Ok(())
+}
+
 
 #[cfg(test)]
 mod test {
@@ -145,6 +195,22 @@ mod test {
         let mut x = b.clone();
 
         super::lsolve_csc_dense_rhs(l.borrowed(), &mut x).unwrap();
+        assert_eq!(x, vec![3, 1, 1]);
+    }
+
+    #[test]
+    fn usolve_csc_dense_rhs() {
+        // |1 0 1| |3|   |4|
+        // |  2 0| |1| = |2|
+        // |    3| |1|   |3|
+        let u = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
+                                             3, 3, vec![0, 1, 2, 4],
+                                             vec![0, 1, 0, 2],
+                                             vec![1, 2, 1, 3]).unwrap();
+        let b = vec![4, 2, 3];
+        let mut x = b.clone();
+
+        super::usolve_csc_dense_rhs(u.borrowed(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
     }
 }
