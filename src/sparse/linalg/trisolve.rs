@@ -2,6 +2,7 @@
 
 use num::traits::Num;
 use sparse::csmat;
+use sparse::vec;
 use errors::SprsError;
 
 fn check_solver_dimensions<N>(lower_tri_mat: &csmat::CsMatView<N>,
@@ -200,6 +201,31 @@ where N: Copy + Num {
         rhs[row_ind] = x / diag_val;
     }
     Ok(())
+}
+
+
+/// Sparse triangular CSC / sparse vector solve
+/// 
+/// visited is a workspace vector of same size as upper_tri_mat.indptr(),
+/// and should be all false.
+pub fn lsolve_csc_sparse_rhs<N>(upper_tri_mat: csmat::CsMatView<N>,
+                                rhs: vec::CsVecView<N>,
+                                visited: &mut [bool]
+                               ) -> Result<vec::CsVecOwned<N>, SprsError>
+where N: Copy + Num {
+    // the solve works out the sparsity of the solution using depth first
+    // search on the matrix's graph
+    // |0              | |   |     |   |
+    // |  1            | | x |     | a |     x = a / l1
+    // |    2          | |   |     |   |
+    // |      3        | |   |     |   |
+    // |  d     4      | | y |  =  | b |     x*d + l4*y = b
+    // |          5    | |   |     |   |
+    // |        e   6  | | z |     |   |     y*e + l6*z = 0
+    // |      f       7| | w |     | c |     w = c / l7
+    
+
+    unimplemented!();
 }
 
 #[cfg(test)]
