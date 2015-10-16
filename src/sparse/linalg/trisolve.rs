@@ -4,6 +4,7 @@ use num::traits::Num;
 use sparse::csmat;
 use sparse::vec;
 use errors::SprsError;
+use stack::DStack;
 
 fn check_solver_dimensions<N>(lower_tri_mat: &csmat::CsMatView<N>,
                               rhs: &[N]) -> Result<(), SprsError>
@@ -203,16 +204,19 @@ where N: Copy + Num {
     Ok(())
 }
 
-
 /// Sparse triangular CSC / sparse vector solve
 /// 
 /// visited is a workspace vector of same size as upper_tri_mat.indptr(),
 /// and should be all false.
-pub fn lsolve_csc_sparse_rhs<N>(upper_tri_mat: csmat::CsMatView<N>,
+pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
                                 visited: &mut [bool]
                                ) -> Result<vec::CsVecOwned<N>, SprsError>
 where N: Copy + Num {
+    if ! lower_tri_mat.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+
     // the solve works out the sparsity of the solution using depth first
     // search on the matrix's graph
     // |0              | |   |     |   |
@@ -224,8 +228,38 @@ where N: Copy + Num {
     // |        e   6  | | z |     |   |     y*e + l6*z = 0
     // |      f       7| | w |     | c |     w = c / l7
     
+    let n = lower_tri_mat.rows();
+
+    // compute the non-zero elements of the result by dfs traversal
+    let mut dstack = DStack::with_capacity(n);
+    for (root_ind, _) in rhs.iter() {
+        if visited[root_ind] {
+            continue;
+        }
+        dstack.push_rec(root_ind);
+        while let Some(ind) = dstack.pop_rec() {
+            visited[ind] = true;
+            if let Some(column) = lower_tri_mat.outer_view(ind) {
+                for (child_ind, _) in column.iter() { 
+                    dstack.push_data(child_ind);
+                }
+            }
+            else {
+                unreachable!();
+            }
+        }
+    }
+
+    // compute the solve result
+    let mut res = vec::CsVecOwned::empty(n);
+    res.reserve_exact(dstack.len_data());
+
+    while let Some(ind) = dstack.pop_data() {
+        // TODO
+    }
 
     unimplemented!();
+    Ok((res))
 }
 
 #[cfg(test)]

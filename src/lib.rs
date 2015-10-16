@@ -58,5 +58,7 @@ pub use sparse::{CsMat, CsMatOwned, CsMatView,
 pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
 
+mod stack;
+
 #[cfg(test)]
 mod test_data;
