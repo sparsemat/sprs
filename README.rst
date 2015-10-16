@@ -25,6 +25,7 @@ Operations
 - sparse matrix / sparse matrix product
 - sparse matrix / sparse matrix addition, subtraction
 - sparse vector / sparse vector addition, subtraction, dot product
+- sparse/dense matrix operations
 
 Algorithms
 ..........
@@ -33,6 +34,7 @@ Algorithms
 - sparse vector iteration
 - sparse vectors joint non zero iterations
 - simple sparse Cholesky decomposition
+- sparse triangular solves with dense right-hand side
 
 
 Examples
