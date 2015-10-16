@@ -672,11 +672,13 @@ where N: Copy,
 
     /// Check the structure of CsMat components
     /// This will ensure that:
-    /// - indptr is of length outer_dim() + 1
-    /// - indices and data have the same length, nnz == indptr[outer_dims()]
-    /// - indptr is sorted
-    /// - indices is sorted for each outer slice
-    /// - indices are lower than inner_dims()
+    /// * indptr is of length outer_dim() + 1
+    /// * indices and data have the same length, nnz == indptr[outer_dims()]
+    /// * indptr is sorted
+    /// * indptr values do not exceed usize::MAX / 2, as that would mean
+    ///   indices and indptr would take more space than the addressable memory
+    /// * indices is sorted for each outer slice
+    /// * indices are lower than inner_dims()
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
         let outer = self.outer_dims();
 
@@ -690,8 +692,16 @@ where N: Copy,
         if nnz != self.nnz {
             return Err(SprsError::BadNnzCount);
         }
-        if self.indptr.iter().max().unwrap() > &nnz {
-            return Err(SprsError::OutOfBoundsIndptr);
+        if let Some(&max_indptr) = self.indptr.iter().max() {
+            if max_indptr > nnz {
+                return Err(SprsError::OutOfBoundsIndptr);
+            }
+            if max_indptr > usize::max_value() / 2 {
+                return Err(SprsError::OutOfBoundsIndptr);
+            }
+        }
+        else {
+            unreachable!();
         }
 
         if ! self.indptr.deref().windows(2).all(|x| x[0] <= x[1]) {
