@@ -37,7 +37,7 @@ where N: Copy + Num {
     // | l_1_0^T  l_1_1 | | x_1 |  = | b_1 |
     //
     // At each step of the algorithm, the x_0 part is known,
-    // and x_1 can be computed as x_1 = (b_1 - l_1_0^T.b_0) / l_1_1
+    // and x_1 can be computed as x_1 = (b_1 - l_1_0^T.x_0) / l_1_1
 
     for (row_ind, row) in lower_tri_mat.outer_iterator() {
         let mut diag_val = N::zero();
@@ -127,7 +127,7 @@ where N: Copy + Num {
     if ! upper_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
     }
-    //
+
     // we base our algorithm on the following decomposition:
     // | U_0_0    u_0_1 | | x_0 |    | b_0 |
     // |   0      u_1_1 | | x_1 |  = | b_1 |
@@ -160,6 +160,47 @@ where N: Copy + Num {
     Ok(())
 }
 
+/// Solve a sparse lower triangular matrix system, with a csr matrix
+/// and a dense vector as inputs
+///
+/// The solve results are written into the provided values.
+///
+/// This solve does not assume the input matrix to actually be
+/// triangular, instead it ignores the upper triangular part.
+pub fn usolve_csr_dense_rhs<N>(upper_tri_mat: csmat::CsMatView<N>,
+                               rhs: &mut [N]) -> Result<(), SprsError>
+where N: Copy + Num {
+    try!(check_solver_dimensions(&upper_tri_mat, rhs));
+    if ! upper_tri_mat.is_csr() {
+        return Err(SprsError::BadStorageType);
+    }
+    // we base our algorithm on the following decomposition:
+    // | u_0_0    u_0_1^T | | x_0 |    | b_0 |
+    // |   0      U_1_1   | | x_1 |  = | b_1 |
+    //
+    // At each step of the algorithm, the x_1 part is known from previous
+    // iterations and x_0 can be computed as
+    // x0 = (b_0 - u_0_1^T.x_1) / u_0_0
+    for (row_ind, row) in upper_tri_mat.outer_iterator().rev() {
+        let mut diag_val = N::zero();
+        let mut x = rhs[row_ind];
+        for (col_ind, val) in row.iter() {
+            if col_ind == row_ind {
+                diag_val = val;
+                continue;
+            }
+            if col_ind < row_ind {
+                continue;
+            }
+            x = x - val * rhs[col_ind];
+        }
+        if diag_val == N::zero() {
+            return Err(SprsError::SingularMatrix);
+        }
+        rhs[row_ind] = x / diag_val;
+    }
+    Ok(())
+}
 
 #[cfg(test)]
 mod test {
@@ -211,6 +252,22 @@ mod test {
         let mut x = b.clone();
 
         super::usolve_csc_dense_rhs(u.borrowed(), &mut x).unwrap();
+        assert_eq!(x, vec![3, 1, 1]);
+    }
+
+    #[test]
+    fn usolve_csr_dense_rhs() {
+        // |1 1 0| |3|   |4|
+        // |  5 3| |1| = |8|
+        // |    1| |1|   |1|
+        let u = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSR,
+                                             3, 3, vec![0, 2, 4, 5],
+                                             vec![0, 1, 1, 2, 2],
+                                             vec![1, 1, 5, 3, 1]).unwrap();
+        let b = vec![4, 8, 1];
+        let mut x = b.clone();
+
+        super::usolve_csr_dense_rhs(u.borrowed(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
     }
 }
