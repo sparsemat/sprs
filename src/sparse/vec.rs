@@ -475,6 +475,13 @@ DStorage: Deref<Target=[N]> {
         self.iter().nnz_zip(rhs.iter()).map(|(_, lval, rval)| lval * rval)
                                        .fold(N::zero(), |x, y| x + y)
     }
+
+    /// Fill a dense vector with our values
+    pub fn scatter(&self, out: &mut [N]) {
+        for (ind, val) in self.iter() {
+            out[ind] = val;
+        }
+    }
 }
 
 impl<'a, 'b, N, IS1, DS1, IpS2, IS2, DS2> Mul<&'b CsMat<N, IpS2, IS2, DS2>>

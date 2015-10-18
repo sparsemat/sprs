@@ -2,6 +2,7 @@
 /// encountered in sparse matrix solves/factorizations
 
 use std::default::Default;
+use std::slice;
 
 /// A double stack of fixed capacity, holding recursion information (eg for dfs)
 /// as well as data values.
@@ -73,5 +74,15 @@ impl<I> DStack<I> where I: Copy {
     pub fn len_data(&self) -> usize {
         let n = self.stacks.len();
         n - self.out_head
+    }
+
+    /// Iterates along the data stack without removing items
+    pub fn iter_data(&self) -> slice::Iter<I> {
+        self.stacks[self.out_head..].iter()
+    }
+
+    /// Clear the data stack
+    pub fn clear_data(&mut self) {
+        self.out_head = self.stacks.len();
     }
 }

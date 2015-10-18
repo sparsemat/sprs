@@ -206,10 +206,13 @@ where N: Copy + Num {
 
 /// Sparse triangular CSC / sparse vector solve
 /// 
+/// x_workspace is a workspace vector with length equal to the number of
+/// rows of lower_tri_mat. Its input values can be anything.
 /// visited is a workspace vector of same size as upper_tri_mat.indptr(),
 /// and should be all false.
 pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
+                                x_workspace: &mut [N],
                                 visited: &mut [bool]
                                ) -> Result<vec::CsVecOwned<N>, SprsError>
 where N: Copy + Num {
@@ -250,14 +253,16 @@ where N: Copy + Num {
         }
     }
 
-    // compute the solve result
-    let mut res = vec::CsVecOwned::empty(n);
-    res.reserve_exact(dstack.len_data());
+    rhs.scatter(x_workspace);
 
-    while let Some(ind) = dstack.pop_data() {
+    // we use the dstack data as a queue instead of a stack
+    for ind in dstack.iter_data().rev() {
         // TODO
+        let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
     }
 
+    let mut res = vec::CsVecOwned::empty(n);
+    res.reserve_exact(dstack.len_data());
     unimplemented!();
     Ok((res))
 }
