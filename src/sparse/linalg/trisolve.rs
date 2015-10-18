@@ -256,7 +256,7 @@ where N: Copy + Num {
     rhs.scatter(x_workspace);
 
     // we use the dstack data as a queue instead of a stack
-    for ind in dstack.iter_data().rev() {
+    for &ind in dstack.iter_data().rev() {
         // TODO
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
     }
