@@ -230,7 +230,7 @@ where N: Copy + Num {
     // |          5    | |   |     |   |
     // |        e   6  | | z |     |   |     y*e + l6*z = 0
     // |      f       7| | w |     | c |     w = c / l7
-    
+
     let n = lower_tri_mat.rows();
 
     // compute the non-zero elements of the result by dfs traversal
@@ -243,7 +243,7 @@ where N: Copy + Num {
         while let Some(ind) = dstack.pop_rec() {
             visited[ind] = true;
             if let Some(column) = lower_tri_mat.outer_view(ind) {
-                for (child_ind, _) in column.iter() { 
+                for (child_ind, _) in column.iter() {
                     dstack.push_data(child_ind);
                 }
             }

@@ -16,7 +16,7 @@ pub struct DStack<I> {
 }
 
 impl<I> DStack<I> where I: Copy {
-    
+
     /// Create a new double stacked suited for containing at most n elements
     pub fn with_capacity(n: usize) -> DStack<I> where I: Default {
         assert!(n > 1);
