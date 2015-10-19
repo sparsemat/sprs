@@ -256,6 +256,10 @@ where N: Copy + Num {
     rhs.scatter(x_workspace);
 
     // we use the dstack data as a queue instead of a stack
+    // FIXME: this is in fact wrong as it does not yield the topological
+    // order. The proper way is to modify dstack to be able to distinguish
+    // between entering and exiting a node
+    // ie dstack.push_rec(Enter(i)) and dstack.push_rec(Exit(i))
     for &ind in dstack.iter_data().rev() {
         // TODO
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
