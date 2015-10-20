@@ -4,7 +4,7 @@ use num::traits::Num;
 use sparse::csmat;
 use sparse::vec;
 use errors::SprsError;
-use stack::DStack;
+use stack::{StackVal, DStack};
 
 fn check_solver_dimensions<N>(lower_tri_mat: &csmat::CsMatView<N>,
                               rhs: &[N]) -> Result<(), SprsError>
@@ -234,21 +234,29 @@ where N: Copy + Num {
     let n = lower_tri_mat.rows();
 
     // compute the non-zero elements of the result by dfs traversal
-    let mut dstack = DStack::with_capacity(n);
+    let mut dstack = DStack::with_capacity(2 * n);
     for (root_ind, _) in rhs.iter() {
         if visited[root_ind] {
             continue;
         }
-        dstack.push_rec(root_ind);
-        while let Some(ind) = dstack.pop_rec() {
-            visited[ind] = true;
-            if let Some(column) = lower_tri_mat.outer_view(ind) {
-                for (child_ind, _) in column.iter() {
-                    dstack.push_data(child_ind);
+        dstack.push_rec(StackVal::Enter(root_ind));
+        while let Some(stack_val) = dstack.pop_rec() {
+            match stack_val {
+                StackVal::Enter(ind) => {
+                    visited[ind] = true;
+                    dstack.push_rec(StackVal::Exit(ind));
+                    if let Some(column) = lower_tri_mat.outer_view(ind) {
+                        for (child_ind, _) in column.iter() {
+                            dstack.push_rec(StackVal::Enter(child_ind));
+                        }
+                    }
+                    else {
+                        unreachable!();
+                    }
+                },
+                StackVal::Exit(ind) => {
+                    dstack.push_data(ind);
                 }
-            }
-            else {
-                unreachable!();
             }
         }
     }
@@ -260,7 +268,7 @@ where N: Copy + Num {
     // order. The proper way is to modify dstack to be able to distinguish
     // between entering and exiting a node
     // ie dstack.push_rec(Enter(i)) and dstack.push_rec(Exit(i))
-    for &ind in dstack.iter_data().rev() {
+    while let Some(ind) = dstack.pop_data() {
         // TODO
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
     }

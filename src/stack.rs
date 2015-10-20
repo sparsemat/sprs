@@ -2,7 +2,6 @@
 /// encountered in sparse matrix solves/factorizations
 
 use std::default::Default;
-use std::slice;
 
 /// A double stack of fixed capacity, holding recursion information (eg for dfs)
 /// as well as data values.
@@ -10,9 +9,15 @@ use std::slice;
 /// Used in sparse triangular / sparse vector solves, where it is guaranteed
 /// that the two parts of the stack cannot overlap.
 pub struct DStack<I> {
-    stacks: Vec<I>,
+    stacks: Vec<StackVal<I>>,
     rec_head: Option<usize>,
     out_head: usize,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum StackVal<I> {
+    Enter(I),
+    Exit(I)
 }
 
 impl<I> DStack<I> where I: Copy {
@@ -21,14 +26,14 @@ impl<I> DStack<I> where I: Copy {
     pub fn with_capacity(n: usize) -> DStack<I> where I: Default {
         assert!(n > 1);
         DStack {
-            stacks: vec![I::default(); n],
+            stacks: vec![StackVal::Enter(I::default()); n],
             rec_head: None,
             out_head: n
         }
     }
 
     /// Push a value on the recursion stack
-    pub fn push_rec(&mut self, value: I) {
+    pub fn push_rec(&mut self, value: StackVal<I>) {
         let head = self.rec_head.map_or(0, |x| x + 1);
         assert!(head < self.out_head);
         self.stacks[head] = value;
@@ -41,11 +46,11 @@ impl<I> DStack<I> where I: Copy {
         if let Some(rec_head) = self.rec_head {
             assert!(self.out_head > rec_head);
         }
-        self.stacks[self.out_head] = value;
+        self.stacks[self.out_head] = StackVal::Enter(value);
     }
 
     /// Pop a value from the recursion stack
-    pub fn pop_rec(&mut self) -> Option<I> {
+    pub fn pop_rec(&mut self) -> Option<StackVal<I>> {
         match self.rec_head {
             Some(rec_head) => {
                 let res = self.stacks[rec_head];
@@ -64,9 +69,13 @@ impl<I> DStack<I> where I: Copy {
             None
         }
         else {
-            let res = self.stacks[self.out_head];
-            self.out_head += 1;
-            Some(res)
+            if let StackVal::Enter(res) = self.stacks[self.out_head] {
+                self.out_head += 1;
+                Some(res)
+            }
+            else {
+                unreachable!();
+            }
         }
     }
 
@@ -74,11 +83,6 @@ impl<I> DStack<I> where I: Copy {
     pub fn len_data(&self) -> usize {
         let n = self.stacks.len();
         n - self.out_head
-    }
-
-    /// Iterates along the data stack without removing items
-    pub fn iter_data(&self) -> slice::Iter<I> {
-        self.stacks[self.out_head..].iter()
     }
 
     /// Clear the data stack
