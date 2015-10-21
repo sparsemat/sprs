@@ -90,24 +90,32 @@ where N: Copy + Num {
     // L_1_1 x1 = b_1 - x0*l_1_0
 
     for (col_ind, col) in lower_tri_mat.outer_iterator() {
-        if let Some(diag_val) = col.at(col_ind) {
-            if diag_val == N::zero() {
-                return Err(SprsError::SingularMatrix);
-            }
-            let b = rhs[col_ind];
-            let x = b / diag_val;
-            rhs[col_ind] = x;
-            for (row_ind, val) in col.iter() {
-                if row_ind <= col_ind {
-                    continue;
-                }
-                let b = rhs[row_ind];
-                rhs[row_ind] = b - val * x;
-            }
-        }
-        else {
+        try!(lspsolve_csc_process_col(col, col_ind, rhs));
+    }
+    Ok(())
+}
+
+fn lspsolve_csc_process_col<N: Copy + Num>(col: vec::CsVecView<N>,
+                                           col_ind: usize,
+                                           rhs: &mut[N]
+                                          ) -> Result<(), SprsError> {
+    if let Some(diag_val) = col.at(col_ind) {
+        if diag_val == N::zero() {
             return Err(SprsError::SingularMatrix);
         }
+        let b = rhs[col_ind];
+        let x = b / diag_val;
+        rhs[col_ind] = x;
+        for (row_ind, val) in col.iter() {
+            if row_ind <= col_ind {
+                continue;
+            }
+            let b = rhs[row_ind];
+            rhs[row_ind] = b - val * x;
+        }
+    }
+    else {
+        return Err(SprsError::SingularMatrix);
     }
     Ok(())
 }
@@ -261,19 +269,21 @@ where N: Copy + Num {
         }
     }
 
+    // solve for the non-zero values into dense workspace
     rhs.scatter(x_workspace);
-
     for &ind in dstack.iter_data() {
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
-        // TODO: compute x values into x_workspace
+        try!(lspsolve_csc_process_col(col, ind, x_workspace));
     }
 
+    // populate a sparse vector with the non-zero values
+    // TODO: maybe we want a lower level method that only fills
+    // the workspace and returns the dstack?
     let mut res = vec::CsVecOwned::empty(n);
     res.reserve_exact(dstack.len_data());
     while let Some(ind) = dstack.pop_data() {
-        // TODO: put data into res
+        res.append(ind, x_workspace[ind]);
     }
-    unimplemented!();
     Ok((res))
 }
 
