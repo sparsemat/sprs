@@ -244,13 +244,13 @@ where N: Copy + Num {
     // compute the non-zero elements of the result by dfs traversal
     let mut dstack = DStack::with_capacity(2 * n);
     for (root_ind, _) in rhs.iter() {
-        if visited[root_ind] {
-            continue;
-        }
         dstack.push_rec(StackVal::Enter(root_ind));
         while let Some(stack_val) = dstack.pop_rec() {
             match stack_val {
                 StackVal::Enter(ind) => {
+                    if visited[ind] {
+                        continue;
+                    }
                     visited[ind] = true;
                     dstack.push_rec(StackVal::Exit(ind));
                     if let Some(column) = lower_tri_mat.outer_view(ind) {
@@ -282,6 +282,7 @@ where N: Copy + Num {
     let mut res = vec::CsVecOwned::empty(n);
     res.reserve_exact(dstack.len_data());
     while let Some(ind) = dstack.pop_data() {
+        println!("{}", ind);
         res.append(ind, x_workspace[ind]);
     }
     Ok((res))
@@ -290,7 +291,7 @@ where N: Copy + Num {
 #[cfg(test)]
 mod test {
 
-    use sparse::csmat;
+    use sparse::{csmat, vec};
 
     #[test]
     fn lsolve_csr_dense_rhs() {
@@ -354,5 +355,33 @@ mod test {
 
         super::usolve_csr_dense_rhs(u.borrowed(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
+    }
+
+    #[test]
+    fn lspsolve_csc() {
+        // |1        | | |   | |
+        // |1 2      | |2| = |4|
+        // |  5 3    | |1|   |8|
+        // |    1 7  | | |   |1|
+        // |  2   3 5| |1|   |7|
+        let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
+                                             5, 5, vec![0, 2, 5, 7, 9, 10],
+                                             vec![0, 1, 1, 2, 4, 2, 3, 3, 4, 4],
+                                             vec![1, 1, 2, 5, 2, 3, 1, 7, 3, 5]
+                                            ).unwrap();
+        let b = vec::CsVecOwned::new_owned(5,
+                                           vec![1, 2, 3, 4],
+                                           vec![4, 8, 1, 7]).unwrap();
+        let mut xw = vec![1; 5]; // inital values should not matter
+        let mut visited = vec![false; 5]; // inital values matter here
+        let x = super::lsolve_csc_sparse_rhs(l.borrowed(), b.borrowed(),
+                                             &mut xw, &mut visited).unwrap();
+
+        let expected_output = vec::CsVecOwned::new_owned(5,
+                                                         vec![1, 2, 4],
+                                                         vec![2, 1, 1]
+                                                        ).unwrap();
+
+        assert_eq!(x, expected_output);
     }
 }
