@@ -205,7 +205,7 @@ where N: Copy + Num {
 }
 
 /// Sparse triangular CSC / sparse vector solve
-/// 
+///
 /// x_workspace is a workspace vector with length equal to the number of
 /// rows of lower_tri_mat. Its input values can be anything.
 /// visited is a workspace vector of same size as upper_tri_mat.indptr(),
@@ -263,18 +263,16 @@ where N: Copy + Num {
 
     rhs.scatter(x_workspace);
 
-    // we use the dstack data as a queue instead of a stack
-    // FIXME: this is in fact wrong as it does not yield the topological
-    // order. The proper way is to modify dstack to be able to distinguish
-    // between entering and exiting a node
-    // ie dstack.push_rec(Enter(i)) and dstack.push_rec(Exit(i))
-    while let Some(ind) = dstack.pop_data() {
-        // TODO
+    for &ind in dstack.iter_data() {
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
+        // TODO: compute x values into x_workspace
     }
 
     let mut res = vec::CsVecOwned::empty(n);
     res.reserve_exact(dstack.len_data());
+    while let Some(ind) = dstack.pop_data() {
+        // TODO: put data into res
+    }
     unimplemented!();
     Ok((res))
 }

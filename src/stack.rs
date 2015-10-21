@@ -2,6 +2,8 @@
 /// encountered in sparse matrix solves/factorizations
 
 use std::default::Default;
+use std::slice;
+use std::iter::Map;
 
 /// A double stack of fixed capacity, holding recursion information (eg for dfs)
 /// as well as data values.
@@ -88,5 +90,17 @@ impl<I> DStack<I> where I: Copy {
     /// Clear the data stack
     pub fn clear_data(&mut self) {
         self.out_head = self.stacks.len();
+    }
+
+    /// Iterates along the data stack without removing items
+    pub fn iter_data<'a>(&'a self) -> Map<slice::Iter<'a, StackVal<I>>, fn(& StackVal<I>) -> &I> {
+        self.stacks[self.out_head..].iter().map(extract_stack_val)
+    }
+}
+
+fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
+    match stack_val {
+        & StackVal::Enter(ref i) => &i,
+        & StackVal::Exit(ref i) => &i,
     }
 }
