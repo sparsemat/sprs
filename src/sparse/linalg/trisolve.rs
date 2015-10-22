@@ -244,6 +244,9 @@ where N: Copy + Num {
     // compute the non-zero elements of the result by dfs traversal
     let mut dstack = DStack::with_capacity(2 * n);
     for (root_ind, _) in rhs.iter() {
+        if visited[root_ind] {
+            continue;
+        }
         dstack.push_rec(StackVal::Enter(root_ind));
         while let Some(stack_val) = dstack.pop_rec() {
             match stack_val {
@@ -282,7 +285,6 @@ where N: Copy + Num {
     let mut res = vec::CsVecOwned::empty(n);
     res.reserve_exact(dstack.len_data());
     while let Some(ind) = dstack.pop_data() {
-        println!("{}", ind);
         res.append(ind, x_workspace[ind]);
     }
     Ok((res))
@@ -361,17 +363,17 @@ mod test {
     fn lspsolve_csc() {
         // |1        | | |   | |
         // |1 2      | |2| = |4|
-        // |  5 3    | |1|   |8|
-        // |    1 7  | | |   |1|
-        // |  2   3 5| |1|   |7|
+        // |  3 3    | |1|   |9|
+        // |      7  | | |   | |
+        // |  2   3 5| |1|   |9|
         let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
-                                             5, 5, vec![0, 2, 5, 7, 9, 10],
-                                             vec![0, 1, 1, 2, 4, 2, 3, 3, 4, 4],
-                                             vec![1, 1, 2, 5, 2, 3, 1, 7, 3, 5]
+                                             5, 5, vec![0, 2, 5, 6, 8, 9],
+                                             vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
+                                             vec![1, 1, 2, 3, 2, 3, 7, 3, 5]
                                             ).unwrap();
         let b = vec::CsVecOwned::new_owned(5,
-                                           vec![1, 2, 3, 4],
-                                           vec![4, 8, 1, 7]).unwrap();
+                                           vec![1, 2, 4],
+                                           vec![4, 9, 9]).unwrap();
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
         let x = super::lsolve_csc_sparse_rhs(l.borrowed(), b.borrowed(),
