@@ -275,6 +275,7 @@ where N: Copy + Num {
     // solve for the non-zero values into dense workspace
     rhs.scatter(x_workspace);
     for &ind in dstack.iter_data() {
+        println!("ind: {}", ind);
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
         try!(lspsolve_csc_process_col(col, ind, x_workspace));
     }
@@ -285,6 +286,7 @@ where N: Copy + Num {
     let mut res = vec::CsVecOwned::empty(n);
     res.reserve_exact(dstack.len_data());
     while let Some(ind) = dstack.pop_data() {
+        println!("{}", ind);
         res.append(ind, x_workspace[ind]);
     }
     Ok((res))
@@ -382,6 +384,35 @@ mod test {
         let expected_output = vec::CsVecOwned::new_owned(5,
                                                          vec![1, 2, 4],
                                                          vec![2, 1, 1]
+                                                        ).unwrap();
+
+        assert_eq!(x, expected_output);
+
+        // |1            | |1|   |1|
+        // |  2          | | | = | |
+        // |1   3        | |2|   |7|
+        // |      7      | |1|   |7|
+        // |        5    | | |   | |
+        // |    1     1  | |1|   |3|
+        // |  3     2   2| | |   | |
+        let l = csmat::CsMatOwned::new_owned(
+            csmat::CompressedStorage::CSC,
+            7, 7,
+            vec![0, 2, 4, 6, 7, 9, 10, 11],
+            vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
+            vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2]).unwrap();
+        let b = vec::CsVecOwned::new_owned(7,
+                                           vec![0, 2, 3, 5],
+                                           vec![1, 7, 7, 3]).unwrap();
+        let mut xw = vec![1; 7]; // inital values should not matter
+        let mut visited = vec![false; 7]; // inital values matter here
+
+        let x = super::lsolve_csc_sparse_rhs(l.borrowed(), b.borrowed(),
+                                             &mut xw, &mut visited).unwrap();
+
+        let expected_output = vec::CsVecOwned::new_owned(7,
+                                                         vec![0, 2, 3, 5],
+                                                         vec![1, 2, 1, 1]
                                                         ).unwrap();
 
         assert_eq!(x, expected_output);

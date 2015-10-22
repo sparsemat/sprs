@@ -300,9 +300,9 @@ impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
     pub fn append(&mut self, ind: usize, val: N) {
         match self.indices.last() {
             None => (),
-            Some(&last_ind) => assert!(ind > last_ind)
+            Some(&last_ind) => assert!(ind > last_ind, "unsorted append")
         }
-        assert!(ind <= self.dim);
+        assert!(ind <= self.dim, "out of bounds index");
         self.indices.push(ind);
         self.data.push(val);
     }
