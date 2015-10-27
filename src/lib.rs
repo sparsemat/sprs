@@ -52,13 +52,13 @@ extern crate dense_mats;
 
 pub mod sparse;
 pub mod errors;
+pub mod stack;
 
 pub use sparse::{CsMat, CsMatOwned, CsMatView,
                  CsVec, CsVecView, CsVecOwned};
 pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
 
-mod stack;
 
 #[cfg(test)]
 mod test_data;

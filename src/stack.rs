@@ -34,6 +34,21 @@ impl<I> DStack<I> where I: Copy {
         }
     }
 
+    /// Capacity of the dstack
+    pub fn capacity(&self) -> usize {
+        self.stacks.len()
+    }
+
+    /// Test whether the recursion stack is empty
+    pub fn is_rec_empty(&self) -> bool {
+        self.rec_head.is_none()
+    }
+
+    /// Test whether the data stack is empty
+    pub fn is_data_empty(&self) -> bool {
+        self.out_head == self.capacity()
+    }
+
     /// Push a value on the recursion stack
     pub fn push_rec(&mut self, value: StackVal<I>) {
         let head = self.rec_head.map_or(0, |x| x + 1);

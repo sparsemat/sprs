@@ -20,6 +20,8 @@ use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
 use std::ops::{Deref, Mul, Add, Sub};
 use std::cmp;
 use std::slice::{self, Iter};
+use std::collections::HashSet;
+use std::hash::Hash;
 
 use num::traits::Num;
 
@@ -481,6 +483,12 @@ DStorage: Deref<Target=[N]> {
         for (ind, val) in self.iter() {
             out[ind] = val;
         }
+    }
+
+    /// Transform this vector into a set of (index, value) tuples
+    pub fn to_set(self) -> HashSet<(usize, N)>
+    where N: Hash + Eq {
+        self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
     }
 }
 

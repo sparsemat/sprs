@@ -214,19 +214,41 @@ where N: Copy + Num {
 
 /// Sparse triangular CSC / sparse vector solve
 ///
+/// lower_tri_mat is a sparse lower triangular matrix of shape (n, n)
+/// rhs is a sparse vector of size n
+/// dstack is a double stack with capacity 2*n
 /// x_workspace is a workspace vector with length equal to the number of
 /// rows of lower_tri_mat. Its input values can be anything.
 /// visited is a workspace vector of same size as upper_tri_mat.indptr(),
 /// and should be all false.
+///
+/// On succesful execution, dstack will hold the non-zero pattern in its
+/// data stack, and x_workspace will contain the solve values at the indices
+/// contained in data stack. The non-zero pattern indices are not guaranteed
+/// to be sorted (they are sorted for each connected component of the matrix's
+/// graph).
+///
+/// # Panics
+///
+/// * if dstack.capacity() is too small
+/// * if dstack is not empty
+/// * if w_workspace is not of length n
+///
 pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
+                                dstack: &mut DStack<usize>,
                                 x_workspace: &mut [N],
                                 visited: &mut [bool]
-                               ) -> Result<vec::CsVecOwned<N>, SprsError>
+                               ) -> Result<(), SprsError>
 where N: Copy + Num {
     if ! lower_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
     }
+    let n = lower_tri_mat.rows();
+    assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
+    assert!(dstack.is_rec_empty() && dstack.is_data_empty(),
+            "dstack should be empty");
+    assert!(x_workspace.len() == n, "x should be of len n");
 
     // the solve works out the sparsity of the solution using depth first
     // search on the matrix's graph
@@ -239,10 +261,7 @@ where N: Copy + Num {
     // |        e   6  | | z |     |   |     y*e + l6*z = 0
     // |      f       7| | w |     | c |     w = c / l7
 
-    let n = lower_tri_mat.rows();
-
     // compute the non-zero elements of the result by dfs traversal
-    let mut dstack = DStack::with_capacity(2 * n);
     for (root_ind, _) in rhs.iter() {
         if visited[root_ind] {
             continue;
@@ -280,22 +299,15 @@ where N: Copy + Num {
         try!(lspsolve_csc_process_col(col, ind, x_workspace));
     }
 
-    // populate a sparse vector with the non-zero values
-    // TODO: maybe we want a lower level method that only fills
-    // the workspace and returns the dstack?
-    let mut res = vec::CsVecOwned::empty(n);
-    res.reserve_exact(dstack.len_data());
-    while let Some(ind) = dstack.pop_data() {
-        println!("{}", ind);
-        res.append(ind, x_workspace[ind]);
-    }
-    Ok((res))
+    Ok(())
 }
 
 #[cfg(test)]
 mod test {
 
     use sparse::{csmat, vec};
+    use stack::DStack;
+    use std::collections::HashSet;
 
     #[test]
     fn lsolve_csr_dense_rhs() {
@@ -378,13 +390,15 @@ mod test {
                                            vec![4, 9, 9]).unwrap();
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
-        let x = super::lsolve_csc_sparse_rhs(l.borrowed(), b.borrowed(),
-                                             &mut xw, &mut visited).unwrap();
+        let mut dstack = DStack::with_capacity(2*5);
+        super::lsolve_csc_sparse_rhs(
+            l.borrowed(), b.borrowed(),
+            &mut dstack, &mut xw, &mut visited).unwrap();
 
-        let expected_output = vec::CsVecOwned::new_owned(5,
-                                                         vec![1, 2, 4],
-                                                         vec![2, 1, 1]
-                                                        ).unwrap();
+        let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
+
+        let expected_output : HashSet<_> = vec::CsVecOwned::new_owned(
+            5, vec![1, 2, 4], vec![2, 1, 1]).unwrap().to_set();
 
         assert_eq!(x, expected_output);
 
@@ -404,16 +418,17 @@ mod test {
         let b = vec::CsVecOwned::new_owned(7,
                                            vec![0, 2, 3, 5],
                                            vec![1, 7, 7, 3]).unwrap();
+        let mut dstack = DStack::with_capacity(2*7);
         let mut xw = vec![1; 7]; // inital values should not matter
         let mut visited = vec![false; 7]; // inital values matter here
 
-        let x = super::lsolve_csc_sparse_rhs(l.borrowed(), b.borrowed(),
-                                             &mut xw, &mut visited).unwrap();
+        super::lsolve_csc_sparse_rhs(
+            l.borrowed(), b.borrowed(),
+            &mut dstack, &mut xw, &mut visited).unwrap();
+        let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
 
-        let expected_output = vec::CsVecOwned::new_owned(7,
-                                                         vec![0, 2, 3, 5],
-                                                         vec![1, 2, 1, 1]
-                                                        ).unwrap();
+        let expected_output = vec::CsVecOwned::new_owned(
+            7, vec![0, 2, 3, 5], vec![1, 2, 1, 1]).unwrap().to_set();
 
         assert_eq!(x, expected_output);
     }
