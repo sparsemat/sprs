@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["StackVal",""]],"struct":[["DStack","A double stack of fixed capacity, holding recursion information (eg for dfs) as well as data values."]]});
