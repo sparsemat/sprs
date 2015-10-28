@@ -2,7 +2,9 @@
 
 use num::traits::Num;
 use sparse::csmat;
+use sparse::vec;
 use errors::SprsError;
+use stack::{StackVal, DStack};
 
 fn check_solver_dimensions<N>(lower_tri_mat: &csmat::CsMatView<N>,
                               rhs: &[N]) -> Result<(), SprsError>
@@ -88,24 +90,32 @@ where N: Copy + Num {
     // L_1_1 x1 = b_1 - x0*l_1_0
 
     for (col_ind, col) in lower_tri_mat.outer_iterator() {
-        if let Some(diag_val) = col.at(col_ind) {
-            if diag_val == N::zero() {
-                return Err(SprsError::SingularMatrix);
-            }
-            let b = rhs[col_ind];
-            let x = b / diag_val;
-            rhs[col_ind] = x;
-            for (row_ind, val) in col.iter() {
-                if row_ind <= col_ind {
-                    continue;
-                }
-                let b = rhs[row_ind];
-                rhs[row_ind] = b - val * x;
-            }
-        }
-        else {
+        try!(lspsolve_csc_process_col(col, col_ind, rhs));
+    }
+    Ok(())
+}
+
+fn lspsolve_csc_process_col<N: Copy + Num>(col: vec::CsVecView<N>,
+                                           col_ind: usize,
+                                           rhs: &mut[N]
+                                          ) -> Result<(), SprsError> {
+    if let Some(diag_val) = col.at(col_ind) {
+        if diag_val == N::zero() {
             return Err(SprsError::SingularMatrix);
         }
+        let b = rhs[col_ind];
+        let x = b / diag_val;
+        rhs[col_ind] = x;
+        for (row_ind, val) in col.iter() {
+            if row_ind <= col_ind {
+                continue;
+            }
+            let b = rhs[row_ind];
+            rhs[row_ind] = b - val * x;
+        }
+    }
+    else {
+        return Err(SprsError::SingularMatrix);
     }
     Ok(())
 }
@@ -202,10 +212,102 @@ where N: Copy + Num {
     Ok(())
 }
 
+/// Sparse triangular CSC / sparse vector solve
+///
+/// lower_tri_mat is a sparse lower triangular matrix of shape (n, n)
+/// rhs is a sparse vector of size n
+/// dstack is a double stack with capacity 2*n
+/// x_workspace is a workspace vector with length equal to the number of
+/// rows of lower_tri_mat. Its input values can be anything.
+/// visited is a workspace vector of same size as upper_tri_mat.indptr(),
+/// and should be all false.
+///
+/// On succesful execution, dstack will hold the non-zero pattern in its
+/// data stack, and x_workspace will contain the solve values at the indices
+/// contained in data stack. The non-zero pattern indices are not guaranteed
+/// to be sorted (they are sorted for each connected component of the matrix's
+/// graph).
+///
+/// # Panics
+///
+/// * if dstack.capacity() is too small
+/// * if dstack is not empty
+/// * if w_workspace is not of length n
+///
+pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
+                                rhs: vec::CsVecView<N>,
+                                dstack: &mut DStack<usize>,
+                                x_workspace: &mut [N],
+                                visited: &mut [bool]
+                               ) -> Result<(), SprsError>
+where N: Copy + Num {
+    if ! lower_tri_mat.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+    let n = lower_tri_mat.rows();
+    assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
+    assert!(dstack.is_rec_empty() && dstack.is_data_empty(),
+            "dstack should be empty");
+    assert!(x_workspace.len() == n, "x should be of len n");
+
+    // the solve works out the sparsity of the solution using depth first
+    // search on the matrix's graph
+    // |0              | |   |     |   |
+    // |  1            | | x |     | a |     x = a / l1
+    // |    2          | |   |     |   |
+    // |      3        | |   |     |   |
+    // |  d     4      | | y |  =  | b |     x*d + l4*y = b
+    // |          5    | |   |     |   |
+    // |        e   6  | | z |     |   |     y*e + l6*z = 0
+    // |      f       7| | w |     | c |     w = c / l7
+
+    // compute the non-zero elements of the result by dfs traversal
+    for (root_ind, _) in rhs.iter() {
+        if visited[root_ind] {
+            continue;
+        }
+        dstack.push_rec(StackVal::Enter(root_ind));
+        while let Some(stack_val) = dstack.pop_rec() {
+            match stack_val {
+                StackVal::Enter(ind) => {
+                    if visited[ind] {
+                        continue;
+                    }
+                    visited[ind] = true;
+                    dstack.push_rec(StackVal::Exit(ind));
+                    if let Some(column) = lower_tri_mat.outer_view(ind) {
+                        for (child_ind, _) in column.iter() {
+                            dstack.push_rec(StackVal::Enter(child_ind));
+                        }
+                    }
+                    else {
+                        unreachable!();
+                    }
+                },
+                StackVal::Exit(ind) => {
+                    dstack.push_data(ind);
+                }
+            }
+        }
+    }
+
+    // solve for the non-zero values into dense workspace
+    rhs.scatter(x_workspace);
+    for &ind in dstack.iter_data() {
+        println!("ind: {}", ind);
+        let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
+        try!(lspsolve_csc_process_col(col, ind, x_workspace));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
 
-    use sparse::csmat;
+    use sparse::{csmat, vec};
+    use stack::DStack;
+    use std::collections::HashSet;
 
     #[test]
     fn lsolve_csr_dense_rhs() {
@@ -269,5 +371,65 @@ mod test {
 
         super::usolve_csr_dense_rhs(u.borrowed(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
+    }
+
+    #[test]
+    fn lspsolve_csc() {
+        // |1        | | |   | |
+        // |1 2      | |2| = |4|
+        // |  3 3    | |1|   |9|
+        // |      7  | | |   | |
+        // |  2   3 5| |1|   |9|
+        let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
+                                             5, 5, vec![0, 2, 5, 6, 8, 9],
+                                             vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
+                                             vec![1, 1, 2, 3, 2, 3, 7, 3, 5]
+                                            ).unwrap();
+        let b = vec::CsVecOwned::new_owned(5,
+                                           vec![1, 2, 4],
+                                           vec![4, 9, 9]).unwrap();
+        let mut xw = vec![1; 5]; // inital values should not matter
+        let mut visited = vec![false; 5]; // inital values matter here
+        let mut dstack = DStack::with_capacity(2*5);
+        super::lsolve_csc_sparse_rhs(
+            l.borrowed(), b.borrowed(),
+            &mut dstack, &mut xw, &mut visited).unwrap();
+
+        let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
+
+        let expected_output : HashSet<_> = vec::CsVecOwned::new_owned(
+            5, vec![1, 2, 4], vec![2, 1, 1]).unwrap().to_set();
+
+        assert_eq!(x, expected_output);
+
+        // |1            | |1|   |1|
+        // |  2          | | | = | |
+        // |1   3        | |2|   |7|
+        // |      7      | |1|   |7|
+        // |        5    | | |   | |
+        // |    1     1  | |1|   |3|
+        // |  3     2   2| | |   | |
+        let l = csmat::CsMatOwned::new_owned(
+            csmat::CompressedStorage::CSC,
+            7, 7,
+            vec![0, 2, 4, 6, 7, 9, 10, 11],
+            vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
+            vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2]).unwrap();
+        let b = vec::CsVecOwned::new_owned(7,
+                                           vec![0, 2, 3, 5],
+                                           vec![1, 7, 7, 3]).unwrap();
+        let mut dstack = DStack::with_capacity(2*7);
+        let mut xw = vec![1; 7]; // inital values should not matter
+        let mut visited = vec![false; 7]; // inital values matter here
+
+        super::lsolve_csc_sparse_rhs(
+            l.borrowed(), b.borrowed(),
+            &mut dstack, &mut xw, &mut visited).unwrap();
+        let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
+
+        let expected_output = vec::CsVecOwned::new_owned(
+            7, vec![0, 2, 3, 5], vec![1, 2, 1, 1]).unwrap().to_set();
+
+        assert_eq!(x, expected_output);
     }
 }

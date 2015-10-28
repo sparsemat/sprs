@@ -20,6 +20,8 @@ use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
 use std::ops::{Deref, Mul, Add, Sub};
 use std::cmp;
 use std::slice::{self, Iter};
+use std::collections::HashSet;
+use std::hash::Hash;
 
 use num::traits::Num;
 
@@ -300,9 +302,9 @@ impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
     pub fn append(&mut self, ind: usize, val: N) {
         match self.indices.last() {
             None => (),
-            Some(&last_ind) => assert!(ind > last_ind)
+            Some(&last_ind) => assert!(ind > last_ind, "unsorted append")
         }
-        assert!(ind <= self.dim);
+        assert!(ind <= self.dim, "out of bounds index");
         self.indices.push(ind);
         self.data.push(val);
     }
@@ -474,6 +476,19 @@ DStorage: Deref<Target=[N]> {
     where N: Num, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
         self.iter().nnz_zip(rhs.iter()).map(|(_, lval, rval)| lval * rval)
                                        .fold(N::zero(), |x, y| x + y)
+    }
+
+    /// Fill a dense vector with our values
+    pub fn scatter(&self, out: &mut [N]) {
+        for (ind, val) in self.iter() {
+            out[ind] = val;
+        }
+    }
+
+    /// Transform this vector into a set of (index, value) tuples
+    pub fn to_set(self) -> HashSet<(usize, N)>
+    where N: Hash + Eq {
+        self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
     }
 }
 
