@@ -34,7 +34,7 @@
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-0' class='srclink' href='../src/sprs/lib.rs.html#1-61' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-0' class='srclink' href='../src/sprs/lib.rs.html#1-64' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id="sprs" class='section-header'><a
                            href="#sprs">sprs</a></h1>
@@ -66,8 +66,7 @@ solvers is planned.</p>
 <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>CsMat</span>::<span class='ident'>new_owned</span>(<span class='ident'>sprs</span>::<span class='ident'>CSC</span>, <span class='number'>3</span>, <span class='number'>3</span>,
                          <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>, <span class='number'>2</span>, <span class='number'>4</span>, <span class='number'>5</span>],
                          <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>0</span>, <span class='number'>2</span>, <span class='number'>2</span>],
-                         <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1.</span>, <span class='number'>2.</span>, <span class='number'>3.</span>, <span class='number'>4.</span>, <span class='number'>5.</span>]).<span class='ident'>unwrap</span>();
-</pre>
+                         <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1.</span>, <span class='number'>2.</span>, <span class='number'>3.</span>, <span class='number'>4.</span>, <span class='number'>5.</span>]).<span class='ident'>unwrap</span>();</pre>
 
 <p>Matrix vector multiplication</p>
 <pre class='rust rust-example-rendered'>
@@ -75,8 +74,7 @@ solvers is planned.</p>
 <span class='kw'>let</span> <span class='ident'>eye</span> <span class='op'>=</span> <span class='ident'>CsMat</span>::<span class='ident'>eye</span>(<span class='ident'>sprs</span>::<span class='ident'>CSR</span>, <span class='number'>5</span>);
 <span class='kw'>let</span> <span class='ident'>x</span> <span class='op'>=</span> <span class='ident'>CsVec</span>::<span class='ident'>new_owned</span>(<span class='number'>5</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>, <span class='number'>2</span>, <span class='number'>4</span>], <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1.</span>, <span class='number'>2.</span>, <span class='number'>3.</span>]).<span class='ident'>unwrap</span>();
 <span class='kw'>let</span> <span class='ident'>y</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>eye</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>x</span>;
-<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>x</span>, <span class='ident'>y</span>);
-</pre>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>x</span>, <span class='ident'>y</span>);</pre>
 
 <p>Matrix matrix multiplication, addition</p>
 <pre class='rust rust-example-rendered'>
@@ -87,8 +85,7 @@ solvers is planned.</p>
                          <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>0</span>, <span class='number'>2</span>, <span class='number'>2</span>],
                          <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1.</span>, <span class='number'>2.</span>, <span class='number'>3.</span>, <span class='number'>4.</span>, <span class='number'>5.</span>]).<span class='ident'>unwrap</span>();
 <span class='kw'>let</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>eye</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span>;
-<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>a</span>, <span class='ident'>b</span>.<span class='ident'>to_csc</span>());
-</pre>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>a</span>, <span class='ident'>b</span>.<span class='ident'>to_csc</span>());</pre>
 </div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
 <table><tr><td><code>pub use sparse::{<a class='struct' href='../sprs/sparse/csmat/struct.CsMat.html' title='sprs::sparse::csmat::CsMat'>CsMat</a>, <a class='type' href='../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>, <a class='type' href='../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>, <a class='struct' href='../sprs/sparse/vec/struct.CsVec.html' title='sprs::sparse::vec::CsVec'>CsVec</a>, <a class='type' href='../sprs/sparse/vec/type.CsVecView.html' title='sprs::sparse::vec::CsVecView'>CsVecView</a>, <a class='type' href='../sprs/sparse/vec/type.CsVecOwned.html' title='sprs::sparse::vec::CsVecOwned'>CsVecOwned</a>};</code></td></tr><tr><td><code>pub use sparse::CompressedStorage::{<a class='enum' href='../sprs/sparse/csmat/enum.CompressedStorage.html' title='sprs::sparse::csmat::CompressedStorage'>CSR</a>, <a class='enum' href='../sprs/sparse/csmat/enum.CompressedStorage.html' title='sprs::sparse::csmat::CompressedStorage'>CSC</a>};</code></td></tr><tr><td><code>pub use sparse::construct::{<a class='fn' href='../sprs/sparse/construct/fn.vstack.html' title='sprs::sparse::construct::vstack'>vstack</a>, <a class='fn' href='../sprs/sparse/construct/fn.hstack.html' title='sprs::sparse::construct::hstack'>hstack</a>, <a class='fn' href='../sprs/sparse/construct/fn.bmat.html' title='sprs::sparse::construct::bmat'>bmat</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
@@ -108,43 +105,58 @@ solvers is planned.</p>
                              
                         </td>
                     </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='stack/index.html'
+                               title='sprs::stack'>stack</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
                 </table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
     <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
-        </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
+        <div>
+            <div class="shortcuts">
+                <h1>Keyboard Shortcuts</h1>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h1>Search Tricks</h1>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>typedef</code> (or
+                    <code>tdef</code>).
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
     </div>
 

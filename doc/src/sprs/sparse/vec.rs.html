@@ -34,7 +34,7 @@
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -632,6 +632,38 @@
 <span id="590">590</span>
 <span id="591">591</span>
 <span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
 </pre><pre class='rust '>
 <span class='doccomment'>/// A sparse vector, which can be extracted from a sparse matrix</span>
 <span class='doccomment'>///</span>
@@ -651,10 +683,12 @@
 <span class='doccomment'>/// assert_eq!(iter.next(), None);</span>
 <span class='doccomment'>/// ```</span>
 
-<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::{<span class='ident'>Zip</span>, <span class='ident'>Peekable</span>, <span class='ident'>FilterMap</span>};
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::{<span class='ident'>Zip</span>, <span class='ident'>Peekable</span>, <span class='ident'>FilterMap</span>, <span class='ident'>IntoIterator</span>, <span class='ident'>Enumerate</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::{<span class='ident'>Deref</span>, <span class='ident'>Mul</span>, <span class='ident'>Add</span>, <span class='ident'>Sub</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>slice</span>::{<span class='self'>self</span>, <span class='ident'>Iter</span>};
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>HashSet</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>hash</span>::<span class='ident'>Hash</span>;
 
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 
@@ -681,12 +715,10 @@
 
 <span class='doccomment'>/// An iterator over the non-zero elements of a sparse vector</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
-    <span class='ident'>dim</span>: <span class='ident'>usize</span>,
     <span class='ident'>ind_data</span>: <span class='ident'>Zip</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>N</span><span class='op'>&gt;&gt;</span>,
 }
 
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>VectorIteratorPerm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
-    <span class='ident'>dim</span>: <span class='ident'>usize</span>,
     <span class='ident'>ind_data</span>: <span class='ident'>Zip</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>N</span><span class='op'>&gt;&gt;</span>,
     <span class='ident'>perm</span>: <span class='ident'>Permutation</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
 }
@@ -727,38 +759,8 @@
     }
 }
 
-
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
-
-
-    <span class='doccomment'>/// Iterate over the matching non-zero elements of both vectors</span>
-    <span class='doccomment'>/// Useful for vector dot product.</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// # Example</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use sprs::CsVec;</span>
-    <span class='doccomment'>/// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();</span>
-    <span class='doccomment'>/// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]</span>
-    <span class='doccomment'>///                          ).unwrap();</span>
-    <span class='doccomment'>/// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());</span>
-    <span class='doccomment'>/// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));</span>
-    <span class='doccomment'>/// assert_eq!(nnz_zip.next(), None);</span>
-    <span class='doccomment'>/// ```</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>nnz_zip</span><span class='op'>&lt;</span><span class='ident'>M</span><span class='op'>&gt;</span>(<span class='self'>self</span>,
-                     <span class='ident'>other</span>: <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>M</span><span class='op'>&gt;</span>
-                     )
-     <span class='op'>-&gt;</span> <span class='ident'>FilterMap</span><span class='op'>&lt;</span><span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>M</span><span class='op'>&gt;</span>, <span class='kw'>fn</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N</span>,<span class='ident'>M</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>,<span class='ident'>N</span>,<span class='ident'>M</span>)<span class='op'>&gt;&gt;</span>
-    <span class='kw'>where</span> <span class='ident'>M</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span> {
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='self'>self</span>.<span class='ident'>dim</span> <span class='op'>==</span> <span class='ident'>other</span>.<span class='ident'>dim</span>);
-        <span class='kw'>let</span> <span class='ident'>nnz_or_iter</span> <span class='op'>=</span> <span class='ident'>NnzOrZip</span> {
-            <span class='ident'>left</span>: <span class='self'>self</span>.<span class='ident'>peekable</span>(),
-            <span class='ident'>right</span>: <span class='ident'>other</span>.<span class='ident'>peekable</span>(),
-        };
-        <span class='ident'>nnz_or_iter</span>.<span class='ident'>filter_map</span>(<span class='ident'>filter_both_nnz</span>)
-    }
-
-    <span class='doccomment'>/// Iterate over non-zero elements of eiither of two vectors.</span>
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>SparseIterTools</span>: <span class='ident'>Iterator</span> {
+    <span class='doccomment'>/// Iterate over non-zero elements of either of two vectors.</span>
     <span class='doccomment'>/// This is useful for implementing eg addition of vectors.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Example</span>
@@ -766,6 +768,7 @@
     <span class='doccomment'>/// ```rust</span>
     <span class='doccomment'>/// use sprs::CsVec;</span>
     <span class='doccomment'>/// use sprs::sparse::vec::NnzEither;</span>
+    <span class='doccomment'>/// use sprs::sparse::vec::SparseIterTools;</span>
     <span class='doccomment'>/// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();</span>
     <span class='doccomment'>/// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]</span>
     <span class='doccomment'>///                          ).unwrap();</span>
@@ -777,23 +780,58 @@
     <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, 3.))));</span>
     <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), None);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>nnz_or_zip</span><span class='op'>&lt;</span><span class='ident'>M</span><span class='op'>&gt;</span>(<span class='self'>self</span>,
-                         <span class='ident'>other</span>: <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>M</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>M</span><span class='op'>&gt;</span>
-    <span class='kw'>where</span> <span class='ident'>M</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span> {
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='self'>self</span>.<span class='ident'>dim</span> <span class='op'>==</span> <span class='ident'>other</span>.<span class='ident'>dim</span>);
+    <span class='kw'>fn</span> <span class='ident'>nnz_or_zip</span><span class='op'>&lt;</span><span class='ident'>I</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='self'>self</span>, <span class='ident'>other</span>: <span class='ident'>I</span>)
+    <span class='op'>-&gt;</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>I</span>::<span class='ident'>IntoIter</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sized</span>,
+          <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
         <span class='ident'>NnzOrZip</span> {
             <span class='ident'>left</span>: <span class='self'>self</span>.<span class='ident'>peekable</span>(),
-            <span class='ident'>right</span>: <span class='ident'>other</span>.<span class='ident'>peekable</span>(),
+            <span class='ident'>right</span>: <span class='ident'>other</span>.<span class='ident'>into_iter</span>().<span class='ident'>peekable</span>(),
         }
+    }
+
+    <span class='doccomment'>/// Iterate over the matching non-zero elements of both vectors</span>
+    <span class='doccomment'>/// Useful for vector dot product.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # Example</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// ```rust</span>
+    <span class='doccomment'>/// use sprs::CsVec;</span>
+    <span class='doccomment'>/// use sprs::sparse::vec::SparseIterTools;</span>
+    <span class='doccomment'>/// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();</span>
+    <span class='doccomment'>/// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]</span>
+    <span class='doccomment'>///                          ).unwrap();</span>
+    <span class='doccomment'>/// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());</span>
+    <span class='doccomment'>/// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_zip.next(), None);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>fn</span> <span class='ident'>nnz_zip</span><span class='op'>&lt;</span><span class='ident'>I</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='self'>self</span>, <span class='ident'>other</span>: <span class='ident'>I</span>)
+    <span class='op'>-&gt;</span> <span class='ident'>FilterMap</span><span class='op'>&lt;</span><span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>I</span>::<span class='ident'>IntoIter</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>,
+                 <span class='kw'>fn</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>,<span class='ident'>N2</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>,<span class='ident'>N1</span>,<span class='ident'>N2</span>)<span class='op'>&gt;&gt;</span>
+    <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sized</span>,
+          <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
+        <span class='kw'>let</span> <span class='ident'>nnz_or_iter</span> <span class='op'>=</span> <span class='ident'>NnzOrZip</span> {
+            <span class='ident'>left</span>: <span class='self'>self</span>.<span class='ident'>peekable</span>(),
+            <span class='ident'>right</span>: <span class='ident'>other</span>.<span class='ident'>into_iter</span>().<span class='ident'>peekable</span>(),
+        };
+        <span class='ident'>nnz_or_iter</span>.<span class='ident'>filter_map</span>(<span class='ident'>filter_both_nnz</span>)
     }
 }
 
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Iterator</span><span class='op'>&gt;</span> <span class='ident'>SparseIterTools</span> <span class='kw'>for</span> <span class='ident'>Enumerate</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='op'>&lt;</span><span class='ident'>T</span> <span class='kw'>as</span> <span class='ident'>Iterator</span><span class='op'>&gt;</span>::<span class='ident'>Item</span> : <span class='ident'>Copy</span> {
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>SparseIterTools</span> <span class='kw'>for</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+}
 
 <span class='doccomment'>/// An iterator over the non zeros of either of two vector iterators, ordered,</span>
 <span class='doccomment'>/// such that the sum of the vectors may be computed</span>
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> {
-    <span class='ident'>left</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span><span class='op'>&gt;&gt;</span>,
-    <span class='ident'>right</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N2</span><span class='op'>&gt;&gt;</span>
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>Ite1</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span>,
+      <span class='ident'>Ite2</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
+    <span class='ident'>left</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Ite1</span><span class='op'>&gt;</span>,
+    <span class='ident'>right</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Ite2</span><span class='op'>&gt;</span>,
 }
 
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Debug</span>)]</span>
@@ -811,9 +849,11 @@
     }
 }
 
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>
 <span class='ident'>Iterator</span>
-<span class='kw'>for</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span> {
+<span class='kw'>for</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>Ite1</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span>,
+      <span class='ident'>Ite2</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>;
 
     <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>)<span class='op'>&gt;</span> {
@@ -929,9 +969,9 @@
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>append</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>ind</span>: <span class='ident'>usize</span>, <span class='ident'>val</span>: <span class='ident'>N</span>) {
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>last</span>() {
             <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> (),
-            <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>last_ind</span>) <span class='op'>=&gt;</span> <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>ind</span> <span class='op'>&gt;</span> <span class='ident'>last_ind</span>)
+            <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='ident'>last_ind</span>) <span class='op'>=&gt;</span> <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>ind</span> <span class='op'>&gt;</span> <span class='ident'>last_ind</span>, <span class='string'>&quot;unsorted append&quot;</span>)
         }
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>ind</span> <span class='op'>&lt;=</span> <span class='self'>self</span>.<span class='ident'>dim</span>);
+        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>ind</span> <span class='op'>&lt;=</span> <span class='self'>self</span>.<span class='ident'>dim</span>, <span class='string'>&quot;out of bounds index&quot;</span>);
         <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>push</span>(<span class='ident'>ind</span>);
         <span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>push</span>(<span class='ident'>val</span>);
     }
@@ -990,7 +1030,6 @@
     <span class='doccomment'>/// ```</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>iter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
         <span class='ident'>VectorIterator</span> {
-            <span class='ident'>dim</span>: <span class='self'>self</span>.<span class='ident'>dim</span>,
             <span class='ident'>ind_data</span>: <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>iter</span>().<span class='ident'>zip</span>(<span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>iter</span>()),
         }
     }
@@ -1001,7 +1040,6 @@
                                 <span class='ident'>perm</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;perm</span> <span class='ident'>Permutation</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;perm</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>)
                                <span class='op'>-&gt;</span> <span class='ident'>VectorIteratorPerm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
         <span class='ident'>VectorIteratorPerm</span> {
-            <span class='ident'>dim</span>: <span class='self'>self</span>.<span class='ident'>dim</span>,
             <span class='ident'>ind_data</span>: <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>iter</span>().<span class='ident'>zip</span>(<span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>iter</span>()),
             <span class='ident'>perm</span>: <span class='ident'>perm</span>.<span class='ident'>borrowed</span>()
         }
@@ -1077,6 +1115,18 @@
         }
     }
 
+    <span class='doccomment'>/// Access element at given index, with logarithmic complexity</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// TODO: use this for CsMat::at_outer_inner</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>at</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>index</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+        <span class='kw'>let</span> <span class='ident'>position</span> <span class='op'>=</span> <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>binary_search</span>(<span class='kw-2'>&amp;</span><span class='ident'>index</span>) {
+            <span class='prelude-val'>Ok</span>(<span class='ident'>ind</span>) <span class='op'>=&gt;</span> <span class='ident'>ind</span>,
+            _ <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='prelude-val'>None</span>
+        };
+
+        <span class='prelude-val'>Some</span>(<span class='self'>self</span>.<span class='ident'>data</span>[<span class='ident'>position</span>])
+    }
+
     <span class='doccomment'>/// Vector dot product</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Example</span>
@@ -1093,6 +1143,19 @@
     <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span>, <span class='ident'>IS2</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>, <span class='ident'>DS2</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
         <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>nnz_zip</span>(<span class='ident'>rhs</span>.<span class='ident'>iter</span>()).<span class='ident'>map</span>(<span class='op'>|</span>(_, <span class='ident'>lval</span>, <span class='ident'>rval</span>)<span class='op'>|</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>)
                                        .<span class='ident'>fold</span>(<span class='ident'>N</span>::<span class='ident'>zero</span>(), <span class='op'>|</span><span class='ident'>x</span>, <span class='ident'>y</span><span class='op'>|</span> <span class='ident'>x</span> <span class='op'>+</span> <span class='ident'>y</span>)
+    }
+
+    <span class='doccomment'>/// Fill a dense vector with our values</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>scatter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>out</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>N</span>]) {
+        <span class='kw'>for</span> (<span class='ident'>ind</span>, <span class='ident'>val</span>) <span class='kw'>in</span> <span class='self'>self</span>.<span class='ident'>iter</span>() {
+            <span class='ident'>out</span>[<span class='ident'>ind</span>] <span class='op'>=</span> <span class='ident'>val</span>;
+        }
+    }
+
+    <span class='doccomment'>/// Transform this vector into a set of (index, value) tuples</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_set</span>(<span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>HashSet</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>, <span class='ident'>N</span>)<span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Hash</span> <span class='op'>+</span> <span class='ident'>Eq</span> {
+        <span class='self'>self</span>.<span class='ident'>indices</span>().<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>zip</span>(<span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>iter</span>().<span class='ident'>cloned</span>()).<span class='ident'>collect</span>()
     }
 }
 
@@ -1169,6 +1232,7 @@
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>test</span> {
     <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>CsVec</span>;
+    <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>SparseIterTools</span>;
 
     <span class='kw'>fn</span> <span class='ident'>test_vec1</span>() <span class='op'>-&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>f64</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;&gt;</span> {
         <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='number'>8</span>;
@@ -1232,37 +1296,44 @@
     <section class="footer"></section>
 
     <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
-        </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
+        <div>
+            <div class="shortcuts">
+                <h1>Keyboard Shortcuts</h1>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h1>Search Tricks</h1>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>typedef</code> (or
+                    <code>tdef</code>).
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
     </div>
 

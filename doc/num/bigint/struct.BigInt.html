@@ -34,7 +34,7 @@
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -88,8 +88,7 @@ fn main() {
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>BigInt</span>::<span class='ident'>from_bytes_be</span>(<span class='ident'>Sign</span>::<span class='ident'>Plus</span>, <span class='string'>b&quot;AB&quot;</span>),
            <span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;16706&quot;</span>, <span class='number'>10</span>).<span class='ident'>unwrap</span>());
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>BigInt</span>::<span class='ident'>from_bytes_be</span>(<span class='ident'>Sign</span>::<span class='ident'>Plus</span>, <span class='string'>b&quot;Hello world!&quot;</span>),
-           <span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;22405534230753963835153736737&quot;</span>, <span class='number'>10</span>).<span class='ident'>unwrap</span>());
-</pre>
+           <span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;22405534230753963835153736737&quot;</span>, <span class='number'>10</span>).<span class='ident'>unwrap</span>());</pre>
 </div><h4 id='method.from_bytes_le' class='method'><code>fn <a href='#method.from_bytes_le' class='fnname'>from_bytes_le</a>(sign: <a class='enum' href='../../num/bigint/enum.Sign.html' title='num::bigint::Sign'>Sign</a>, bytes: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='struct' href='../../num/bigint/struct.BigInt.html' title='num::bigint::BigInt'>BigInt</a></code></h4>
 <div class='docblock'><p>Creates and initializes a <code>BigInt</code>.</p>
 
@@ -109,8 +108,7 @@ fn main() {
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>bigint</span>::{<span class='ident'>ToBigInt</span>, <span class='ident'>Sign</span>};
 
 <span class='kw'>let</span> <span class='ident'>i</span> <span class='op'>=</span> <span class='op'>-</span><span class='number'>1125</span>.<span class='ident'>to_bigint</span>().<span class='ident'>unwrap</span>();
-<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>i</span>.<span class='ident'>to_bytes_le</span>(), (<span class='ident'>Sign</span>::<span class='ident'>Minus</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>101</span>, <span class='number'>4</span>]));
-</pre>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>i</span>.<span class='ident'>to_bytes_le</span>(), (<span class='ident'>Sign</span>::<span class='ident'>Minus</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>101</span>, <span class='number'>4</span>]));</pre>
 </div><h4 id='method.to_bytes_be' class='method'><code>fn <a href='#method.to_bytes_be' class='fnname'>to_bytes_be</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='enum' href='../../num/bigint/enum.Sign.html' title='num::bigint::Sign'>Sign</a>, <a class='struct' href='http://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;)</a></code></h4>
 <div class='docblock'><p>Returns the sign and the byte representation of the <code>BigInt</code> in big-endian byte order.</p>
 
@@ -126,8 +124,7 @@ fn main() {
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>bigint</span>::{<span class='ident'>ToBigInt</span>, <span class='ident'>Sign</span>};
 
 <span class='kw'>let</span> <span class='ident'>i</span> <span class='op'>=</span> <span class='op'>-</span><span class='number'>1125</span>.<span class='ident'>to_bigint</span>().<span class='ident'>unwrap</span>();
-<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>i</span>.<span class='ident'>to_bytes_be</span>(), (<span class='ident'>Sign</span>::<span class='ident'>Minus</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>4</span>, <span class='number'>101</span>]));
-</pre>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>i</span>.<span class='ident'>to_bytes_be</span>(), (<span class='ident'>Sign</span>::<span class='ident'>Minus</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>4</span>, <span class='number'>101</span>]));</pre>
 </div><h4 id='method.parse_bytes' class='method'><code>fn <a href='#method.parse_bytes' class='fnname'>parse_bytes</a>(buf: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, radix: <a href='http://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../num/bigint/struct.BigInt.html' title='num::bigint::BigInt'>BigInt</a>&gt;</code></h4>
 <div class='docblock'><p>Creates and initializes a <code>BigInt</code>.</p>
 
@@ -145,8 +142,7 @@ fn main() {
 
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;1234&quot;</span>, <span class='number'>10</span>), <span class='ident'>ToBigInt</span>::<span class='ident'>to_bigint</span>(<span class='kw-2'>&amp;</span><span class='number'>1234</span>));
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;ABCD&quot;</span>, <span class='number'>16</span>), <span class='ident'>ToBigInt</span>::<span class='ident'>to_bigint</span>(<span class='kw-2'>&amp;</span><span class='number'>0xABCD</span>));
-<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;G&quot;</span>, <span class='number'>16</span>), <span class='prelude-val'>None</span>);
-</pre>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>BigInt</span>::<span class='ident'>parse_bytes</span>(<span class='string'>b&quot;G&quot;</span>, <span class='number'>16</span>), <span class='prelude-val'>None</span>);</pre>
 </div><h4 id='method.to_biguint' class='method'><code>fn <a href='#method.to_biguint' class='fnname'>to_biguint</a>(&amp;self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../num/bigint/struct.BigUint.html' title='num::bigint::BigUint'>BigUint</a>&gt;</code></h4>
 <div class='docblock'><p>Converts this <code>BigInt</code> into a <code>BigUint</code>, if it&#39;s not negative.</p>
 </div><h4 id='method.checked_add' class='method'><code>fn <a href='#method.checked_add' class='fnname'>checked_add</a>(&amp;self, v: &amp;<a class='struct' href='../../num/bigint/struct.BigInt.html' title='num::bigint::BigInt'>BigInt</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../num/bigint/struct.BigInt.html' title='num::bigint::BigInt'>BigInt</a>&gt;</code></h4>
@@ -280,37 +276,44 @@ fn main() {
     <section class="footer"></section>
 
     <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
-        </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
+        <div>
+            <div class="shortcuts">
+                <h1>Keyboard Shortcuts</h1>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h1>Search Tricks</h1>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>typedef</code> (or
+                    <code>tdef</code>).
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
     </div>
 

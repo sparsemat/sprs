@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["cholesky",""]]});
+initSidebarItems({"mod":[["cholesky",""],["trisolve",""]]});
