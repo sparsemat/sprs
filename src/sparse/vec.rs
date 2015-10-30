@@ -35,9 +35,7 @@ use errors::SprsError;
 /// The indices should be sorted.
 #[derive(PartialEq, Debug)]
 pub struct CsVec<N, IStorage, DStorage>
-where N: Clone,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+where DStorage: Deref<Target=[N]> {
     dim: usize,
     indices : IStorage,
     data : DStorage
@@ -45,6 +43,26 @@ DStorage: Deref<Target=[N]> {
 
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
 pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
+
+/// A trait to represent types which can be interpreted as vectors
+/// of a given dimension.
+pub trait VecDim {
+    /// The dimension of the vector
+    fn dim(&self) -> usize;
+}
+
+impl<N, IS, DS: Deref<Target=[N]>> VecDim for CsVec<N, IS, DS> {
+    fn dim(&self) -> usize {
+        self.dim
+    }
+}
+
+impl<N> VecDim for [N] {
+    fn dim(&self) -> usize {
+        self.len()
+    }
+}
+
 
 /// An iterator over the non-zero elements of a sparse vector
 pub struct VectorIterator<'a, N: 'a> {

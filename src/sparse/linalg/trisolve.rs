@@ -1,19 +1,20 @@
 /// Sparse triangular solves
 
+use std::ops::IndexMut;
 use num::traits::Num;
 use sparse::csmat;
-use sparse::vec;
+use sparse::vec::{self, VecDim};
 use errors::SprsError;
 use stack::{StackVal, DStack};
 
-fn check_solver_dimensions<N>(lower_tri_mat: &csmat::CsMatView<N>,
-                              rhs: &[N]) -> Result<(), SprsError>
-where N: Copy + Num {
+fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &csmat::CsMatView<N>,
+                                 rhs: &V) -> Result<(), SprsError>
+where N: Copy + Num, V: vec::VecDim {
     let (cols, rows) = (lower_tri_mat.cols(),lower_tri_mat.rows());
     if  cols != rows {
         return Err(SprsError::NonSquareMatrix);
     }
-    if  cols != rhs.len() {
+    if  cols != rhs.dim() {
         return Err(SprsError::IncompatibleDimensions);
     }
     Ok(())
@@ -73,9 +74,9 @@ where N: Copy + Num {
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn lsolve_csc_dense_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
-                               rhs: &mut [N]) -> Result<(), SprsError>
-where N: Copy + Num {
+pub fn lsolve_csc_dense_rhs<N, V: ?Sized>(lower_tri_mat: csmat::CsMatView<N>,
+                                          rhs: &mut V) -> Result<(), SprsError>
+where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim {
     try!(check_solver_dimensions(&lower_tri_mat, rhs));
     if ! lower_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
@@ -95,10 +96,11 @@ where N: Copy + Num {
     Ok(())
 }
 
-fn lspsolve_csc_process_col<N: Copy + Num>(col: vec::CsVecView<N>,
-                                           col_ind: usize,
-                                           rhs: &mut[N]
-                                          ) -> Result<(), SprsError> {
+fn lspsolve_csc_process_col<N: Copy + Num, V: ?Sized>(col: vec::CsVecView<N>,
+                                                      col_ind: usize,
+                                                      rhs: &mut V
+                                                     ) -> Result<(), SprsError>
+where V: vec::VecDim + IndexMut<usize, Output=N> {
     if let Some(diag_val) = col.at(col_ind) {
         if diag_val == N::zero() {
             return Err(SprsError::SingularMatrix);
