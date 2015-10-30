@@ -63,6 +63,12 @@ impl<N> VecDim for [N] {
     }
 }
 
+impl<N> VecDim for Vec<N> {
+    fn dim(&self) -> usize {
+        self.len()
+    }
+}
+
 
 /// An iterator over the non-zero elements of a sparse vector
 pub struct VectorIterator<'a, N: 'a> {
