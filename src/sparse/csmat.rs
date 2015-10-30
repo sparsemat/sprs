@@ -1025,7 +1025,7 @@ where N: 'a + Copy + Num + Default,
 
 /// An iterator over non-overlapping blocks of a matrix,
 /// along the least-varying dimension
-pub struct ChunkOuterBlocks<'a, N> {
+pub struct ChunkOuterBlocks<'a, N: 'a> {
     mat: CsMatView<'a, N>,
     dims_in_bloc: usize,
     bloc_count: usize,
