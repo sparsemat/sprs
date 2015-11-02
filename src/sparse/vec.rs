@@ -18,6 +18,7 @@
 
 use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
 use std::ops::{Deref, Mul, Add, Sub};
+use std::convert::AsRef;
 use std::cmp;
 use std::slice::{self, Iter};
 use std::collections::HashSet;
@@ -46,26 +47,20 @@ pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 /// A trait to represent types which can be interpreted as vectors
 /// of a given dimension.
-pub trait VecDim {
+pub trait VecDim<N> {
     /// The dimension of the vector
     fn dim(&self) -> usize;
 }
 
-impl<N, IS, DS: Deref<Target=[N]>> VecDim for CsVec<N, IS, DS> {
+impl<N, IS, DS: Deref<Target=[N]>> VecDim<N> for CsVec<N, IS, DS> {
     fn dim(&self) -> usize {
         self.dim
     }
 }
 
-impl<N> VecDim for [N] {
+impl<N, T: ?Sized> VecDim<N> for T where T: AsRef<[N]> {
     fn dim(&self) -> usize {
-        self.len()
-    }
-}
-
-impl<N> VecDim for Vec<N> {
-    fn dim(&self) -> usize {
-        self.len()
+        self.as_ref().len()
     }
 }
 

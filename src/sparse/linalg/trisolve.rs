@@ -9,7 +9,7 @@ use stack::{StackVal, DStack};
 
 fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &csmat::CsMatView<N>,
                                  rhs: &V) -> Result<(), SprsError>
-where N: Copy + Num, V: vec::VecDim {
+where N: Copy + Num, V: vec::VecDim<N> {
     let (cols, rows) = (lower_tri_mat.cols(),lower_tri_mat.rows());
     if  cols != rows {
         return Err(SprsError::NonSquareMatrix);
@@ -76,7 +76,7 @@ where N: Copy + Num {
 /// has to be performed for each column.
 pub fn lsolve_csc_dense_rhs<N, V: ?Sized>(lower_tri_mat: csmat::CsMatView<N>,
                                           rhs: &mut V) -> Result<(), SprsError>
-where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim {
+where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
     try!(check_solver_dimensions(&lower_tri_mat, rhs));
     if ! lower_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
@@ -100,7 +100,7 @@ fn lspsolve_csc_process_col<N: Copy + Num, V: ?Sized>(col: vec::CsVecView<N>,
                                                       col_ind: usize,
                                                       rhs: &mut V
                                                      ) -> Result<(), SprsError>
-where V: vec::VecDim + IndexMut<usize, Output=N> {
+where V: vec::VecDim<N> + IndexMut<usize, Output=N> {
     if let Some(diag_val) = col.at(col_ind) {
         if diag_val == N::zero() {
             return Err(SprsError::SingularMatrix);
