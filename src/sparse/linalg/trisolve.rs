@@ -27,9 +27,9 @@ where N: Copy + Num, V: vec::VecDim<N> {
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn lsolve_csr_dense_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
-                               rhs: &mut [N]) -> Result<(), SprsError>
-where N: Copy + Num {
+pub fn lsolve_csr_dense_rhs<N, V: ?Sized>(lower_tri_mat: csmat::CsMatView<N>,
+                                          rhs: &mut V) -> Result<(), SprsError>
+where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
     try!(check_solver_dimensions(&lower_tri_mat, rhs));
     if ! lower_tri_mat.is_csr() {
         return Err(SprsError::BadStorageType);
@@ -132,9 +132,9 @@ where V: vec::VecDim<N> + IndexMut<usize, Output=N> {
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn usolve_csc_dense_rhs<N>(upper_tri_mat: csmat::CsMatView<N>,
-                               rhs: &mut [N]) -> Result<(), SprsError>
-where N: Copy + Num {
+pub fn usolve_csc_dense_rhs<N, V: ?Sized>(upper_tri_mat: csmat::CsMatView<N>,
+                                          rhs: &mut V) -> Result<(), SprsError>
+where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
     try!(check_solver_dimensions(&upper_tri_mat, rhs));
     if ! upper_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
@@ -179,9 +179,9 @@ where N: Copy + Num {
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn usolve_csr_dense_rhs<N>(upper_tri_mat: csmat::CsMatView<N>,
-                               rhs: &mut [N]) -> Result<(), SprsError>
-where N: Copy + Num {
+pub fn usolve_csr_dense_rhs<N, V: ?Sized>(upper_tri_mat: csmat::CsMatView<N>,
+                                          rhs: &mut V) -> Result<(), SprsError>
+where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
     try!(check_solver_dimensions(&upper_tri_mat, rhs));
     if ! upper_tri_mat.is_csr() {
         return Err(SprsError::BadStorageType);
