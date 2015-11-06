@@ -187,22 +187,12 @@ N: Clone + Copy + Num {
     }
 }
 
-pub fn ldl_dsolve<N>(
-    d: &[N],
-    x: &mut [N])
-where
-N: Clone + Copy + Num {
-
-    for (xv, dv) in x.iter_mut().zip(d.iter()) {
-        *xv = *xv / *dv;
-    }
-}
-
 #[cfg(test)]
 mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::csmat::CompressedStorage::{CSC};
     use sparse::permutation::Permutation;
+    use sparse::linalg;
     use super::{SymmetryCheck};
 
     fn test_mat1() -> CsMatOwned<f64> {
@@ -312,7 +302,7 @@ mod test {
         let mut x = b.clone();
         super::ldl_lsolve(&expected_lp, &expected_li, &expected_lx, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
-        super::ldl_dsolve(&expected_d, &mut x);
+        linalg::diag_solve(&expected_d, &mut x);
         assert_eq!(&x, &expected_dsolve_res1());
         super::ldl_ltsolve(&expected_lp, &expected_li, &expected_lx, &mut x);
 
@@ -349,7 +339,7 @@ mod test {
         let b = test_vec1();
         let mut x = b.clone();
         super::ldl_lsolve(&l_colptr, &l_indices, &l_data, &mut x);
-        super::ldl_dsolve(&diag, &mut x);
+        linalg::diag_solve(&diag, &mut x);
         super::ldl_ltsolve(&l_colptr, &l_indices, &l_data, &mut x);
 
         let x0 = expected_res1();
