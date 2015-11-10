@@ -1,6 +1,7 @@
 /// Cholesky factorization
 
 use std::ops::{Deref};
+use std::ops::IndexMut;
 
 use num::traits::Num;
 
@@ -154,27 +155,34 @@ PStorage: Deref<Target=[usize]> {
 
 /// Triangular solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_lsolve<N>(
+pub fn ldl_lsolve<N, V: ?Sized>(
     l: &CsMatView<N>,
-    x: &mut [N])
+    x: &mut V)
 where
-N: Clone + Copy + Num {
+N: Clone + Copy + Num,
+V: IndexMut<usize, Output=N> {
     for (col_ind, vec) in l.outer_iterator() {
+        let x_col = x[col_ind];
         for (row_ind, value) in vec.iter() {
-            x[row_ind] = x[row_ind] - value * x[col_ind];
+            x[row_ind] = x[row_ind] - value * x_col;
         }
     }
 }
 
-pub fn ldl_ltsolve<N>(
+/// Triangular transposed solve specialized on lower triangular matrices
+/// produced by ldlt (diagonal terms are omitted and assumed to be 1).
+pub fn ldl_ltsolve<N, V: ?Sized>(
     l: &CsMatView<N>,
-    x: &mut [N])
+    x: &mut V)
 where
-N: Clone + Copy + Num {
+N: Clone + Copy + Num,
+V: IndexMut<usize, Output=N> {
     for (outer_ind, vec) in l.outer_iterator().rev() {
+        let mut x_outer = x[outer_ind];
         for (inner_ind, value) in vec.iter() {
-            x[outer_ind] = x[outer_ind] - value * x[inner_ind];
+            x_outer = x_outer - value * x[inner_ind];
         }
+        x[outer_ind] = x_outer;
     }
 }
 
