@@ -1,0 +1,3 @@
+fn_brace_style = "PreferSameLine"
+max_width = 90
+ideal_width = 80
