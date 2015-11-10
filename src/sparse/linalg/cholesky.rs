@@ -4,7 +4,7 @@ use std::ops::{Deref};
 
 use num::traits::Num;
 
-use sparse::csmat::{CsMat, CsMatView, CompressedStorage};
+use sparse::csmat::CsMatView;
 use sparse::symmetric::{is_symmetric};
 use sparse::permutation::Permutation;
 
@@ -152,17 +152,13 @@ PStorage: Deref<Target=[usize]> {
     }
 }
 
+/// Triangular solve specialized on lower triangular matrices
+/// produced by ldlt (diagonal terms are omitted and assumed to be 1).
 pub fn ldl_lsolve<N>(
-    l_colptr: &[usize],
-    l_indices: &[usize],
-    l_data: &[N],
+    l: &CsMatView<N>,
     x: &mut [N])
 where
 N: Clone + Copy + Num {
-
-    let n = l_colptr.len() - 1;
-    let l = CsMat::new_borrowed(
-        CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
     for (col_ind, vec) in l.outer_iterator() {
         for (row_ind, value) in vec.iter() {
             x[row_ind] = x[row_ind] - value * x[col_ind];
@@ -171,15 +167,10 @@ N: Clone + Copy + Num {
 }
 
 pub fn ldl_ltsolve<N>(
-    l_colptr: &[usize],
-    l_indices: &[usize],
-    l_data: &[N],
+    l: &CsMatView<N>,
     x: &mut [N])
 where
 N: Clone + Copy + Num {
-    let n = l_colptr.len() - 1;
-    let l = CsMat::new_borrowed(
-        CompressedStorage::CSC, n, n, l_colptr, l_indices, l_data).unwrap();
     for (outer_ind, vec) in l.outer_iterator().rev() {
         for (inner_ind, value) in vec.iter() {
             x[outer_ind] = x[outer_ind] - value * x[inner_ind];
@@ -189,11 +180,12 @@ N: Clone + Copy + Num {
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{CsMat, CsMatOwned};
+    use sparse::csmat::{self, CsMat, CsMatOwned};
     use sparse::csmat::CompressedStorage::{CSC};
     use sparse::permutation::Permutation;
     use sparse::linalg;
     use super::{SymmetryCheck};
+    use utils::csmat_borrowed_uchk;
 
     fn test_mat1() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
@@ -300,11 +292,14 @@ mod test {
         let (expected_lp, expected_li, expected_lx, expected_d) = expected_factors1();
         let b = test_vec1();
         let mut x = b.clone();
-        super::ldl_lsolve(&expected_lp, &expected_li, &expected_lx, &mut x);
+        let n = b.len();
+        let l = csmat_borrowed_uchk(csmat::CSC, n, n, &expected_lp,
+                                    &expected_li, &expected_lx);
+        super::ldl_lsolve(&l, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
         linalg::diag_solve(&expected_d, &mut x);
         assert_eq!(&x, &expected_dsolve_res1());
-        super::ldl_ltsolve(&expected_lp, &expected_li, &expected_lx, &mut x);
+        super::ldl_ltsolve(&l, &mut x);
 
         let x0 = expected_res1();
         assert_eq!(x, x0);
@@ -338,9 +333,12 @@ mod test {
 
         let b = test_vec1();
         let mut x = b.clone();
-        super::ldl_lsolve(&l_colptr, &l_indices, &l_data, &mut x);
+        let n = b.len();
+        let l = csmat_borrowed_uchk(csmat::CSC, n, n,
+                                    &l_colptr, &l_indices, &l_data);
+        super::ldl_lsolve(&l, &mut x);
         linalg::diag_solve(&diag, &mut x);
-        super::ldl_ltsolve(&l_colptr, &l_indices, &l_data, &mut x);
+        super::ldl_ltsolve(&l, &mut x);
 
         let x0 = expected_res1();
         assert_eq!(x, x0);

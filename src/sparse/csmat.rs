@@ -50,7 +50,7 @@ impl CompressedStorage {
     }
 }
 
-use self::CompressedStorage::*;
+pub use self::CompressedStorage::{CSC, CSR};
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
