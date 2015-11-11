@@ -8,13 +8,16 @@ use errors::SprsError;
 use stack::{StackVal, DStack};
 
 fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &csmat::CsMatView<N>,
-                                 rhs: &V) -> Result<(), SprsError>
-where N: Copy + Num, V: vec::VecDim<N> {
-    let (cols, rows) = (lower_tri_mat.cols(),lower_tri_mat.rows());
-    if  cols != rows {
+                                         rhs: &V)
+                                         -> Result<(), SprsError>
+where N: Copy + Num,
+      V: vec::VecDim<N>
+{
+    let (cols, rows) = (lower_tri_mat.cols(), lower_tri_mat.rows());
+    if cols != rows {
         return Err(SprsError::NonSquareMatrix);
     }
-    if  cols != rhs.dim() {
+    if cols != rhs.dim() {
         return Err(SprsError::IncompatibleDimensions);
     }
     Ok(())
@@ -28,10 +31,13 @@ where N: Copy + Num, V: vec::VecDim<N> {
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
 pub fn lsolve_csr_dense_rhs<N, V: ?Sized>(lower_tri_mat: csmat::CsMatView<N>,
-                                          rhs: &mut V) -> Result<(), SprsError>
-where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
+                                          rhs: &mut V)
+                                          -> Result<(), SprsError>
+where N: Copy + Num,
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+{
     try!(check_solver_dimensions(&lower_tri_mat, rhs));
-    if ! lower_tri_mat.is_csr() {
+    if !lower_tri_mat.is_csr() {
         return Err(SprsError::BadStorageType);
     }
 
@@ -75,10 +81,13 @@ where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
 pub fn lsolve_csc_dense_rhs<N, V: ?Sized>(lower_tri_mat: csmat::CsMatView<N>,
-                                          rhs: &mut V) -> Result<(), SprsError>
-where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
+                                          rhs: &mut V)
+                                          -> Result<(), SprsError>
+where N: Copy + Num,
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+{
     try!(check_solver_dimensions(&lower_tri_mat, rhs));
-    if ! lower_tri_mat.is_csc() {
+    if !lower_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
     }
 
@@ -96,11 +105,13 @@ where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
     Ok(())
 }
 
-fn lspsolve_csc_process_col<N: Copy + Num, V: ?Sized>(col: vec::CsVecView<N>,
-                                                      col_ind: usize,
-                                                      rhs: &mut V
-                                                     ) -> Result<(), SprsError>
-where V: vec::VecDim<N> + IndexMut<usize, Output=N> {
+fn lspsolve_csc_process_col<N: Copy + Num, V: ?Sized>
+                                                      (col: vec::CsVecView<N>,
+                                                       col_ind: usize,
+                                                       rhs: &mut V)
+                                                       -> Result<(), SprsError>
+where V: vec::VecDim<N> + IndexMut<usize, Output = N>
+{
     if let Some(diag_val) = col.at(col_ind) {
         if diag_val == N::zero() {
             return Err(SprsError::SingularMatrix);
@@ -115,8 +126,7 @@ where V: vec::VecDim<N> + IndexMut<usize, Output=N> {
             let b = rhs[row_ind];
             rhs[row_ind] = b - val * x;
         }
-    }
-    else {
+    } else {
         return Err(SprsError::SingularMatrix);
     }
     Ok(())
@@ -133,10 +143,13 @@ where V: vec::VecDim<N> + IndexMut<usize, Output=N> {
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
 pub fn usolve_csc_dense_rhs<N, V: ?Sized>(upper_tri_mat: csmat::CsMatView<N>,
-                                          rhs: &mut V) -> Result<(), SprsError>
-where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
+                                          rhs: &mut V)
+                                          -> Result<(), SprsError>
+where N: Copy + Num,
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+{
     try!(check_solver_dimensions(&upper_tri_mat, rhs));
-    if ! upper_tri_mat.is_csc() {
+    if !upper_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
     }
 
@@ -163,8 +176,7 @@ where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
                 let b = rhs[row_ind];
                 rhs[row_ind] = b - val * x;
             }
-        }
-        else {
+        } else {
             return Err(SprsError::SingularMatrix);
         }
     }
@@ -180,10 +192,13 @@ where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
 pub fn usolve_csr_dense_rhs<N, V: ?Sized>(upper_tri_mat: csmat::CsMatView<N>,
-                                          rhs: &mut V) -> Result<(), SprsError>
-where N: Copy + Num, V: IndexMut<usize, Output=N> + vec::VecDim<N> {
+                                          rhs: &mut V)
+                                          -> Result<(), SprsError>
+where N: Copy + Num,
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+{
     try!(check_solver_dimensions(&upper_tri_mat, rhs));
-    if ! upper_tri_mat.is_csr() {
+    if !upper_tri_mat.is_csr() {
         return Err(SprsError::BadStorageType);
     }
     // we base our algorithm on the following decomposition:
@@ -240,10 +255,11 @@ pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
                                 dstack: &mut DStack<usize>,
                                 x_workspace: &mut [N],
-                                visited: &mut [bool]
-                               ) -> Result<(), SprsError>
-where N: Copy + Num {
-    if ! lower_tri_mat.is_csc() {
+                                visited: &mut [bool])
+                                -> Result<(), SprsError>
+where N: Copy + Num
+{
+    if !lower_tri_mat.is_csc() {
         return Err(SprsError::BadStorageType);
     }
     let n = lower_tri_mat.rows();
@@ -281,11 +297,10 @@ where N: Copy + Num {
                         for (child_ind, _) in column.iter() {
                             dstack.push_rec(StackVal::Enter(child_ind));
                         }
-                    }
-                    else {
+                    } else {
                         unreachable!();
                     }
-                },
+                }
                 StackVal::Exit(ind) => {
                     dstack.push_data(ind);
                 }
@@ -317,9 +332,12 @@ mod test {
         // |0 2  | |1| = |2|
         // |1 0 1| |1|   |4|
         let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSR,
-                                             3, 3, vec![0, 1, 2, 4],
+                                             3,
+                                             3,
+                                             vec![0, 1, 2, 4],
                                              vec![0, 1, 0, 2],
-                                             vec![1, 2, 1, 1]).unwrap();
+                                             vec![1, 2, 1, 1])
+                    .unwrap();
         let b = vec![3, 2, 4];
         let mut x = b.clone();
 
@@ -333,9 +351,12 @@ mod test {
         // |1 2  | |1| = |5|
         // |0 0 3| |1|   |3|
         let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
-                                             3, 3, vec![0, 2, 3, 4],
+                                             3,
+                                             3,
+                                             vec![0, 2, 3, 4],
                                              vec![0, 1, 1, 2],
-                                             vec![1, 1, 2, 3]).unwrap();
+                                             vec![1, 1, 2, 3])
+                    .unwrap();
         let b = vec![3, 5, 3];
         let mut x = b.clone();
 
@@ -349,9 +370,12 @@ mod test {
         // |  2 0| |1| = |2|
         // |    3| |1|   |3|
         let u = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
-                                             3, 3, vec![0, 1, 2, 4],
+                                             3,
+                                             3,
+                                             vec![0, 1, 2, 4],
                                              vec![0, 1, 0, 2],
-                                             vec![1, 2, 1, 3]).unwrap();
+                                             vec![1, 2, 1, 3])
+                    .unwrap();
         let b = vec![4, 2, 3];
         let mut x = b.clone();
 
@@ -365,9 +389,12 @@ mod test {
         // |  5 3| |1| = |8|
         // |    1| |1|   |1|
         let u = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSR,
-                                             3, 3, vec![0, 2, 4, 5],
+                                             3,
+                                             3,
+                                             vec![0, 2, 4, 5],
                                              vec![0, 1, 1, 2, 2],
-                                             vec![1, 1, 5, 3, 1]).unwrap();
+                                             vec![1, 1, 5, 3, 1])
+                    .unwrap();
         let b = vec![4, 8, 1];
         let mut x = b.clone();
 
@@ -383,24 +410,35 @@ mod test {
         // |      7  | | |   | |
         // |  2   3 5| |1|   |9|
         let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
-                                             5, 5, vec![0, 2, 5, 6, 8, 9],
+                                             5,
+                                             5,
+                                             vec![0, 2, 5, 6, 8, 9],
                                              vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
-                                             vec![1, 1, 2, 3, 2, 3, 7, 3, 5]
-                                            ).unwrap();
-        let b = vec::CsVecOwned::new_owned(5,
-                                           vec![1, 2, 4],
-                                           vec![4, 9, 9]).unwrap();
+                                             vec![1, 1, 2, 3, 2, 3, 7, 3, 5])
+                    .unwrap();
+        let b = vec::CsVecOwned::new_owned(5, vec![1, 2, 4], vec![4, 9, 9])
+                    .unwrap();
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
-        let mut dstack = DStack::with_capacity(2*5);
-        super::lsolve_csc_sparse_rhs(
-            l.borrowed(), b.borrowed(),
-            &mut dstack, &mut xw, &mut visited).unwrap();
+        let mut dstack = DStack::with_capacity(2 * 5);
+        super::lsolve_csc_sparse_rhs(l.borrowed(),
+                                     b.borrowed(),
+                                     &mut dstack,
+                                     &mut xw,
+                                     &mut visited)
+            .unwrap();
 
         let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
 
-        let expected_output : HashSet<_> = vec::CsVecOwned::new_owned(
-            5, vec![1, 2, 4], vec![2, 1, 1]).unwrap().to_set();
+        let expected_output: HashSet<_> = vec::CsVecOwned::new_owned(5,
+                                                                     vec![1,
+                                                                          2,
+                                                                          4],
+                                                                     vec![2,
+                                                                          1,
+                                                                          1])
+                                              .unwrap()
+                                              .to_set();
 
         assert_eq!(x, expected_output);
 
@@ -411,26 +449,36 @@ mod test {
         // |        5    | | |   | |
         // |    1     1  | |1|   |3|
         // |  3     2   2| | |   | |
-        let l = csmat::CsMatOwned::new_owned(
-            csmat::CompressedStorage::CSC,
-            7, 7,
-            vec![0, 2, 4, 6, 7, 9, 10, 11],
-            vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
-            vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2]).unwrap();
+        let l = csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
+                                             7,
+                                             7,
+                                             vec![0, 2, 4, 6, 7, 9, 10, 11],
+                                             vec![0, 2, 1, 6, 2, 5, 3, 4, 6,
+                                                  5, 6],
+                                             vec![1, 1, 2, 3, 3, 1, 7, 5, 2,
+                                                  1, 2])
+                    .unwrap();
         let b = vec::CsVecOwned::new_owned(7,
                                            vec![0, 2, 3, 5],
-                                           vec![1, 7, 7, 3]).unwrap();
-        let mut dstack = DStack::with_capacity(2*7);
+                                           vec![1, 7, 7, 3])
+                    .unwrap();
+        let mut dstack = DStack::with_capacity(2 * 7);
         let mut xw = vec![1; 7]; // inital values should not matter
         let mut visited = vec![false; 7]; // inital values matter here
 
-        super::lsolve_csc_sparse_rhs(
-            l.borrowed(), b.borrowed(),
-            &mut dstack, &mut xw, &mut visited).unwrap();
+        super::lsolve_csc_sparse_rhs(l.borrowed(),
+                                     b.borrowed(),
+                                     &mut dstack,
+                                     &mut xw,
+                                     &mut visited)
+            .unwrap();
         let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
 
-        let expected_output = vec::CsVecOwned::new_owned(
-            7, vec![0, 2, 3, 5], vec![1, 2, 1, 1]).unwrap().to_set();
+        let expected_output = vec::CsVecOwned::new_owned(7,
+                                                         vec![0, 2, 3, 5],
+                                                         vec![1, 2, 1, 1])
+                                  .unwrap()
+                                  .to_set();
 
         assert_eq!(x, expected_output);
     }
