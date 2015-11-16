@@ -7,6 +7,7 @@ use std::iter::IntoIterator;
 
 pub mod cholesky;
 pub mod trisolve;
+pub mod etree;
 
 /// Diagonal solve
 pub fn diag_solve<'a, N, I1, I2>(diag: I1, x: I2)

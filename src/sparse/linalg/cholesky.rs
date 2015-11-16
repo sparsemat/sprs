@@ -9,7 +9,7 @@ use sparse::csmat::{self, CsMat, CsMatView};
 use sparse::symmetric::is_symmetric;
 use sparse::permutation::Permutation;
 use utils::csmat_borrowed_uchk;
-use sparse::linalg;
+use sparse::linalg::{self, etree};
 
 pub enum SymmetryCheck {
     CheckSymmetry,
@@ -19,7 +19,7 @@ pub enum SymmetryCheck {
 /// Structure to compute a
 pub struct LdlSymbolic {
     colptr: Vec<usize>,
-    parents: Vec<isize>,
+    parents: linalg::etree::ParentsOwned,
     nz: Vec<usize>,
     flag_workspace: Vec<usize>,
     perm: Permutation<Vec<usize>>,
@@ -45,13 +45,13 @@ impl LdlSymbolic {
         let n = mat.cols();
         assert!(mat.rows() == n, "matrix should be square");
         let mut l_colptr = vec![0; n+1];
-        let mut parents = vec![0; n];
+        let mut parents = linalg::etree::ParentsOwned::new(n);
         let mut l_nz = vec![0; n];
         let mut flag_workspace = vec![0; n];
         ldl_symbolic(mat.borrowed(),
                      &perm,
                      &mut l_colptr,
-                     &mut parents,
+                     parents.borrowed_mut(),
                      &mut l_nz,
                      &mut flag_workspace,
                      SymmetryCheck::CheckSymmetry);
@@ -67,7 +67,7 @@ impl LdlSymbolic {
 
     #[inline]
     pub fn dim(&self) -> usize {
-        self.parents.len()
+        self.parents.nb_nodes()
     }
 
     #[inline]
@@ -124,7 +124,7 @@ impl<N> LdlNumeric<N> {
     {
         ldl_numeric(mat.borrowed(),
                     &self.symbolic.colptr,
-                    &self.symbolic.parents,
+                    self.symbolic.parents.borrowed(),
                     &self.symbolic.perm,
                     &mut self.symbolic.nz,
                     &mut self.l_indices,
@@ -158,7 +158,7 @@ impl<N> LdlNumeric<N> {
 pub fn ldl_symbolic<N, PStorage>(mat: CsMatView<N>,
                                  perm: &Permutation<PStorage>,
                                  l_colptr: &mut [usize],
-                                 parents: &mut [isize],
+                                 mut parents: etree::ParentsViewMut,
                                  l_nz: &mut [usize],
                                  flag_workspace: &mut [usize],
                                  check_symmetry: SymmetryCheck)
@@ -180,7 +180,7 @@ where N: Clone + Copy + PartialEq,
     for (k, (outer_ind, vec)) in outer_it.enumerate() {
 
         flag_workspace[k] = k; // this node is visited
-        parents[k] = -1;
+        parents.set_root(k);
         l_nz[k] = 0;
 
         // FIXME: perm might not be good, maybe inv() needed
@@ -191,15 +191,11 @@ where N: Clone + Copy + PartialEq,
             // weird as it would introduce a dissimetry between the permuted
             // and non permuted cases. Needs test however
             if i < outer_ind {
-                // get back to the root of the etree
-                // TODO: maybe this calls for a more adequate parent structure?
                 while flag_workspace[i] != outer_ind {
-                    if parents[i] == -1 {
-                        parents[i] = outer_ind as isize; // TODO check overflow
-                    }
+                    parents.uproot(i, outer_ind);
                     l_nz[i] = l_nz[i] + 1;
                     flag_workspace[i] = outer_ind;
-                    i = parents[i] as usize; // TODO check negative
+                    i = parents.get_parent(i).expect("uprooted so not a root");
                 }
             }
         }
@@ -216,7 +212,7 @@ where N: Clone + Copy + PartialEq,
 
 pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
                                 l_colptr: &[usize],
-                                parents: &[isize],
+                                parents: etree::ParentsView,
                                 perm: &Permutation<PStorage>,
                                 l_nz: &mut [usize],
                                 l_indices: &mut [usize],
@@ -253,7 +249,7 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
                 pattern_workspace[len] = i;
                 len += 1;
                 flag_workspace[i] = k;
-                i = parents[i] as usize;
+                i = parents.get_parent(i).expect("enforced by ldl_symbolic");
             }
             while len > 0 {
                 // TODO: can be written as a loop with iterators
@@ -416,7 +412,7 @@ mod test {
     #[test]
     fn test_factor1() {
         let mut l_colptr = [0; 11];
-        let mut parents = [0; 10];
+        let mut parents = linalg::etree::ParentsOwned::new(10);
         let mut l_nz = [0; 10];
         let mut flag_workspace = [0; 10];
         let perm: Permutation<&[usize]> = Permutation::identity();
@@ -424,7 +420,7 @@ mod test {
         super::ldl_symbolic(mat.borrowed(),
                             &perm,
                             &mut l_colptr,
-                            &mut parents,
+                            parents.borrowed_mut(),
                             &mut l_nz,
                             &mut flag_workspace,
                             SymmetryCheck::CheckSymmetry);
@@ -437,7 +433,7 @@ mod test {
         let mut pattern_workspace = [0; 10];
         super::ldl_numeric(mat.borrowed(),
                            &l_colptr,
-                           &parents,
+                           parents.borrowed(),
                            &perm,
                            &mut l_nz,
                            &mut l_indices,
