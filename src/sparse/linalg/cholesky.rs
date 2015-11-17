@@ -237,6 +237,8 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         flag_workspace[k] = k; // this node is visited
         y_workspace[k] = N::zero();
         l_nz[k] = 0;
+        // TODO: pattern workspace works like a DStack
+        // it is advisable to replace it by one to make the code clearer
         let mut top = n;
 
         // FIXME: perm might not be good, maybe inv() needed
