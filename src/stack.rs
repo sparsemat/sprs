@@ -111,9 +111,28 @@ impl<I> DStack<I> where I: Copy {
         self.right_head = self.stacks.len();
     }
 
+    /// Clear the left stack
+    pub fn clear_left(&mut self) {
+        self.left_head = None;
+    }
+
     /// Iterates along the right stack without removing items
     pub fn iter_right<'a>(&'a self) -> slice::Iter<'a, I> {
         self.stacks[self.right_head..].iter()
+    }
+
+    /// Push the values of the left stack onto the right stack.
+    pub fn push_left_on_right(&mut self) {
+        while let Some(val) = self.pop_left() {
+            self.push_right(val);
+        }
+    }
+
+    /// Push the values of the right stack onto the left stack.
+    pub fn push_right_on_left(&mut self) {
+        while let Some(val) = self.pop_right() {
+            self.push_left(val);
+        }
     }
 }
 

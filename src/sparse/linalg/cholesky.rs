@@ -10,6 +10,7 @@ use sparse::symmetric::is_symmetric;
 use sparse::permutation::Permutation;
 use utils::csmat_borrowed_uchk;
 use sparse::linalg::{self, etree};
+use stack::DStack;
 
 pub enum SymmetryCheck {
     CheckSymmetry,
@@ -31,7 +32,7 @@ pub struct LdlNumeric<N> {
     l_data: Vec<N>,
     diag: Vec<N>,
     y_workspace: Vec<N>,
-    pattern_workspace: Vec<usize>,
+    pattern_workspace: DStack<usize>,
 }
 
 impl LdlSymbolic {
@@ -90,7 +91,7 @@ impl LdlSymbolic {
         let l_data = vec![N::zero(); nnz];
         let diag = vec![N::zero(); n];
         let y_workspace = vec![N::zero(); n];
-        let pattern_workspace = vec![0; n];
+        let pattern_workspace = DStack::with_capacity(n);
         let mut ldl_numeric = LdlNumeric {
             symbolic: self,
             l_indices: l_indices,
@@ -210,6 +211,9 @@ where N: Clone + Copy + PartialEq,
 
 }
 
+/// Perform numeric LDLT decomposition
+///
+/// pattern_workspace is a DStack of capacity n
 pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
                                 l_colptr: &[usize],
                                 parents: etree::ParentsView,
@@ -219,14 +223,11 @@ pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
                                 l_data: &mut [N],
                                 diag: &mut [N],
                                 y_workspace: &mut [N],
-                                pattern_workspace: &mut [usize],
+                                pattern_workspace: &mut DStack<usize>,
                                 flag_workspace: &mut [usize])
 where N: Clone + Copy + PartialEq + Num + PartialOrd,
       PStorage: Deref<Target = [usize]>
 {
-
-    let n = mat.rows();
-
     let perm_borrowed = perm.borrowed();
     let outer_it = mat.outer_iterator_perm(&perm_borrowed);
     for (k, (outer_ind, vec)) in outer_it.enumerate() {
@@ -237,35 +238,27 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         flag_workspace[k] = k; // this node is visited
         y_workspace[k] = N::zero();
         l_nz[k] = 0;
-        // TODO: pattern workspace works like a DStack
-        // it is advisable to replace it by one to make the code clearer
-        let mut top = n;
+        pattern_workspace.clear_right();
 
         // FIXME: perm might not be good, maybe inv() needed
         for (inner_ind, val) in vec.iter_perm(&perm_borrowed)
                                    .filter(|&(i, _)| i <= k) {
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
-            let mut len = 0;
+            pattern_workspace.clear_left();
             while flag_workspace[i] != outer_ind {
-                pattern_workspace[len] = i;
-                len += 1;
+                pattern_workspace.push_left(i);
                 flag_workspace[i] = k;
                 i = parents.get_parent(i).expect("enforced by ldl_symbolic");
             }
-            while len > 0 {
-                // TODO: can be written as a loop with iterators
-                top -= 1;
-                len -= 1;
-                pattern_workspace[top] = pattern_workspace[len];
-            }
+            pattern_workspace.push_left_on_right();
         }
 
         // use a sparse triangular solve to compute the values
         // of the kth row of L
         diag[k] = y_workspace[k];
         y_workspace[k] = N::zero();
-        'pattern: for &i in &pattern_workspace[top..n] {
+        'pattern: for &i in pattern_workspace.iter_right() {
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
             let p2 = l_colptr[i] + l_nz[i];
@@ -328,6 +321,7 @@ mod test {
     use sparse::linalg;
     use super::SymmetryCheck;
     use utils::csmat_borrowed_uchk;
+    use stack::DStack;
 
     fn test_mat1() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
@@ -432,7 +426,7 @@ mod test {
         let mut l_data = vec![0.; nnz];
         let mut diag = [0.; 10];
         let mut y_workspace = [0.; 10];
-        let mut pattern_workspace = [0; 10];
+        let mut pattern_workspace = DStack::with_capacity(10);
         super::ldl_numeric(mat.borrowed(),
                            &l_colptr,
                            parents.borrowed(),
