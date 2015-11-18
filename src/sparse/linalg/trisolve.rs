@@ -5,7 +5,7 @@ use num::traits::Num;
 use sparse::csmat;
 use sparse::vec::{self, VecDim};
 use errors::SprsError;
-use stack::{StackVal, DStack};
+use stack::{self, StackVal, DStack};
 
 fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &csmat::CsMatView<N>,
                                          rhs: &V)
@@ -253,7 +253,7 @@ where N: Copy + Num,
 ///
 pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: csmat::CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
-                                dstack: &mut DStack<usize>,
+                                dstack: &mut DStack<StackVal<usize>>,
                                 x_workspace: &mut [N],
                                 visited: &mut [bool])
                                 -> Result<(), SprsError>
@@ -302,7 +302,7 @@ where N: Copy + Num
                     }
                 }
                 StackVal::Exit(ind) => {
-                    dstack.push_right(ind);
+                    dstack.push_right(StackVal::Enter(ind));
                 }
             }
         }
@@ -310,7 +310,7 @@ where N: Copy + Num
 
     // solve for the non-zero values into dense workspace
     rhs.scatter(x_workspace);
-    for &ind in dstack.iter_right() {
+    for &ind in dstack.iter_right().map(stack::extract_stack_val) {
         println!("ind: {}", ind);
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
         try!(lspsolve_csc_process_col(col, ind, x_workspace));
@@ -323,7 +323,7 @@ where N: Copy + Num
 mod test {
 
     use sparse::{csmat, vec};
-    use stack::DStack;
+    use stack::{self, DStack};
     use std::collections::HashSet;
 
     #[test]
@@ -428,17 +428,16 @@ mod test {
                                      &mut visited)
             .unwrap();
 
-        let x: HashSet<_> = dstack.iter_right().map(|&i| (i, xw[i])).collect();
+        let x: HashSet<_> = dstack.iter_right()
+                                  .map(stack::extract_stack_val)
+                                  .map(|&i| (i, xw[i]))
+                                  .collect();
 
-        let expected_output: HashSet<_> = vec::CsVecOwned::new_owned(5,
-                                                                     vec![1,
-                                                                          2,
-                                                                          4],
-                                                                     vec![2,
-                                                                          1,
-                                                                          1])
-                                              .unwrap()
-                                              .to_set();
+        let expected_output = vec::CsVecOwned::new_owned(5,
+                                                         vec![1, 2, 4],
+                                                         vec![2, 1, 1])
+                                  .unwrap();
+        let expected_output = expected_output.to_set();
 
         assert_eq!(x, expected_output);
 
@@ -472,7 +471,10 @@ mod test {
                                      &mut xw,
                                      &mut visited)
             .unwrap();
-        let x: HashSet<_> = dstack.iter_right().map(|&i| (i, xw[i])).collect();
+        let x: HashSet<_> = dstack.iter_right()
+                                  .map(stack::extract_stack_val)
+                                  .map(|&i| (i, xw[i]))
+                                  .collect();
 
         let expected_output = vec::CsVecOwned::new_owned(7,
                                                          vec![0, 2, 3, 5],
