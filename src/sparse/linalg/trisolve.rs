@@ -240,8 +240,8 @@ where N: Copy + Num,
 /// and should be all false.
 ///
 /// On succesful execution, dstack will hold the non-zero pattern in its
-/// data stack, and x_workspace will contain the solve values at the indices
-/// contained in data stack. The non-zero pattern indices are not guaranteed
+/// right stack, and x_workspace will contain the solve values at the indices
+/// contained in right stack. The non-zero pattern indices are not guaranteed
 /// to be sorted (they are sorted for each connected component of the matrix's
 /// graph).
 ///
@@ -264,7 +264,7 @@ where N: Copy + Num
     }
     let n = lower_tri_mat.rows();
     assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
-    assert!(dstack.is_rec_empty() && dstack.is_data_empty(),
+    assert!(dstack.is_left_empty() && dstack.is_right_empty(),
             "dstack should be empty");
     assert!(x_workspace.len() == n, "x should be of len n");
 
@@ -284,25 +284,25 @@ where N: Copy + Num
         if visited[root_ind] {
             continue;
         }
-        dstack.push_rec(StackVal::Enter(root_ind));
-        while let Some(stack_val) = dstack.pop_rec() {
+        dstack.push_left(StackVal::Enter(root_ind));
+        while let Some(stack_val) = dstack.pop_left() {
             match stack_val {
                 StackVal::Enter(ind) => {
                     if visited[ind] {
                         continue;
                     }
                     visited[ind] = true;
-                    dstack.push_rec(StackVal::Exit(ind));
+                    dstack.push_left(StackVal::Exit(ind));
                     if let Some(column) = lower_tri_mat.outer_view(ind) {
                         for (child_ind, _) in column.iter() {
-                            dstack.push_rec(StackVal::Enter(child_ind));
+                            dstack.push_left(StackVal::Enter(child_ind));
                         }
                     } else {
                         unreachable!();
                     }
                 }
                 StackVal::Exit(ind) => {
-                    dstack.push_data(ind);
+                    dstack.push_right(ind);
                 }
             }
         }
@@ -310,7 +310,7 @@ where N: Copy + Num
 
     // solve for the non-zero values into dense workspace
     rhs.scatter(x_workspace);
-    for &ind in dstack.iter_data() {
+    for &ind in dstack.iter_right() {
         println!("ind: {}", ind);
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
         try!(lspsolve_csc_process_col(col, ind, x_workspace));
@@ -428,7 +428,7 @@ mod test {
                                      &mut visited)
             .unwrap();
 
-        let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
+        let x: HashSet<_> = dstack.iter_right().map(|&i| (i, xw[i])).collect();
 
         let expected_output: HashSet<_> = vec::CsVecOwned::new_owned(5,
                                                                      vec![1,
@@ -472,7 +472,7 @@ mod test {
                                      &mut xw,
                                      &mut visited)
             .unwrap();
-        let x: HashSet<_> = dstack.iter_data().map(|&i| (i, xw[i])).collect();
+        let x: HashSet<_> = dstack.iter_right().map(|&i| (i, xw[i])).collect();
 
         let expected_output = vec::CsVecOwned::new_owned(7,
                                                          vec![0, 2, 3, 5],
