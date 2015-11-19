@@ -13,6 +13,9 @@ where IndStorage: Deref<Target=[usize]> {
     }
 }
 
+pub type PermOwned = Permutation<Vec<usize>>;
+pub type PermView<'a> = Permutation<&'a [usize]>;
+
 use self::Permutation::*;
 
 impl Permutation<Vec<usize>> {
@@ -29,6 +32,26 @@ impl Permutation<Vec<usize>> {
     }
 }
 
+impl<'a> Permutation<&'a [usize]> {
+    pub fn reborrow(&self) -> PermView<'a> {
+        match self {
+            &Identity => Identity,
+            &FinitePerm {
+                perm: ref p, perm_inv: ref p_
+            } => FinitePerm { perm: &p[..], perm_inv: &p_[..] }
+        }
+    }
+
+    pub fn reborrow_inv(&self) -> PermView<'a> {
+        match self {
+            &Identity => Identity,
+            &FinitePerm {
+                perm: ref p, perm_inv: ref p_
+            } => FinitePerm { perm: &p_[..], perm_inv: &p[..] }
+        }
+    }
+}
+
 impl<IndStorage> Permutation<IndStorage>
 where IndStorage: Deref<Target=[usize]> {
 
@@ -36,7 +59,7 @@ where IndStorage: Deref<Target=[usize]> {
         Identity
     }
 
-    pub fn inv<'perm>(&'perm self) -> Permutation<&'perm [usize]> {
+    pub fn inv(&self) -> PermView {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -46,7 +69,7 @@ where IndStorage: Deref<Target=[usize]> {
     }
 
     // TODO: either the trait Deref or Borrow should be implemnted for this
-    pub fn borrowed<'perm>(&'perm self) -> Permutation<&'perm [usize]> {
+    pub fn borrowed(&self) -> PermView {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -55,7 +78,7 @@ where IndStorage: Deref<Target=[usize]> {
         }
     }
 
-    pub fn owned_clone(&self) -> Permutation<Vec<usize>> {
+    pub fn owned_clone(&self) -> PermOwned {
         match self {
             &Identity => Identity,
             &FinitePerm {

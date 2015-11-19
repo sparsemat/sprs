@@ -17,7 +17,7 @@ use num::traits::Num;
 
 use dense_mats::{StorageOrder, Tensor, MatOwned};
 
-use sparse::permutation::{Permutation};
+use sparse::permutation::PermView;
 use sparse::vec::{CsVec, CsVecView};
 use sparse::compressed::SpMatView;
 use sparse::binop;
@@ -68,7 +68,7 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
     indptr_iter: Enumerate<Windows<'iter, usize>>,
     indices: &'iter [usize],
     data: &'iter [N],
-    perm: Permutation<&'perm[usize]>,
+    perm: PermView<'perm>,
 }
 
 
@@ -463,11 +463,11 @@ where N: Copy,
     /// for iterating over the inner dimension of P*A*P^T
     /// Unstable
     pub fn outer_iterator_perm<'a, 'perm: 'a>(
-        &'a self, perm: &'perm Permutation<&'perm [usize]>)
+        &'a self, perm: PermView<'perm>)
     -> OuterIteratorPerm<'a, 'perm, N> {
         let (inner_len, oriented_perm) = match self.storage {
-            CSR => (self.ncols, perm.borrowed()),
-            CSC => (self.nrows, Permutation::inv(perm))
+            CSR => (self.ncols, perm.reborrow()),
+            CSC => (self.nrows, perm.reborrow_inv())
         };
         OuterIteratorPerm {
             inner_len: inner_len,

@@ -176,8 +176,7 @@ where N: Clone + Copy + PartialEq,
 
     let n = mat.rows();
 
-    let perm_borrowed = perm.borrowed();
-    let outer_it = mat.outer_iterator_perm(&perm_borrowed);
+    let outer_it = mat.outer_iterator_perm(perm.borrowed());
     for (k, (outer_ind, vec)) in outer_it.enumerate() {
 
         flag_workspace[k] = k; // this node is visited
@@ -185,7 +184,7 @@ where N: Clone + Copy + PartialEq,
         l_nz[k] = 0;
 
         // FIXME: perm might not be good, maybe inv() needed
-        for (inner_ind, _) in vec.iter_perm(&perm_borrowed) {
+        for (inner_ind, _) in vec.iter_perm(perm.borrowed()) {
             let mut i = inner_ind;
 
             // FIXME: the article tests inner_ind versus k, but this looks
@@ -194,7 +193,7 @@ where N: Clone + Copy + PartialEq,
             if i < outer_ind {
                 while flag_workspace[i] != outer_ind {
                     parents.uproot(i, outer_ind);
-                    l_nz[i] = l_nz[i] + 1;
+                    l_nz[i] += 1;
                     flag_workspace[i] = outer_ind;
                     i = parents.get_parent(i).expect("uprooted so not a root");
                 }
@@ -228,8 +227,7 @@ pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
 where N: Clone + Copy + PartialEq + Num + PartialOrd,
       PStorage: Deref<Target = [usize]>
 {
-    let perm_borrowed = perm.borrowed();
-    let outer_it = mat.outer_iterator_perm(&perm_borrowed);
+    let outer_it = mat.outer_iterator_perm(perm.borrowed());
     for (k, (outer_ind, vec)) in outer_it.enumerate() {
 
         // compute the nonzero pattern of the kth row of L
@@ -240,8 +238,7 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         l_nz[k] = 0;
         pattern_workspace.clear_right();
 
-        // FIXME: perm might not be good, maybe inv() needed
-        for (inner_ind, val) in vec.iter_perm(&perm_borrowed)
+        for (inner_ind, val) in vec.iter_perm(perm.inv())
                                    .filter(|&(i, _)| i <= k) {
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
