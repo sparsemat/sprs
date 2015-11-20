@@ -136,11 +136,11 @@ impl<N> LdlNumeric<N> {
                     &mut self.symbolic.flag_workspace);
     }
 
-    pub fn solve<'a, V>(&self, rhs: V) -> Vec<N>
+    pub fn solve<'a, V>(&self, rhs: &V) -> Vec<N>
     where N: 'a + Copy + Num,
-          V: IntoIterator<Item = &'a N>
+          V: Deref<Target=[N]>,
     {
-        let mut x: Vec<N> = rhs.into_iter().cloned().collect();
+        let mut x = &self.symbolic.perm * &rhs[..];
         let n = self.symbolic.dim();
         let l = csmat_borrowed_uchk(csmat::CSC,
                                     n,
@@ -151,7 +151,8 @@ impl<N> LdlNumeric<N> {
         ldl_lsolve(&l, &mut x);
         linalg::diag_solve(&self.diag, &mut x);
         ldl_ltsolve(&l, &mut x);
-        x
+        let pinv = self.symbolic.perm.inv();
+        &pinv * &x
     }
 }
 
@@ -177,24 +178,21 @@ where N: Clone + Copy + PartialEq,
     let n = mat.rows();
 
     let outer_it = mat.outer_iterator_perm(perm.borrowed());
-    for (k, (outer_ind, vec)) in outer_it.enumerate() {
+    // compute the elimination tree of L
+    for (k, (_, vec)) in outer_it.enumerate() {
 
         flag_workspace[k] = k; // this node is visited
         parents.set_root(k);
         l_nz[k] = 0;
 
-        // FIXME: perm might not be good, maybe inv() needed
-        for (inner_ind, _) in vec.iter_perm(perm.borrowed()) {
+        for (inner_ind, _) in vec.iter_perm(perm.inv()) {
             let mut i = inner_ind;
 
-            // FIXME: the article tests inner_ind versus k, but this looks
-            // weird as it would introduce a dissimetry between the permuted
-            // and non permuted cases. Needs test however
-            if i < outer_ind {
-                while flag_workspace[i] != outer_ind {
-                    parents.uproot(i, outer_ind);
+            if i < k {
+                while flag_workspace[i] != k {
+                    parents.uproot(i, k);
                     l_nz[i] += 1;
-                    flag_workspace[i] = outer_ind;
+                    flag_workspace[i] = k;
                     i = parents.get_parent(i).expect("uprooted so not a root");
                 }
             }

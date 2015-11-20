@@ -2,7 +2,7 @@
 ///
 /// Both the permutation matrices and its inverse are stored
 
-use std::ops::{Deref};
+use std::ops::{Deref, Mul};
 
 pub enum Permutation<IndStorage>
 where IndStorage: Deref<Target=[usize]> {
@@ -103,6 +103,28 @@ where IndStorage: Deref<Target=[usize]> {
             &Identity => index,
             &FinitePerm {
                 perm: _, perm_inv: ref p_ } => p_[index]
+        }
+    }
+}
+
+impl<'a, 'b, N, IndStorage> Mul<&'a [N]> for &'b Permutation<IndStorage>
+where IndStorage: 'b + Deref<Target=[usize]>,
+      N: 'a + Copy
+{
+    type Output = Vec<N>;
+    fn mul(self, rhs: &'a [N]) -> Vec<N> {
+        let mut res = rhs.to_vec();
+        match self {
+            &Identity => res,
+            &FinitePerm {
+                perm: ref p,
+                perm_inv: _,
+            } => {
+                for (i, &x) in rhs.iter().enumerate() {
+                    res[p[i]] = x;
+                }
+                res
+            }
         }
     }
 }
