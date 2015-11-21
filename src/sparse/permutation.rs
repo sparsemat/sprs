@@ -120,11 +120,29 @@ where IndStorage: 'b + Deref<Target=[usize]>,
                 perm: ref p,
                 perm_inv: _,
             } => {
-                for (i, &x) in rhs.iter().enumerate() {
-                    res[p[i]] = x;
+                for (&pi, r) in p.iter().zip(res.iter_mut()) {
+                    *r = rhs[pi];
                 }
                 res
             }
         }
+    }
+}
+
+
+mod test {
+    
+    #[test]
+    fn perm_mul() {
+        // |0 0 1 0 0| |5|   |2|
+        // |0 1 0 0 0| |1|   |1|
+        // |0 0 0 1 0| |2| = |3|
+        // |1 0 0 0 0| |3|   |5|
+        // |0 0 0 0 1| |4|   |4|
+        let x = vec![5, 1, 2, 3, 4];
+        let p = super::PermOwned::new(vec![2, 1, 3, 0, 4]);
+
+        let y = &p * &x;
+        assert_eq!(&y, &[2, 1, 3, 5, 4]);
     }
 }
