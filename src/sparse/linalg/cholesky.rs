@@ -226,7 +226,7 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
       PStorage: Deref<Target = [usize]>
 {
     let outer_it = mat.outer_iterator_perm(perm.borrowed());
-    for (k, (outer_ind, vec)) in outer_it.enumerate() {
+    for (k, (_, vec)) in outer_it.enumerate() {
 
         // compute the nonzero pattern of the kth row of L
         // in topological order
@@ -241,7 +241,7 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             pattern_workspace.clear_left();
-            while flag_workspace[i] != outer_ind {
+            while flag_workspace[i] != k {
                 pattern_workspace.push_left(i);
                 flag_workspace[i] = k;
                 i = parents.get_parent(i).expect("enforced by ldl_symbolic");
