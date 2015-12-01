@@ -498,4 +498,34 @@ mod test {
         let x0 = expected_res1();
         assert_eq!(x, x0);
     }
+
+    #[test]
+    fn permuted_ldl_solve() {
+        // |1      | |1      | |1     2|   |1      | |1      2| |1      |
+        // |  1    | |  2    | |  1 3  |   |    1  | |  21 6  | |    1  |
+        // |  3 1  | |    3  | |    1  | = |  1    | |   6 2  | |  1    |
+        // |2     1| |      4| |      1|   |      1| |2      8| |      1|
+        //     L         D         L^T   =    P^T        A          P
+        //
+        // |1      2| |1|   | 9|
+        // |  21 6  | |2|   |60|
+        // |   6 2  | |3| = |18|
+        // |2      8| |4|   |34|
+
+        let mat = CsMatOwned::new_owned(CSC,
+                                        4,
+                                        4,
+                                        vec![0, 2, 4, 6, 8],
+                                        vec![0, 3, 1, 2, 1, 2, 0, 3],
+                                        vec![1, 2, 21, 6, 6, 2, 2, 8])
+                      .unwrap();
+
+        let perm = Permutation::new(vec![0, 2, 1, 3]);
+
+        let ldlt = super::LdlNumeric::new_perm(&mat, perm);
+        let b = vec![9, 60, 18, 34];
+        let x0 = vec![1, 2, 3, 4];
+        let x = ldlt.solve(&b);
+        assert_eq!(x, x0);
+    }
 }
