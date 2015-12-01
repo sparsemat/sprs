@@ -7,7 +7,7 @@ use num::traits::Num;
 
 use sparse::csmat::{self, CsMat, CsMatView};
 use sparse::symmetric::is_symmetric;
-use sparse::permutation::Permutation;
+use sparse::permutation::{Permutation, PermOwned};
 use utils::csmat_borrowed_uchk;
 use sparse::linalg::{self, etree};
 use stack::DStack;
@@ -17,7 +17,7 @@ pub enum SymmetryCheck {
     DontCheckSymmetry,
 }
 
-/// Structure to compute a
+/// Structure to compute a  symbolic LDLT decomposition
 pub struct LdlSymbolic {
     colptr: Vec<usize>,
     parents: linalg::etree::ParentsOwned,
@@ -43,6 +43,17 @@ impl LdlSymbolic {
           DS: Deref<Target = [N]>
     {
         let perm: Permutation<Vec<usize>> = Permutation::identity();
+        LdlSymbolic::new_perm(mat, perm)
+    }
+
+    pub fn new_perm<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
+                                    perm: PermOwned)
+                                    -> LdlSymbolic
+    where N: Copy + PartialEq,
+          IpS: Deref<Target = [usize]>,
+          IS: Deref<Target = [usize]>,
+          DS: Deref<Target = [N]>
+    {
         let n = mat.cols();
         assert!(mat.rows() == n, "matrix should be square");
         let mut l_colptr = vec![0; n+1];
@@ -117,6 +128,18 @@ impl<N> LdlNumeric<N> {
         symbolic.factor(mat)
     }
 
+    pub fn new_perm<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
+                                 perm: PermOwned)
+                                 -> Self
+    where N: Copy + Num + PartialOrd,
+          IpS: Deref<Target = [usize]>,
+          IS: Deref<Target = [usize]>,
+          DS: Deref<Target = [N]>
+    {
+        let symbolic = LdlSymbolic::new_perm(mat, perm);
+        symbolic.factor(mat)
+    }
+
     pub fn update<IpS, IS, DS>(&mut self, mat: &CsMat<N, IpS, IS, DS>)
     where N: Copy + Num + PartialOrd,
           IpS: Deref<Target = [usize]>,
@@ -138,7 +161,7 @@ impl<N> LdlNumeric<N> {
 
     pub fn solve<'a, V>(&self, rhs: &V) -> Vec<N>
     where N: 'a + Copy + Num,
-          V: Deref<Target=[N]>,
+          V: Deref<Target = [N]>
     {
         let mut x = &self.symbolic.perm * &rhs[..];
         let n = self.symbolic.dim();
