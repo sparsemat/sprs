@@ -18,6 +18,7 @@ pub enum SymmetryCheck {
 }
 
 /// Structure to compute a  symbolic LDLT decomposition
+#[derive(Debug)]
 pub struct LdlSymbolic {
     colptr: Vec<usize>,
     parents: linalg::etree::ParentsOwned,
@@ -26,6 +27,7 @@ pub struct LdlSymbolic {
     perm: Permutation<Vec<usize>>,
 }
 
+#[derive(Debug)]
 pub struct LdlNumeric<N> {
     symbolic: LdlSymbolic,
     l_indices: Vec<usize>,
