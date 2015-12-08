@@ -11,7 +11,7 @@
 use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{self, Windows};
-use std::ops::{Deref, DerefMut, Add, Sub, Mul};
+use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range};
 use std::mem;
 use num::traits::Num;
 
@@ -65,7 +65,8 @@ pub struct OuterIterator<'iter, N: 'iter> {
 /// Implemented over an iterator on the indptr array
 pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
     inner_len: usize,
-    indptr_iter: Enumerate<Windows<'iter, usize>>,
+    outer_ind_iter: Range<usize>,
+    indptr: &'iter [usize],
     indices: &'iter [usize],
     data: &'iter [N],
     perm: PermView<'perm>,
@@ -112,12 +113,12 @@ for OuterIteratorPerm<'iter, 'perm, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        match self.indptr_iter.next() {
+        match self.outer_ind_iter.next() {
             None => None,
-            Some((outer_ind, window)) => {
-                let inner_start = window[0];
-                let inner_end = window[1];
+            Some(outer_ind) => {
                 let outer_ind_perm = self.perm.at(outer_ind);
+                let inner_start = self.indptr[outer_ind_perm];
+                let inner_end = self.indptr[outer_ind_perm + 1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
@@ -131,7 +132,7 @@ for OuterIteratorPerm<'iter, 'perm, N> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.indptr_iter.size_hint()
+        self.outer_ind_iter.size_hint()
     }
 }
 
@@ -469,9 +470,11 @@ where N: Copy,
             CSR => (self.ncols, perm.reborrow()),
             CSC => (self.nrows, perm.reborrow_inv())
         };
+        let n = self.indptr.len() - 1;
         OuterIteratorPerm {
             inner_len: inner_len,
-            indptr_iter: self.indptr.windows(2).enumerate(),
+            outer_ind_iter: (0..n),
+            indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
             perm: oriented_perm
