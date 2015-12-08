@@ -3,34 +3,42 @@
 
 use std::default::Default;
 use std::slice;
-use std::iter::Map;
 
-/// A double stack of fixed capacity, holding recursion information (eg for dfs)
-/// as well as data values.
+/// A double stack of fixed capacity, growing from the left to the right
+/// or conversely.
 ///
 /// Used in sparse triangular / sparse vector solves, where it is guaranteed
 /// that the two parts of the stack cannot overlap.
+#[derive(Debug)]
 pub struct DStack<I> {
-    stacks: Vec<StackVal<I>>,
-    rec_head: Option<usize>,
-    out_head: usize,
+    stacks: Vec<I>,
+    left_head: Option<usize>,
+    right_head: usize,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum StackVal<I> {
     Enter(I),
-    Exit(I)
+    Exit(I),
+}
+
+impl<I: Default> Default for StackVal<I> {
+    fn default() -> StackVal<I> {
+        StackVal::Enter(I::default())
+    }
 }
 
 impl<I> DStack<I> where I: Copy {
 
     /// Create a new double stacked suited for containing at most n elements
-    pub fn with_capacity(n: usize) -> DStack<I> where I: Default {
+    pub fn with_capacity(n: usize) -> DStack<I>
+    where I: Default
+    {
         assert!(n > 1);
         DStack {
-            stacks: vec![StackVal::Enter(I::default()); n],
-            rec_head: None,
-            out_head: n
+            stacks: vec![I::default(); n],
+            left_head: None,
+            right_head: n,
         }
     }
 
@@ -39,83 +47,100 @@ impl<I> DStack<I> where I: Copy {
         self.stacks.len()
     }
 
-    /// Test whether the recursion stack is empty
-    pub fn is_rec_empty(&self) -> bool {
-        self.rec_head.is_none()
+    /// Test whether the left stack is empty
+    pub fn is_left_empty(&self) -> bool {
+        self.left_head.is_none()
     }
 
-    /// Test whether the data stack is empty
-    pub fn is_data_empty(&self) -> bool {
-        self.out_head == self.capacity()
+    /// Test whether the right stack is empty
+    pub fn is_right_empty(&self) -> bool {
+        self.right_head == self.capacity()
     }
 
-    /// Push a value on the recursion stack
-    pub fn push_rec(&mut self, value: StackVal<I>) {
-        let head = self.rec_head.map_or(0, |x| x + 1);
-        assert!(head < self.out_head);
+    /// Push a value on the left stack
+    pub fn push_left(&mut self, value: I) {
+        let head = self.left_head.map_or(0, |x| x + 1);
+        assert!(head < self.right_head);
         self.stacks[head] = value;
-        self.rec_head = Some(head);
+        self.left_head = Some(head);
     }
 
-    /// Push a value on the data stack
-    pub fn push_data(&mut self, value: I) {
-        self.out_head -= 1;
-        if let Some(rec_head) = self.rec_head {
-            assert!(self.out_head > rec_head);
+    /// Push a value on the right stack
+    pub fn push_right(&mut self, value: I) {
+        self.right_head -= 1;
+        if let Some(left_head) = self.left_head {
+            assert!(self.right_head > left_head);
         }
-        self.stacks[self.out_head] = StackVal::Enter(value);
+        self.stacks[self.right_head] = value;
     }
 
-    /// Pop a value from the recursion stack
-    pub fn pop_rec(&mut self) -> Option<StackVal<I>> {
-        match self.rec_head {
-            Some(rec_head) => {
-                let res = self.stacks[rec_head];
-                self.rec_head = if rec_head > 0 {
-                    Some(rec_head - 1)
-                } else { None };
+    /// Pop a value from the left stack
+    pub fn pop_left(&mut self) -> Option<I> {
+        match self.left_head {
+            Some(left_head) => {
+                let res = self.stacks[left_head];
+                self.left_head = if left_head > 0 {
+                    Some(left_head - 1)
+                } else {
+                    None
+                };
                 Some(res)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 
-    /// Pop a value from the data stack
-    pub fn pop_data(&mut self) -> Option<I> {
-        if self.out_head >= self.stacks.len() {
+    /// Pop a value from the right stack
+    pub fn pop_right(&mut self) -> Option<I> {
+        if self.right_head >= self.stacks.len() {
             None
-        }
-        else {
-            if let StackVal::Enter(res) = self.stacks[self.out_head] {
-                self.out_head += 1;
-                Some(res)
-            }
-            else {
-                unreachable!();
-            }
+        } else {
+            let res = self.stacks[self.right_head];
+            self.right_head += 1;
+            Some(res)
         }
     }
 
-    /// Number of data elements this double stack contains
-    pub fn len_data(&self) -> usize {
+    /// Number of right elements this double stack contains
+    pub fn len_right(&self) -> usize {
         let n = self.stacks.len();
-        n - self.out_head
+        n - self.right_head
     }
 
-    /// Clear the data stack
-    pub fn clear_data(&mut self) {
-        self.out_head = self.stacks.len();
+    /// Clear the right stack
+    pub fn clear_right(&mut self) {
+        self.right_head = self.stacks.len();
     }
 
-    /// Iterates along the data stack without removing items
-    pub fn iter_data<'a>(&'a self) -> Map<slice::Iter<'a, StackVal<I>>, fn(& StackVal<I>) -> &I> {
-        self.stacks[self.out_head..].iter().map(extract_stack_val)
+    /// Clear the left stack
+    pub fn clear_left(&mut self) {
+        self.left_head = None;
+    }
+
+    /// Iterates along the right stack without removing items
+    pub fn iter_right<'a>(&'a self) -> slice::Iter<'a, I> {
+        self.stacks[self.right_head..].iter()
+    }
+
+    /// Push the values of the left stack onto the right stack.
+    pub fn push_left_on_right(&mut self) {
+        while let Some(val) = self.pop_left() {
+            self.push_right(val);
+        }
+    }
+
+    /// Push the values of the right stack onto the left stack.
+    pub fn push_right_on_left(&mut self) {
+        while let Some(val) = self.pop_right() {
+            self.push_left(val);
+        }
     }
 }
 
-fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
+/// Enable extraction of stack val from iterators
+pub fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
     match stack_val {
-        & StackVal::Enter(ref i) => &i,
-        & StackVal::Exit(ref i) => &i,
+        &StackVal::Enter(ref i) => &i,
+        &StackVal::Exit(ref i) => &i,
     }
 }

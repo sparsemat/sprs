@@ -26,7 +26,7 @@ use std::hash::Hash;
 
 use num::traits::Num;
 
-use sparse::permutation::Permutation;
+use sparse::permutation::PermView;
 use sparse::{prod, binop};
 use sparse::csmat::{CsMat, CsMatVecView};
 use sparse::csmat::CompressedStorage::{CSR, CSC};
@@ -72,7 +72,7 @@ pub struct VectorIterator<'a, N: 'a> {
 
 pub struct VectorIteratorPerm<'a, N: 'a> {
     ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
-    perm: Permutation<&'a [usize]>,
+    perm: PermView<'a>,
 }
 
 
@@ -102,7 +102,7 @@ for VectorIteratorPerm<'a, N> {
         match self.ind_data.next() {
             None => None,
             Some((inner_ind, data)) => Some(
-                (self.perm.at_inv(*inner_ind), *data))
+                (self.perm.at(*inner_ind), *data))
         }
     }
 
@@ -389,11 +389,11 @@ DStorage: Deref<Target=[N]> {
     /// Permuted iteration. Not finished
     #[doc(hidden)]
     pub fn iter_perm<'perm: 'a>(&'a self,
-                                perm: &'perm Permutation<&'perm [usize]>)
+                                perm: PermView<'perm>)
                                -> VectorIteratorPerm<'a, N> {
         VectorIteratorPerm {
             ind_data: self.indices.iter().zip(self.data.iter()),
-            perm: perm.borrowed()
+            perm: perm
         }
     }
 

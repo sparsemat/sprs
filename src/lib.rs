@@ -59,6 +59,26 @@ pub use sparse::{CsMat, CsMatOwned, CsMatView,
 pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
 
+mod utils {
+    use sparse::csmat::{self, CsMatView};
+
+    /// Create a borrowed CsMat matrix from sliced data without
+    /// checking validity. Intended for internal use only.
+    pub fn csmat_borrowed_uchk<'a, N: Copy>(storage: csmat::CompressedStorage,
+                                            nrows : usize, ncols: usize,
+                                            indptr : &'a [usize],
+                                            indices : &'a [usize],
+                                            data : &'a [N]
+                                           ) -> CsMatView<'a, N> {
+        // not actually memory unsafe here since data comes from slices
+        unsafe {
+            CsMatView::new_raw(storage, nrows, ncols,
+                               indptr.as_ptr(),
+                               indices.as_ptr(),
+                               data.as_ptr())
+        }
+    }
+}
 
 #[cfg(test)]
 mod test_data;

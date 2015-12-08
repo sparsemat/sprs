@@ -11,13 +11,13 @@
 use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{self, Windows};
-use std::ops::{Deref, DerefMut, Add, Sub, Mul};
+use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range};
 use std::mem;
 use num::traits::Num;
 
 use dense_mats::{StorageOrder, Tensor, MatOwned};
 
-use sparse::permutation::{Permutation};
+use sparse::permutation::PermView;
 use sparse::vec::{CsVec, CsVecView};
 use sparse::compressed::SpMatView;
 use sparse::binop;
@@ -50,7 +50,7 @@ impl CompressedStorage {
     }
 }
 
-use self::CompressedStorage::*;
+pub use self::CompressedStorage::{CSC, CSR};
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
@@ -65,10 +65,11 @@ pub struct OuterIterator<'iter, N: 'iter> {
 /// Implemented over an iterator on the indptr array
 pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
     inner_len: usize,
-    indptr_iter: Enumerate<Windows<'iter, usize>>,
+    outer_ind_iter: Range<usize>,
+    indptr: &'iter [usize],
     indices: &'iter [usize],
     data: &'iter [N],
-    perm: Permutation<&'perm[usize]>,
+    perm: PermView<'perm>,
 }
 
 
@@ -112,12 +113,12 @@ for OuterIteratorPerm<'iter, 'perm, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        match self.indptr_iter.next() {
+        match self.outer_ind_iter.next() {
             None => None,
-            Some((outer_ind, window)) => {
-                let inner_start = window[0];
-                let inner_end = window[1];
+            Some(outer_ind) => {
                 let outer_ind_perm = self.perm.at(outer_ind);
+                let inner_start = self.indptr[outer_ind_perm];
+                let inner_end = self.indptr[outer_ind_perm + 1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
@@ -131,7 +132,7 @@ for OuterIteratorPerm<'iter, 'perm, N> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.indptr_iter.size_hint()
+        self.outer_ind_iter.size_hint()
     }
 }
 
@@ -463,15 +464,17 @@ where N: Copy,
     /// for iterating over the inner dimension of P*A*P^T
     /// Unstable
     pub fn outer_iterator_perm<'a, 'perm: 'a>(
-        &'a self, perm: &'perm Permutation<&'perm [usize]>)
+        &'a self, perm: PermView<'perm>)
     -> OuterIteratorPerm<'a, 'perm, N> {
         let (inner_len, oriented_perm) = match self.storage {
-            CSR => (self.ncols, perm.borrowed()),
-            CSC => (self.nrows, Permutation::inv(perm))
+            CSR => (self.ncols, perm.reborrow()),
+            CSC => (self.nrows, perm.reborrow_inv())
         };
+        let n = self.indptr.len() - 1;
         OuterIteratorPerm {
             inner_len: inner_len,
-            indptr_iter: self.indptr.windows(2).enumerate(),
+            outer_ind_iter: (0..n),
+            indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
             perm: oriented_perm
