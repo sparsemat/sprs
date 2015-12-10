@@ -1,6 +1,9 @@
 ///! Triplet format matrix
 ///! Useful for building a matrix, but not for computations
 
+/// Indexing type into a Triplet
+pub struct TripletIndex(pub usize);
+
 /// Triplet matrix
 pub struct TripletMat<N> {
     rows: usize,
@@ -22,9 +25,7 @@ impl<N> TripletMat<N> {
         }
     }
 
-    pub fn with_capacity(shape: (usize, usize),
-                         cap: usize)
-                         -> TripletMat<N> {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TripletMat<N> {
         TripletMat {
             rows: shape.0,
             cols: shape.1,
@@ -82,6 +83,10 @@ impl<N> TripletMat<N> {
         self.borrowed().data()
     }
 
+    pub fn find_locations(&self, row: usize, col: usize) -> Vec<TripletIndex> {
+        self.borrowed().find_locations(row, col)
+    }
+
     pub fn borrowed(&self) -> TripletView<N> {
         TripletView {
             rows: self.rows,
@@ -89,6 +94,27 @@ impl<N> TripletMat<N> {
             row_inds: &self.row_inds[..],
             col_inds: &self.col_inds[..],
             data: &self.data[..],
+        }
+    }
+
+    pub fn set_triplet(&mut self,
+                       TripletIndex(triplet_ind): TripletIndex,
+                       row: usize,
+                       col: usize,
+                       val: N) {
+        self.borrowed_mut().set_triplet(TripletIndex(triplet_ind),
+                                        row,
+                                        col,
+                                        val);
+    }
+
+    pub fn borrowed_mut(&mut self) -> TripletViewMut<N> {
+        TripletViewMut {
+            rows: self.rows,
+            cols: self.cols,
+            row_inds: &mut self.row_inds[..],
+            col_inds: &mut self.col_inds[..],
+            data: &mut self.data[..],
         }
     }
 
@@ -137,15 +163,86 @@ impl<'a, N> TripletView<'a, N> {
         self.data.len()
     }
 
-    pub fn row_inds(& self) -> &'a [usize] {
+    pub fn row_inds(&self) -> &'a [usize] {
         self.row_inds
     }
 
-    pub fn col_inds(& self) -> &'a [usize] {
+    pub fn col_inds(&self) -> &'a [usize] {
         self.col_inds
     }
 
     pub fn data(&self) -> &'a [N] {
         self.data
+    }
+
+    pub fn find_locations(&self, row: usize, col: usize) -> Vec<TripletIndex> {
+        self.row_inds
+            .iter()
+            .zip(self.col_inds.iter())
+            .enumerate()
+            .filter(|&(_, (&i, &j))| i == row && j == col)
+            .map(|(ind, _)| TripletIndex(ind))
+            .collect()
+    }
+}
+
+
+/// Triplet matrix mutable view
+pub struct TripletViewMut<'a, N: 'a> {
+    rows: usize,
+    cols: usize,
+    row_inds: &'a mut [usize],
+    col_inds: &'a mut [usize],
+    data: &'a mut [N],
+}
+
+impl<'a, N> TripletViewMut<'a, N> {
+
+    pub fn rows(&self) -> usize {
+        self.borrowed().rows()
+    }
+
+    pub fn cols(&self) -> usize {
+        self.borrowed().cols()
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        self.borrowed().shape()
+    }
+
+    pub fn nnz(&self) -> usize {
+        self.borrowed().nnz()
+    }
+
+    pub fn row_inds(&self) -> &[usize] {
+        self.borrowed().row_inds()
+    }
+
+    pub fn col_inds(&self) -> &[usize] {
+        self.borrowed().col_inds()
+    }
+
+    pub fn data(&self) -> &[N] {
+        self.borrowed().data()
+    }
+
+    pub fn borrowed(&self) -> TripletView<N> {
+        TripletView {
+            rows: self.rows,
+            cols: self.cols,
+            row_inds: &self.row_inds[..],
+            col_inds: &self.col_inds[..],
+            data: &self.data[..],
+        }
+    }
+
+    pub fn set_triplet(&mut self,
+                       TripletIndex(triplet_ind): TripletIndex,
+                       row: usize,
+                       col: usize,
+                       val: N) {
+        self.row_inds[triplet_ind] = row;
+        self.col_inds[triplet_ind] = col;
+        self.data[triplet_ind] = val;
     }
 }
