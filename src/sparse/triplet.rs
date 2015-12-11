@@ -46,6 +46,10 @@ impl<N> TripletMat<N> {
                 "all inputs should have the same length");
         assert!(row_inds.len() == data.len(),
                 "all inputs should have the same length");
+        assert!(row_inds.iter().all(|&i| i < shape.0),
+                "row indices should be within shape");
+        assert!(col_inds.iter().all(|&j| j < shape.1),
+                "col indices should be within shape");
         TripletMat {
             rows: shape.0,
             cols: shape.1,
@@ -119,6 +123,8 @@ impl<N> TripletMat<N> {
     }
 
     pub fn add_triplet(&mut self, row: usize, col: usize, val: N) {
+        assert!(row < self.rows);
+        assert!(col < self.cols);
         self.row_inds.push(row);
         self.col_inds.push(col);
         self.data.push(val);
