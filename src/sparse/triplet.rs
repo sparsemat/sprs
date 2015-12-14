@@ -2,6 +2,7 @@
 ///! Useful for building a matrix, but not for computations
 
 use sparse::csmat;
+use num::traits::Num;
 
 /// Indexing type into a Triplet
 pub struct TripletIndex(pub usize);
@@ -191,38 +192,57 @@ impl<'a, N> TripletView<'a, N> {
             .collect()
     }
 
-    pub fn to_csr(&self) -> csmat::CsMatOwned<N> where N: Copy {
+    pub fn to_csc(&self) -> csmat::CsMatOwned<N>
+    where N: Copy + Num
+    {
         let mut row_counts = vec![0; self.rows() + 1];
         for &i in self.row_inds.iter() {
             row_counts[i + 1] += 1;
         }
-        let mut indptr = row_counts;
+        let mut indptr = row_counts.clone();
         // cum sum
-        for i in (1..self.rows()) {
-            indptr[i] += indptr[i-1];
+        for i in 1..self.rows() {
+            indptr[i] += indptr[i - 1];
         }
-        let indptr = indptr;
         let nnz_max = indptr[self.rows()];
-        let mut indices = vec![None; nnz_max];
-        let mut data = vec![None; nnz_max];
+        let mut indices = vec![0; nnz_max];
+        let mut data = vec![N::zero(); nnz_max];
+
+        // reset row counts to 0
+        for mut count in row_counts.iter_mut() {
+            *count = 0;
+        }
 
         for (&val, (&i, &j)) in self.data
-                                     .iter()
-                                     .zip(self.row_inds
-                                              .iter()
-                                              .zip(self.col_inds.iter())) {
+                                    .iter()
+                                    .zip(self.row_inds
+                                             .iter()
+                                             .zip(self.col_inds.iter())) {
             // TODO
             let start = indptr[i];
-            let stop = indptr[i + 1];
-            for (mut col_cell, mut data_cell) in indices[start..stop]
-                                                       .iter_mut()
-                                                       .zip(data[start..stop].iter_mut()) {
-                if col_cell.is_none() {
-                    *col_cell = Some(j);
-                    *data_cell = Some(val);
+            let stop = start + row_counts[i];
+            let col_exists = {
+                let mut col_exists = false;
+                let iter = indices[start..stop]
+                               .iter()
+                               .zip(data[start..stop].iter_mut());
+                for (&col_cell, mut data_cell) in iter {
+                    if col_cell == j {
+                        *data_cell = *data_cell + val;
+                        col_exists = true;
+                        break;
+                    }
                 }
+                col_exists
+            };
+            if !col_exists {
+                indices[stop] = j;
+                row_counts[i] += 1;
             }
         }
+
+        // at this point we have a CSR matrix with unsorted columns
+        // transposing it will yield the desired CSC matrix with sorted rows
         unimplemented!();
     }
 }
