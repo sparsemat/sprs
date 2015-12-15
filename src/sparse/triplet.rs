@@ -241,6 +241,23 @@ impl<'a, N> TripletView<'a, N> {
             }
         }
 
+        // compress the nonzero entries
+        let mut dst_start = indptr[0];
+        for i in 1..self.rows() {
+            let start = indptr[i];
+            if start == dst_start {
+                continue; // no repeated element in this column
+            }
+            let col_nnz = row_counts[i];
+            let stop = start + col_nnz;
+            for k in 0..stop {
+                indices[dst_start + k] = indices[start + k];
+                data[dst_start + k] = data[start + k];
+            }
+            dst_start += col_nnz;
+            indptr[i] = dst_start;
+        }
+
         // at this point we have a CSR matrix with unsorted columns
         // transposing it will yield the desired CSC matrix with sorted rows
         unimplemented!();

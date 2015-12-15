@@ -12,6 +12,7 @@ pub use self::vec::{CsVec,
 
 
 pub mod csmat;
+pub mod cmat;
 pub mod triplet;
 pub mod vec;
 pub mod permutation;

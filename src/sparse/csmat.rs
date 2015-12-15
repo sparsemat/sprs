@@ -50,6 +50,16 @@ impl CompressedStorage {
     }
 }
 
+pub fn outer_dimension(storage: CompressedStorage,
+                       rows: usize,
+                       cols: usize)
+                       -> usize {
+    match storage {
+        CSR => rows,
+        CSC => cols
+    }
+}
+
 pub use self::CompressedStorage::{CSC, CSR};
 
 /// Iterator on the matrix' outer dimension
@@ -506,10 +516,7 @@ where N: Copy,
     /// Number of outer dimensions, that ie equal to self.rows() for a CSR
     /// matrix, and equal to self.cols() for a CSC matrix
     pub fn outer_dims(&self) -> usize {
-        match self.storage {
-            CSR => self.nrows,
-            CSC => self.ncols
-        }
+        outer_dimension(self.storage, self.nrows, self.ncols)
     }
 
     /// Number of inner dimensions, that ie equal to self.cols() for a CSR
