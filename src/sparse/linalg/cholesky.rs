@@ -4,6 +4,7 @@ use std::ops::Deref;
 use std::ops::IndexMut;
 
 use num::traits::Num;
+use std::ops::{Add, Sub, Mul, Div};
 
 use sparse::csmat::{self, CsMat, CsMatView};
 use sparse::symmetric::is_symmetric;
@@ -161,9 +162,10 @@ impl<N> LdlNumeric<N> {
                     &mut self.symbolic.flag_workspace);
     }
 
-    pub fn solve<'a, V>(&self, rhs: &V) -> Vec<N>
+    pub fn solve<'a, V, M>(&self, rhs: &V) -> Vec<M>
     where N: 'a + Copy + Num,
-          V: Deref<Target = [N]>
+          V: Deref<Target = [M]>,
+          M: 'a + Copy + Add<Output=M> + Sub<Output=M> + Mul<N, Output=M> + Div<N, Output=M>
     {
         let mut x = &self.symbolic.perm * &rhs[..];
         let n = self.symbolic.dim();
@@ -306,28 +308,30 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
 
 /// Triangular solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_lsolve<N, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
+pub fn ldl_lsolve<N, M, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
 where N: Clone + Copy + Num,
-      V: IndexMut<usize, Output = N>
+      M: Copy + Add<Output=M> + Sub<Output=M> + Mul<N, Output=M> + Div<N, Output=M>,
+      V: IndexMut<usize, Output = M>
 {
     for (col_ind, vec) in l.outer_iterator() {
         let x_col = x[col_ind];
         for (row_ind, value) in vec.iter() {
-            x[row_ind] = x[row_ind] - value * x_col;
+            x[row_ind] = x[row_ind] - x_col * value;
         }
     }
 }
 
 /// Triangular transposed solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_ltsolve<N, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
+pub fn ldl_ltsolve<N, M, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
 where N: Clone + Copy + Num,
-      V: IndexMut<usize, Output = N>
+      M: Copy + Add<Output=M> + Sub<Output=M> + Mul<N, Output=M> + Div<N, Output=M>,
+      V: IndexMut<usize, Output = M>
 {
     for (outer_ind, vec) in l.outer_iterator().rev() {
         let mut x_outer = x[outer_ind];
         for (inner_ind, value) in vec.iter() {
-            x_outer = x_outer - value * x[inner_ind];
+            x_outer = x_outer - x[inner_ind] * value;
         }
         x[outer_ind] = x_outer;
     }
