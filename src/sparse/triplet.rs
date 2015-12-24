@@ -260,6 +260,19 @@ impl<'a, N> TripletView<'a, N> {
 
         // at this point we have a CSR matrix with unsorted columns
         // transposing it will yield the desired CSC matrix with sorted rows
+        let nnz = indptr[self.rows()];
+        let mut out_indptr = vec![0; self.cols() + 1];
+        let mut out_indices = vec![0; nnz];
+        let mut out_data = vec![N::zero(); nnz];
+        csmat::raw::convert_storage(csmat::CompressedStorage::CSR,
+                                    self.rows(),
+                                    self.cols(),
+                                    &indptr,
+                                    &indices,
+                                    &data,
+                                    &mut out_indptr,
+                                    &mut out_indices,
+                                    &mut out_data);
         unimplemented!();
     }
 }

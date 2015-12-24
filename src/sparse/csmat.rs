@@ -273,7 +273,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     }
 
     /// Get a view into count contiguous outer dimensions, starting from i.
-    /// 
+    ///
     /// eg this gets the rows from i to i + count in a CSR matrix
     pub fn middle_outer_views(&self,
                               i: usize, count: usize
@@ -803,15 +803,49 @@ DataStorage: DerefMut<Target=[N]> {
 
 }
 
-mod raw {
+pub mod raw {
     use super::{CsMatView};
+    use utils;
     use std::mem::swap;
 
-    /// Copy-convert a CsMat into the oppposite storage.
+    /// Copy-convert a compressed matrix into the oppposite storage.
+    ///
+    /// The input compressed matrix does not need to have its indices sorted,
+    /// but the output compressed matrix will have its indices sorted.
+    ///
     /// Can be used to implement CSC <-> CSR conversions, or to implement
     /// same-storage (copy) transposition.
     ///
     /// # Panics
+    ///
+    /// Panics if indptr contains non-zero values
+    ///
+    /// Panics if the output slices don't match the input matrices'
+    /// corresponding slices.
+    pub fn convert_storage<N: Copy>(in_storage: super::CompressedStorage,
+                                    in_rows: usize,
+                                    in_cols: usize,
+                                    in_indtpr: &[usize],
+                                    in_indices: &[usize],
+                                    in_data: &[N],
+                                    indptr: &mut [usize],
+                                    indices: &mut[usize],
+                                    data: &mut [N]) {
+        // we're building a csmat even though the indices are not sorted,
+        // but it's not a problem since we don't rely on this property.
+        // FIXME: this would be better with an explicit unsorted matrix type
+        let mat = utils::csmat_borrowed_uchk(
+            in_storage, in_rows, in_cols, in_indtpr, in_indices, in_data);
+        convert_mat_storage(mat, indptr, indices, data);
+    }
+
+    /// Copy-convert a csmat into the oppposite storage.
+    ///
+    /// Can be used to implement CSC <-> CSR conversions, or to implement
+    /// same-storage (copy) transposition.
+    ///
+    /// # Panics
+    ///
     /// Panics if indptr contains non-zero values
     ///
     /// Panics if the output slices don't match the input matrices'
@@ -1009,14 +1043,14 @@ where N: 'a + Copy + Num + Default,
                                                        N::one()).unwrap()
                 }
                 (CSR, StorageOrder::F) => {
-                    let lhs = self.to_other_storage(); 
+                    let lhs = self.to_other_storage();
                     binop::add_dense_mat_same_ordering(&lhs,
                                                        rhs,
                                                        N::one(),
                                                        N::one()).unwrap()
                 }
                 (CSC, StorageOrder::C) => {
-                    let lhs = self.to_other_storage(); 
+                    let lhs = self.to_other_storage();
                     binop::add_dense_mat_same_ordering(&lhs,
                                                        rhs,
                                                        N::one(),
