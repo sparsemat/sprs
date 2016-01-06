@@ -273,7 +273,13 @@ impl<'a, N> TripletView<'a, N> {
                                     &mut out_indptr,
                                     &mut out_indices,
                                     &mut out_data);
-        unimplemented!();
+        csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
+                                     self.rows,
+                                     self.cols,
+                                     out_indptr,
+                                     out_indices,
+                                     out_data
+                                    ).expect("struct ensured by previous code")
     }
 }
 
