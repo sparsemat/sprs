@@ -142,6 +142,12 @@ impl<N> TripletMat<N> {
         self.col_inds.reserve_exact(cap);
         self.data.reserve_exact(cap);
     }
+
+    pub fn to_csc(&self) -> csmat::CsMatOwned<N>
+    where N: Copy + Num
+    {
+        self.borrowed().to_csc()
+    }
 }
 
 /// Triplet matrix view
@@ -201,7 +207,7 @@ impl<'a, N> TripletView<'a, N> {
         }
         let mut indptr = row_counts.clone();
         // cum sum
-        for i in 1..self.rows() {
+        for i in 1..(self.rows() + 1) {
             indptr[i] += indptr[i - 1];
         }
         let nnz_max = indptr[self.rows()];
@@ -341,5 +347,27 @@ impl<'a, N> TripletViewMut<'a, N> {
         self.row_inds[triplet_ind] = row;
         self.col_inds[triplet_ind] = col;
         self.data[triplet_ind] = val;
+    }
+
+    pub fn to_csc(&self) -> csmat::CsMatOwned<N>
+    where N: Copy + Num
+    {
+        self.borrowed().to_csc()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn triplet_incremental() {
+        let mut triplet_mat = super::TripletMat::with_capacity((4, 4), 6);
+        triplet_mat.add_triplet(0, 0, 1.);
+        triplet_mat.add_triplet(0, 1, 2.);
+        triplet_mat.add_triplet(1, 0, 3.);
+        triplet_mat.add_triplet(2, 3, 4.);
+        triplet_mat.add_triplet(3, 2, 5.);
+        triplet_mat.add_triplet(3, 3, 6.);
+
+        let csc = triplet_mat.to_csc();
     }
 }
