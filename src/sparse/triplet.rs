@@ -357,9 +357,18 @@ impl<'a, N> TripletViewMut<'a, N> {
 
 #[cfg(test)]
 mod test {
+
+    use super::TripletMat;
+    use sparse::csmat;
+    use sparse::csmat::CompressedStorage::CSC;
+
     #[test]
     fn triplet_incremental() {
-        let mut triplet_mat = super::TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        // |1 2    |
+        // |3      |
+        // |    4  |
+        // |    5 6|
         triplet_mat.add_triplet(0, 0, 1.);
         triplet_mat.add_triplet(0, 1, 2.);
         triplet_mat.add_triplet(1, 0, 3.);
@@ -368,5 +377,13 @@ mod test {
         triplet_mat.add_triplet(3, 3, 6.);
 
         let csc = triplet_mat.to_csc();
+        let expected = csmat::CsMatOwned::new_owned(CSC,
+                                                    4,
+                                                    4,
+                                                    vec![0, 2, 3, 5, 6],
+                                                    vec![0, 1, 1, 2, 3, 3],
+                                                    vec![1., 2., 3., 4., 5., 6.]
+                                                    ).unwrap();
+        assert_eq!(csc, expected);
     }
 }
