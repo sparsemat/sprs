@@ -255,8 +255,7 @@ impl<'a, N> TripletView<'a, N> {
                 continue; // no repeated element in this column
             }
             let col_nnz = row_counts[i];
-            let stop = start + col_nnz;
-            for k in 0..stop {
+            for k in 0..col_nnz {
                 indices[dst_start + k] = indices[start + k];
                 data[dst_start + k] = data[start + k];
             }
