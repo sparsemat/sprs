@@ -224,7 +224,6 @@ impl<'a, N> TripletView<'a, N> {
                                     .zip(self.row_inds
                                              .iter()
                                              .zip(self.col_inds.iter())) {
-            // TODO
             let start = indptr[i];
             let stop = start + row_counts[i];
             let col_exists = {
@@ -367,7 +366,7 @@ mod test {
         let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
-        // |    4  |
+        // |      4|
         // |    5 6|
         triplet_mat.add_triplet(0, 0, 1.);
         triplet_mat.add_triplet(0, 1, 2.);
@@ -380,9 +379,9 @@ mod test {
         let expected = csmat::CsMatOwned::new_owned(CSC,
                                                     4,
                                                     4,
-                                                    vec![0, 2, 3, 5, 6],
-                                                    vec![0, 1, 1, 2, 3, 3],
-                                                    vec![1., 2., 3., 4., 5., 6.]
+                                                    vec![0, 2, 3, 4, 6],
+                                                    vec![0, 1, 0, 3, 2, 3],
+                                                    vec![1., 3., 2., 5., 4., 6.]
                                                     ).unwrap();
         assert_eq!(csc, expected);
     }
