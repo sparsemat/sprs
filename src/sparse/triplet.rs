@@ -249,18 +249,17 @@ impl<'a, N> TripletView<'a, N> {
 
         // compress the nonzero entries
         let mut dst_start = indptr[0];
-        for i in 1..self.rows() {
+        for i in 0..self.rows() {
             let start = indptr[i];
-            if start == dst_start {
-                continue; // no repeated element in this column
-            }
             let col_nnz = row_counts[i];
-            for k in 0..col_nnz {
-                indices[dst_start + k] = indices[start + k];
-                data[dst_start + k] = data[start + k];
+            if start != dst_start {
+                for k in 0..col_nnz {
+                    indices[dst_start + k] = indices[start + k];
+                    data[dst_start + k] = data[start + k];
+                }
             }
-            dst_start += col_nnz;
             indptr[i] = dst_start;
+            dst_start += col_nnz;
         }
 
         // at this point we have a CSR matrix with unsorted columns
