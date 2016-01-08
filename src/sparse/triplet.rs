@@ -243,6 +243,7 @@ impl<'a, N> TripletView<'a, N> {
             };
             if !col_exists {
                 indices[stop] = j;
+                data[stop] = val;
                 row_counts[i] += 1;
             }
         }
