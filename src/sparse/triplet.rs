@@ -385,4 +385,33 @@ mod test {
                                                     ).unwrap();
         assert_eq!(csc, expected);
     }
+
+    #[test]
+    fn triplet_unordered() {
+        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        // |1 2    |
+        // |3      |
+        // |      4|
+        // |    5 6|
+
+        // the only difference with the triplet_incremental test is that
+        // the triplets are added with non-sorted indices, therefore
+        // testing the ability of the conversion to yield sorted output
+        triplet_mat.add_triplet(0, 1, 2.);
+        triplet_mat.add_triplet(0, 0, 1.);
+        triplet_mat.add_triplet(1, 0, 3.);
+        triplet_mat.add_triplet(2, 3, 4.);
+        triplet_mat.add_triplet(3, 3, 6.);
+        triplet_mat.add_triplet(3, 2, 5.);
+
+        let csc = triplet_mat.to_csc();
+        let expected = csmat::CsMatOwned::new_owned(CSC,
+                                                    4,
+                                                    4,
+                                                    vec![0, 2, 3, 4, 6],
+                                                    vec![0, 1, 0, 3, 2, 3],
+                                                    vec![1., 3., 2., 5., 4., 6.]
+                                                    ).unwrap();
+        assert_eq!(csc, expected);
+    }
 }
