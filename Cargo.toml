@@ -2,7 +2,7 @@
 
 name = "sprs"
 description = "A sparse matrix library"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 
 readme = "README.rst"
