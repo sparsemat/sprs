@@ -273,7 +273,7 @@ impl<'a, N> TripletView<'a, N> {
             let start = indptr[i];
             let col_nnz = row_counts[i];
             let pred_nnz = indptr[i + 1] - start;
-            if col_nnz != pred_nnz {
+            if start != dst_start {
                 for k in 0..col_nnz {
                     indices[dst_start + k] = indices[start + k];
                     data[dst_start + k] = data[start + k];
