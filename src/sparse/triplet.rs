@@ -446,4 +446,34 @@ mod test {
                            .unwrap();
         assert_eq!(csc, expected);
     }
+
+    #[test]
+    fn triplet_from_vecs() {
+        // |1 2    |
+        // |3      |
+        // |      4|
+        // |    5 6|
+        // |  7   8|
+        let row_inds = vec![0, 0, 1, 2, 3, 3, 4, 4];
+        let col_inds = vec![0, 1, 0, 3, 2, 3, 1, 3];
+        let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
+
+        let triplet_mat = super::TripletMat::from_triplets((5, 4),
+                                                           row_inds,
+                                                           col_inds,
+                                                           data);
+
+        let csc = triplet_mat.to_csc();
+        let expected = csmat::CsMatOwned::new_owned(CSC,
+                                                    5,
+                                                    4,
+                                                    vec![0, 2, 4, 5, 8],
+                                                    vec![0, 1, 0, 4, 3, 2, 3,
+                                                         4],
+                                                    vec![1, 3, 2, 7, 5, 4, 6,
+                                                         8])
+                           .unwrap();
+
+        assert_eq!(csc, expected);
+    }
 }
