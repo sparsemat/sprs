@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>binop</a></p><script>window.sidebarCurrent = {name: 'csmat_binop_same_storage_raw', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,8 +45,8 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-9509' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#112-148' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn csmat_binop_same_storage_raw&lt;N, F&gt;(lhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, rhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, binop: F, out_indptr: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, out_indices: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, out_data: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(N, N) -&gt; N</span></pre><div class='docblock'><p>Raw implementation of scalar binary operation for compressed sparse matrices
+        </span><a id='src-1610' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#112-148' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn csmat_binop_same_storage_raw&lt;N, F&gt;(lhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, rhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, binop: F, out_indptr: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, out_indices: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, out_data: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a> <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(N, N) -&gt; N</span></pre><div class='docblock'><p>Raw implementation of scalar binary operation for compressed sparse matrices
 sharing the same storage. The output arrays are assumed to be preallocated</p>
 
 <p>Returns the nnz count</p>
@@ -55,10 +55,12 @@ sharing the same storage. The output arrays are assumed to be preallocated</p>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -75,7 +77,7 @@ sharing the same storage. The output arrays are assumed to be preallocated</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -85,8 +87,8 @@ sharing the same storage. The output arrays are assumed to be preallocated</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -95,7 +97,7 @@ sharing the same storage. The output arrays are assumed to be preallocated</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

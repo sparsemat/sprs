@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../index.html'>sprs</a>::<wbr><a href='index.html'>stack</a></p><script>window.sidebarCurrent = {name: 'DStack', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,45 +45,54 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-14516' class='srclink' href='../../src/sprs/stack.rs.html#13-17' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2372' class='srclink' href='../../src/sprs/stack.rs.html#13-17' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct DStack&lt;I&gt; {
     // some fields omitted
-}</pre><div class='docblock'><p>A double stack of fixed capacity, holding recursion information (eg for dfs)
-as well as data values.</p>
+}</pre><div class='docblock'><p>A double stack of fixed capacity, growing from the left to the right
+or conversely.</p>
 
 <p>Used in sparse triangular / sparse vector solves, where it is guaranteed
 that the two parts of the stack cannot overlap.</p>
-</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;I&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h3><div class='impl-items'><h4 id='method.with_capacity' class='method'><code>fn <a href='#method.with_capacity' class='fnname'>with_capacity</a>(n: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='http://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;I&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h3><div class='impl-items'><h4 id='method.with_capacity' class='method'><code>fn <a href='#method.with_capacity' class='fnname'>with_capacity</a>(n: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h4>
 <div class='docblock'><p>Create a new double stacked suited for containing at most n elements</p>
-</div><h4 id='method.capacity' class='method'><code>fn <a href='#method.capacity' class='fnname'>capacity</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.capacity' class='method'><code>fn <a href='#method.capacity' class='fnname'>capacity</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>Capacity of the dstack</p>
-</div><h4 id='method.is_rec_empty' class='method'><code>fn <a href='#method.is_rec_empty' class='fnname'>is_rec_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>Test whether the recursion stack is empty</p>
-</div><h4 id='method.is_data_empty' class='method'><code>fn <a href='#method.is_data_empty' class='fnname'>is_data_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>Test whether the data stack is empty</p>
-</div><h4 id='method.push_rec' class='method'><code>fn <a href='#method.push_rec' class='fnname'>push_rec</a>(&amp;mut self, value: <a class='enum' href='../../sprs/stack/enum.StackVal.html' title='sprs::stack::StackVal'>StackVal</a>&lt;I&gt;)</code></h4>
-<div class='docblock'><p>Push a value on the recursion stack</p>
-</div><h4 id='method.push_data' class='method'><code>fn <a href='#method.push_data' class='fnname'>push_data</a>(&amp;mut self, value: I)</code></h4>
-<div class='docblock'><p>Push a value on the data stack</p>
-</div><h4 id='method.pop_rec' class='method'><code>fn <a href='#method.pop_rec' class='fnname'>pop_rec</a>(&amp;mut self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='enum' href='../../sprs/stack/enum.StackVal.html' title='sprs::stack::StackVal'>StackVal</a>&lt;I&gt;&gt;</code></h4>
-<div class='docblock'><p>Pop a value from the recursion stack</p>
-</div><h4 id='method.pop_data' class='method'><code>fn <a href='#method.pop_data' class='fnname'>pop_data</a>(&amp;mut self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;</code></h4>
-<div class='docblock'><p>Pop a value from the data stack</p>
-</div><h4 id='method.len_data' class='method'><code>fn <a href='#method.len_data' class='fnname'>len_data</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
-<div class='docblock'><p>Number of data elements this double stack contains</p>
-</div><h4 id='method.clear_data' class='method'><code>fn <a href='#method.clear_data' class='fnname'>clear_data</a>(&amp;mut self)</code></h4>
-<div class='docblock'><p>Clear the data stack</p>
-</div><h4 id='method.iter_data' class='method'><code>fn <a href='#method.iter_data' class='fnname'>iter_data</a>&lt;'a&gt;(&amp;'a self) -&gt; <a class='struct' href='http://doc.rust-lang.org/nightly/core/iter/struct.Map.html' title='core::iter::Map'>Map</a>&lt;<a class='struct' href='http://doc.rust-lang.org/nightly/core/slice/struct.Iter.html' title='core::slice::Iter'>Iter</a>&lt;'a, <a class='enum' href='../../sprs/stack/enum.StackVal.html' title='sprs::stack::StackVal'>StackVal</a>&lt;I&gt;&gt;, fn(&amp;<a class='enum' href='../../sprs/stack/enum.StackVal.html' title='sprs::stack::StackVal'>StackVal</a>&lt;I&gt;) -&gt; &amp;I&gt;</code></h4>
-<div class='docblock'><p>Iterates along the data stack without removing items</p>
-</div></div></section>
+</div><h4 id='method.is_left_empty' class='method'><code>fn <a href='#method.is_left_empty' class='fnname'>is_left_empty</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Test whether the left stack is empty</p>
+</div><h4 id='method.is_right_empty' class='method'><code>fn <a href='#method.is_right_empty' class='fnname'>is_right_empty</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Test whether the right stack is empty</p>
+</div><h4 id='method.push_left' class='method'><code>fn <a href='#method.push_left' class='fnname'>push_left</a>(&amp;mut self, value: I)</code></h4>
+<div class='docblock'><p>Push a value on the left stack</p>
+</div><h4 id='method.push_right' class='method'><code>fn <a href='#method.push_right' class='fnname'>push_right</a>(&amp;mut self, value: I)</code></h4>
+<div class='docblock'><p>Push a value on the right stack</p>
+</div><h4 id='method.pop_left' class='method'><code>fn <a href='#method.pop_left' class='fnname'>pop_left</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;</code></h4>
+<div class='docblock'><p>Pop a value from the left stack</p>
+</div><h4 id='method.pop_right' class='method'><code>fn <a href='#method.pop_right' class='fnname'>pop_right</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;</code></h4>
+<div class='docblock'><p>Pop a value from the right stack</p>
+</div><h4 id='method.len_right' class='method'><code>fn <a href='#method.len_right' class='fnname'>len_right</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>Number of right elements this double stack contains</p>
+</div><h4 id='method.clear_right' class='method'><code>fn <a href='#method.clear_right' class='fnname'>clear_right</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Clear the right stack</p>
+</div><h4 id='method.clear_left' class='method'><code>fn <a href='#method.clear_left' class='fnname'>clear_left</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Clear the left stack</p>
+</div><h4 id='method.iter_right' class='method'><code>fn <a href='#method.iter_right' class='fnname'>iter_right</a>&lt;'a&gt;(&amp;'a self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/core/slice/struct.Iter.html' title='core::slice::Iter'>Iter</a>&lt;'a, I&gt;</code></h4>
+<div class='docblock'><p>Iterates along the right stack without removing items</p>
+</div><h4 id='method.push_left_on_right' class='method'><code>fn <a href='#method.push_left_on_right' class='fnname'>push_left_on_right</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Push the values of the left stack onto the right stack.</p>
+</div><h4 id='method.push_right_on_left' class='method'><code>fn <a href='#method.push_right_on_left' class='fnname'>push_right_on_left</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Push the values of the right stack onto the left stack.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl&lt;I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt;</code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -100,7 +109,7 @@ that the two parts of the stack cannot overlap.</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -110,8 +119,8 @@ that the two parts of the stack cannot overlap.</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -120,7 +129,7 @@ that the two parts of the stack cannot overlap.</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

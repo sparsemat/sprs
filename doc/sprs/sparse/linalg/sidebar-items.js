@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["cholesky",""],["trisolve",""]]});
+initSidebarItems({"fn":[["diag_solve","Diagonal solve"]],"mod":[["cholesky",""],["etree",""],["trisolve",""]]});

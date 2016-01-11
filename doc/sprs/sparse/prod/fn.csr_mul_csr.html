@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>prod</a></p><script>window.sidebarCurrent = {name: 'csr_mul_csr', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,8 +45,8 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-7299' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#70-79' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn csr_mul_csr&lt;N, Mat1, Mat2&gt;(lhs: &amp;Mat1, rhs: &amp;Mat2, workspace: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat1: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;, Mat2: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;</span></pre><div class='docblock'><p>Perform a matrix multiplication for matrices sharing the same storage order.</p>
+        </span><a id='src-1351' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#70-79' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn csr_mul_csr&lt;N, Mat1, Mat2&gt;(lhs: &amp;Mat1, rhs: &amp;Mat2, workspace: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat1: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;, Mat2: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;</span></pre><div class='docblock'><p>Perform a matrix multiplication for matrices sharing the same storage order.</p>
 
 <p>For brevity, this method assumes a CSR storage order, transposition should
 be used for the CSC-CSC case.
@@ -61,10 +61,12 @@ workspace: used to accumulate the line values. Should be of length
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -81,7 +83,7 @@ workspace: used to accumulate the line values. Should be of length
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -91,8 +93,8 @@ workspace: used to accumulate the line values. Should be of length
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -101,7 +103,7 @@ workspace: used to accumulate the line values. Should be of length
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

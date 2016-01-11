@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -664,6 +664,25 @@
 <span id="622">622</span>
 <span id="623">623</span>
 <span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
 </pre><pre class='rust '>
 <span class='doccomment'>/// A sparse vector, which can be extracted from a sparse matrix</span>
 <span class='doccomment'>///</span>
@@ -685,6 +704,7 @@
 
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::{<span class='ident'>Zip</span>, <span class='ident'>Peekable</span>, <span class='ident'>FilterMap</span>, <span class='ident'>IntoIterator</span>, <span class='ident'>Enumerate</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::{<span class='ident'>Deref</span>, <span class='ident'>Mul</span>, <span class='ident'>Add</span>, <span class='ident'>Sub</span>};
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>convert</span>::<span class='ident'>AsRef</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>slice</span>::{<span class='self'>self</span>, <span class='ident'>Iter</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>HashSet</span>;
@@ -692,7 +712,7 @@
 
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 
-<span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>permutation</span>::<span class='ident'>Permutation</span>;
+<span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>permutation</span>::<span class='ident'>PermView</span>;
 <span class='kw'>use</span> <span class='ident'>sparse</span>::{<span class='ident'>prod</span>, <span class='ident'>binop</span>};
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>csmat</span>::{<span class='ident'>CsMat</span>, <span class='ident'>CsMatVecView</span>};
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>csmat</span>::<span class='ident'>CompressedStorage</span>::{<span class='ident'>CSR</span>, <span class='ident'>CSC</span>};
@@ -702,9 +722,7 @@
 <span class='doccomment'>/// The indices should be sorted.</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Debug</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>,
-<span class='ident'>IStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
-<span class='ident'>DStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+<span class='kw'>where</span> <span class='ident'>DStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
     <span class='ident'>dim</span>: <span class='ident'>usize</span>,
     <span class='ident'>indices</span> : <span class='ident'>IStorage</span>,
     <span class='ident'>data</span> : <span class='ident'>DStorage</span>
@@ -713,6 +731,26 @@
 <span class='kw'>pub</span> <span class='kw'>type</span> <span class='ident'>CsVecView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span>;
 <span class='kw'>pub</span> <span class='kw'>type</span> <span class='ident'>CsVecOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span>;
 
+<span class='doccomment'>/// A trait to represent types which can be interpreted as vectors</span>
+<span class='doccomment'>/// of a given dimension.</span>
+<span class='kw'>pub</span> <span class='kw'>trait</span> <span class='ident'>VecDim</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='doccomment'>/// The dimension of the vector</span>
+    <span class='kw'>fn</span> <span class='ident'>dim</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span>;
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;&gt;</span> <span class='ident'>VecDim</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>dim</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
+        <span class='self'>self</span>.<span class='ident'>dim</span>
+    }
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>T</span>: ?<span class='ident'>Sized</span><span class='op'>&gt;</span> <span class='ident'>VecDim</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>T</span> <span class='kw'>where</span> <span class='ident'>T</span>: <span class='ident'>AsRef</span><span class='op'>&lt;</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>dim</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
+        <span class='self'>self</span>.<span class='ident'>as_ref</span>().<span class='ident'>len</span>()
+    }
+}
+
+
 <span class='doccomment'>/// An iterator over the non-zero elements of a sparse vector</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>ind_data</span>: <span class='ident'>Zip</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>N</span><span class='op'>&gt;&gt;</span>,
@@ -720,7 +758,7 @@
 
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>VectorIteratorPerm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>ind_data</span>: <span class='ident'>Zip</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>,<span class='ident'>N</span><span class='op'>&gt;&gt;</span>,
-    <span class='ident'>perm</span>: <span class='ident'>Permutation</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+    <span class='ident'>perm</span>: <span class='ident'>PermView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>,
 }
 
 
@@ -750,7 +788,7 @@
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>ind_data</span>.<span class='ident'>next</span>() {
             <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> <span class='prelude-val'>None</span>,
             <span class='prelude-val'>Some</span>((<span class='ident'>inner_ind</span>, <span class='ident'>data</span>)) <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(
-                (<span class='self'>self</span>.<span class='ident'>perm</span>.<span class='ident'>at_inv</span>(<span class='op'>*</span><span class='ident'>inner_ind</span>), <span class='op'>*</span><span class='ident'>data</span>))
+                (<span class='self'>self</span>.<span class='ident'>perm</span>.<span class='ident'>at</span>(<span class='op'>*</span><span class='ident'>inner_ind</span>), <span class='op'>*</span><span class='ident'>data</span>))
         }
     }
 
@@ -1037,11 +1075,11 @@
     <span class='doccomment'>/// Permuted iteration. Not finished</span>
     <span class='attribute'>#[<span class='ident'>doc</span>(<span class='ident'>hidden</span>)]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>iter_perm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;perm</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>,
-                                <span class='ident'>perm</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;perm</span> <span class='ident'>Permutation</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;perm</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>)
+                                <span class='ident'>perm</span>: <span class='ident'>PermView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;perm</span><span class='op'>&gt;</span>)
                                <span class='op'>-&gt;</span> <span class='ident'>VectorIteratorPerm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
         <span class='ident'>VectorIteratorPerm</span> {
             <span class='ident'>ind_data</span>: <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>iter</span>().<span class='ident'>zip</span>(<span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>iter</span>()),
-            <span class='ident'>perm</span>: <span class='ident'>perm</span>.<span class='ident'>borrowed</span>()
+            <span class='ident'>perm</span>: <span class='ident'>perm</span>
         }
     }
 
@@ -1295,10 +1333,12 @@
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -1315,7 +1355,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -1325,8 +1365,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -1335,7 +1375,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

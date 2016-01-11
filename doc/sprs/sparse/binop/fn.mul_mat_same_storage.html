@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>binop</a></p><script>window.sidebarCurrent = {name: 'mul_mat_same_storage', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,17 +45,19 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-8941' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#29-34' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn mul_mat_same_storage&lt;N, Mat1, Mat2&gt;(lhs: &amp;Mat1, rhs: &amp;Mat2) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat1: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;, Mat2: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;</span></pre><div class='docblock'><p>Sparse matrix scalar multiplication, with same storage type</p>
+        </span><a id='src-1547' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#29-34' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn mul_mat_same_storage&lt;N, Mat1, Mat2&gt;(lhs: &amp;Mat1, rhs: &amp;Mat2) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat1: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;, Mat2: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;</span></pre><div class='docblock'><p>Sparse matrix scalar multiplication, with same storage type</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -72,7 +74,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -82,8 +84,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -92,7 +94,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

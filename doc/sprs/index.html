@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'></p><script>window.sidebarCurrent = {name: 'sprs', ty: 'mod', relpath: '../'};</script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,10 +45,9 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-0' class='srclink' href='../src/sprs/lib.rs.html#1-64' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-0' class='srclink' href='../src/sprs/lib.rs.html#1-84' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
-<h1 id="sprs" class='section-header'><a
-                           href="#sprs">sprs</a></h1>
+<h1 id='sprs' class='section-header'><a href='#sprs'>sprs</a></h1>
 <p>sprs is a sparse linear algebra library for Rust.</p>
 
 <p>It features a sparse matrix type, CsMat, and a sparse vector type, CsVec,
@@ -57,8 +56,7 @@ both based on the compressed storage scheme.</p>
 <p>All matrix algebra operations are supported, and support for direct sparse
 solvers is planned.</p>
 
-<h2 id="examples" class='section-header'><a
-                           href="#examples">Examples</a></h2>
+<h2 id='examples' class='section-header'><a href='#examples'>Examples</a></h2>
 <p>Matrix construction</p>
 <pre class='rust rust-example-rendered'>
 <span class='kw'>use</span> <span class='ident'>sprs</span>::{<span class='ident'>CsMat</span>, <span class='ident'>CsMatOwned</span>, <span class='ident'>CsVec</span>};
@@ -118,10 +116,12 @@ solvers is planned.</p>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -138,7 +138,7 @@ solvers is planned.</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -148,8 +148,8 @@ solvers is planned.</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -158,7 +158,7 @@ solvers is planned.</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

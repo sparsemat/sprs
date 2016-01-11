@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../../index.html'>sprs</a>::<wbr><a href='../../index.html'>sparse</a>::<wbr><a href='../index.html'>linalg</a></p><script>window.sidebarCurrent = {name: 'cholesky', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,8 +45,26 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-11481' class='srclink' href='../../../../src/sprs/sparse/linalg/cholesky.rs.html#1-358' title='goto source code'>[src]</a></span></h1>
-<h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+        </span><a id='src-1864' class='srclink' href='../../../../src/sprs/sparse/linalg/cholesky.rs.html#1-533' title='goto source code'>[src]</a></span></h1>
+<h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.LdlNumeric.html'
+                               title='sprs::sparse::linalg::cholesky::LdlNumeric'>LdlNumeric</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.LdlSymbolic.html'
+                               title='sprs::sparse::linalg::cholesky::LdlSymbolic'>LdlSymbolic</a></td>
+                        <td class='docblock short'>
+                             <p>Structure to compute a  symbolic LDLT decomposition</p>
+
+                        </td>
+                    </tr>
+                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
 <table>
                     <tr class=' module-item'>
                         <td><a class='enum' href='enum.SymmetryCheck.html'
@@ -58,18 +76,12 @@
                 </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
 <table>
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.ldl_dsolve.html'
-                               title='sprs::sparse::linalg::cholesky::ldl_dsolve'>ldl_dsolve</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.ldl_lsolve.html'
                                title='sprs::sparse::linalg::cholesky::ldl_lsolve'>ldl_lsolve</a></td>
                         <td class='docblock short'>
-                             
+                             <p>Triangular solve specialized on lower triangular matrices
+produced by ldlt (diagonal terms are omitted and assumed to be 1).</p>
+
                         </td>
                     </tr>
                 
@@ -77,7 +89,9 @@
                         <td><a class='fn' href='fn.ldl_ltsolve.html'
                                title='sprs::sparse::linalg::cholesky::ldl_ltsolve'>ldl_ltsolve</a></td>
                         <td class='docblock short'>
-                             
+                             <p>Triangular transposed solve specialized on lower triangular matrices
+produced by ldlt (diagonal terms are omitted and assumed to be 1).</p>
+
                         </td>
                     </tr>
                 
@@ -85,7 +99,8 @@
                         <td><a class='fn' href='fn.ldl_numeric.html'
                                title='sprs::sparse::linalg::cholesky::ldl_numeric'>ldl_numeric</a></td>
                         <td class='docblock short'>
-                             
+                             <p>Perform numeric LDLT decomposition</p>
+
                         </td>
                     </tr>
                 
@@ -102,10 +117,12 @@
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -122,7 +139,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -132,8 +149,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -142,7 +159,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

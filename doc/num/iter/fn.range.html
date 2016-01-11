@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         <a href='../../num/index.html'><img src='http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         <p class='location'><a href='../index.html'>num</a>::<wbr><a href='index.html'>iter</a></p><script>window.sidebarCurrent = {name: 'range', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,12 +45,11 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-13423' class='srclink' href='../../src/num/iter.rs.html#40-44' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn range&lt;A&gt;(start: A, stop: A) -&gt; <a class='struct' href='../../num/iter/struct.Range.html' title='num::iter::Range'>Range</a>&lt;A&gt; <span class='where'>where A: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Add.html' title='core::ops::Add'>Add</a>&lt;A, Output=A&gt; + <a class='trait' href='http://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html' title='core::cmp::PartialOrd'>PartialOrd</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../../num/traits/trait.One.html' title='num::traits::One'>One</a></span></pre><div class='docblock'><p>Returns an iterator over the given range [start, stop) (that is, starting
+        </span><a id='src-2079' class='srclink' href='../../src/num/iter.rs.html#40-44' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn range&lt;A&gt;(start: A, stop: A) -&gt; <a class='struct' href='../../num/iter/struct.Range.html' title='num::iter::Range'>Range</a>&lt;A&gt; <span class='where'>where A: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Add.html' title='core::ops::Add'>Add</a>&lt;A, Output=A&gt; + <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html' title='core::cmp::PartialOrd'>PartialOrd</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../../num/traits/trait.One.html' title='num::traits::One'>One</a></span></pre><div class='docblock'><p>Returns an iterator over the given range [start, stop) (that is, starting
 at start (inclusive), and ending at stop (exclusive)).</p>
 
-<h1 id="example" class='section-header'><a
-                           href="#example">Example</a></h1><span class='rusttest'>extern crate num;
+<h1 id='example' class='section-header'><a href='#example'>Example</a></h1><span class='rusttest'>extern crate num;
 fn main() {
     use num::iter;
     
@@ -75,10 +74,12 @@ fn main() {
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -95,7 +96,7 @@ fn main() {
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -105,8 +106,8 @@ fn main() {
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -115,7 +116,7 @@ fn main() {
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

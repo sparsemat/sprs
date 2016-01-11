@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../index.html'>sprs</a></p><script>window.sidebarCurrent = {name: 'stack', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,15 +45,15 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-14511' class='srclink' href='../../src/sprs/stack.rs.html#1-121' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2368' class='srclink' href='../../src/sprs/stack.rs.html#1-146' title='goto source code'>[src]</a></span></h1>
 <h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                     <tr class=' module-item'>
                         <td><a class='struct' href='struct.DStack.html'
                                title='sprs::stack::DStack'>DStack</a></td>
                         <td class='docblock short'>
-                             <p>A double stack of fixed capacity, holding recursion information (eg for dfs)
-as well as data values.</p>
+                             <p>A double stack of fixed capacity, growing from the left to the right
+or conversely.</p>
 
                         </td>
                     </tr>
@@ -66,15 +66,27 @@ as well as data values.</p>
                              
                         </td>
                     </tr>
+                </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.extract_stack_val.html'
+                               title='sprs::stack::extract_stack_val'>extract_stack_val</a></td>
+                        <td class='docblock short'>
+                             <p>Enable extraction of stack val from iterators</p>
+
+                        </td>
+                    </tr>
                 </table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -91,7 +103,7 @@ as well as data values.</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -101,8 +113,8 @@ as well as data values.</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -111,7 +123,7 @@ as well as data values.</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         <a href='../../../../libc/index.html'><img src='https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         <p class='location'><a href='../../../index.html'>libc</a>::<wbr><a href='../../index.html'>funcs</a>::<wbr><a href='../index.html'>c95</a>::<wbr><a href='index.html'>stdlib</a></p><script>window.sidebarCurrent = {name: 'exit', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,18 +45,16 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-3437' class='srclink' href='../../../../src/libc/lib.rs.html#5486' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1065' class='srclink' href='../../../../src/libc/lib.rs.html#6184' title='goto source code'>[src]</a></span></h1>
 <pre class='rust fn'>pub unsafe extern fn exit(status: <a class='type' href='../../../../libc/types/os/arch/c95/type.c_int.html' title='libc::types::os::arch::c95::c_int'>c_int</a>) -&gt; !</pre><div class='docblock'><p>Exits the running program in a possibly dangerous manner.</p>
 
-<h1 id="unsafety" class='section-header'><a
-                           href="#unsafety">Unsafety</a></h1>
+<h1 id='safety' class='section-header'><a href='#safety'>Safety</a></h1>
 <p>While this forces your program to exit, it does so in a way that has
 consequences. This will skip all unwinding code, which means that anything
 relying on unwinding for cleanup (such as flushing and closing a buffer to a
 file) may act in an unexpected way.</p>
 
-<h1 id="examples" class='section-header'><a
-                           href="#examples">Examples</a></h1><span class='rusttest'>extern crate libc;
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1><span class='rusttest'>extern crate libc;
 
 fn main() {
     unsafe {
@@ -76,10 +74,12 @@ fn main() {
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -96,7 +96,7 @@ fn main() {
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -106,8 +106,8 @@ fn main() {
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -116,7 +116,7 @@ fn main() {
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

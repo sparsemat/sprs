@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>binop</a></p><script>window.sidebarCurrent = {name: 'scalar_mul_mat', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,17 +45,19 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-8989' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#37-51' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn scalar_mul_mat&lt;N, Mat&gt;(mat: &amp;Mat, val: N) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;</span></pre><div class='docblock'><p>Sparse matrix multiplication by a scalar</p>
+        </span><a id='src-1557' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#37-51' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn scalar_mul_mat&lt;N, Mat&gt;(mat: &amp;Mat, val: N) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;</span></pre><div class='docblock'><p>Sparse matrix multiplication by a scalar</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -72,7 +74,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -82,8 +84,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -92,7 +94,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

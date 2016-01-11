@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         <a href='../num/index.html'><img src='http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         <p class='location'></p><script>window.sidebarCurrent = {name: 'num', ty: 'mod', relpath: '../'};</script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -50,8 +50,7 @@
 
 <p>This crate contains arbitrary-sized integer, rational, and complex types.</p>
 
-<h2 id="example" class='section-header'><a
-                           href="#example">Example</a></h2>
+<h2 id='example' class='section-header'><a href='#example'>Example</a></h2>
 <p>This example uses the BigRational type and <a href="https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method">Newton&#39;s method</a> to
 approximate a square root to arbitrary precision:</p>
 <span class='rusttest'>extern crate num;
@@ -219,10 +218,12 @@ fn main() {
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -239,7 +240,7 @@ fn main() {
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -249,8 +250,8 @@ fn main() {
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -259,7 +260,7 @@ fn main() {
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

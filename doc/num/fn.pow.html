@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         <a href='../num/index.html'><img src='http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         <p class='location'><a href='index.html'>num</a></p><script>window.sidebarCurrent = {name: 'pow', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,11 +45,10 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-34087' class='srclink' href='../src/num/lib.rs.html#139-156' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn pow&lt;T: <a class='trait' href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../num/traits/trait.One.html' title='num::traits::One'>One</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Mul.html' title='core::ops::Mul'>Mul</a>&lt;T, Output=T&gt;&gt;(base: T, exp: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; T</pre><div class='docblock'><p>Raises a value to the power of exp, using exponentiation by squaring.</p>
+        </span><a id='src-5014' class='srclink' href='../src/num/lib.rs.html#139-156' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn pow&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../num/traits/trait.One.html' title='num::traits::One'>One</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Mul.html' title='core::ops::Mul'>Mul</a>&lt;T, Output=T&gt;&gt;(base: T, exp: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; T</pre><div class='docblock'><p>Raises a value to the power of exp, using exponentiation by squaring.</p>
 
-<h1 id="example" class='section-header'><a
-                           href="#example">Example</a></h1><span class='rusttest'>extern crate num;
+<h1 id='example' class='section-header'><a href='#example'>Example</a></h1><span class='rusttest'>extern crate num;
 fn main() {
     use num;
     
@@ -66,10 +65,12 @@ fn main() {
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -86,7 +87,7 @@ fn main() {
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -96,8 +97,8 @@ fn main() {
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -106,7 +107,7 @@ fn main() {
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

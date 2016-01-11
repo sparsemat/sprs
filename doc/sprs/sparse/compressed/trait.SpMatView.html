@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>compressed</a></p><script>window.sidebarCurrent = {name: 'SpMatView', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-13828' class='srclink' href='../../../src/sprs/sparse/compressed.rs.html#9-15' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2284' class='srclink' href='../../../src/sprs/sparse/compressed.rs.html#9-15' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait SpMatView&lt;N&gt; {
     fn <a href='#tymethod.borrowed' class='fnname'>borrowed</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;;
     fn <a href='#tymethod.transpose_view' class='fnname'>transpose_view</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;;
@@ -59,7 +59,7 @@ into a CsMat</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;N, IpStorage, IndStorage, DataStorage&gt; <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt; for <a class='struct' href='../../../sprs/sparse/csmat/struct.CsMat.html' title='sprs::sparse::csmat::CsMat'>CsMat</a>&lt;N, IpStorage, IndStorage, DataStorage&gt; <span class='where'>where N: <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, IpStorage: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;, IndStorage: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;, DataStorage: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></li>
+    <li><code>impl&lt;N, IpStorage, IndStorage, DataStorage&gt; <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt; for <a class='struct' href='../../../sprs/sparse/csmat/struct.CsMat.html' title='sprs::sparse::csmat::CsMat'>CsMat</a>&lt;N, IpStorage, IndStorage, DataStorage&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, IpStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;, IndStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;, DataStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></li>
 </ul><script type="text/javascript" async
                               src="../../../implementors/sprs/sparse/compressed/trait.SpMatView.js">
                       </script></section>
@@ -67,10 +67,12 @@ into a CsMat</p>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -87,7 +89,7 @@ into a CsMat</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -97,8 +99,8 @@ into a CsMat</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -107,7 +109,7 @@ into a CsMat</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

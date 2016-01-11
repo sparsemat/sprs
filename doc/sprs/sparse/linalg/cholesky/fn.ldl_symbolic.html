@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../../../index.html'>sprs</a>::<wbr><a href='../../index.html'>sparse</a>::<wbr><a href='../index.html'>linalg</a>::<wbr><a href='index.html'>cholesky</a></p><script>window.sidebarCurrent = {name: 'ldl_symbolic', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,17 +45,19 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-11497' class='srclink' href='../../../../src/sprs/sparse/linalg/cholesky.rs.html#17-75' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn ldl_symbolic&lt;N, PStorage&gt;(mat: <a class='type' href='../../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, perm: &amp;<a class='enum' href='../../../../sprs/sparse/permutation/enum.Permutation.html' title='sprs::sparse::permutation::Permutation'>Permutation</a>&lt;PStorage&gt;, l_colptr: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, parents: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='http://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, l_nz: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, flag_workspace: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, check_symmetry: <a class='enum' href='../../../../sprs/sparse/linalg/cholesky/enum.SymmetryCheck.html' title='sprs::sparse::linalg::cholesky::SymmetryCheck'>SymmetryCheck</a>) <span class='where'>where N: <a class='trait' href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> + <a class='trait' href='http://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a>, PStorage: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;</span></pre><div class='docblock'><p>Perform a symbolic LDLt decomposition of a symmetric sparse matrix</p>
+        </span><a id='src-1983' class='srclink' href='../../../../src/sprs/sparse/linalg/cholesky.rs.html#185-234' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn ldl_symbolic&lt;N, PStorage&gt;(mat: <a class='type' href='../../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, perm: &amp;<a class='enum' href='../../../../sprs/sparse/permutation/enum.Permutation.html' title='sprs::sparse::permutation::Permutation'>Permutation</a>&lt;PStorage&gt;, l_colptr: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, parents: <a class='type' href='../../../../sprs/sparse/linalg/etree/type.ParentsViewMut.html' title='sprs::sparse::linalg::etree::ParentsViewMut'>ParentsViewMut</a>, l_nz: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, flag_workspace: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, check_symmetry: <a class='enum' href='../../../../sprs/sparse/linalg/cholesky/enum.SymmetryCheck.html' title='sprs::sparse::linalg::cholesky::SymmetryCheck'>SymmetryCheck</a>) <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a>, PStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;</span></pre><div class='docblock'><p>Perform a symbolic LDLt decomposition of a symmetric sparse matrix</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -72,7 +74,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -82,8 +84,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -92,7 +94,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

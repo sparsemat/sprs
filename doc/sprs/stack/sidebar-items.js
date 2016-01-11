@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["StackVal",""]],"struct":[["DStack","A double stack of fixed capacity, holding recursion information (eg for dfs) as well as data values."]]});
+initSidebarItems({"enum":[["StackVal",""]],"fn":[["extract_stack_val","Enable extraction of stack val from iterators"]],"struct":[["DStack","A double stack of fixed capacity, growing from the left to the right or conversely."]]});

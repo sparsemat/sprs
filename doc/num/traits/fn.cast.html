@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         <a href='../../num/index.html'><img src='http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         <p class='location'><a href='../index.html'>num</a>::<wbr><a href='index.html'>traits</a></p><script>window.sidebarCurrent = {name: 'cast', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,11 +45,10 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-29396' class='srclink' href='../../src/num/traits.rs.html#1301-1303' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn cast&lt;T: <a class='trait' href='../../num/traits/trait.NumCast.html' title='num::traits::NumCast'>NumCast</a>, U: <a class='trait' href='../../num/traits/trait.NumCast.html' title='num::traits::NumCast'>NumCast</a>&gt;(n: T) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;U&gt;</pre><div class='docblock'><p>Cast from one machine scalar to another.</p>
+        </span><a id='src-4191' class='srclink' href='../../src/num/traits.rs.html#1301-1303' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn cast&lt;T: <a class='trait' href='../../num/traits/trait.NumCast.html' title='num::traits::NumCast'>NumCast</a>, U: <a class='trait' href='../../num/traits/trait.NumCast.html' title='num::traits::NumCast'>NumCast</a>&gt;(n: T) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;U&gt;</pre><div class='docblock'><p>Cast from one machine scalar to another.</p>
 
-<h1 id="examples" class='section-header'><a
-                           href="#examples">Examples</a></h1><span class='rusttest'>extern crate num;
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1><span class='rusttest'>extern crate num;
 fn main() {
     use num;
     
@@ -66,10 +65,12 @@ fn main() {
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -86,7 +87,7 @@ fn main() {
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -96,8 +97,8 @@ fn main() {
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -106,7 +107,7 @@ fn main() {
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Permutation",""]]});
+initSidebarItems({"enum":[["Permutation",""]],"type":[["PermOwned",""],["PermView",""]]});
