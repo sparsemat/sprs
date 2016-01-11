@@ -17,7 +17,6 @@ pub struct TripletMat<N> {
 }
 
 impl<N> TripletMat<N> {
-
     pub fn new(shape: (usize, usize)) -> TripletMat<N> {
         TripletMat {
             rows: shape.0,
@@ -252,7 +251,7 @@ impl<'a, N> TripletView<'a, N> {
         for i in 0..self.rows() {
             let start = indptr[i];
             let col_nnz = row_counts[i];
-            let pred_nnz = indptr[i+1] - start;
+            let pred_nnz = indptr[i + 1] - start;
             if col_nnz != pred_nnz {
                 for k in 0..col_nnz {
                     indices[dst_start + k] = indices[start + k];
@@ -284,8 +283,8 @@ impl<'a, N> TripletView<'a, N> {
                                      self.cols,
                                      out_indptr,
                                      out_indices,
-                                     out_data
-                                    ).expect("struct ensured by previous code")
+                                     out_data)
+            .expect("struct ensured by previous code")
     }
 }
 
@@ -300,7 +299,6 @@ pub struct TripletViewMut<'a, N: 'a> {
 }
 
 impl<'a, N> TripletViewMut<'a, N> {
-
     pub fn rows(&self) -> usize {
         self.borrowed().rows()
     }
@@ -383,8 +381,9 @@ mod test {
                                                     4,
                                                     vec![0, 2, 3, 4, 6],
                                                     vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4., 6.]
-                                                    ).unwrap();
+                                                    vec![1., 3., 2., 5., 4.,
+                                                         6.])
+                           .unwrap();
         assert_eq!(csc, expected);
     }
 
@@ -412,8 +411,9 @@ mod test {
                                                     4,
                                                     vec![0, 2, 3, 4, 6],
                                                     vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4., 6.]
-                                                    ).unwrap();
+                                                    vec![1., 3., 2., 5., 4.,
+                                                         6.])
+                           .unwrap();
         assert_eq!(csc, expected);
     }
 
@@ -441,8 +441,9 @@ mod test {
                                                     4,
                                                     vec![0, 2, 3, 4, 6],
                                                     vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4., 6.]
-                                                    ).unwrap();
+                                                    vec![1., 3., 2., 5., 4.,
+                                                         6.])
+                           .unwrap();
         assert_eq!(csc, expected);
     }
 }
