@@ -1,5 +1,13 @@
 ///! Triplet format matrix
-///! Useful for building a matrix, but not for computations
+///!
+///! Useful for building a matrix, but not for computations. Therefore this
+///! struct is mainly used to initialize a matrix before converting to
+///! to a CsMatOwned.
+///!
+///! A triplet format matrix is formed of three arrays of equal length, storing
+///! the row indices, the column indices, and the values of the non-zero
+///! entries. By convention, duplicate locations are summed up when converting
+///! into CsMatOwned.
 
 use sparse::csmat;
 use num::traits::Num;
@@ -8,7 +16,7 @@ use num::traits::Num;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TripletIndex(pub usize);
 
-/// Triplet matrix
+/// Triplet matrix owning its data
 pub struct TripletMat<N> {
     rows: usize,
     cols: usize,
@@ -18,6 +26,7 @@ pub struct TripletMat<N> {
 }
 
 impl<N> TripletMat<N> {
+    /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
     pub fn new(shape: (usize, usize)) -> TripletMat<N> {
         TripletMat {
             rows: shape.0,
@@ -28,6 +37,8 @@ impl<N> TripletMat<N> {
         }
     }
 
+    /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
+    /// pre-allocate `cap` elements on the backing storage
     pub fn with_capacity(shape: (usize, usize), cap: usize) -> TripletMat<N> {
         TripletMat {
             rows: shape.0,
@@ -38,6 +49,13 @@ impl<N> TripletMat<N> {
         }
     }
 
+    /// Create a triplet matrix from its raw components. All arrays should
+    /// have the same length.
+    ///
+    /// # Panics
+    ///
+    /// - if the arrays don't have the same length
+    /// - if either the row or column indices are out of bounds.
     pub fn from_triplets(shape: (usize, usize),
                          row_inds: Vec<usize>,
                          col_inds: Vec<usize>,
@@ -62,10 +80,12 @@ impl<N> TripletMat<N> {
         }
     }
 
+    /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.borrowed().rows()
     }
 
+    /// The number of cols of the matrix
     pub fn cols(&self) -> usize {
         self.borrowed().cols()
     }
