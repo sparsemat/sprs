@@ -123,6 +123,10 @@ impl<N> TripletMat<N> {
         }
     }
 
+    pub fn transpose_view(&self) -> TripletView<N> {
+        self.borrowed().transpose_view()
+    }
+
     pub fn add_triplet(&mut self, row: usize, col: usize, val: N) {
         assert!(row < self.rows);
         assert!(col < self.cols);
@@ -147,6 +151,12 @@ impl<N> TripletMat<N> {
     where N: Copy + Num
     {
         self.borrowed().to_csc()
+    }
+
+    pub fn to_csr(&self) -> csmat::CsMatOwned<N>
+    where N: Copy + Num
+    {
+        self.borrowed().to_csr()
     }
 }
 
@@ -196,6 +206,16 @@ impl<'a, N> TripletView<'a, N> {
             .filter(|&(_, (&i, &j))| i == row && j == col)
             .map(|(ind, _)| TripletIndex(ind))
             .collect()
+    }
+
+    pub fn transpose_view(&self) -> TripletView<'a, N> {
+        TripletView {
+            rows: self.cols,
+            cols: self.rows,
+            row_inds: self.col_inds,
+            col_inds: self.row_inds,
+            data: self.data,
+        }
     }
 
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
@@ -287,6 +307,13 @@ impl<'a, N> TripletView<'a, N> {
                                      out_data)
             .expect("struct ensured by previous code")
     }
+
+    pub fn to_csr(&self) -> csmat::CsMatOwned<N>
+    where N: Copy + Num
+    {
+        let res = self.transpose_view().to_csc();
+        res.transpose_into()
+    }
 }
 
 
@@ -338,6 +365,10 @@ impl<'a, N> TripletViewMut<'a, N> {
         }
     }
 
+    pub fn transpose_view(&self) -> TripletView<N> {
+        self.borrowed().transpose_view()
+    }
+
     pub fn set_triplet(&mut self,
                        TripletIndex(triplet_ind): TripletIndex,
                        row: usize,
@@ -352,6 +383,12 @@ impl<'a, N> TripletViewMut<'a, N> {
     where N: Copy + Num
     {
         self.borrowed().to_csc()
+    }
+
+    pub fn to_csr(&self) -> csmat::CsMatOwned<N>
+    where N: Copy + Num
+    {
+        self.borrowed().to_csr()
     }
 }
 
@@ -503,5 +540,35 @@ mod test {
                                                          6.])
                            .unwrap();
         assert_eq!(csc, expected);
+    }
+
+    #[test]
+    fn triplet_to_csr() {
+        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        // |1 2    |
+        // |3      |
+        // |      4|
+        // |    5 6|
+
+        // here we test the additive properties of triples
+        // the (3, 2) nnz element is specified twice
+        triplet_mat.add_triplet(0, 1, 2.);
+        triplet_mat.add_triplet(0, 0, 1.);
+        triplet_mat.add_triplet(3, 2, 3.);
+        triplet_mat.add_triplet(1, 0, 3.);
+        triplet_mat.add_triplet(2, 3, 4.);
+        triplet_mat.add_triplet(3, 3, 6.);
+        triplet_mat.add_triplet(3, 2, 2.);
+
+        let csr = triplet_mat.to_csr();
+        let expected = csmat::CsMatOwned::new_owned(CSC,
+                                                    4,
+                                                    4,
+                                                    vec![0, 2, 3, 4, 6],
+                                                    vec![0, 1, 0, 3, 2, 3],
+                                                    vec![1., 3., 2., 5., 4.,
+                                                         6.])
+                           .unwrap().to_csr();
+        assert_eq!(csr, expected);
     }
 }
