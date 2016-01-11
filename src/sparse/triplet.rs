@@ -5,6 +5,7 @@ use sparse::csmat;
 use num::traits::Num;
 
 /// Indexing type into a Triplet
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TripletIndex(pub usize);
 
 /// Triplet matrix
@@ -474,6 +475,33 @@ mod test {
                                                          8])
                            .unwrap();
 
+        assert_eq!(csc, expected);
+    }
+
+    #[test]
+    fn triplet_mutate_entry() {
+        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        triplet_mat.add_triplet(0, 0, 1.);
+        triplet_mat.add_triplet(0, 1, 2.);
+        triplet_mat.add_triplet(1, 0, 3.);
+        triplet_mat.add_triplet(2, 3, 4.);
+        triplet_mat.add_triplet(3, 2, 5.);
+        triplet_mat.add_triplet(3, 3, 6.);
+
+        let locations = triplet_mat.find_locations(2, 3);
+        assert_eq!(locations.len(), 1);
+        triplet_mat.set_triplet(locations[0], 2, 3, 0.);
+
+
+        let csc = triplet_mat.to_csc();
+        let expected = csmat::CsMatOwned::new_owned(CSC,
+                                                    4,
+                                                    4,
+                                                    vec![0, 2, 3, 4, 6],
+                                                    vec![0, 1, 0, 3, 2, 3],
+                                                    vec![1., 3., 2., 5., 0.,
+                                                         6.])
+                           .unwrap();
         assert_eq!(csc, expected);
     }
 }
