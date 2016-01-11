@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `prod` mod in crate `sprs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, prod">
+
+    <title>sprs::sparse::prod - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a></p><script>window.sidebarCurrent = {name: 'prod', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a class='mod' href=''>prod</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-1314' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#1-593' title='goto source code'>[src]</a></span></h1>
+<h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csc_mul_csc.html'
+                               title='sprs::sparse::prod::csc_mul_csc'>csc_mul_csc</a></td>
+                        <td class='docblock short'>
+                             <p>Perform a matrix multiplication for matrices sharing the same storage order.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csc_mulacc_dense_colmaj.html'
+                               title='sprs::sparse::prod::csc_mulacc_dense_colmaj'>csc_mulacc_dense_colmaj</a></td>
+                        <td class='docblock short'>
+                             <p>CSC-dense colmaj multiplication</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csc_mulacc_dense_rowmaj.html'
+                               title='sprs::sparse::prod::csc_mulacc_dense_rowmaj'>csc_mulacc_dense_rowmaj</a></td>
+                        <td class='docblock short'>
+                             <p>CSC-dense rowmaj multiplication</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csr_mul_csr.html'
+                               title='sprs::sparse::prod::csr_mul_csr'>csr_mul_csr</a></td>
+                        <td class='docblock short'>
+                             <p>Perform a matrix multiplication for matrices sharing the same storage order.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csr_mul_csr_impl.html'
+                               title='sprs::sparse::prod::csr_mul_csr_impl'>csr_mul_csr_impl</a></td>
+                        <td class='docblock short'>
+                             <p>Actual implementation of CSR-CSR multiplication
+All other matrix products are implemented in terms of this one.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csr_mul_csvec.html'
+                               title='sprs::sparse::prod::csr_mul_csvec'>csr_mul_csvec</a></td>
+                        <td class='docblock short'>
+                             <p>CSR-vector multiplication</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csr_mulacc_dense_colmaj.html'
+                               title='sprs::sparse::prod::csr_mulacc_dense_colmaj'>csr_mulacc_dense_colmaj</a></td>
+                        <td class='docblock short'>
+                             <p>CSR-dense colmaj multiplication</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csr_mulacc_dense_rowmaj.html'
+                               title='sprs::sparse::prod::csr_mulacc_dense_rowmaj'>csr_mulacc_dense_rowmaj</a></td>
+                        <td class='docblock short'>
+                             <p>CSR-dense rowmaj multiplication</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.mul_acc_mat_vec_csc.html'
+                               title='sprs::sparse::prod::mul_acc_mat_vec_csc'>mul_acc_mat_vec_csc</a></td>
+                        <td class='docblock short'>
+                             <p>Multiply a sparse CSC matrix with a dense vector and accumulate the result
+into another dense vector</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.mul_acc_mat_vec_csr.html'
+                               title='sprs::sparse::prod::mul_acc_mat_vec_csr'>mul_acc_mat_vec_csr</a></td>
+                        <td class='docblock short'>
+                             <p>Multiply a sparse CSR matrix with a dense vector and accumulate the result
+into another dense vector</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.workspace_csc.html'
+                               title='sprs::sparse::prod::workspace_csc'>workspace_csc</a></td>
+                        <td class='docblock short'>
+                             <p>Allocate the appropriate workspace for a CSC-CSC product</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.workspace_csr.html'
+                               title='sprs::sparse::prod::workspace_csr'>workspace_csr</a></td>
+                        <td class='docblock short'>
+                             <p>Allocate the appropriate workspace for a CSR-CSR product</p>
+
+                        </td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "sprs";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script async src="../../../search-index.js"></script>
+</body>
+</html>

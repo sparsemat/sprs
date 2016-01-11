@@ -45,10 +45,10 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1065' class='srclink' href='../../../../src/libc/lib.rs.html#6184' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1058' class='srclink' href='../../../../src/libc/lib.rs.html#5486' title='goto source code'>[src]</a></span></h1>
 <pre class='rust fn'>pub unsafe extern fn exit(status: <a class='type' href='../../../../libc/types/os/arch/c95/type.c_int.html' title='libc::types::os::arch::c95::c_int'>c_int</a>) -&gt; !</pre><div class='docblock'><p>Exits the running program in a possibly dangerous manner.</p>
 
-<h1 id='safety' class='section-header'><a href='#safety'>Safety</a></h1>
+<h1 id='unsafety' class='section-header'><a href='#unsafety'>Unsafety</a></h1>
 <p>While this forces your program to exit, it does so in a way that has
 consequences. This will skip all unwinding code, which means that anything
 relying on unwinding for cleanup (such as flushing and closing a buffer to a

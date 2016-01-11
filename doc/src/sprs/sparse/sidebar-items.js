@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["binop",""],["cmat",""],["compressed",""],["construct","High level construction of sparse matrices by stacking, by block, ..."],["csmat",""],["linalg",""],["permutation",""],["prod",""],["symmetric",""],["triplet",""],["vec",""]]});

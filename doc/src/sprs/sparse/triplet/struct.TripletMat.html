@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `TripletMat` struct in crate `sprs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, TripletMat">
+
+    <title>sprs::sparse::triplet::TripletMat - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>triplet</a></p><script>window.sidebarCurrent = {name: 'TripletMat', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>sprs</a>::<wbr><a href='../index.html'>sparse</a>::<wbr><a href='index.html'>triplet</a>::<wbr><a class='struct' href=''>TripletMat</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-665' class='srclink' href='../../../src/sprs/sparse/triplet.rs.html#11-17' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct TripletMat&lt;N&gt; {
+    // some fields omitted
+}</pre><div class='docblock'><p>Triplet matrix</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;N&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletMat.html' title='sprs::sparse::triplet::TripletMat'>TripletMat</a>&lt;N&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(shape: <a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</a>) -&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletMat.html' title='sprs::sparse::triplet::TripletMat'>TripletMat</a>&lt;N&gt;</code></h4>
+<h4 id='method.with_capacity' class='method'><code>fn <a href='#method.with_capacity' class='fnname'>with_capacity</a>(shape: <a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</a>, cap: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletMat.html' title='sprs::sparse::triplet::TripletMat'>TripletMat</a>&lt;N&gt;</code></h4>
+<h4 id='method.from_triplets' class='method'><code>fn <a href='#method.from_triplets' class='fnname'>from_triplets</a>(shape: <a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</a>, row_inds: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, col_inds: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, data: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;N&gt;) -&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletMat.html' title='sprs::sparse::triplet::TripletMat'>TripletMat</a>&lt;N&gt;</code></h4>
+<h4 id='method.rows' class='method'><code>fn <a href='#method.rows' class='fnname'>rows</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.cols' class='method'><code>fn <a href='#method.cols' class='fnname'>cols</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.shape' class='method'><code>fn <a href='#method.shape' class='fnname'>shape</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</a></code></h4>
+<h4 id='method.nnz' class='method'><code>fn <a href='#method.nnz' class='fnname'>nnz</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.row_inds' class='method'><code>fn <a href='#method.row_inds' class='fnname'>row_inds</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.col_inds' class='method'><code>fn <a href='#method.col_inds' class='fnname'>col_inds</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.data' class='method'><code>fn <a href='#method.data' class='fnname'>data</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.find_locations' class='method'><code>fn <a href='#method.find_locations' class='fnname'>find_locations</a>(&amp;self, row: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, col: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../sprs/sparse/triplet/struct.TripletIndex.html' title='sprs::sparse::triplet::TripletIndex'>TripletIndex</a>&gt;</code></h4>
+<h4 id='method.borrowed' class='method'><code>fn <a href='#method.borrowed' class='fnname'>borrowed</a>(&amp;self) -&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletView.html' title='sprs::sparse::triplet::TripletView'>TripletView</a>&lt;N&gt;</code></h4>
+<h4 id='method.set_triplet' class='method'><code>fn <a href='#method.set_triplet' class='fnname'>set_triplet</a>(&amp;mut self, TripletIndex: <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletIndex.html' title='sprs::sparse::triplet::TripletIndex'>TripletIndex</a>, row: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, col: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, val: N)</code></h4>
+<h4 id='method.borrowed_mut' class='method'><code>fn <a href='#method.borrowed_mut' class='fnname'>borrowed_mut</a>(&amp;mut self) -&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletViewMut.html' title='sprs::sparse::triplet::TripletViewMut'>TripletViewMut</a>&lt;N&gt;</code></h4>
+<h4 id='method.add_triplet' class='method'><code>fn <a href='#method.add_triplet' class='fnname'>add_triplet</a>(&amp;mut self, row: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, col: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, val: N)</code></h4>
+<h4 id='method.reserve' class='method'><code>fn <a href='#method.reserve' class='fnname'>reserve</a>(&amp;mut self, cap: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</code></h4>
+<h4 id='method.reserve_exact' class='method'><code>fn <a href='#method.reserve_exact' class='fnname'>reserve_exact</a>(&amp;mut self, cap: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</code></h4>
+<h4 id='method.to_csc' class='method'><code>fn <a href='#method.to_csc' class='fnname'>to_csc</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a></span></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "sprs";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script async src="../../../search-index.js"></script>
+</body>
+</html>
