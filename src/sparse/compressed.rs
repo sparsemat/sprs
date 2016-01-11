@@ -2,6 +2,7 @@
 
 
 use sparse::csmat::{CsMat, CsMatView};
+use sparse::vec::{CsVec, CsVecView};
 use std::ops::{Deref};
 
 /// The SpMatView trait describes data that can be seen as a view
@@ -31,3 +32,20 @@ where N: Copy,
     }
 }
 
+/// The SpVecView trait describes types that can be seen as a view into
+/// a CsVec
+pub trait SpVecView<N> {
+    /// Return a view into the current vector
+    fn borrowed(&self) ->  CsVecView<N>;
+}
+
+impl<N, IndStorage, DataStorage> SpVecView<N>
+for CsVec<N, IndStorage, DataStorage>
+where N: Copy,
+      IndStorage: Deref<Target=[usize]>,
+      DataStorage: Deref<Target=[N]> {
+
+    fn borrowed(&self) -> CsVecView<N> {
+        self.borrowed()
+    }
+}
