@@ -631,4 +631,57 @@ mod test {
                            .unwrap().to_csr();
         assert_eq!(csr, expected);
     }
+
+    #[test]
+    fn triplet_complex() {
+        // |1       6       2|
+        // |1         1     2|
+        // |1 2   3     3   2|
+        // |1   9     4     2|
+        // |1     5         2|
+        // |1         7   8 2|
+        let mut triplet_mat = TripletMat::with_capacity((6, 9), 22);
+
+        triplet_mat.add_triplet(5, 8, 1); // (a) push 1 later
+        triplet_mat.add_triplet(0, 0, 1);
+        triplet_mat.add_triplet(0, 8, 2);
+        triplet_mat.add_triplet(0, 4, 2); // (b) push 4 later
+        triplet_mat.add_triplet(2, 0, 1);
+        triplet_mat.add_triplet(2, 1, 2);
+        triplet_mat.add_triplet(2, 3, 2); // (c) push 1 later
+        triplet_mat.add_triplet(2, 6, 3);
+        triplet_mat.add_triplet(2, 8, 2);
+        triplet_mat.add_triplet(1, 0, 1);
+        triplet_mat.add_triplet(1, 5, 1);
+        triplet_mat.add_triplet(1, 8, 1); // (d) push 1 later
+        triplet_mat.add_triplet(0, 4, 4); // push the missing 4 (b)
+        triplet_mat.add_triplet(3, 8, 2);
+        triplet_mat.add_triplet(3, 5, 4);
+        triplet_mat.add_triplet(5, 8, 1); // push the missing 1 (a)
+        triplet_mat.add_triplet(3, 2, 9);
+        triplet_mat.add_triplet(3, 0, 1);
+        triplet_mat.add_triplet(4, 0, 1);
+        triplet_mat.add_triplet(4, 8, 2);
+        triplet_mat.add_triplet(1, 8, 1); // push the missing 1 (d)
+        triplet_mat.add_triplet(4, 3, 5);
+        triplet_mat.add_triplet(5, 0, 1);
+        triplet_mat.add_triplet(5, 5, 7);
+        triplet_mat.add_triplet(2, 3, 1); // push the missing 1 (c)
+        triplet_mat.add_triplet(5, 7, 8);
+
+        let csc = triplet_mat.to_csc();
+
+        let expected = csmat::CsMatOwned::new_owned(CSC,
+                                                    6,
+                                                    9,
+                                                    vec![0, 6, 7, 8, 10, 11, 14, 15, 16, 22],
+                                                    vec![0, 1, 2, 3, 4, 5, 2, 3, 2, 4, 0, 1, 3, 5, 2, 5, 0, 1, 2, 3, 4, 5],
+                                                    vec![1, 1, 1, 1, 1, 1, 2, 9, 3, 5, 6, 1, 4, 7, 3, 8, 2, 2, 2, 2, 2, 2]).unwrap();
+
+        assert_eq!(csc, expected);
+
+        let csr = triplet_mat.to_csr();
+
+        assert_eq!(csr, expected.to_csr());
+    }
 }
