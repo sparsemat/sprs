@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["TripletIndex","Indexing type into a Triplet"],["TripletMat","Triplet matrix"],["TripletView","Triplet matrix view"],["TripletViewMut","Triplet matrix mutable view"]]});
+initSidebarItems({"struct":[["TripletIndex","Indexing type into a Triplet"],["TripletMat","Triplet matrix owning its data"],["TripletView","Triplet matrix view"],["TripletViewMut","Triplet matrix mutable view"]]});

@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1496' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#316-346' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1507' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#316-346' title='goto source code'>[src]</a></span></h1>
 <pre class='rust fn'>pub fn csr_mulacc_dense_colmaj&lt;'a, N: 'a + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>&gt;(lhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, rhs: <a class='type' href='../../../dense_mats/tensor/type.MatView.html' title='dense_mats::tensor::MatView'>MatView</a>&lt;N&gt;, out: <a class='type' href='../../../dense_mats/tensor/type.MatViewMut.html' title='dense_mats::tensor::MatViewMut'>MatViewMut</a>&lt;'a, N&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt;</pre><div class='docblock'><p>CSR-dense colmaj multiplication</p>
 
 <p>Performs better if out is colmaj</p>
