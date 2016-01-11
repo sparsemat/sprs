@@ -90,30 +90,37 @@ impl<N> TripletMat<N> {
         self.borrowed().cols()
     }
 
+    /// The shape of the matrix, as a `(rows, cols)` tuple
     pub fn shape(&self) -> (usize, usize) {
         self.borrowed().shape()
     }
 
+    /// The number of non-zero entries
     pub fn nnz(&self) -> usize {
         self.borrowed().nnz()
     }
 
+    /// The non-zero row indices
     pub fn row_inds(&self) -> &[usize] {
         self.borrowed().row_inds()
     }
 
+    /// The non-zero column indices
     pub fn col_inds(&self) -> &[usize] {
         self.borrowed().col_inds()
     }
 
+    /// The non-zero values
     pub fn data(&self) -> &[N] {
         self.borrowed().data()
     }
 
+    /// Find all non-zero entries at the location given by `row` and `col`
     pub fn find_locations(&self, row: usize, col: usize) -> Vec<TripletIndex> {
         self.borrowed().find_locations(row, col)
     }
 
+    /// Return a view of this matrix
     pub fn borrowed(&self) -> TripletView<N> {
         TripletView {
             rows: self.rows,
@@ -124,6 +131,8 @@ impl<N> TripletMat<N> {
         }
     }
 
+    /// Replace a non-zero value at the given index.
+    /// Indices can be obtained using find_locations.
     pub fn set_triplet(&mut self,
                        TripletIndex(triplet_ind): TripletIndex,
                        row: usize,
@@ -133,6 +142,7 @@ impl<N> TripletMat<N> {
             .set_triplet(TripletIndex(triplet_ind), row, col, val);
     }
 
+    /// Get a mutable view into this matrix.
     pub fn borrowed_mut(&mut self) -> TripletViewMut<N> {
         TripletViewMut {
             rows: self.rows,
@@ -143,10 +153,12 @@ impl<N> TripletMat<N> {
         }
     }
 
+    /// Get a transposed view of this matrix
     pub fn transpose_view(&self) -> TripletView<N> {
         self.borrowed().transpose_view()
     }
 
+    /// Append a non-zero triplet to this matrix.
     pub fn add_triplet(&mut self, row: usize, col: usize, val: N) {
         assert!(row < self.rows);
         assert!(col < self.cols);
@@ -155,24 +167,28 @@ impl<N> TripletMat<N> {
         self.data.push(val);
     }
 
+    /// Reserve `cap` additional non-zeros
     pub fn reserve(&mut self, cap: usize) {
         self.row_inds.reserve(cap);
         self.col_inds.reserve(cap);
         self.data.reserve(cap);
     }
 
+    /// Reserve exactly `cap` non-zeros
     pub fn reserve_exact(&mut self, cap: usize) {
         self.row_inds.reserve_exact(cap);
         self.col_inds.reserve_exact(cap);
         self.data.reserve_exact(cap);
     }
 
+    /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
     where N: Copy + Num
     {
         self.borrowed().to_csc()
     }
 
+    /// Create a CSR matrix from this triplet matrix
     pub fn to_csr(&self) -> csmat::CsMatOwned<N>
     where N: Copy + Num
     {
@@ -190,34 +206,42 @@ pub struct TripletView<'a, N: 'a> {
 }
 
 impl<'a, N> TripletView<'a, N> {
+    /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.rows
     }
 
+    /// The number of cols of the matrix
     pub fn cols(&self) -> usize {
         self.cols
     }
 
+    /// The shape of the matrix, as a `(rows, cols)` tuple
     pub fn shape(&self) -> (usize, usize) {
         (self.rows, self.cols)
     }
 
+    /// The number of non-zero entries
     pub fn nnz(&self) -> usize {
         self.data.len()
     }
 
+    /// The non-zero row indices
     pub fn row_inds(&self) -> &'a [usize] {
         self.row_inds
     }
 
+    /// The non-zero column indices
     pub fn col_inds(&self) -> &'a [usize] {
         self.col_inds
     }
 
+    /// The non-zero values
     pub fn data(&self) -> &'a [N] {
         self.data
     }
 
+    /// Find all non-zero entries at the location given by `row` and `col`
     pub fn find_locations(&self, row: usize, col: usize) -> Vec<TripletIndex> {
         self.row_inds
             .iter()
@@ -228,6 +252,7 @@ impl<'a, N> TripletView<'a, N> {
             .collect()
     }
 
+    /// Get a transposed view of this matrix
     pub fn transpose_view(&self) -> TripletView<'a, N> {
         TripletView {
             rows: self.cols,
@@ -238,6 +263,7 @@ impl<'a, N> TripletView<'a, N> {
         }
     }
 
+    /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
     where N: Copy + Num
     {
@@ -328,6 +354,7 @@ impl<'a, N> TripletView<'a, N> {
             .expect("struct ensured by previous code")
     }
 
+    /// Create a CSR matrix from this triplet matrix
     pub fn to_csr(&self) -> csmat::CsMatOwned<N>
     where N: Copy + Num
     {
@@ -347,34 +374,42 @@ pub struct TripletViewMut<'a, N: 'a> {
 }
 
 impl<'a, N> TripletViewMut<'a, N> {
+    /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.borrowed().rows()
     }
 
+    /// The number of cols of the matrix
     pub fn cols(&self) -> usize {
         self.borrowed().cols()
     }
 
+    /// The shape of the matrix, as a `(rows, cols)` tuple
     pub fn shape(&self) -> (usize, usize) {
         self.borrowed().shape()
     }
 
+    /// The number of non-zero entries
     pub fn nnz(&self) -> usize {
         self.borrowed().nnz()
     }
 
+    /// The non-zero row indices
     pub fn row_inds(&self) -> &[usize] {
         self.borrowed().row_inds()
     }
 
+    /// The non-zero column indices
     pub fn col_inds(&self) -> &[usize] {
         self.borrowed().col_inds()
     }
 
+    /// The non-zero values
     pub fn data(&self) -> &[N] {
         self.borrowed().data()
     }
 
+    /// Return a view of this matrix
     pub fn borrowed(&self) -> TripletView<N> {
         TripletView {
             rows: self.rows,
@@ -385,10 +420,13 @@ impl<'a, N> TripletViewMut<'a, N> {
         }
     }
 
+    /// Get a transposed view of this matrix
     pub fn transpose_view(&self) -> TripletView<N> {
         self.borrowed().transpose_view()
     }
 
+    /// Replace a non-zero value at the given index.
+    /// Indices can be obtained using find_locations.
     pub fn set_triplet(&mut self,
                        TripletIndex(triplet_ind): TripletIndex,
                        row: usize,
@@ -399,12 +437,14 @@ impl<'a, N> TripletViewMut<'a, N> {
         self.data[triplet_ind] = val;
     }
 
+    /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
     where N: Copy + Num
     {
         self.borrowed().to_csc()
     }
 
+    /// Create a CSR matrix from this triplet matrix
     pub fn to_csr(&self) -> csmat::CsMatOwned<N>
     where N: Copy + Num
     {
