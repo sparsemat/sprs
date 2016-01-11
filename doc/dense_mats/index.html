@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `dense_mats` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, dense_mats">
+
+    <title>dense_mats - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'dense_mats', ty: 'mod', relpath: '../'};</script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>dense_mats</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-0' class='srclink' href='../src/dense_mats/lib.rs.html#1-29' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>This crate contains strided dense tensor implementations.</p>
+
+<p>Tensors are defined as a contiguous piece of memory, the data array,
+which is interpreted using its stride information.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use tensor::{<a class='struct' href='../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>, <a class='type' href='../dense_mats/tensor/type.MatView.html' title='dense_mats::tensor::MatView'>MatView</a>, <a class='type' href='../dense_mats/tensor/type.MatViewMut.html' title='dense_mats::tensor::MatViewMut'>MatViewMut</a>, <a class='type' href='../dense_mats/tensor/type.MatOwned.html' title='dense_mats::tensor::MatOwned'>MatOwned</a>};</code></td></tr><tr><td><code>pub use tensor::{<a class='type' href='../dense_mats/tensor/type.VecView.html' title='dense_mats::tensor::VecView'>VecView</a>, <a class='type' href='../dense_mats/tensor/type.VecViewMut.html' title='dense_mats::tensor::VecViewMut'>VecViewMut</a>, <a class='type' href='../dense_mats/tensor/type.VecOwned.html' title='dense_mats::tensor::VecOwned'>VecOwned</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='array_like/index.html'
+                               title='dense_mats::array_like'>array_like</a></td>
+                        <td class='docblock short'>
+                             <p>This module is a simple workaround around the fact that arrays don&#39;t
+implement Copy or Deref (even though in practice they are).
+This enables asking for arrays as a generic bound</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='errors/index.html'
+                               title='dense_mats::errors'>errors</a></td>
+                        <td class='docblock short'>
+                             <p>Error type for sprs</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='tensor/index.html'
+                               title='dense_mats::tensor'>tensor</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='enum' href='enum.StorageOrder.html'
+                               title='dense_mats::StorageOrder'>StorageOrder</a></td>
+                        <td class='docblock short'>
+                             <p>Describe the storage order of a matrix.</p>
+
+                        </td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "dense_mats";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>

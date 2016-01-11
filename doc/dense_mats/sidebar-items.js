@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["StorageOrder","Describe the storage order of a matrix."]],"mod":[["array_like","This module is a simple workaround around the fact that arrays don't implement Copy or Deref (even though in practice they are). This enables asking for arrays as a generic bound"],["errors","Error type for sprs"],["tensor",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CMatView","A view of an unsorted compressed matrix"]]});

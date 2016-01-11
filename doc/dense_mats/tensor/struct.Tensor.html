@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Tensor` struct in crate `dense_mats`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Tensor">
+
+    <title>dense_mats::tensor::Tensor - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>dense_mats</a>::<wbr><a href='index.html'>tensor</a></p><script>window.sidebarCurrent = {name: 'Tensor', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>dense_mats</a>::<wbr><a href='index.html'>tensor</a>::<wbr><a class='struct' href=''>Tensor</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-38' class='srclink' href='../../src/dense_mats/tensor.rs.html#19-24' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Tensor&lt;N, DimArray, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span> {
+    // some fields omitted
+}</pre><div class='docblock'><p>A simple dense matrix</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;N, DimArray&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;N&gt;&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLikeMut.html' title='dense_mats::array_like::ArrayLikeMut'>ArrayLikeMut</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.zeros' class='method'><code>fn <a href='#method.zeros' class='fnname'>zeros</a>(shape: DimArray) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorOwned.html' title='dense_mats::tensor::TensorOwned'>TensorOwned</a>&lt;N, DimArray&gt; <span class='where'>where N: <a class='trait' href='../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h4>
+<div class='docblock'><p>Create an all-zero tensor in C order</p>
+</div><h4 id='method.zeros_f' class='method'><code>fn <a href='#method.zeros_f' class='fnname'>zeros_f</a>(shape: DimArray) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorOwned.html' title='dense_mats::tensor::TensorOwned'>TensorOwned</a>&lt;N, DimArray&gt; <span class='where'>where N: <a class='trait' href='../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h4>
+<div class='docblock'><p>Create an all-zero tensor in F order</p>
+</div><h4 id='method.ones' class='method'><code>fn <a href='#method.ones' class='fnname'>ones</a>(shape: DimArray) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorOwned.html' title='dense_mats::tensor::TensorOwned'>TensorOwned</a>&lt;N, DimArray&gt; <span class='where'>where N: <a class='trait' href='../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h4>
+<div class='docblock'><p>Create an all-one tensor in C order</p>
+</div><h4 id='method.ones_c' class='method'><code>fn <a href='#method.ones_c' class='fnname'>ones_c</a>(shape: DimArray) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorOwned.html' title='dense_mats::tensor::TensorOwned'>TensorOwned</a>&lt;N, DimArray&gt; <span class='where'>where N: <a class='trait' href='../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h4>
+<div class='docblock'><p>Create an all-one tensor in F order</p>
+</div></div><h3 class='impl'><code>impl&lt;N, DimArray, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLike.html' title='dense_mats::array_like::ArrayLike'>ArrayLike</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='docblock'><p>Methods available for all tensors regardless of their dimension count</p>
+</div><div class='impl-items'><h4 id='method.ndims' class='method'><code>fn <a href='#method.ndims' class='fnname'>ndims</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>The number of dimensions of this tensor</p>
+</div><h4 id='method.strides' class='method'><code>fn <a href='#method.strides' class='fnname'>strides</a>(&amp;self) -&gt; DimArray</code></h4>
+<div class='docblock'><p>The strides of the tensor.</p>
+
+<h1 id='explanations-on-a-matrix' class='section-header'><a href='#explanations-on-a-matrix'>Explanations on a matrix.</a></h1>
+<p>self.strides()[0] gives the number of elements that must be skipped
+into self.data() to get to the element of the next row with the same
+column.
+self.strides()[1] gives the number of elements that must be skipped
+into self.data() to get to the element of the next column with the same
+row.</p>
+
+<p>For a row major matrix of shape (3, 4) with contiguous storage,
+the strides would be [4, 1].</p>
+
+<p>For alignement reasons, it is possible to have strides that don&#39;t match
+the shape of the matrix (meaning that some elements of the data array
+are unused).</p>
+</div><h4 id='method.strides_ref' class='method'><code>fn <a href='#method.strides_ref' class='fnname'>strides_ref</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<div class='docblock'><p>Get the strides by reference</p>
+</div><h4 id='method.data' class='method'><code>fn <a href='#method.data' class='fnname'>data</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<div class='docblock'><p>Access to the tensors&#39;s data</p>
+
+<h1 id='explanations-on-a-matrix' class='section-header'><a href='#explanations-on-a-matrix'>Explanations on a matrix.</a></h1>
+<p>Getting access to the element located at row i and column j
+can be done by indexing self.data() at the location
+computed by i * strides[0] + j * strides[1]</p>
+</div><h4 id='method.shape' class='method'><code>fn <a href='#method.shape' class='fnname'>shape</a>(&amp;self) -&gt; DimArray</code></h4>
+<div class='docblock'><p>The shape of the tensor</p>
+</div><h4 id='method.shape_ref' class='method'><code>fn <a href='#method.shape_ref' class='fnname'>shape_ref</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<div class='docblock'><p>Get the shape by reference</p>
+</div><h4 id='method.is_contiguous' class='method'><code>fn <a href='#method.is_contiguous' class='fnname'>is_contiguous</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Returns true if the array is contiguous, ie the fastest varying
+axis has stride 1, and no unused data is present in the array</p>
+</div><h4 id='method.can_ravel' class='method'><code>fn <a href='#method.can_ravel' class='fnname'>can_ravel</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Checks whether all dimensions except the fastest varying one
+are contiguous. Having that property verified allows flattened
+views of the tensor using <code>ravel()</code>. Otherwise copies have to be done.</p>
+</div><h4 id='method.ordering' class='method'><code>fn <a href='#method.ordering' class='fnname'>ordering</a>(&amp;self) -&gt; <a class='enum' href='../../dense_mats/enum.StorageOrder.html' title='dense_mats::StorageOrder'>StorageOrder</a></code></h4>
+<div class='docblock'><p>Get the storage order of this tensor</p>
+</div><h4 id='method.outer_dim' class='method'><code>fn <a href='#method.outer_dim' class='fnname'>outer_dim</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Get the slowest varying dimension index</p>
+</div><h4 id='method.inner_dim' class='method'><code>fn <a href='#method.inner_dim' class='fnname'>inner_dim</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>Get the fastest varying dimension index</p>
+</div><h4 id='method.outer_stride' class='method'><code>fn <a href='#method.outer_stride' class='fnname'>outer_stride</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>The stride for the outer dimension</p>
+</div><h4 id='method.inner_stride' class='method'><code>fn <a href='#method.inner_stride' class='fnname'>inner_stride</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>The stride for the inner dimension</p>
+</div><h4 id='method.outer_shape' class='method'><code>fn <a href='#method.outer_shape' class='fnname'>outer_shape</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>The shape of the outer dimension</p>
+</div><h4 id='method.inner_shape' class='method'><code>fn <a href='#method.inner_shape' class='fnname'>inner_shape</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<div class='docblock'><p>The stride for the inner dimension</p>
+</div><h4 id='method.borrowed' class='method'><code>fn <a href='#method.borrowed' class='fnname'>borrowed</a>(&amp;self) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorView.html' title='dense_mats::tensor::TensorView'>TensorView</a>&lt;N, DimArray&gt;</code></h4>
+<div class='docblock'><p>Get a view into this tensor</p>
+</div><h4 id='method.outer_block_iter' class='method'><code>fn <a href='#method.outer_block_iter' class='fnname'>outer_block_iter</a>&lt;'a&gt;(&amp;'a self, block_size: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../dense_mats/tensor/struct.ChunkOuterBlocks.html' title='dense_mats::tensor::ChunkOuterBlocks'>ChunkOuterBlocks</a>&lt;'a, N, DimArray, Storage&gt;</code></h4>
+<div class='docblock'><p>Iteration on outer blocks views of size block_size</p>
+</div><h4 id='method.data_index' class='method'><code>fn <a href='#method.data_index' class='fnname'>data_index</a>(&amp;self, index: DimArray) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>Index into the data array for the given N-dimensional index</p>
+</div><h4 id='method.to_owned' class='method'><code>fn <a href='#method.to_owned' class='fnname'>to_owned</a>(&amp;self) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorOwned.html' title='dense_mats::tensor::TensorOwned'>TensorOwned</a>&lt;N, DimArray&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h4>
+<h4 id='method.iter_axis' class='method'><code>fn <a href='#method.iter_axis' class='fnname'>iter_axis</a>&lt;'a&gt;(&amp;'a self, axis: <a class='struct' href='../../dense_mats/tensor/struct.Axis.html' title='dense_mats::tensor::Axis'>Axis</a>) -&gt; <a class='struct' href='../../dense_mats/tensor/struct.Slices.html' title='dense_mats::tensor::Slices'>Slices</a>&lt;'a, N, DimArray, Storage&gt;</code></h4>
+<div class='docblock'><p>Iteration on the given axis</p>
+</div><h4 id='method.slice_dim' class='method'><code>fn <a href='#method.slice_dim' class='fnname'>slice_dim</a>&lt;'a&gt;(&amp;'a self, Axis: <a class='struct' href='../../dense_mats/tensor/struct.Axis.html' title='dense_mats::tensor::Axis'>Axis</a>, index: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorView.html' title='dense_mats::tensor::TensorView'>TensorView</a>&lt;'a, N, DimArray::Pred&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLikeMut.html' title='dense_mats::array_like::ArrayLikeMut'>ArrayLikeMut</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</span></code></h4>
+<div class='docblock'><p>Get a view as a tensor of lower dimension count, by
+slicing into the given axis at the given index</p>
+</div><h4 id='method.diag_view' class='method'><code>fn <a href='#method.diag_view' class='fnname'>diag_view</a>(&amp;self) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorView.html' title='dense_mats::tensor::TensorView'>TensorView</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 1]</a>&gt;</code></h4>
+<div class='docblock'><p>Get a view over the tensor&#39;s diagonal</p>
+
+<p>The diagonal vector is as long as the smallest dimension.</p>
+
+<h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
+<p>Panics if the tensor is zero-dim.</p>
+</div><h4 id='method.ravel' class='method'><code>fn <a href='#method.ravel' class='fnname'>ravel</a>(&amp;self) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorView.html' title='dense_mats::tensor::TensorView'>TensorView</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 1]</a>&gt;</code></h4>
+<div class='docblock'><p>Get a flattened view of the tensor</p>
+
+<p>This only works if the tensor verifies <code>can_ravel()</code></p>
+
+<h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
+<p>If the tensor is not contiguous over all dimensions except the
+fastest varying one</p>
+
+<p>On zero-dim tensors</p>
+</div></div><h3 class='impl'><code>impl&lt;N, DimArray, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLikeMut.html' title='dense_mats::array_like::ArrayLikeMut'>ArrayLikeMut</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.middle_outer_views' class='method'><code>fn <a href='#method.middle_outer_views' class='fnname'>middle_outer_views</a>&lt;'a&gt;(&amp;'a self, start: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, count: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../dense_mats/tensor/type.TensorView.html' title='dense_mats::tensor::TensorView'>TensorView</a>&lt;'a, N, DimArray&gt;, <a class='enum' href='../../dense_mats/errors/enum.DMatError.html' title='dense_mats::errors::DMatError'>DMatError</a>&gt;</code></h4>
+<div class='docblock'><p>Slice along the least varying dimension of the matrix, from
+index <code>start</code> and taking <code>count</code> vectors.</p>
+
+<p>e.g. for a row major matrix, get a view of <code>count</code> rows starting
+from <code>start</code>.</p>
+</div></div><h3 class='impl'><code>impl&lt;N, DimArray, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLikeMut.html' title='dense_mats::array_like::ArrayLikeMut'>ArrayLikeMut</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.outer_block_iter_mut' class='method'><code>fn <a href='#method.outer_block_iter_mut' class='fnname'>outer_block_iter_mut</a>&lt;'a&gt;(&amp;'a mut self, block_size: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../dense_mats/tensor/struct.ChunkOuterBlocksMut.html' title='dense_mats::tensor::ChunkOuterBlocksMut'>ChunkOuterBlocksMut</a>&lt;'a, N, DimArray, Storage&gt;</code></h4>
+<div class='docblock'><p>Iteration on mutable outer blocks views of size block_size</p>
+</div><h4 id='method.borrowed_mut' class='method'><code>fn <a href='#method.borrowed_mut' class='fnname'>borrowed_mut</a>(&amp;mut self) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorViewMut.html' title='dense_mats::tensor::TensorViewMut'>TensorViewMut</a>&lt;N, DimArray&gt;</code></h4>
+<div class='docblock'><p>Get a mutable view into this tensor</p>
+</div><h4 id='method.slice_dim_mut' class='method'><code>fn <a href='#method.slice_dim_mut' class='fnname'>slice_dim_mut</a>&lt;'a&gt;(&amp;'a mut self, Axis: <a class='struct' href='../../dense_mats/tensor/struct.Axis.html' title='dense_mats::tensor::Axis'>Axis</a>, index: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorViewMut.html' title='dense_mats::tensor::TensorViewMut'>TensorViewMut</a>&lt;'a, N, DimArray::Pred&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLikeMut.html' title='dense_mats::array_like::ArrayLikeMut'>ArrayLikeMut</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</span></code></h4>
+<div class='docblock'><p>Get a mutable view as a tensor of lower dimension count, by
+slicing into the given axis at the given index</p>
+</div><h4 id='method.iter_axis_mut' class='method'><code>fn <a href='#method.iter_axis_mut' class='fnname'>iter_axis_mut</a>&lt;'a&gt;(&amp;'a mut self, axis: <a class='struct' href='../../dense_mats/tensor/struct.Axis.html' title='dense_mats::tensor::Axis'>Axis</a>) -&gt; <a class='struct' href='../../dense_mats/tensor/struct.SlicesMut.html' title='dense_mats::tensor::SlicesMut'>SlicesMut</a>&lt;'a, N, DimArray, Storage&gt;</code></h4>
+<h4 id='method.middle_outer_views_mut' class='method'><code>fn <a href='#method.middle_outer_views_mut' class='fnname'>middle_outer_views_mut</a>&lt;'a&gt;(&amp;'a mut self, start: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, count: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../dense_mats/tensor/type.TensorViewMut.html' title='dense_mats::tensor::TensorViewMut'>TensorViewMut</a>&lt;'a, N, DimArray&gt;, <a class='enum' href='../../dense_mats/errors/enum.DMatError.html' title='dense_mats::errors::DMatError'>DMatError</a>&gt;</code></h4>
+<div class='docblock'><p>Slice mutably along the least varying dimension of the matrix, from
+index <code>start</code> and taking <code>count</code> vectors.</p>
+
+<p>e.g. for a row major matrix, get a view of <code>count</code> rows starting
+from <code>start</code>.</p>
+</div><h4 id='method.diag_view_mut' class='method'><code>fn <a href='#method.diag_view_mut' class='fnname'>diag_view_mut</a>(&amp;mut self) -&gt; <a class='type' href='../../dense_mats/tensor/type.TensorViewMut.html' title='dense_mats::tensor::TensorViewMut'>TensorViewMut</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 1]</a>&gt;</code></h4>
+<div class='docblock'><p>Get a mutable view over the tensor&#39;s diagonal</p>
+
+<p>The diagonal vector is as long as the smallest dimension.</p>
+
+<h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
+<p>Panics if the tensor is zero-dim.</p>
+</div></div><h3 class='impl'><code>impl&lt;N&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;N&gt;&gt;</code></h3><div class='impl-items'><h4 id='method.new_owned' class='method'><code>fn <a href='#method.new_owned' class='fnname'>new_owned</a>(data: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;N&gt;, rows: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, cols: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, strides: <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>) -&gt; <a class='type' href='../../dense_mats/tensor/type.MatOwned.html' title='dense_mats::tensor::MatOwned'>MatOwned</a>&lt;N&gt;</code></h4>
+<div class='docblock'><p>Create a dense matrix from owned data</p>
+</div><h4 id='method.eye' class='method'><code>fn <a href='#method.eye' class='fnname'>eye</a>(dim: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='type' href='../../dense_mats/tensor/type.MatOwned.html' title='dense_mats::tensor::MatOwned'>MatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h4>
+<div class='docblock'><p>Return the identity matrix of dimension <code>dim</code></p>
+
+<p>The storage will be row major, however one can transpose if needed</p>
+</div><h4 id='method.into_data' class='method'><code>fn <a href='#method.into_data' class='fnname'>into_data</a>(self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;N&gt;</code></h4>
+<div class='docblock'><p>Get the underlying data array as a vector</p>
+</div></div><h3 class='impl'><code>impl&lt;'a, N: 'a&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt;</code></h3><div class='impl-items'><h4 id='method.new_mat_view' class='method'><code>fn <a href='#method.new_mat_view' class='fnname'>new_mat_view</a>(data: <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, rows: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, cols: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, strides: <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>) -&gt; <a class='type' href='../../dense_mats/tensor/type.MatView.html' title='dense_mats::tensor::MatView'>MatView</a>&lt;'a, N&gt;</code></h4>
+<div class='docblock'><p>Create a view of a matrix implementing DenseMatView</p>
+</div></div><h3 class='impl'><code>impl&lt;N, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.rows' class='method'><code>fn <a href='#method.rows' class='fnname'>rows</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>The number of rows of the matrix</p>
+</div><h4 id='method.cols' class='method'><code>fn <a href='#method.cols' class='fnname'>cols</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>The number of cols of the matrix</p>
+</div><h4 id='method.row' class='method'><code>fn <a href='#method.row' class='fnname'>row</a>(&amp;self, i: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../dense_mats/tensor/type.VecView.html' title='dense_mats::tensor::VecView'>VecView</a>&lt;N&gt;, <a class='enum' href='../../dense_mats/errors/enum.DMatError.html' title='dense_mats::errors::DMatError'>DMatError</a>&gt;</code></h4>
+<div class='docblock'><p>Get a view into the specified row</p>
+</div><h4 id='method.col' class='method'><code>fn <a href='#method.col' class='fnname'>col</a>(&amp;self, j: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../dense_mats/tensor/type.VecView.html' title='dense_mats::tensor::VecView'>VecView</a>&lt;N&gt;, <a class='enum' href='../../dense_mats/errors/enum.DMatError.html' title='dense_mats::errors::DMatError'>DMatError</a>&gt;</code></h4>
+<div class='docblock'><p>Get a view into the specified column</p>
+</div></div><h3 class='impl'><code>impl&lt;N, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.data_mut' class='method'><code>fn <a href='#method.data_mut' class='fnname'>data_mut</a>(&amp;mut self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<div class='docblock'><p>Mutable access to the matrix&#39;s data</p>
+
+<p>Getting access to the element located at row i and column j
+can be done by indexing self.data() at the location
+computed by i * strides[0] + j * strides[1]</p>
+</div><h4 id='method.row_mut' class='method'><code>fn <a href='#method.row_mut' class='fnname'>row_mut</a>(&amp;mut self, i: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../dense_mats/tensor/type.VecViewMut.html' title='dense_mats::tensor::VecViewMut'>VecViewMut</a>&lt;N&gt;, <a class='enum' href='../../dense_mats/errors/enum.DMatError.html' title='dense_mats::errors::DMatError'>DMatError</a>&gt;</code></h4>
+<div class='docblock'><p>Get a mutable view into the specified row</p>
+</div><h4 id='method.col_mut' class='method'><code>fn <a href='#method.col_mut' class='fnname'>col_mut</a>(&amp;mut self, j: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../dense_mats/tensor/type.VecViewMut.html' title='dense_mats::tensor::VecViewMut'>VecViewMut</a>&lt;N&gt;, <a class='enum' href='../../dense_mats/errors/enum.DMatError.html' title='dense_mats::errors::DMatError'>DMatError</a>&gt;</code></h4>
+<div class='docblock'><p>Get a mutable view into the specified column</p>
+</div></div><h3 class='impl'><code>impl&lt;N, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 1]</a>, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.iter' class='method'><code>fn <a href='#method.iter' class='fnname'>iter</a>(&amp;self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/core/iter/struct.Map.html' title='core::iter::Map'>Map</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/core/iter/struct.Take.html' title='core::iter::Take'>Take</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/core/slice/struct.Chunks.html' title='core::slice::Chunks'>Chunks</a>&lt;N&gt;&gt;, fn(<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; &amp;N&gt;</code></h4>
+<div class='docblock'><p>Iterate over a dense vector&#39;s values by reference</p>
+</div><h4 id='method.dim' class='method'><code>fn <a href='#method.dim' class='fnname'>dim</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>The number of dimensions</p>
+</div><h4 id='method.stride' class='method'><code>fn <a href='#method.stride' class='fnname'>stride</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>The stride of this vector</p>
+</div></div><h3 class='impl'><code>impl&lt;N, Storage&gt; <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 1]</a>, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.iter_mut' class='method'><code>fn <a href='#method.iter_mut' class='fnname'>iter_mut</a>(&amp;mut self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/core/iter/struct.Map.html' title='core::iter::Map'>Map</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/core/iter/struct.Take.html' title='core::iter::Take'>Take</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/core/slice/struct.ChunksMut.html' title='core::slice::ChunksMut'>ChunksMut</a>&lt;N&gt;&gt;, fn(<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; &amp;mut N&gt;</code></h4>
+<div class='docblock'><p>Iterate over a dense vector&#39;s values by mutable reference</p>
+</div><h4 id='method.data_mut' class='method'><code>fn <a href='#method.data_mut' class='fnname'>data_mut</a>(&amp;mut self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<div class='docblock'><p>The underlying data as a mutable slice</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;N, DimArray, Storage&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Index.html' title='core::ops::Index'>Index</a>&lt;DimArray&gt; for <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLike.html' title='dense_mats::array_like::ArrayLike'>ArrayLike</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='assoc_type.Output' class='type'><code>type Output = N</code></h4>
+<h4 id='method.index' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/trait.Index.html#method.index' class='fnname'>index</a>&lt;'a&gt;(&amp;'a self, index: DimArray) -&gt; &amp;'a N</code></h4>
+</div><h3 class='impl'><code>impl&lt;N, DimArray, Storage&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.IndexMut.html' title='core::ops::IndexMut'>IndexMut</a>&lt;DimArray&gt; for <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where DimArray: <a class='trait' href='../../dense_mats/array_like/trait.ArrayLike.html' title='dense_mats::array_like::ArrayLike'>ArrayLike</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.index_mut' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/trait.IndexMut.html#method.index_mut' class='fnname'>index_mut</a>&lt;'a&gt;(&amp;'a mut self, index: DimArray) -&gt; &amp;'a mut N</code></h4>
+</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl&lt;N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a>, DimArray: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a>, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div><h3 class='impl'><code>impl&lt;N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a>, DimArray: <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a>, Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt; <span class='where'>where Storage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></h3><div class='impl-items'><h4 id='method.eq' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt;) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.ne' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, DimArray, Storage&gt;) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "dense_mats";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>
