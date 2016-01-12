@@ -80,6 +80,37 @@ Documentation
 
 https://vbarrielle.github.io/sprs/doc/sprs/
 
+Changelog
+---------
+
+- 0.3.3
+  - switch to dual MIT/Apache-2.0 license
+- 0.3.2
+  - triplet matrix format for easier initialization
+- 0.3.1
+  - trait to abstract over sparse vectors
+- 0.3.0
+  - LDLT decomposition with support for permutations
+- 0.2.6
+  - lifetime issue fixed (revealed by rust 1.4)
+- 0.2.5
+  - sparse triangular / sparse rhs solvers
+- 0.2.4
+  - sparse triangular / dense rhs solvers
+  - avoid "*" in dependencies
+- 0.2.3
+  - initial support for sparse/dense matrix addition
+- 0.2.2
+  - initial support for sparse/dense matrix multiplication
+- 0.2.1
+  - remove type aliases from impl blocks (doc issue)
+- 0.2.0
+  - matrix multiplication, addition
+  - block matrix constructors (vstack, hstack, bmat)
+  - trait to abstract over sparse matrices
+- 0.1.0
+  - first release on crates.io
+
 License
 -------
 
