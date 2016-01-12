@@ -74,7 +74,7 @@ impl LdlSymbolic {
         LdlSymbolic::new_perm(mat, perm)
     }
 
-    /// Compute the symbolic decomposition L D L^T = P^T A P
+    /// Compute the symbolic decomposition L D L^T = P A P^T
     /// where P is a permutation matrix.
     ///
     /// Using a good permutation matrix can reduce the non-zero count in L,
