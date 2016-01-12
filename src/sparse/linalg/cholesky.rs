@@ -114,16 +114,16 @@ impl LdlSymbolic {
         }
     }
 
-    /// The number of dimensions of the decomposed matrix.
+    /// The size of the linear system associated with this decomposition
     #[inline]
-    pub fn dim(&self) -> usize {
+    pub fn problem_size(&self) -> usize {
         self.parents.nb_nodes()
     }
 
     /// The number of non-zero entries in L
     #[inline]
     pub fn nnz(&self) -> usize {
-        let n = self.dim();
+        let n = self.problem_size();
         self.colptr[n]
     }
 
@@ -136,7 +136,7 @@ impl LdlSymbolic {
           IS: Deref<Target = [usize]>,
           DS: Deref<Target = [N]>
     {
-        let n = self.dim();
+        let n = self.problem_size();
         let nnz = self.nnz();
         let l_indices = vec![0; nnz];
         let l_data = vec![N::zero(); nnz];
@@ -221,7 +221,7 @@ impl<N> LdlNumeric<N> {
           V: Deref<Target = [N]>
     {
         let mut x = &self.symbolic.perm * &rhs[..];
-        let n = self.symbolic.dim();
+        let n = self.symbolic.problem_size();
         let l = csmat_borrowed_uchk(csmat::CSC,
                                     n,
                                     n,
@@ -234,6 +234,19 @@ impl<N> LdlNumeric<N> {
         let pinv = self.symbolic.perm.inv();
         &pinv * &x
     }
+
+    /// The size of the linear system associated with this decomposition
+    #[inline]
+    pub fn problem_size(&self) -> usize {
+        self.symbolic.problem_size()
+    }
+
+    /// The number of non-zero entries in L
+    #[inline]
+    pub fn nnz(&self) -> usize {
+        self.symbolic.nnz()
+    }
+
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
