@@ -6,7 +6,7 @@ version = "0.3.2"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 
 readme = "README.rst"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/vbarrielle/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
 keywords = ["sparse", "matrix", "linear", "algebra"]
