@@ -83,13 +83,6 @@ https://vbarrielle.github.io/sprs/doc/sprs/
 License
 -------
 
-MIT license. See LICENSE.txt
-
-
-=======
-License
-=======
-
 Licensed under either of
 
  * Apache License, Version 2.0, (./LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
@@ -97,9 +90,8 @@ Licensed under either of
 
 at your option.
 
-------------
 Contribution
-------------
+............
 
 Unless you explicitly state otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the Apache-2.0
