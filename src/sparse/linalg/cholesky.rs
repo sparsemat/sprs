@@ -6,6 +6,19 @@
 ///! and is written `A = L D L` where L is lower triangular and D is diagonal.
 ///! It is closely related to the Cholesky decomposition, but is often more
 ///! numerically stable and can work on some indefinite matrices.
+///!
+///! The easiest way to use this API is to create a `LdlNumeric` instance from
+///! a matrix, then use the `LdlNumeric::solve` method.
+///!
+///! It is possible to update a decomposition if the sparsity structure of a
+///! matrix does not change. In that case the `LdlNumeric::update` method can
+///! be used.
+///!
+///! When only the sparsity structure of a matrix is known, it is possible
+///! to precompute part of the factorization by using the `LdlSymbolic` struct.
+///! This struct can the be converted into a `LdlNumeric` once the non-zero
+///! values are known, using the `LdlSymbolic::factor` method.
+
 
 use std::ops::Deref;
 use std::ops::IndexMut;
@@ -47,6 +60,10 @@ pub struct LdlNumeric<N> {
 
 impl LdlSymbolic {
     /// Compute the symbolic LDLT of the given matrix
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>) -> LdlSymbolic
     where N: Copy + PartialEq,
           IpS: Deref<Target = [usize]>,
@@ -62,6 +79,10 @@ impl LdlSymbolic {
     ///
     /// Using a good permutation matrix can reduce the non-zero count in L,
     /// thus making the decomposition and the solves faster.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new_perm<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
                                     perm: PermOwned)
                                     -> LdlSymbolic
@@ -137,6 +158,10 @@ impl LdlSymbolic {
 
 impl<N> LdlNumeric<N> {
     /// Compute the numeric LDLT decomposition of the given matrix.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>) -> Self
     where N: Copy + Num + PartialOrd,
           IpS: Deref<Target = [usize]>,
@@ -152,6 +177,10 @@ impl<N> LdlNumeric<N> {
     ///
     /// Using a good permutation matrix can reduce the non-zero count in L,
     /// thus making the decomposition and the solves faster.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new_perm<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
                                  perm: PermOwned)
                                  -> Self
