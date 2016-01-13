@@ -573,8 +573,98 @@
 <span id="531">531</span>
 <span id="532">532</span>
 <span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
 </pre><pre class='rust '>
-<span class='doccomment'>/// Cholesky factorization</span>
+<span class='doccomment'>///! Cholesky factorization module.</span>
+<span class='doccomment'>///!</span>
+<span class='doccomment'>///! Contains LDLT decomposition methods.</span>
+<span class='doccomment'>///!</span>
+<span class='doccomment'>///! This decomposition operates on symmetric positive definite matrices,</span>
+<span class='doccomment'>///! and is written `A = L D L` where L is lower triangular and D is diagonal.</span>
+<span class='doccomment'>///! It is closely related to the Cholesky decomposition, but is often more</span>
+<span class='doccomment'>///! numerically stable and can work on some indefinite matrices.</span>
+<span class='doccomment'>///!</span>
+<span class='doccomment'>///! The easiest way to use this API is to create a `LdlNumeric` instance from</span>
+<span class='doccomment'>///! a matrix, then use the `LdlNumeric::solve` method.</span>
+<span class='doccomment'>///!</span>
+<span class='doccomment'>///! It is possible to update a decomposition if the sparsity structure of a</span>
+<span class='doccomment'>///! matrix does not change. In that case the `LdlNumeric::update` method can</span>
+<span class='doccomment'>///! be used.</span>
+<span class='doccomment'>///!</span>
+<span class='doccomment'>///! When only the sparsity structure of a matrix is known, it is possible</span>
+<span class='doccomment'>///! to precompute part of the factorization by using the `LdlSymbolic` struct.</span>
+<span class='doccomment'>///! This struct can the be converted into a `LdlNumeric` once the non-zero</span>
+<span class='doccomment'>///! values are known, using the `LdlSymbolic::factor` method.</span>
+
 
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Deref</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>IndexMut</span>;
@@ -593,7 +683,7 @@
     <span class='ident'>DontCheckSymmetry</span>,
 }
 
-<span class='doccomment'>/// Structure to compute a  symbolic LDLT decomposition</span>
+<span class='doccomment'>/// Structure to compute and hold a symbolic LDLT decomposition</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>LdlSymbolic</span> {
     <span class='ident'>colptr</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>,
@@ -603,6 +693,7 @@
     <span class='ident'>perm</span>: <span class='ident'>Permutation</span><span class='op'>&lt;</span><span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;&gt;</span>,
 }
 
+<span class='doccomment'>/// Structure to hold a numeric LDLT decomposition</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Debug</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>LdlNumeric</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
     <span class='ident'>symbolic</span>: <span class='ident'>LdlSymbolic</span>,
@@ -614,6 +705,11 @@
 }
 
 <span class='kw'>impl</span> <span class='ident'>LdlSymbolic</span> {
+    <span class='doccomment'>/// Compute the symbolic LDLT of the given matrix</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # Panics</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// * if mat is not symmetric</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>LdlSymbolic</span>
     <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>PartialEq</span>,
           <span class='ident'>IpS</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span> <span class='op'>=</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
@@ -624,6 +720,15 @@
         <span class='ident'>LdlSymbolic</span>::<span class='ident'>new_perm</span>(<span class='ident'>mat</span>, <span class='ident'>perm</span>)
     }
 
+    <span class='doccomment'>/// Compute the symbolic decomposition L D L^T = P A P^T</span>
+    <span class='doccomment'>/// where P is a permutation matrix.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// Using a good permutation matrix can reduce the non-zero count in L,</span>
+    <span class='doccomment'>/// thus making the decomposition and the solves faster.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # Panics</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// * if mat is not symmetric</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new_perm</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>,
                                     <span class='ident'>perm</span>: <span class='ident'>PermOwned</span>)
                                     <span class='op'>-&gt;</span> <span class='ident'>LdlSymbolic</span>
@@ -655,17 +760,20 @@
         }
     }
 
+    <span class='doccomment'>/// The size of the linear system associated with this decomposition</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>dim</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>problem_size</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
         <span class='self'>self</span>.<span class='ident'>parents</span>.<span class='ident'>nb_nodes</span>()
     }
 
+    <span class='doccomment'>/// The number of non-zero entries in L</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>nnz</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
-        <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>dim</span>();
+        <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>problem_size</span>();
         <span class='self'>self</span>.<span class='ident'>colptr</span>[<span class='ident'>n</span>]
     }
 
+    <span class='doccomment'>/// Compute the numerical decomposition of the given matrix.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>factor</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>(<span class='self'>self</span>,
                                   <span class='ident'>mat</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>)
                                   <span class='op'>-&gt;</span> <span class='ident'>LdlNumeric</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
@@ -674,7 +782,7 @@
           <span class='ident'>IS</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span> <span class='op'>=</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
           <span class='ident'>DS</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span> <span class='op'>=</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span>
     {
-        <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>dim</span>();
+        <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>problem_size</span>();
         <span class='kw'>let</span> <span class='ident'>nnz</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>nnz</span>();
         <span class='kw'>let</span> <span class='ident'>l_indices</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>; <span class='ident'>nnz</span>];
         <span class='kw'>let</span> <span class='ident'>l_data</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='ident'>N</span>::<span class='ident'>zero</span>(); <span class='ident'>nnz</span>];
@@ -695,7 +803,11 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> <span class='ident'>LdlNumeric</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
-
+    <span class='doccomment'>/// Compute the numeric LDLT decomposition of the given matrix.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # Panics</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// * if mat is not symmetric</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span><span class='op'>&lt;</span><span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='kw'>Self</span>
     <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>PartialOrd</span>,
           <span class='ident'>IpS</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span> <span class='op'>=</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
@@ -706,6 +818,15 @@
         <span class='ident'>symbolic</span>.<span class='ident'>factor</span>(<span class='ident'>mat</span>)
     }
 
+    <span class='doccomment'>/// Compute the numeric decomposition L D L^T = P^T A P</span>
+    <span class='doccomment'>/// where P is a permutation matrix.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// Using a good permutation matrix can reduce the non-zero count in L,</span>
+    <span class='doccomment'>/// thus making the decomposition and the solves faster.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # Panics</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// * if mat is not symmetric</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new_perm</span><span class='op'>&lt;</span><span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>,
                                  <span class='ident'>perm</span>: <span class='ident'>PermOwned</span>)
                                  <span class='op'>-&gt;</span> <span class='kw'>Self</span>
@@ -718,6 +839,9 @@
         <span class='ident'>symbolic</span>.<span class='ident'>factor</span>(<span class='ident'>mat</span>)
     }
 
+    <span class='doccomment'>/// Update the decomposition with the given matrix. The matrix must</span>
+    <span class='doccomment'>/// have the same non-zero pattern as the original matrix, otherwise</span>
+    <span class='doccomment'>/// the result is unspecified.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>update</span><span class='op'>&lt;</span><span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>mat</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>)
     <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>PartialOrd</span>,
           <span class='ident'>IpS</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span> <span class='op'>=</span> [<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
@@ -737,12 +861,13 @@
                     <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>flag_workspace</span>);
     }
 
+    <span class='doccomment'>/// Solve the system A x = rhs</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>solve</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>V</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>V</span>) <span class='op'>-&gt;</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
     <span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span>,
           <span class='ident'>V</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span> <span class='op'>=</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span>
     {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>x</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>perm</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>rhs</span>[..];
-        <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>dim</span>();
+        <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>problem_size</span>();
         <span class='kw'>let</span> <span class='ident'>l</span> <span class='op'>=</span> <span class='ident'>csmat_borrowed_uchk</span>(<span class='ident'>csmat</span>::<span class='ident'>CSC</span>,
                                     <span class='ident'>n</span>,
                                     <span class='ident'>n</span>,
@@ -755,6 +880,19 @@
         <span class='kw'>let</span> <span class='ident'>pinv</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>perm</span>.<span class='ident'>inv</span>();
         <span class='kw-2'>&amp;</span><span class='ident'>pinv</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>x</span>
     }
+
+    <span class='doccomment'>/// The size of the linear system associated with this decomposition</span>
+    <span class='attribute'>#[<span class='ident'>inline</span>]</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>problem_size</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
+        <span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>problem_size</span>()
+    }
+
+    <span class='doccomment'>/// The number of non-zero entries in L</span>
+    <span class='attribute'>#[<span class='ident'>inline</span>]</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>nnz</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
+        <span class='self'>self</span>.<span class='ident'>symbolic</span>.<span class='ident'>nnz</span>()
+    }
+
 }
 
 <span class='doccomment'>/// Perform a symbolic LDLt decomposition of a symmetric sparse matrix</span>
@@ -771,9 +909,11 @@
 
     <span class='kw'>match</span> <span class='ident'>check_symmetry</span> {
         <span class='ident'>SymmetryCheck</span>::<span class='ident'>DontCheckSymmetry</span> <span class='op'>=&gt;</span> (),
-        <span class='ident'>SymmetryCheck</span>::<span class='ident'>CheckSymmetry</span> <span class='op'>=&gt;</span> <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>is_symmetric</span>(<span class='kw-2'>&amp;</span><span class='ident'>mat</span>) {
-            <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;Matrix is not symmetric&quot;</span>)
-        },
+        <span class='ident'>SymmetryCheck</span>::<span class='ident'>CheckSymmetry</span> <span class='op'>=&gt;</span> {
+            <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>is_symmetric</span>(<span class='kw-2'>&amp;</span><span class='ident'>mat</span>) {
+                <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;Matrix is not symmetric&quot;</span>)
+            }
+        }
     }
 
     <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='ident'>mat</span>.<span class='ident'>rows</span>();

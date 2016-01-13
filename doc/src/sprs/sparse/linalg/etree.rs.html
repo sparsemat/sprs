@@ -140,9 +140,10 @@
 <span id="98"> 98</span>
 <span id="99"> 99</span>
 <span id="100">100</span>
+<span id="101">101</span>
 </pre><pre class='rust '>
-<span class='doccomment'>/// Data structures to work with elimination trees (etree).</span>
-<span class='doccomment'>/// etrees arise when considering cholesky factorization, QR factorization, ...</span>
+<span class='doccomment'>///! Data structures to work with elimination trees (etree).</span>
+<span class='doccomment'>///! etrees arise when considering cholesky factorization, QR factorization, ...</span>
 
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::{<span class='ident'>Deref</span>, <span class='ident'>DerefMut</span>};
 
@@ -184,6 +185,7 @@
         <span class='self'>self</span>.<span class='ident'>parents</span>.<span class='ident'>len</span>()
     }
 
+    <span class='doccomment'>/// Get a view of this object</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>borrowed</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>ParentsView</span> {
         <span class='ident'>ParentsView</span> {
             <span class='ident'>parents</span>: <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>parents</span>[..]

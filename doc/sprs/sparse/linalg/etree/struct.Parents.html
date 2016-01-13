@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-2214' class='srclink' href='../../../../src/sprs/sparse/linalg/etree.rs.html#11-13' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2218' class='srclink' href='../../../../src/sprs/sparse/linalg/etree.rs.html#11-13' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Parents&lt;S&gt; <span class='where'>where S: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a class='type' href='../../../../sprs/sparse/linalg/etree/type.Parent.html' title='sprs::sparse::linalg::etree::Parent'>Parent</a>]</a>&gt;</span> {
     // some fields omitted
 }</pre><div class='docblock'><p>Store an etree as the parent information of each node.
@@ -67,7 +67,8 @@ This reflects the fact that etrees can in fact have multiple roots.</p>
 </div><h4 id='method.nb_nodes' class='method'><code>fn <a href='#method.nb_nodes' class='fnname'>nb_nodes</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>The number of nodes in this tree.</p>
 </div><h4 id='method.borrowed' class='method'><code>fn <a href='#method.borrowed' class='fnname'>borrowed</a>(&amp;self) -&gt; <a class='type' href='../../../../sprs/sparse/linalg/etree/type.ParentsView.html' title='sprs::sparse::linalg::etree::ParentsView'>ParentsView</a></code></h4>
-</div><h3 class='impl'><code>impl&lt;S: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a class='type' href='../../../../sprs/sparse/linalg/etree/type.Parent.html' title='sprs::sparse::linalg::etree::Parent'>Parent</a>]</a>&gt;&gt; <a class='struct' href='../../../../sprs/sparse/linalg/etree/struct.Parents.html' title='sprs::sparse::linalg::etree::Parents'>Parents</a>&lt;S&gt;</code></h3><div class='impl-items'><h4 id='method.set_parent' class='method'><code>fn <a href='#method.set_parent' class='fnname'>set_parent</a>(&amp;mut self, node: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, parent: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</code></h4>
+<div class='docblock'><p>Get a view of this object</p>
+</div></div><h3 class='impl'><code>impl&lt;S: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.DerefMut.html' title='core::ops::DerefMut'>DerefMut</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a class='type' href='../../../../sprs/sparse/linalg/etree/type.Parent.html' title='sprs::sparse::linalg::etree::Parent'>Parent</a>]</a>&gt;&gt; <a class='struct' href='../../../../sprs/sparse/linalg/etree/struct.Parents.html' title='sprs::sparse::linalg::etree::Parents'>Parents</a>&lt;S&gt;</code></h3><div class='impl-items'><h4 id='method.set_parent' class='method'><code>fn <a href='#method.set_parent' class='fnname'>set_parent</a>(&amp;mut self, node: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, parent: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</code></h4>
 <div class='docblock'><p>Set the parent of a node.</p>
 
 <h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
