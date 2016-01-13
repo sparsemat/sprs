@@ -83,6 +83,8 @@ https://vbarrielle.github.io/sprs/doc/sprs/
 Changelog
 ---------
 
+- in progress:
+    - forward some LdlSymbolic methods in LdlNumeric
 - 0.3.3
     - switch to dual MIT/Apache-2.0 license
 - 0.3.2

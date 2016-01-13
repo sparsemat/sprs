@@ -1,4 +1,7 @@
-/// Sparse linear algebra
+///! Sparse linear algebra
+///!
+///! This module contains solvers for sparse linear systems. Currently
+///! there are solver for sparse triangular systems and symmetric systems.
 
 
 pub use self::cholesky::ldl_symbolic;

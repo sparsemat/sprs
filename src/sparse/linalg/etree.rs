@@ -1,5 +1,5 @@
-/// Data structures to work with elimination trees (etree).
-/// etrees arise when considering cholesky factorization, QR factorization, ...
+///! Data structures to work with elimination trees (etree).
+///! etrees arise when considering cholesky factorization, QR factorization, ...
 
 use std::ops::{Deref, DerefMut};
 
@@ -41,6 +41,7 @@ impl<S: Deref<Target=[Parent]>> Parents<S> {
         self.parents.len()
     }
 
+    /// Get a view of this object
     pub fn borrowed(&self) -> ParentsView {
         ParentsView {
             parents: &self.parents[..]

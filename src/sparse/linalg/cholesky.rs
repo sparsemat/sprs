@@ -1,4 +1,24 @@
-/// Cholesky factorization
+///! Cholesky factorization module.
+///!
+///! Contains LDLT decomposition methods.
+///!
+///! This decomposition operates on symmetric positive definite matrices,
+///! and is written `A = L D L` where L is lower triangular and D is diagonal.
+///! It is closely related to the Cholesky decomposition, but is often more
+///! numerically stable and can work on some indefinite matrices.
+///!
+///! The easiest way to use this API is to create a `LdlNumeric` instance from
+///! a matrix, then use the `LdlNumeric::solve` method.
+///!
+///! It is possible to update a decomposition if the sparsity structure of a
+///! matrix does not change. In that case the `LdlNumeric::update` method can
+///! be used.
+///!
+///! When only the sparsity structure of a matrix is known, it is possible
+///! to precompute part of the factorization by using the `LdlSymbolic` struct.
+///! This struct can the be converted into a `LdlNumeric` once the non-zero
+///! values are known, using the `LdlSymbolic::factor` method.
+
 
 use std::ops::Deref;
 use std::ops::IndexMut;
@@ -17,7 +37,7 @@ pub enum SymmetryCheck {
     DontCheckSymmetry,
 }
 
-/// Structure to compute a  symbolic LDLT decomposition
+/// Structure to compute and hold a symbolic LDLT decomposition
 #[derive(Debug)]
 pub struct LdlSymbolic {
     colptr: Vec<usize>,
@@ -27,6 +47,7 @@ pub struct LdlSymbolic {
     perm: Permutation<Vec<usize>>,
 }
 
+/// Structure to hold a numeric LDLT decomposition
 #[derive(Debug)]
 pub struct LdlNumeric<N> {
     symbolic: LdlSymbolic,
@@ -38,6 +59,11 @@ pub struct LdlNumeric<N> {
 }
 
 impl LdlSymbolic {
+    /// Compute the symbolic LDLT of the given matrix
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>) -> LdlSymbolic
     where N: Copy + PartialEq,
           IpS: Deref<Target = [usize]>,
@@ -48,6 +74,15 @@ impl LdlSymbolic {
         LdlSymbolic::new_perm(mat, perm)
     }
 
+    /// Compute the symbolic decomposition L D L^T = P A P^T
+    /// where P is a permutation matrix.
+    ///
+    /// Using a good permutation matrix can reduce the non-zero count in L,
+    /// thus making the decomposition and the solves faster.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new_perm<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
                                     perm: PermOwned)
                                     -> LdlSymbolic
@@ -79,17 +114,20 @@ impl LdlSymbolic {
         }
     }
 
+    /// The size of the linear system associated with this decomposition
     #[inline]
-    pub fn dim(&self) -> usize {
+    pub fn problem_size(&self) -> usize {
         self.parents.nb_nodes()
     }
 
+    /// The number of non-zero entries in L
     #[inline]
     pub fn nnz(&self) -> usize {
-        let n = self.dim();
+        let n = self.problem_size();
         self.colptr[n]
     }
 
+    /// Compute the numerical decomposition of the given matrix.
     pub fn factor<N, IpS, IS, DS>(self,
                                   mat: &CsMat<N, IpS, IS, DS>)
                                   -> LdlNumeric<N>
@@ -98,7 +136,7 @@ impl LdlSymbolic {
           IS: Deref<Target = [usize]>,
           DS: Deref<Target = [N]>
     {
-        let n = self.dim();
+        let n = self.problem_size();
         let nnz = self.nnz();
         let l_indices = vec![0; nnz];
         let l_data = vec![N::zero(); nnz];
@@ -119,7 +157,11 @@ impl LdlSymbolic {
 }
 
 impl<N> LdlNumeric<N> {
-
+    /// Compute the numeric LDLT decomposition of the given matrix.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>) -> Self
     where N: Copy + Num + PartialOrd,
           IpS: Deref<Target = [usize]>,
@@ -130,6 +172,15 @@ impl<N> LdlNumeric<N> {
         symbolic.factor(mat)
     }
 
+    /// Compute the numeric decomposition L D L^T = P^T A P
+    /// where P is a permutation matrix.
+    ///
+    /// Using a good permutation matrix can reduce the non-zero count in L,
+    /// thus making the decomposition and the solves faster.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
     pub fn new_perm<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
                                  perm: PermOwned)
                                  -> Self
@@ -142,6 +193,9 @@ impl<N> LdlNumeric<N> {
         symbolic.factor(mat)
     }
 
+    /// Update the decomposition with the given matrix. The matrix must
+    /// have the same non-zero pattern as the original matrix, otherwise
+    /// the result is unspecified.
     pub fn update<IpS, IS, DS>(&mut self, mat: &CsMat<N, IpS, IS, DS>)
     where N: Copy + Num + PartialOrd,
           IpS: Deref<Target = [usize]>,
@@ -161,12 +215,13 @@ impl<N> LdlNumeric<N> {
                     &mut self.symbolic.flag_workspace);
     }
 
+    /// Solve the system A x = rhs
     pub fn solve<'a, V>(&self, rhs: &V) -> Vec<N>
     where N: 'a + Copy + Num,
           V: Deref<Target = [N]>
     {
         let mut x = &self.symbolic.perm * &rhs[..];
-        let n = self.symbolic.dim();
+        let n = self.symbolic.problem_size();
         let l = csmat_borrowed_uchk(csmat::CSC,
                                     n,
                                     n,
@@ -179,6 +234,19 @@ impl<N> LdlNumeric<N> {
         let pinv = self.symbolic.perm.inv();
         &pinv * &x
     }
+
+    /// The size of the linear system associated with this decomposition
+    #[inline]
+    pub fn problem_size(&self) -> usize {
+        self.symbolic.problem_size()
+    }
+
+    /// The number of non-zero entries in L
+    #[inline]
+    pub fn nnz(&self) -> usize {
+        self.symbolic.nnz()
+    }
+
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
@@ -195,9 +263,11 @@ where N: Clone + Copy + PartialEq,
 
     match check_symmetry {
         SymmetryCheck::DontCheckSymmetry => (),
-        SymmetryCheck::CheckSymmetry => if !is_symmetric(&mat) {
-            panic!("Matrix is not symmetric")
-        },
+        SymmetryCheck::CheckSymmetry => {
+            if !is_symmetric(&mat) {
+                panic!("Matrix is not symmetric")
+            }
+        }
     }
 
     let n = mat.rows();
