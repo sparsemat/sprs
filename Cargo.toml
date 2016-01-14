@@ -22,3 +22,6 @@ num = "0.1.27"
 
 [dependencies.dense_mats]
 version = ">= 0.3.4"
+
+[dependencies.ndarray]
+version = "0.3"

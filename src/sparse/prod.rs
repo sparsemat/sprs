@@ -6,6 +6,7 @@ use num::traits::Num;
 use sparse::compressed::SpMatView;
 use dense_mats::{StorageOrder, MatView, MatViewMut};
 use dense_mats::tensor;
+use ndarray::{ArrayView, ArrayViewMut, Ix};
 use errors::SprsError;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
@@ -276,6 +277,43 @@ pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     Ok(())
 }
 
+/// CSC-dense rowmaj multiplication
+///
+/// Performs better if out is rowmaj
+pub fn csc_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
+    lhs: CsMatView<N>,
+    rhs: ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.shape()[1] != out.shape()[1] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+    if !rhs.is_standard_layout() {
+        return Err(SprsError::BadStorageType);
+    }
+
+    let axis0 = 0;
+    for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
+        for (orow, lval) in lcol.iter() {
+            let mut oline = out.subview_mut(axis0, orow);
+            for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
+                let prev = *oval;
+                *oval = prev + lval * rval;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// CSC-dense colmaj multiplication
 /// 
 /// Performs better if out is colmaj
@@ -355,7 +393,9 @@ mod test {
                 csr_mulacc_dense_rowmaj};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
                     mat1_csc, mat4, mat1_csc_matprod_mat4,
-                    mat_dense1, mat5, mat_dense2, mat_dense1_colmaj};
+                    mat_dense1, mat_dense1_ndarray,
+                    mat5, mat_dense2, mat_dense1_colmaj};
+    use ndarray::{OwnedArray, arr2};
 
     #[test]
     fn mul_csc_vec() {
@@ -551,6 +591,22 @@ mod test {
 
         let c = &a * &b;
         assert_eq!(c, expected_output);
+    }
+
+    #[test]
+    fn mul_csc_dense_rowmaj_ndarray() {
+        let a = mat1_csc();
+        let b = mat_dense1_ndarray();
+        let mut res = OwnedArray::zeros((5, 5));
+        super::csc_mulacc_dense_rowmaj_ndarray(a.borrowed(),
+                                               b.view(),
+                                               res.view_mut()).unwrap();
+        let expected_output = arr2(&[[24., 31., 24., 17., 10.],
+                                     [11., 18., 11.,  9.,  2.],
+                                     [20., 25., 20., 15., 10.],
+                                     [40., 48., 40., 32., 24.],
+                                     [21., 28., 21., 14., 7. ]]);
+        assert_eq!(res, expected_output);
     }
 
     #[test]

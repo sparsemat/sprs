@@ -3,6 +3,7 @@
 use sparse::{CsMat, CsMatOwned};
 use sparse::CompressedStorage::{CSR, CSC};
 use dense_mats::{MatOwned};
+use ndarray::{arr2, OwnedArray, Ix};
 
 pub fn mat1() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];
@@ -87,6 +88,15 @@ pub fn mat_dense1() -> MatOwned<f64> {
                                      1., 2., 1., 1., 0.],
                                 5, 5, [5, 1]);
     m
+}
+
+pub fn mat_dense1_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
+    let m = arr2(&[[0., 1., 2., 3., 4.],
+                   [5., 6., 5., 4., 3.],
+                   [4., 5., 4., 3., 2.],
+                   [3., 4., 3., 2., 1.],
+                   [1., 2., 1., 1., 0.]]);
+    m.to_owned()
 }
 
 pub fn mat_dense1_colmaj() -> MatOwned<f64> {
