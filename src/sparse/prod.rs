@@ -301,10 +301,9 @@ pub fn csc_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
         return Err(SprsError::BadStorageType);
     }
 
-    let axis0 = 0;
     for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
         for (orow, lval) in lcol.iter() {
-            let mut oline = out.subview_mut(axis0, orow);
+            let mut oline = out.row_mut(orow);
             for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
                 let prev = *oval;
                 *oval = prev + lval * rval;
