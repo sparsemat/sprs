@@ -314,7 +314,7 @@ pub fn csc_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
 }
 
 /// CSC-dense colmaj multiplication
-/// 
+///
 /// Performs better if out is colmaj
 pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
@@ -346,6 +346,46 @@ pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     }
     Ok(())
 }
+
+/// CSC-dense colmaj multiplication
+///
+/// Performs better if out is colmaj
+pub fn csc_mulacc_dense_colmaj_ndarray<'a, N: 'a + Num + Copy>(
+    lhs: CsMatView<N>,
+    rhs: ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.shape()[1] != out.shape()[1] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csc() {
+        return Err(SprsError::BadStorageType);
+    }
+    if rhs.is_standard_layout() {
+        return Err(SprsError::BadStorageType);
+    }
+
+    let cols = out.shape()[1];
+    for col_ind in 0..cols {
+        let mut ocol = out.column_mut(col_ind);
+        let rcol = rhs.column(col_ind);
+        for (rrow, lcol) in lhs.outer_iterator() {
+            let rval = rcol[[rrow]];
+            for (orow, lval) in lcol.iter() {
+                let prev = ocol[[orow]];
+                ocol[[orow]] = prev + lval * rval;
+            }
+        }
+    }
+    Ok(())
+}
+
 
 /// CSR-dense colmaj multiplication
 /// 
