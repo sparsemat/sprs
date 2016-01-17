@@ -371,10 +371,8 @@ pub fn csc_mulacc_dense_colmaj_ndarray<'a, N: 'a + Num + Copy>(
         return Err(SprsError::BadStorageType);
     }
 
-    let cols = out.shape()[1];
-    for col_ind in 0..cols {
-        let mut ocol = out.column_mut(col_ind);
-        let rcol = rhs.column(col_ind);
+    let axis1 = 1;
+    for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (rrow, lcol) in lhs.outer_iterator() {
             let rval = rcol[[rrow]];
             for (orow, lval) in lcol.iter() {
