@@ -109,6 +109,15 @@ pub fn mat_dense1_colmaj() -> MatOwned<f64> {
     m
 }
 
+pub fn mat_dense1_colmaj_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
+    let v = vec![0., 5., 4., 3., 1.,
+                 1., 6., 5., 4., 2.,
+                 2., 5., 4., 3., 1.,
+                 3., 4., 3., 2., 1.,
+                 4., 3., 2., 1., 0.];
+    OwnedArray::from_vec_dim_stride((5, 5), (1, 5), v).unwrap()
+}
+
 pub fn mat_dense2() -> MatOwned<f64> {
   let m = MatOwned::new_owned(vec![8.2, 1.8, 0.9, 2.6, 6.7, 7.6, 8.3,
                                    8.7, 9.4, 2.6, 6.4, 3.5, 1.2, 4.7,

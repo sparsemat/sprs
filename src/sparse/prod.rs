@@ -431,7 +431,8 @@ mod test {
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
                     mat1_csc, mat4, mat1_csc_matprod_mat4,
                     mat_dense1, mat_dense1_ndarray,
-                    mat5, mat_dense2, mat_dense1_colmaj};
+                    mat5, mat_dense2, mat_dense1_colmaj,
+                    mat_dense1_colmaj_ndarray};
     use ndarray::{OwnedArray, arr2};
 
     #[test]
@@ -664,6 +665,26 @@ mod test {
         let c = &a * &b;
         assert_eq!(c, expected_output);
     }
+
+    #[test]
+    fn mul_csc_dense_colmaj_ndarray() {
+        let a = mat1_csc();
+        let b = mat_dense1_colmaj_ndarray();
+        let mut res = OwnedArray::zeros_f((5, 5));
+        super::csc_mulacc_dense_colmaj_ndarray(a.borrowed(),
+                                               b.view(),
+                                               res.view_mut()).unwrap();
+        let v = vec![24., 11., 20., 40., 21.,
+                     31., 18., 25., 48., 28.,
+                     24., 11., 20., 40., 21.,
+                     17., 9., 15., 32., 14.,
+                     10., 2., 10., 24., 7.];
+        let expected_output = OwnedArray::from_vec_dim_stride((5, 5),
+                                                              (1, 5),
+                                                              v).unwrap();
+        assert_eq!(res, expected_output);
+    }
+
 
     #[test]
     fn mul_csr_dense_colmaj() {
