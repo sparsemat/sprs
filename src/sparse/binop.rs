@@ -8,6 +8,7 @@ use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
 use dense_mats::{StorageOrder, Tensor, MatOwned, MatView, MatViewMut, tensor};
 use errors::SprsError;
+use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
@@ -165,6 +166,30 @@ where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: Deref<Target=[N]> {
     Ok(res)
 }
 
+/// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
+/// and alpha and beta scalars
+pub fn add_dense_mat_same_ordering_ndarray<N, Mat, DenseStorage>(
+    lhs: &Mat,
+    rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
+    alpha: N,
+    beta: N)
+-> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
+where N: Num + Copy,
+      Mat: SpMatView<N>,
+      DenseStorage: ndarray::Data<Elem=N> {
+    let binop = |x, y| alpha * x + beta * y;
+    let shape = (rhs.shape()[0], rhs.shape()[1]);
+    let mut res = match rhs.is_standard_layout() {
+        true => OwnedArray::zeros(shape),
+        false => OwnedArray::zeros_f(shape),
+    };
+    try!(csmat_binop_dense_same_ordering_raw_ndarray(lhs.borrowed(),
+                                                     rhs.view(),
+                                                     binop,
+                                                     res.view_mut()));
+    Ok(res)
+}
+
 /// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
 /// and alpha a scalar
 pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
@@ -220,6 +245,44 @@ where N: 'a + Copy + Num,
     Ok(())
 }
 
+/// Raw implementation of sparse/dense binary operations with the same
+/// ordering
+pub fn csmat_binop_dense_same_ordering_raw_ndarray<'a, N, F>(lhs: CsMatView<'a, N>,
+                                                     rhs: ArrayView<'a, N, (Ix, Ix)>,
+                                                     binop: F,
+                                                     mut out: ArrayViewMut<'a, N, (Ix, Ix)>
+                                                    ) -> Result<(), SprsError>
+where N: 'a + Copy + Num,
+      F: Fn(N, N) -> N {
+    if         lhs.cols() != rhs.shape()[1] || lhs.cols() != out.shape()[1]
+            || lhs.rows() != rhs.shape()[0] || lhs.rows() != out.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    match (lhs.storage(), rhs.is_standard_layout(), out.is_standard_layout()) {
+        (CompressedStorage::CSR, true, true) => (),
+        (CompressedStorage::CSC, false, false) => (),
+        (_, _, _) => return Err(SprsError::IncompatibleStorages),
+    }
+    //let outer_axis = tensor::Axis(rhs.outer_dim().unwrap());
+    let outer_axis = if rhs.is_standard_layout() { 0 } else { 1 };
+    for ((mut orow, (_, lrow)), rrow) in out.axis_iter_mut(outer_axis)
+                                            .zip(lhs.outer_iterator())
+                                            .zip(rhs.axis_iter(outer_axis)) {
+        // now some equivalent of nnz_or_zip is needed
+        for items in orow.iter_mut()
+                         .zip(rrow.iter().enumerate().nnz_or_zip(lrow.iter())) {
+            let (mut oval, lr_elems) = items;
+            let binop_val = match lr_elems {
+                Left((_, &val)) => binop(val, N::zero()),
+                Right((_, val)) => binop(N::zero(), val),
+                Both((_, &lval, rval)) => binop(lval, rval),
+            };
+            *oval = binop_val;
+        }
+    }
+    Ok(())
+}
+
 /// Binary operations for CsVec
 pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
                          rhs: CsVecView<N>, binop: F
@@ -247,8 +310,9 @@ mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
-    use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
+    use test_data::{mat1, mat2, mat1_times_2, mat_dense1, mat_dense1_ndarray};
     use dense_mats::MatOwned;
+    use ndarray::{arr2, OwnedArray};
 
     fn mat1_plus_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
@@ -384,6 +448,34 @@ mod test {
                                                        1., 2., 1., 8., 0.],
                                                   5, 5, [5,1]);
         let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.).unwrap();
+        assert_eq!(c, expected_output);
+        let c = &a + &b;
+        assert_eq!(c, expected_output);
+    }
+
+    #[test]
+    fn csr_add_dense_rowmaj_ndarray() {
+        let a = OwnedArray::zeros((3,3));
+        let b = CsMatOwned::eye(CSR, 3);
+
+        let c = super::add_dense_mat_same_ordering_ndarray(&b, &a, 1., 1.).unwrap();
+
+        let mut expected_output = OwnedArray::zeros((3,3));
+        expected_output[[0,0]] = 1.;
+        expected_output[[1,1]] = 1.;
+        expected_output[[2,2]] = 1.;
+
+        assert_eq!(c, expected_output);
+
+        let a = mat1();
+        let b = mat_dense1_ndarray();
+
+        let expected_output = arr2(&[[0., 1., 5., 7., 4.],
+                                     [5., 6., 5., 6., 8.],
+                                     [4., 5., 9., 3., 2.],
+                                     [3., 12., 3., 2., 1.],
+                                     [1., 2., 1., 8., 0.]]);
+        let c = super::add_dense_mat_same_ordering_ndarray(&a, &b, 1., 1.).unwrap();
         assert_eq!(c, expected_output);
         let c = &a + &b;
         assert_eq!(c, expected_output);

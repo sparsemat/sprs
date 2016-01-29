@@ -1081,6 +1081,48 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, IpS, IS, DS, DS2>
+Add<&'b ArrayBase<DS2, (Ix, Ix)>>
+for &'a CsMat<N, IpS, IS, DS>
+where N: 'a + Copy + Num + Default,
+      IpS: 'a + Deref<Target=[usize]>,
+      IS: 'a + Deref<Target=[usize]>,
+      DS: 'a + Deref<Target=[N]>,
+      DS2: 'b + ndarray::Data<Elem=N> {
+    type Output = OwnedArray<N, (Ix, Ix)>;
+
+    fn add(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> OwnedArray<N, (Ix, Ix)> {
+        match (self.storage(), rhs.is_standard_layout()) {
+            (CSR, true) => {
+                    binop::add_dense_mat_same_ordering_ndarray(self,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (CSR, false) => {
+                    let lhs = self.to_other_storage();
+                    binop::add_dense_mat_same_ordering_ndarray(&lhs,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (CSC, true) => {
+                    let lhs = self.to_other_storage();
+                    binop::add_dense_mat_same_ordering_ndarray(&lhs,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+                (CSC, false) => {
+                    binop::add_dense_mat_same_ordering_ndarray(self,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()).unwrap()
+                }
+        }
+    }
+}
+
+impl<'a, 'b, N, IpS, IS, DS, DS2>
 Mul<&'b ArrayBase<DS2, (Ix, Ix)>>
 for &'a CsMat<N, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
