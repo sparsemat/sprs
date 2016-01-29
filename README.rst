@@ -83,7 +83,8 @@ https://vbarrielle.github.io/sprs/doc/sprs/
 Changelog
 ---------
 
-- in progress:
+- 0.4.0:
+    - depend on ndarray for dense matrices **breaking change**
     - forward some LdlSymbolic methods in LdlNumeric
 - 0.3.3
     - switch to dual MIT/Apache-2.0 license
