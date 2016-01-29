@@ -731,6 +731,9 @@ mod test {
                                      [21., 28., 21., 14.,  7.]]);
         assert_eq!(res, expected_output);
 
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
+
         let a = mat5();
         let b = mat_dense2_ndarray();
         let mut res = OwnedArray::zeros((5, 7));
@@ -782,6 +785,9 @@ mod test {
                                      [40., 48., 40., 32., 24.],
                                      [21., 28., 21., 14., 7. ]]);
         assert_eq!(res, expected_output);
+
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
     }
 
     #[test]
@@ -820,6 +826,9 @@ mod test {
                                                               (1, 5),
                                                               v).unwrap();
         assert_eq!(res, expected_output);
+
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
     }
 
 
@@ -860,5 +869,8 @@ mod test {
                                                               (1, 5),
                                                               v).unwrap();
         assert_eq!(res, expected_output);
+
+        let c = &a * &b;
+        assert_eq!(c, expected_output);
     }
 }
