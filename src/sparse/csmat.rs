@@ -15,7 +15,6 @@ use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range};
 use std::mem;
 use num::traits::Num;
 
-use dense_mats::{StorageOrder, Tensor, MatOwned};
 use ndarray::{self, ArrayBase, OwnedArray, Ix};
 
 use sparse::permutation::PermView;
@@ -990,92 +989,6 @@ where N: 'a + Copy + Num + Default,
                 let mut workspace = prod::workspace_csc(self, rhs);
                 prod::csc_mul_csc(self, rhs, &mut workspace).unwrap()
             }
-        }
-    }
-}
-
-impl<'a, 'b, N, IpS, IS, DS, DS2>
-Mul<&'b Tensor<N, [usize; 2], DS2>>
-for &'a CsMat<N, IpS, IS, DS>
-where N: 'a + Copy + Num + Default,
-      IpS: 'a + Deref<Target=[usize]>,
-      IS: 'a + Deref<Target=[usize]>,
-      DS: 'a + Deref<Target=[N]>,
-      DS2: 'b + Deref<Target=[N]> {
-    type Output = MatOwned<N>;
-
-    fn mul(self, rhs: &'b Tensor<N, [usize; 2], DS2>) -> MatOwned<N> {
-        let rows = self.rows();
-        let cols = rhs.cols();
-        match (self.storage(), rhs.ordering()) {
-            (CSR, StorageOrder::C) => {
-                let mut res = Tensor::zeros([rows, cols]);
-                prod::csr_mulacc_dense_rowmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (CSR, StorageOrder::F) => {
-                let mut res = Tensor::zeros_f([rows, cols]);
-                prod::csr_mulacc_dense_colmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (CSC, StorageOrder::C) => {
-                let mut res = Tensor::zeros([rows, cols]);
-                prod::csc_mulacc_dense_rowmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (CSC, StorageOrder::F) => {
-                let mut res = Tensor::zeros_f([rows, cols]);
-                prod::csc_mulacc_dense_colmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
-        }
-    }
-}
-
-impl<'a, 'b, N, IpS, IS, DS, DS2>
-Add<&'b Tensor<N, [usize; 2], DS2>>
-for &'a CsMat<N, IpS, IS, DS>
-where N: 'a + Copy + Num + Default,
-      IpS: 'a + Deref<Target=[usize]>,
-      IS: 'a + Deref<Target=[usize]>,
-      DS: 'a + Deref<Target=[N]>,
-      DS2: 'b + Deref<Target=[N]> {
-    type Output = MatOwned<N>;
-
-    fn add(self, rhs: &'b Tensor<N, [usize; 2], DS2>) -> MatOwned<N> {
-        match (self.storage(), rhs.ordering()) {
-            (CSR, StorageOrder::C) => {
-                    binop::add_dense_mat_same_ordering(self,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (CSR, StorageOrder::F) => {
-                    let lhs = self.to_other_storage();
-                    binop::add_dense_mat_same_ordering(&lhs,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (CSC, StorageOrder::C) => {
-                    let lhs = self.to_other_storage();
-                    binop::add_dense_mat_same_ordering(&lhs,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (CSC, StorageOrder::F) => {
-                    binop::add_dense_mat_same_ordering(self,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
         }
     }
 }

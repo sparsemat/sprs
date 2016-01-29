@@ -1,12 +1,10 @@
 ///! Sparse matrix addition, subtraction
 
-use std::ops::Deref;
 use sparse::csmat::{CsMat, CsMatOwned, CsMatView, CompressedStorage};
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
-use dense_mats::{StorageOrder, Tensor, MatOwned, MatView, MatViewMut, tensor};
 use errors::SprsError;
 use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
 
@@ -150,24 +148,6 @@ F: Fn(N, N) -> N {
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
-pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat, rhs: &Tensor<N, [usize; 2], DenseStorage>,
-    alpha: N, beta: N)
--> Result<MatOwned<N>, SprsError>
-where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: Deref<Target=[N]> {
-    let binop = |x, y| alpha * x + beta * y;
-    let mut res = match rhs.ordering() {
-        StorageOrder::C => MatOwned::zeros(rhs.shape()),
-        StorageOrder::F => MatOwned::zeros_f(rhs.shape()),
-        _ => unreachable!(),
-    };
-    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(), rhs.borrowed(),
-                                             binop, res.borrowed_mut()));
-    Ok(res)
-}
-
-/// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
-/// and alpha and beta scalars
 pub fn add_dense_mat_same_ordering_ndarray<N, Mat, DenseStorage>(
     lhs: &Mat,
     rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
@@ -192,58 +172,24 @@ where N: Num + Copy,
 
 /// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
 /// and alpha a scalar
-pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat, rhs: &Tensor<N, [usize; 2], DenseStorage>,
+pub fn mul_dense_mat_same_ordering_ndarray<N, Mat, DenseStorage>(
+    lhs: &Mat, rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
     alpha: N)
--> Result<MatOwned<N>, SprsError>
-where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: Deref<Target=[N]> {
+-> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
+where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
     let binop = |x, y| alpha * x * y;
-    let mut res = match rhs.ordering() {
-        StorageOrder::C => MatOwned::zeros(rhs.shape()),
-        StorageOrder::F => MatOwned::zeros_f(rhs.shape()),
-        _ => unreachable!(),
+    let shape = (rhs.shape()[0], rhs.shape()[1]);
+    let mut res = match rhs.is_standard_layout() {
+        true => OwnedArray::zeros(shape),
+        false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(), rhs.borrowed(),
-                                             binop, res.borrowed_mut()));
+    try!(csmat_binop_dense_same_ordering_raw_ndarray(lhs.borrowed(),
+                                                     rhs.view(),
+                                                     binop,
+                                                     res.view_mut()));
     Ok(res)
 }
 
-/// Raw implementation of sparse/dense binary operations with the same
-/// ordering
-pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
-                                                     rhs: MatView<'a, N>,
-                                                     binop: F,
-                                                     mut out: MatViewMut<'a, N>
-                                                    ) -> Result<(), SprsError>
-where N: 'a + Copy + Num,
-      F: Fn(N, N) -> N {
-    if         lhs.cols() != rhs.cols() || lhs.cols() != out.cols()
-            || lhs.rows() != rhs.rows() || lhs.rows() != out.rows() {
-        return Err(SprsError::IncompatibleDimensions);
-    }
-    match (lhs.storage(), rhs.ordering(), out.ordering()) {
-        (CompressedStorage::CSR, StorageOrder::C, StorageOrder::C) => (),
-        (CompressedStorage::CSC, StorageOrder::F, StorageOrder::F) => (),
-        (_, _, _) => return Err(SprsError::IncompatibleStorages),
-    }
-    let outer_axis = tensor::Axis(rhs.outer_dim().unwrap());
-    for ((mut orow, (_, lrow)), rrow) in out.iter_axis_mut(outer_axis)
-                                            .zip(lhs.outer_iterator())
-                                            .zip(rhs.iter_axis(outer_axis)) {
-        // now some equivalent of nnz_or_zip is needed
-        for items in orow.iter_mut()
-                         .zip(rrow.iter().enumerate().nnz_or_zip(lrow.iter())) {
-            let (mut oval, lr_elems) = items;
-            let binop_val = match lr_elems {
-                Left((_, &val)) => binop(val, N::zero()),
-                Right((_, val)) => binop(N::zero(), val),
-                Both((_, &lval, rval)) => binop(lval, rval),
-            };
-            *oval = binop_val;
-        }
-    }
-    Ok(())
-}
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
@@ -310,8 +256,7 @@ mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
-    use test_data::{mat1, mat2, mat1_times_2, mat_dense1, mat_dense1_ndarray};
-    use dense_mats::MatOwned;
+    use test_data::{mat1, mat2, mat1_times_2, mat_dense1_ndarray};
     use ndarray::{arr2, OwnedArray};
 
     fn mat1_plus_mat2() -> CsMatOwned<f64> {
@@ -425,35 +370,6 @@ mod test {
     }
 
     #[test]
-    fn csr_add_dense_rowmaj() {
-        let a = MatOwned::zeros([3,3]);
-        let b = CsMatOwned::eye(CSR, 3);
-
-        let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.).unwrap();
-
-        let mut expected_output = MatOwned::zeros([3,3]);
-        expected_output[[0,0]] = 1.;
-        expected_output[[1,1]] = 1.;
-        expected_output[[2,2]] = 1.;
-
-        assert_eq!(c, expected_output);
-
-        let a = mat1();
-        let b = mat_dense1();
-
-        let expected_output = MatOwned::new_owned(vec![0., 1., 5., 7., 4.,
-                                                       5., 6., 5., 6., 8.,
-                                                       4., 5., 9., 3., 2.,
-                                                       3., 12., 3., 2., 1.,
-                                                       1., 2., 1., 8., 0.],
-                                                  5, 5, [5,1]);
-        let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.).unwrap();
-        assert_eq!(c, expected_output);
-        let c = &a + &b;
-        assert_eq!(c, expected_output);
-    }
-
-    #[test]
     fn csr_add_dense_rowmaj_ndarray() {
         let a = OwnedArray::zeros((3,3));
         let b = CsMatOwned::eye(CSR, 3);
@@ -483,12 +399,12 @@ mod test {
 
     #[test]
     fn csr_mul_dense_rowmaj() {
-        let a = MatOwned::ones([3,3]);
+        let a = OwnedArray::from_elem((3,3), 1.);
         let b = CsMatOwned::eye(CSR, 3);
 
-        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.).unwrap();
+        let c = super::mul_dense_mat_same_ordering_ndarray(&b, &a, 1.).unwrap();
 
-        let expected_output = MatOwned::eye(3);
+        let expected_output = OwnedArray::eye(3);
 
         assert_eq!(c, expected_output);
     }
