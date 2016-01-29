@@ -1006,30 +1006,34 @@ where N: 'a + Copy + Num + Default,
     fn add(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> OwnedArray<N, (Ix, Ix)> {
         match (self.storage(), rhs.is_standard_layout()) {
             (CSR, true) => {
-                    binop::add_dense_mat_same_ordering_ndarray(self,
+                    binop::add_dense_mat_same_ordering(self,
                                                        rhs,
                                                        N::one(),
-                                                       N::one()).unwrap()
+                                                       N::one()
+                                                      ).unwrap()
                 }
                 (CSR, false) => {
                     let lhs = self.to_other_storage();
-                    binop::add_dense_mat_same_ordering_ndarray(&lhs,
+                    binop::add_dense_mat_same_ordering(&lhs,
                                                        rhs,
                                                        N::one(),
-                                                       N::one()).unwrap()
+                                                       N::one()
+                                                      ).unwrap()
                 }
                 (CSC, true) => {
                     let lhs = self.to_other_storage();
-                    binop::add_dense_mat_same_ordering_ndarray(&lhs,
+                    binop::add_dense_mat_same_ordering(&lhs,
                                                        rhs,
                                                        N::one(),
-                                                       N::one()).unwrap()
+                                                       N::one()
+                                                      ).unwrap()
                 }
                 (CSC, false) => {
-                    binop::add_dense_mat_same_ordering_ndarray(self,
+                    binop::add_dense_mat_same_ordering(self,
                                                        rhs,
                                                        N::one(),
-                                                       N::one()).unwrap()
+                                                       N::one()
+                                                      ).unwrap()
                 }
         }
     }
@@ -1051,34 +1055,34 @@ where N: 'a + Copy + Num + Default,
         match (self.storage(), rhs.is_standard_layout()) {
             (CSR, true) => {
                 let mut res = OwnedArray::zeros((rows, cols));
-                prod::csr_mulacc_dense_rowmaj_ndarray(self.borrowed(),
-                                                      rhs.view(),
-                                                      res.view_mut()
-                                                     ).unwrap();
+                prod::csr_mulacc_dense_rowmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
                 res
             }
             (CSR, false) => {
                 let mut res = OwnedArray::zeros_f((rows, cols));
-                prod::csr_mulacc_dense_colmaj_ndarray(self.borrowed(),
-                                                      rhs.view(),
-                                                      res.view_mut()
-                                                     ).unwrap();
+                prod::csr_mulacc_dense_colmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
                 res
             }
             (CSC, true) => {
                 let mut res = OwnedArray::zeros((rows, cols));
-                prod::csc_mulacc_dense_rowmaj_ndarray(self.borrowed(),
-                                                      rhs.view(),
-                                                      res.view_mut()
-                                                     ).unwrap();
+                prod::csc_mulacc_dense_rowmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
                 res
             }
             (CSC, false) => {
                 let mut res = OwnedArray::zeros_f((rows, cols));
-                prod::csc_mulacc_dense_colmaj_ndarray(self.borrowed(),
-                                                      rhs.view(),
-                                                      res.view_mut()
-                                                     ).unwrap();
+                prod::csc_mulacc_dense_colmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
                 res
             }
         }

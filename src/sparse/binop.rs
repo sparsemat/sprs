@@ -148,7 +148,7 @@ F: Fn(N, N) -> N {
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
-pub fn add_dense_mat_same_ordering_ndarray<N, Mat, DenseStorage>(
+pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
     lhs: &Mat,
     rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
     alpha: N,
@@ -163,16 +163,16 @@ where N: Num + Copy,
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw_ndarray(lhs.borrowed(),
-                                                     rhs.view(),
-                                                     binop,
-                                                     res.view_mut()));
+    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
+                                             rhs.view(),
+                                             binop,
+                                             res.view_mut()));
     Ok(res)
 }
 
 /// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
 /// and alpha a scalar
-pub fn mul_dense_mat_same_ordering_ndarray<N, Mat, DenseStorage>(
+pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
     lhs: &Mat, rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
     alpha: N)
 -> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
@@ -183,17 +183,17 @@ where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw_ndarray(lhs.borrowed(),
-                                                     rhs.view(),
-                                                     binop,
-                                                     res.view_mut()));
+    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
+                                             rhs.view(),
+                                             binop,
+                                             res.view_mut()));
     Ok(res)
 }
 
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
-pub fn csmat_binop_dense_same_ordering_raw_ndarray<'a, N, F>(lhs: CsMatView<'a, N>,
+pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
                                                      rhs: ArrayView<'a, N, (Ix, Ix)>,
                                                      binop: F,
                                                      mut out: ArrayViewMut<'a, N, (Ix, Ix)>
@@ -256,7 +256,7 @@ mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
     use sparse::CompressedStorage::{CSR};
-    use test_data::{mat1, mat2, mat1_times_2, mat_dense1_ndarray};
+    use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
     use ndarray::{arr2, OwnedArray};
 
     fn mat1_plus_mat2() -> CsMatOwned<f64> {
@@ -370,11 +370,11 @@ mod test {
     }
 
     #[test]
-    fn csr_add_dense_rowmaj_ndarray() {
+    fn csr_add_dense_rowmaj() {
         let a = OwnedArray::zeros((3,3));
         let b = CsMatOwned::eye(CSR, 3);
 
-        let c = super::add_dense_mat_same_ordering_ndarray(&b, &a, 1., 1.).unwrap();
+        let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.).unwrap();
 
         let mut expected_output = OwnedArray::zeros((3,3));
         expected_output[[0,0]] = 1.;
@@ -384,14 +384,14 @@ mod test {
         assert_eq!(c, expected_output);
 
         let a = mat1();
-        let b = mat_dense1_ndarray();
+        let b = mat_dense1();
 
         let expected_output = arr2(&[[0., 1., 5., 7., 4.],
                                      [5., 6., 5., 6., 8.],
                                      [4., 5., 9., 3., 2.],
                                      [3., 12., 3., 2., 1.],
                                      [1., 2., 1., 8., 0.]]);
-        let c = super::add_dense_mat_same_ordering_ndarray(&a, &b, 1., 1.).unwrap();
+        let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.).unwrap();
         assert_eq!(c, expected_output);
         let c = &a + &b;
         assert_eq!(c, expected_output);
@@ -402,7 +402,7 @@ mod test {
         let a = OwnedArray::from_elem((3,3), 1.);
         let b = CsMatOwned::eye(CSR, 3);
 
-        let c = super::mul_dense_mat_same_ordering_ndarray(&b, &a, 1.).unwrap();
+        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.).unwrap();
 
         let expected_output = OwnedArray::eye(3);
 

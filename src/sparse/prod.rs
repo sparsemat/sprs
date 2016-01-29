@@ -186,7 +186,7 @@ where N: Copy + Num {
 /// CSR-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj.
-pub fn csr_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
+pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     lhs: CsMatView<N>,
     rhs: ArrayView<N, (Ix, Ix)>,
     mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
@@ -243,7 +243,7 @@ pub fn csr_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
 /// CSC-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj
-pub fn csc_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
+pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     lhs: CsMatView<N>,
     rhs: ArrayView<N, (Ix, Ix)>,
     mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
@@ -279,7 +279,7 @@ pub fn csc_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
 /// CSC-dense colmaj multiplication
 ///
 /// Performs better if out is colmaj
-pub fn csc_mulacc_dense_colmaj_ndarray<'a, N: 'a + Num + Copy>(
+pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     lhs: CsMatView<N>,
     rhs: ArrayView<N, (Ix, Ix)>,
     mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
@@ -317,7 +317,7 @@ pub fn csc_mulacc_dense_colmaj_ndarray<'a, N: 'a + Num + Copy>(
 /// CSR-dense colmaj multiplication
 ///
 /// Performs better if out is colmaj
-pub fn csr_mulacc_dense_colmaj_ndarray<'a, N: 'a + Num + Copy>(
+pub fn csr_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     lhs: CsMatView<N>, rhs:
     ArrayView<N, (Ix, Ix)>,
     mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
@@ -358,8 +358,8 @@ mod test {
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
-                    mat1_csc, mat4, mat1_csc_matprod_mat4, mat_dense1_ndarray,
-                    mat5, mat_dense1_colmaj_ndarray, mat_dense2_ndarray};
+                    mat1_csc, mat4, mat1_csc_matprod_mat4, mat_dense1,
+                    mat5, mat_dense1_colmaj, mat_dense2};
     use ndarray::{OwnedArray, arr2};
 
     #[test]
@@ -498,23 +498,23 @@ mod test {
     }
 
     #[test]
-    fn mul_csr_dense_rowmaj_ndarray() {
+    fn mul_csr_dense_rowmaj() {
         let a = OwnedArray::eye(3);
         let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
         let mut res = OwnedArray::zeros((3, 3));
-        super::csr_mulacc_dense_rowmaj_ndarray(e.borrowed(),
-                                               a.view(),
-                                               res.view_mut()
-                                              ).unwrap();
+        super::csr_mulacc_dense_rowmaj(e.borrowed(),
+                                       a.view(),
+                                       res.view_mut()
+                                      ).unwrap();
         assert_eq!(res, a);
 
         let a = mat1();
-        let b = mat_dense1_ndarray();
+        let b = mat_dense1();
         let mut res = OwnedArray::zeros((5, 5));
-        super::csr_mulacc_dense_rowmaj_ndarray(a.borrowed(),
-                                               b.view(),
-                                               res.view_mut()
-                                              ).unwrap();
+        super::csr_mulacc_dense_rowmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()
+                                      ).unwrap();
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
                                      [11., 18., 11.,  9.,  2.],
                                      [20., 25., 20., 15., 10.],
@@ -526,12 +526,12 @@ mod test {
         assert_eq!(c, expected_output);
 
         let a = mat5();
-        let b = mat_dense2_ndarray();
+        let b = mat_dense2();
         let mut res = OwnedArray::zeros((5, 7));
-        super::csr_mulacc_dense_rowmaj_ndarray(a.borrowed(),
-                                               b.view(),
-                                               res.view_mut()
-                                              ).unwrap();
+        super::csr_mulacc_dense_rowmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()
+                                      ).unwrap();
         let expected_output = arr2(
             &[[130.04,  150.1,  87.19, 90.89,  99.48,  80.43,   99.3],
               [217.72, 161.61,  79.47, 121.5, 124.23, 146.91, 157.79],
@@ -544,13 +544,13 @@ mod test {
     }
 
     #[test]
-    fn mul_csc_dense_rowmaj_ndarray() {
+    fn mul_csc_dense_rowmaj() {
         let a = mat1_csc();
-        let b = mat_dense1_ndarray();
+        let b = mat_dense1();
         let mut res = OwnedArray::zeros((5, 5));
-        super::csc_mulacc_dense_rowmaj_ndarray(a.borrowed(),
-                                               b.view(),
-                                               res.view_mut()).unwrap();
+        super::csc_mulacc_dense_rowmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()).unwrap();
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
                                      [11., 18., 11.,  9.,  2.],
                                      [20., 25., 20., 15., 10.],
@@ -563,13 +563,13 @@ mod test {
     }
 
     #[test]
-    fn mul_csc_dense_colmaj_ndarray() {
+    fn mul_csc_dense_colmaj() {
         let a = mat1_csc();
-        let b = mat_dense1_colmaj_ndarray();
+        let b = mat_dense1_colmaj();
         let mut res = OwnedArray::zeros_f((5, 5));
-        super::csc_mulacc_dense_colmaj_ndarray(a.borrowed(),
-                                               b.view(),
-                                               res.view_mut()).unwrap();
+        super::csc_mulacc_dense_colmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()).unwrap();
         let v = vec![24., 11., 20., 40., 21.,
                      31., 18., 25., 48., 28.,
                      24., 11., 20., 40., 21.,
@@ -586,14 +586,14 @@ mod test {
 
 
     #[test]
-    fn mul_csr_dense_colmaj_ndarray() {
+    fn mul_csr_dense_colmaj() {
         let a = mat1();
-        let b = mat_dense1_colmaj_ndarray();
+        let b = mat_dense1_colmaj();
         let mut res = OwnedArray::zeros_f((5, 5));
-        super::csr_mulacc_dense_colmaj_ndarray(a.borrowed(),
-                                               b.view(),
-                                               res.view_mut()
-                                               ).unwrap();
+        super::csr_mulacc_dense_colmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()
+                                      ).unwrap();
         let v = vec![24., 11., 20., 40., 21.,
                     31., 18., 25., 48., 28.,
                     24., 11., 20., 40., 21.,

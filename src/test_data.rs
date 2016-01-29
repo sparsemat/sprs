@@ -79,7 +79,7 @@ pub fn mat1_csc_matprod_mat4() -> CsMatOwned<f64> {
     CsMat::new_owned(CSC, 5, 5, indptr, indices, data).unwrap()
 }
 
-pub fn mat_dense1_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
+pub fn mat_dense1() -> OwnedArray<f64, (Ix, Ix)> {
     let m = arr2(&[[0., 1., 2., 3., 4.],
                    [5., 6., 5., 4., 3.],
                    [4., 5., 4., 3., 2.],
@@ -88,7 +88,7 @@ pub fn mat_dense1_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
     m.to_owned()
 }
 
-pub fn mat_dense1_colmaj_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
+pub fn mat_dense1_colmaj() -> OwnedArray<f64, (Ix, Ix)> {
     let v = vec![0., 5., 4., 3., 1.,
                  1., 6., 5., 4., 2.,
                  2., 5., 4., 3., 1.,
@@ -97,7 +97,7 @@ pub fn mat_dense1_colmaj_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
     OwnedArray::from_vec_dim_stride((5, 5), (1, 5), v).unwrap()
 }
 
-pub fn mat_dense2_ndarray() -> OwnedArray<f64, (Ix, Ix)> {
+pub fn mat_dense2() -> OwnedArray<f64, (Ix, Ix)> {
   let m = arr2(&[[8.2, 1.8, 0.9, 2.6, 6.7, 7.6, 8.3],
                  [8.7, 9.4, 2.6, 6.4, 3.5, 1.2, 4.7],
                  [5.3, 9. , 8.7, 9.8, 4.6, 2.5, 4.6],
