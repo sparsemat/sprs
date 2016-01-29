@@ -242,6 +242,63 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     Ok(())
 }
 
+/// CSR-dense rowmaj multiplication
+///
+/// Performs better if out is rowmaj.
+pub fn csr_mulacc_dense_rowmaj_ndarray<'a, N: 'a + Num + Copy>(
+    lhs: CsMatView<N>,
+    rhs: ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
+-> Result<(), SprsError> {
+    if lhs.cols() != rhs.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if lhs.rows() != out.shape()[0] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if rhs.shape()[1] != out.shape()[1] {
+        return Err(SprsError::IncompatibleDimensions);
+    }
+    if !lhs.is_csr() {
+        return Err(SprsError::BadStorageType);
+    }
+    if !rhs.is_standard_layout() {
+        return Err(SprsError::BadStorageType);
+    }
+    // for now we implement a naive strategy, but later on it would
+    // be nice to pick a data dependent block-size to optimize caching effects
+    let lblock_size = 4;
+    let rblock_size = 4;
+    for (mut oblock, lblock) in out.axis_chunks_iter_mut(0, lblock_size)
+                                   .zip(lhs.outer_block_iter(lblock_size)) {
+        for (rcount, rblock) in rhs.axis_chunks_iter(0, rblock_size)
+                                   .enumerate() {
+            let col_start = rblock_size * rcount;
+            let col_end = col_start + rblock_size;
+
+            let axis0 = 0;
+            for ((_, line), mut oline) in lblock.outer_iterator()
+                                          .zip(oblock.axis_iter_mut(axis0)) {
+                'col_block: for (col_ind, lval) in line.iter() {
+                    if col_ind < col_start {
+                        continue 'col_block;
+                    }
+                    if col_ind >= col_end {
+                        break 'col_block;
+                    }
+                    let k_inblock = col_ind - col_start;
+                    let rline = rblock.subview(axis0, k_inblock);
+                    for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
+                        let prev = *oval;
+                        *oval = prev + lval * rval;
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// CSC-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj
@@ -469,7 +526,7 @@ mod test {
                     mat1_csc, mat4, mat1_csc_matprod_mat4,
                     mat_dense1, mat_dense1_ndarray,
                     mat5, mat_dense2, mat_dense1_colmaj,
-                    mat_dense1_colmaj_ndarray};
+                    mat_dense1_colmaj_ndarray, mat_dense2_ndarray};
     use ndarray::{OwnedArray, arr2};
 
     #[test]
@@ -647,6 +704,49 @@ mod test {
         let eps = 1e-8;
         assert!(res.data().iter().zip(expected_output.data().iter())
                 .all(|(&x, &y)| (x - y).abs() <= eps));
+    }
+
+    #[test]
+    fn mul_csr_dense_rowmaj_ndarray() {
+        let a = OwnedArray::eye(3);
+        let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
+        let mut res = OwnedArray::zeros((3, 3));
+        super::csr_mulacc_dense_rowmaj_ndarray(e.borrowed(),
+                                               a.view(),
+                                               res.view_mut()
+                                              ).unwrap();
+        assert_eq!(res, a);
+
+        let a = mat1();
+        let b = mat_dense1_ndarray();
+        let mut res = OwnedArray::zeros((5, 5));
+        super::csr_mulacc_dense_rowmaj_ndarray(a.borrowed(),
+                                               b.view(),
+                                               res.view_mut()
+                                              ).unwrap();
+        let expected_output = arr2(&[[24., 31., 24., 17., 10.],
+                                     [11., 18., 11.,  9.,  2.],
+                                     [20., 25., 20., 15., 10.],
+                                     [40., 48., 40., 32., 24.],
+                                     [21., 28., 21., 14.,  7.]]);
+        assert_eq!(res, expected_output);
+
+        let a = mat5();
+        let b = mat_dense2_ndarray();
+        let mut res = OwnedArray::zeros((5, 7));
+        super::csr_mulacc_dense_rowmaj_ndarray(a.borrowed(),
+                                               b.view(),
+                                               res.view_mut()
+                                              ).unwrap();
+        let expected_output = arr2(
+            &[[130.04,  150.1,  87.19, 90.89,  99.48,  80.43,   99.3],
+              [217.72, 161.61,  79.47, 121.5, 124.23, 146.91, 157.79],
+              [  55.6,  59.95,   86.7,   0.9,   37.4,  71.66,  51.94],
+              [118.18, 123.16, 128.04, 92.02, 106.84,  175.1,  87.36],
+              [  43.4,   54.1,  12.65, 44.35,   39.9,   23.4,   76.6]]);
+        let eps = 1e-8;
+        assert!(res.iter().zip(expected_output.iter())
+                   .all(|(&x, &y)| (x - y).abs() <= eps));
     }
 
     #[test]
