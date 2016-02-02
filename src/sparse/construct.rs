@@ -172,10 +172,23 @@ where N: Num + Copy + cmp::PartialOrd + Signed
                           data).unwrap()
 }
 
+/// Create a CSC matrix from a dense matrix, ignoring elements
+/// lower than `epsilon`.
+///
+/// If epsilon is negative, it will be clamped to zero.
+pub fn csc_from_dense<N>(mut m: ArrayView<N, (Ix, Ix)>,
+                         epsilon: N
+                        ) -> CsMatOwned<N>
+where N: Num + Copy + cmp::PartialOrd + Signed
+{
+    m.swap_axes(0, 1);
+    csr_from_dense(m, epsilon).transpose_into()
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMatOwned;
-    use sparse::CompressedStorage::{CSR};
+    use sparse::CompressedStorage::{CSR, CSC};
     use test_data::{mat1, mat2, mat3, mat4};
     use errors::SprsError::*;
     use ndarray::{arr2, OwnedArray};
@@ -321,6 +334,29 @@ mod test {
                                                     vec![0, 3, 4, 6],
                                                     vec![0, 2, 4, 3, 0, 2],
                                                     vec![1., 2., 1., 1., 3., 1.]
+                                                   ).unwrap();
+
+        assert_eq!(m_sparse, expected_output);
+    }
+
+    #[test]
+    fn csc_from_dense() {
+        let m = OwnedArray::eye(3);
+        let m_sparse = super::csc_from_dense(m.view(), 0.);
+
+        assert_eq!(m_sparse, CsMatOwned::eye(CSC, 3));
+
+        let m = arr2(&[[1., 0., 2., 1e-7, 1.],
+                       [0., 0., 0., 1.,   0.],
+                       [3., 0., 1., 0.,   0.]]);
+        let m_sparse = super::csc_from_dense(m.view(), 1e-5);
+
+        let expected_output = CsMatOwned::new_owned(CSC,
+                                                    3,
+                                                    5,
+                                                    vec![0, 2, 2, 4, 5, 6],
+                                                    vec![0, 2, 0, 2, 1, 0],
+                                                    vec![1., 3., 2., 1., 1., 1.]
                                                    ).unwrap();
 
         assert_eq!(m_sparse, expected_output);
