@@ -15,7 +15,7 @@ use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range};
 use std::mem;
 use num::traits::Num;
 
-use dense_mats::{StorageOrder, Tensor, MatOwned};
+use ndarray::{self, ArrayBase, OwnedArray, Ix};
 
 use sparse::permutation::PermView;
 use sparse::vec::{CsVec, CsVecView};
@@ -931,18 +931,30 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, N, IpStorage, IStorage, DStorage> Mul<N>
-for &'a CsMat<N, IpStorage, IStorage, DStorage>
-where N: 'a + Copy + Num,
-      IpStorage: 'a + Deref<Target=[usize]>,
-      IStorage: 'a + Deref<Target=[usize]>,
-      DStorage: 'a + Deref<Target=[N]> {
-    type Output = CsMatOwned<N>;
+macro_rules! sparse_scalar_mul {
+    ($scalar: ident) => (
+        impl<'a, IpStorage, IStorage, DStorage> Mul<$scalar>
+        for &'a CsMat<$scalar, IpStorage, IStorage, DStorage>
+        where IpStorage: 'a + Deref<Target=[usize]>,
+              IStorage: 'a + Deref<Target=[usize]>,
+              DStorage: 'a + Deref<Target=[$scalar]> {
+            type Output = CsMatOwned<$scalar>;
 
-    fn mul(self, rhs: N) -> CsMatOwned<N> {
-        binop::scalar_mul_mat(self, rhs)
-    }
+            fn mul(self, rhs: $scalar) -> CsMatOwned<$scalar> {
+                binop::scalar_mul_mat(self, rhs)
+            }
+        }
+    )
 }
+
+sparse_scalar_mul!(u32);
+sparse_scalar_mul!(i32);
+sparse_scalar_mul!(u64);
+sparse_scalar_mul!(i64);
+sparse_scalar_mul!(isize);
+sparse_scalar_mul!(usize);
+sparse_scalar_mul!(f32);
+sparse_scalar_mul!(f64);
 
 impl<'a, 'b, N, IpS1, IS1, DS1, IpS2, IS2, DS2>
 Mul<&'b CsMat<N, IpS2, IS2, DS2>>
@@ -982,87 +994,97 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, IpS, IS, DS, DS2>
-Mul<&'b Tensor<N, [usize; 2], DS2>>
+Add<&'b ArrayBase<DS2, (Ix, Ix)>>
 for &'a CsMat<N, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       IpS: 'a + Deref<Target=[usize]>,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
-      DS2: 'b + Deref<Target=[N]> {
-    type Output = MatOwned<N>;
+      DS2: 'b + ndarray::Data<Elem=N> {
+    type Output = OwnedArray<N, (Ix, Ix)>;
 
-    fn mul(self, rhs: &'b Tensor<N, [usize; 2], DS2>) -> MatOwned<N> {
-        let rows = self.rows();
-        let cols = rhs.cols();
-        match (self.storage(), rhs.ordering()) {
-            (CSR, StorageOrder::C) => {
-                let mut res = Tensor::zeros([rows, cols]);
-                prod::csr_mulacc_dense_rowmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (CSR, StorageOrder::F) => {
-                let mut res = Tensor::zeros_f([rows, cols]);
-                prod::csr_mulacc_dense_colmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (CSC, StorageOrder::C) => {
-                let mut res = Tensor::zeros([rows, cols]);
-                prod::csc_mulacc_dense_rowmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (CSC, StorageOrder::F) => {
-                let mut res = Tensor::zeros_f([rows, cols]);
-                prod::csc_mulacc_dense_colmaj(self.borrowed(), rhs.borrowed(),
-                                              res.borrowed_mut()).unwrap();
-                res
-            }
-            (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
+    fn add(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> OwnedArray<N, (Ix, Ix)> {
+        match (self.storage(), rhs.is_standard_layout()) {
+            (CSR, true) => {
+                    binop::add_dense_mat_same_ordering(self,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()
+                                                      ).unwrap()
+                }
+                (CSR, false) => {
+                    let lhs = self.to_other_storage();
+                    binop::add_dense_mat_same_ordering(&lhs,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()
+                                                      ).unwrap()
+                }
+                (CSC, true) => {
+                    let lhs = self.to_other_storage();
+                    binop::add_dense_mat_same_ordering(&lhs,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()
+                                                      ).unwrap()
+                }
+                (CSC, false) => {
+                    binop::add_dense_mat_same_ordering(self,
+                                                       rhs,
+                                                       N::one(),
+                                                       N::one()
+                                                      ).unwrap()
+                }
         }
     }
 }
 
 impl<'a, 'b, N, IpS, IS, DS, DS2>
-Add<&'b Tensor<N, [usize; 2], DS2>>
+Mul<&'b ArrayBase<DS2, (Ix, Ix)>>
 for &'a CsMat<N, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       IpS: 'a + Deref<Target=[usize]>,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
-      DS2: 'b + Deref<Target=[N]> {
-    type Output = MatOwned<N>;
+      DS2: 'b + ndarray::Data<Elem=N> {
+    type Output = OwnedArray<N, (Ix, Ix)>;
 
-    fn add(self, rhs: &'b Tensor<N, [usize; 2], DS2>) -> MatOwned<N> {
-        match (self.storage(), rhs.ordering()) {
-            (CSR, StorageOrder::C) => {
-                    binop::add_dense_mat_same_ordering(self,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (CSR, StorageOrder::F) => {
-                    let lhs = self.to_other_storage();
-                    binop::add_dense_mat_same_ordering(&lhs,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (CSC, StorageOrder::C) => {
-                    let lhs = self.to_other_storage();
-                    binop::add_dense_mat_same_ordering(&lhs,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (CSC, StorageOrder::F) => {
-                    binop::add_dense_mat_same_ordering(self,
-                                                       rhs,
-                                                       N::one(),
-                                                       N::one()).unwrap()
-                }
-                (_, StorageOrder::Unordered) => unreachable!("mats are ordered")
+    fn mul(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> OwnedArray<N, (Ix, Ix)> {
+        let rows = self.rows();
+        let cols = rhs.shape()[1];
+        match (self.storage(), rhs.is_standard_layout()) {
+            (CSR, true) => {
+                let mut res = OwnedArray::zeros((rows, cols));
+                prod::csr_mulacc_dense_rowmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
+                res
+            }
+            (CSR, false) => {
+                let mut res = OwnedArray::zeros_f((rows, cols));
+                prod::csr_mulacc_dense_colmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
+                res
+            }
+            (CSC, true) => {
+                let mut res = OwnedArray::zeros((rows, cols));
+                prod::csc_mulacc_dense_rowmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
+                res
+            }
+            (CSC, false) => {
+                let mut res = OwnedArray::zeros_f((rows, cols));
+                prod::csc_mulacc_dense_colmaj(self.borrowed(),
+                                              rhs.view(),
+                                              res.view_mut()
+                                             ).unwrap();
+                res
+            }
         }
     }
 }

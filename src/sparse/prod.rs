@@ -4,8 +4,7 @@ use sparse::csmat::{CsMatOwned, CsMatView};
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
-use dense_mats::{StorageOrder, MatView, MatViewMut};
-use dense_mats::tensor;
+use ndarray::{ArrayView, ArrayViewMut, Ix};
 use errors::SprsError;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
@@ -185,39 +184,42 @@ where N: Copy + Num {
 }
 
 /// CSR-dense rowmaj multiplication
-/// 
+///
 /// Performs better if out is rowmaj.
 pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+    lhs: CsMatView<N>,
+    rhs: ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
 -> Result<(), SprsError> {
-    if lhs.cols() != rhs.rows() {
+    if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if lhs.rows() != out.rows() {
+    if lhs.rows() != out.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if rhs.cols() != out.cols() {
+    if rhs.shape()[1] != out.shape()[1] {
         return Err(SprsError::IncompatibleDimensions);
     }
     if !lhs.is_csr() {
         return Err(SprsError::BadStorageType);
     }
-    if rhs.ordering() != StorageOrder::C {
+    if !rhs.is_standard_layout() {
         return Err(SprsError::BadStorageType);
     }
     // for now we implement a naive strategy, but later on it would
     // be nice to pick a data dependent block-size to optimize caching effects
     let lblock_size = 4;
     let rblock_size = 4;
-    for (mut oblock, lblock) in out.outer_block_iter_mut(lblock_size)
+    for (mut oblock, lblock) in out.axis_chunks_iter_mut(0, lblock_size)
                                    .zip(lhs.outer_block_iter(lblock_size)) {
-        for (rcount, rblock) in rhs.outer_block_iter(rblock_size).enumerate() {
+        for (rcount, rblock) in rhs.axis_chunks_iter(0, rblock_size)
+                                   .enumerate() {
             let col_start = rblock_size * rcount;
             let col_end = col_start + rblock_size;
 
-            let axis0 = tensor::Axis(0);
+            let axis0 = 0;
             for ((_, line), mut oline) in lblock.outer_iterator()
-                                          .zip(oblock.iter_axis_mut(axis0)) {
+                                          .zip(oblock.axis_iter_mut(axis0)) {
                 'col_block: for (col_ind, lval) in line.iter() {
                     if col_ind < col_start {
                         continue 'col_block;
@@ -225,11 +227,8 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
                     if col_ind >= col_end {
                         break 'col_block;
                     }
-                    //let i_inblock = line_ind;
-                    //let mut oline = oblock.slice_dim_mut(tensor::Axis(0), 
-                    //                                     i_inblock);
                     let k_inblock = col_ind - col_start;
-                    let rline = rblock.slice_dim(axis0, k_inblock);
+                    let rline = rblock.subview(axis0, k_inblock);
                     for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
                         let prev = *oval;
                         *oval = prev + lval * rval;
@@ -245,28 +244,29 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
 ///
 /// Performs better if out is rowmaj
 pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+    lhs: CsMatView<N>,
+    rhs: ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
 -> Result<(), SprsError> {
-    if lhs.cols() != rhs.rows() {
+    if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if lhs.rows() != out.rows() {
+    if lhs.rows() != out.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if rhs.cols() != out.cols() {
+    if rhs.shape()[1] != out.shape()[1] {
         return Err(SprsError::IncompatibleDimensions);
     }
     if !lhs.is_csc() {
         return Err(SprsError::BadStorageType);
     }
-    if rhs.ordering() != StorageOrder::C {
+    if !rhs.is_standard_layout() {
         return Err(SprsError::BadStorageType);
     }
 
-    let axis0 = tensor::Axis(0);
-    for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.iter_axis(axis0)) {
+    for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
         for (orow, lval) in lcol.iter() {
-            let mut oline = out.slice_dim_mut(axis0, orow);
+            let mut oline = out.row_mut(orow);
             for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
                 let prev = *oval;
                 *oval = prev + lval * rval;
@@ -277,28 +277,31 @@ pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
 }
 
 /// CSC-dense colmaj multiplication
-/// 
+///
 /// Performs better if out is colmaj
 pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+    lhs: CsMatView<N>,
+    rhs: ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
 -> Result<(), SprsError> {
-    if lhs.cols() != rhs.rows() {
+    if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if lhs.rows() != out.rows() {
+    if lhs.rows() != out.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if rhs.cols() != out.cols() {
+    if rhs.shape()[1] != out.shape()[1] {
         return Err(SprsError::IncompatibleDimensions);
     }
     if !lhs.is_csc() {
         return Err(SprsError::BadStorageType);
     }
-    if rhs.ordering() != StorageOrder::F {
+    if rhs.is_standard_layout() {
         return Err(SprsError::BadStorageType);
     }
-    let axis1 = tensor::Axis(1);
-    for (mut ocol, rcol) in out.iter_axis_mut(axis1).zip(rhs.iter_axis(axis1)) {
+
+    let axis1 = 1;
+    for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (rrow, lcol) in lhs.outer_iterator() {
             let rval = rcol[[rrow]];
             for (orow, lval) in lcol.iter() {
@@ -310,29 +313,32 @@ pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     Ok(())
 }
 
+
 /// CSR-dense colmaj multiplication
-/// 
+///
 /// Performs better if out is colmaj
 pub fn csr_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>, rhs: MatView<N>, mut out: MatViewMut<'a, N>)
+    lhs: CsMatView<N>, rhs:
+    ArrayView<N, (Ix, Ix)>,
+    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
 -> Result<(), SprsError> {
-    if lhs.cols() != rhs.rows() {
+    if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if lhs.rows() != out.rows() {
+    if lhs.rows() != out.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
-    if rhs.cols() != out.cols() {
+    if rhs.shape()[1] != out.shape()[1] {
         return Err(SprsError::IncompatibleDimensions);
     }
     if !lhs.is_csr() {
         return Err(SprsError::BadStorageType);
     }
-    if rhs.ordering() != StorageOrder::F {
+    if rhs.is_standard_layout() {
         return Err(SprsError::BadStorageType);
     }
-    let axis1 = tensor::Axis(1);
-    for (mut ocol, rcol) in out.iter_axis_mut(axis1).zip(rhs.iter_axis(axis1)) {
+    let axis1 = 1;
+    for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (orow, lrow) in lhs.outer_iterator() {
             let mut prev = ocol[[orow]];
             for (rrow, lval) in lrow.iter() {
@@ -350,12 +356,11 @@ mod test {
     use sparse::csmat::{CsMat, CsMatOwned};
     use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
-    use dense_mats::{MatOwned};
-    use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr,
-                csr_mulacc_dense_rowmaj};
+    use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
-                    mat1_csc, mat4, mat1_csc_matprod_mat4,
-                    mat_dense1, mat5, mat_dense2, mat_dense1_colmaj};
+                    mat1_csc, mat4, mat1_csc_matprod_mat4, mat_dense1,
+                    mat5, mat_dense1_colmaj, mat_dense2};
+    use ndarray::{OwnedArray, arr2};
 
     #[test]
     fn mul_csc_vec() {
@@ -494,24 +499,27 @@ mod test {
 
     #[test]
     fn mul_csr_dense_rowmaj() {
-        let a: MatOwned<f64> = MatOwned::eye(3);
+        let a = OwnedArray::eye(3);
         let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
-        let mut res = MatOwned::zeros([3, 3]);
-        csr_mulacc_dense_rowmaj(e.borrowed(), a.borrowed(),
-                                res.borrowed_mut()).unwrap();
+        let mut res = OwnedArray::zeros((3, 3));
+        super::csr_mulacc_dense_rowmaj(e.borrowed(),
+                                       a.view(),
+                                       res.view_mut()
+                                      ).unwrap();
         assert_eq!(res, a);
 
         let a = mat1();
         let b = mat_dense1();
-        let mut res = MatOwned::zeros([5, 5]);
-        csr_mulacc_dense_rowmaj(a.borrowed(), b.borrowed(),
-                                res.borrowed_mut()).unwrap();
-        let expected_output = MatOwned::new_owned(vec![24., 31., 24., 17., 10.,
-                                                       11., 18., 11.,  9.,  2.,
-                                                       20., 25., 20., 15., 10.,
-                                                       40., 48., 40., 32., 24.,
-                                                       21., 28., 21., 14.,  7.],
-                                                  5, 5, [5, 1]);
+        let mut res = OwnedArray::zeros((5, 5));
+        super::csr_mulacc_dense_rowmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()
+                                      ).unwrap();
+        let expected_output = arr2(&[[24., 31., 24., 17., 10.],
+                                     [11., 18., 11.,  9.,  2.],
+                                     [20., 25., 20., 15., 10.],
+                                     [40., 48., 40., 32., 24.],
+                                     [21., 28., 21., 14.,  7.]]);
         assert_eq!(res, expected_output);
 
         let c = &a * &b;
@@ -519,34 +527,35 @@ mod test {
 
         let a = mat5();
         let b = mat_dense2();
-        let mut res = MatOwned::zeros([5, 7]);
-        csr_mulacc_dense_rowmaj(a.borrowed(), b.borrowed(),
-                                res.borrowed_mut()).unwrap();
-        let expected_output = MatOwned::new_owned(
-            vec![130.04, 150.1, 87.19, 90.89, 99.48, 80.43, 99.3,
-                 217.72, 161.61, 79.47, 121.5 , 124.23, 146.91, 157.79,
-                 55.6 , 59.95, 86.7 , 0.9 , 37.4 , 71.66, 51.94,
-                 118.18, 123.16, 128.04, 92.02, 106.84, 175.1 , 87.36,
-                 43.4 , 54.1 , 12.65, 44.35, 39.9 , 23.4 , 76.6],
-            5, 7, [7, 1]);
+        let mut res = OwnedArray::zeros((5, 7));
+        super::csr_mulacc_dense_rowmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()
+                                      ).unwrap();
+        let expected_output = arr2(
+            &[[130.04,  150.1,  87.19, 90.89,  99.48,  80.43,   99.3],
+              [217.72, 161.61,  79.47, 121.5, 124.23, 146.91, 157.79],
+              [  55.6,  59.95,   86.7,   0.9,   37.4,  71.66,  51.94],
+              [118.18, 123.16, 128.04, 92.02, 106.84,  175.1,  87.36],
+              [  43.4,   54.1,  12.65, 44.35,   39.9,   23.4,   76.6]]);
         let eps = 1e-8;
-        assert!(res.data().iter().zip(expected_output.data().iter())
-                .all(|(&x, &y)| (x - y).abs() <= eps));
+        assert!(res.iter().zip(expected_output.iter())
+                   .all(|(&x, &y)| (x - y).abs() <= eps));
     }
 
     #[test]
     fn mul_csc_dense_rowmaj() {
         let a = mat1_csc();
         let b = mat_dense1();
-        let mut res = MatOwned::zeros([5, 5]);
-        super::csc_mulacc_dense_rowmaj(a.borrowed(), b.borrowed(),
-                                       res.borrowed_mut()).unwrap();
-        let expected_output = MatOwned::new_owned(vec![24., 31., 24., 17., 10.,
-                                                       11., 18., 11.,  9.,  2.,
-                                                       20., 25., 20., 15., 10.,
-                                                       40., 48., 40., 32., 24.,
-                                                       21., 28., 21., 14.,  7.],
-                                                  5, 5, [5, 1]);
+        let mut res = OwnedArray::zeros((5, 5));
+        super::csc_mulacc_dense_rowmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()).unwrap();
+        let expected_output = arr2(&[[24., 31., 24., 17., 10.],
+                                     [11., 18., 11.,  9.,  2.],
+                                     [20., 25., 20., 15., 10.],
+                                     [40., 48., 40., 32., 24.],
+                                     [21., 28., 21., 14., 7. ]]);
         assert_eq!(res, expected_output);
 
         let c = &a * &b;
@@ -557,34 +566,42 @@ mod test {
     fn mul_csc_dense_colmaj() {
         let a = mat1_csc();
         let b = mat_dense1_colmaj();
-        let mut res = MatOwned::zeros_f([5, 5]);
-        super::csc_mulacc_dense_colmaj(a.borrowed(), b.borrowed(),
-                                       res.borrowed_mut()).unwrap();
-        let expected_output = MatOwned::new_owned(vec![24., 11., 20., 40., 21.,
-                                                       31., 18., 25., 48., 28.,
-                                                       24., 11., 20., 40., 21.,
-                                                       17., 9., 15., 32., 14.,
-                                                       10., 2., 10., 24., 7.],
-                                                  5, 5, [1, 5]);
+        let mut res = OwnedArray::zeros_f((5, 5));
+        super::csc_mulacc_dense_colmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()).unwrap();
+        let v = vec![24., 11., 20., 40., 21.,
+                     31., 18., 25., 48., 28.,
+                     24., 11., 20., 40., 21.,
+                     17., 9., 15., 32., 14.,
+                     10., 2., 10., 24., 7.];
+        let expected_output = OwnedArray::from_vec_dim_stride((5, 5),
+                                                              (1, 5),
+                                                              v).unwrap();
         assert_eq!(res, expected_output);
 
         let c = &a * &b;
         assert_eq!(c, expected_output);
     }
 
+
     #[test]
     fn mul_csr_dense_colmaj() {
         let a = mat1();
         let b = mat_dense1_colmaj();
-        let mut res = MatOwned::zeros_f([5, 5]);
-        super::csr_mulacc_dense_colmaj(a.borrowed(), b.borrowed(),
-                                       res.borrowed_mut()).unwrap();
-        let expected_output = MatOwned::new_owned(vec![24., 11., 20., 40., 21.,
-                                                       31., 18., 25., 48., 28.,
-                                                       24., 11., 20., 40., 21.,
-                                                       17., 9., 15., 32., 14.,
-                                                       10., 2., 10., 24., 7.],
-                                                  5, 5, [1, 5]);
+        let mut res = OwnedArray::zeros_f((5, 5));
+        super::csr_mulacc_dense_colmaj(a.borrowed(),
+                                       b.view(),
+                                       res.view_mut()
+                                      ).unwrap();
+        let v = vec![24., 11., 20., 40., 21.,
+                    31., 18., 25., 48., 28.,
+                    24., 11., 20., 40., 21.,
+                    17., 9., 15., 32., 14.,
+                    10., 2., 10., 24., 7.];
+        let expected_output = OwnedArray::from_vec_dim_stride((5, 5),
+                                                              (1, 5),
+                                                              v).unwrap();
         assert_eq!(res, expected_output);
 
         let c = &a * &b;

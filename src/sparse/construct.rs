@@ -2,8 +2,10 @@
 
 use std::default::Default;
 use std::cmp;
-use sparse::csmat::{CsMatOwned, CsMatView};
+use sparse::csmat::{CompressedStorage, CsMatOwned, CsMatView};
 use errors::SprsError;
+use ndarray::{ArrayView, Ix};
+use num::traits::{Num, Signed};
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
@@ -133,12 +135,62 @@ where N: 'a + Copy + Default,
     vstack(&borrows)
 }
 
+/// Create a CSR matrix from a dense matrix, ignoring elements
+/// lower than `epsilon`.
+///
+/// If epsilon is negative, it will be clamped to zero.
+pub fn csr_from_dense<N>(m: ArrayView<N, (Ix, Ix)>, epsilon: N) -> CsMatOwned<N>
+where N: Num + Copy + cmp::PartialOrd + Signed
+{
+    let epsilon = if epsilon > N::zero() { epsilon } else { N::zero() };
+    let rows = m.shape()[0];
+    let cols = m.shape()[1];
+
+    let mut indptr = vec![0; rows + 1];
+    let mut nnz = 0;
+    for (row, row_count) in m.outer_iter().zip(&mut indptr[1..]) {
+        nnz += row.iter().filter(|&x| x.abs() > epsilon).count();
+        *row_count = nnz;
+    }
+
+    let mut indices = Vec::with_capacity(nnz);
+    let mut data = Vec::with_capacity(nnz);
+    for row in m.outer_iter() {
+        for (col_ind, &x) in row.iter().enumerate() {
+            if x.abs() > epsilon {
+                indices.push(col_ind);
+                data.push(x);
+            }
+        }
+    }
+    // TODO: the structure check are not necessary here
+    CsMatOwned::new_owned(CompressedStorage::CSR,
+                          rows,
+                          cols,
+                          indptr,
+                          indices,
+                          data).unwrap()
+}
+
+/// Create a CSC matrix from a dense matrix, ignoring elements
+/// lower than `epsilon`.
+///
+/// If epsilon is negative, it will be clamped to zero.
+pub fn csc_from_dense<N>(m: ArrayView<N, (Ix, Ix)>,
+                         epsilon: N
+                        ) -> CsMatOwned<N>
+where N: Num + Copy + cmp::PartialOrd + Signed
+{
+    csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
+}
+
 #[cfg(test)]
 mod test {
     use sparse::csmat::CsMatOwned;
-    use sparse::CompressedStorage::{CSR};
+    use sparse::CompressedStorage::{CSR, CSC};
     use test_data::{mat1, mat2, mat3, mat4};
     use errors::SprsError::*;
+    use ndarray::{arr2, OwnedArray};
 
     fn mat1_vstack_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 4, 5, 6, 7, 11, 13, 13, 15, 17];
@@ -261,5 +313,51 @@ mod test {
             vec![3., 4., 3., 4., 2., 5., 2., 5., 5., 5., 8., 8.,
                  7., 7., 6., 8., 7., 4., 3., 2., 4., 9., 4., 3.]).unwrap();
         assert_eq!(f, expected);
+    }
+
+    #[test]
+    fn csr_from_dense() {
+        let m = OwnedArray::eye(3);
+        let m_sparse = super::csr_from_dense(m.view(), 0.);
+
+        assert_eq!(m_sparse, CsMatOwned::eye(CSR, 3));
+
+        let m = arr2(&[[1., 0., 2., 1e-7, 1.],
+                       [0., 0., 0., 1.,   0.],
+                       [3., 0., 1., 0.,   0.]]);
+        let m_sparse = super::csr_from_dense(m.view(), 1e-5);
+
+        let expected_output = CsMatOwned::new_owned(CSR,
+                                                    3,
+                                                    5,
+                                                    vec![0, 3, 4, 6],
+                                                    vec![0, 2, 4, 3, 0, 2],
+                                                    vec![1., 2., 1., 1., 3., 1.]
+                                                   ).unwrap();
+
+        assert_eq!(m_sparse, expected_output);
+    }
+
+    #[test]
+    fn csc_from_dense() {
+        let m = OwnedArray::eye(3);
+        let m_sparse = super::csc_from_dense(m.view(), 0.);
+
+        assert_eq!(m_sparse, CsMatOwned::eye(CSC, 3));
+
+        let m = arr2(&[[1., 0., 2., 1e-7, 1.],
+                       [0., 0., 0., 1.,   0.],
+                       [3., 0., 1., 0.,   0.]]);
+        let m_sparse = super::csc_from_dense(m.view(), 1e-5);
+
+        let expected_output = CsMatOwned::new_owned(CSC,
+                                                    3,
+                                                    5,
+                                                    vec![0, 2, 2, 4, 5, 6],
+                                                    vec![0, 2, 0, 2, 1, 0],
+                                                    vec![1., 3., 2., 1., 1., 1.]
+                                                   ).unwrap();
+
+        assert_eq!(m_sparse, expected_output);
     }
 }
