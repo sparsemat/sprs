@@ -176,13 +176,12 @@ where N: Num + Copy + cmp::PartialOrd + Signed
 /// lower than `epsilon`.
 ///
 /// If epsilon is negative, it will be clamped to zero.
-pub fn csc_from_dense<N>(mut m: ArrayView<N, (Ix, Ix)>,
+pub fn csc_from_dense<N>(m: ArrayView<N, (Ix, Ix)>,
                          epsilon: N
                         ) -> CsMatOwned<N>
 where N: Num + Copy + cmp::PartialOrd + Signed
 {
-    m.swap_axes(0, 1);
-    csr_from_dense(m, epsilon).transpose_into()
+    csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
 }
 
 #[cfg(test)]
