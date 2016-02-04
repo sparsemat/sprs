@@ -85,6 +85,7 @@ Changelog
 
 - 0.4.0:
     - depend on ndarray for dense matrices **breaking change**
+    - constructors to build sparse matrices from dense matrices
     - forward some LdlSymbolic methods in LdlNumeric
 - 0.3.3
     - switch to dual MIT/Apache-2.0 license
