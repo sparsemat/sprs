@@ -22,4 +22,3 @@ num = "0.1.30"
 
 [dependencies.ndarray]
 version = "0.4"
-git = "https://github.com/bluss/rust-ndarray"
