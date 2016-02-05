@@ -86,7 +86,7 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, N: 'iter + Copy>
+impl <'iter, N: 'iter>
 Iterator
 for OuterIterator<'iter, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -197,7 +197,7 @@ where IptrStorage: Deref<Target=[usize]>,
     data : DataStorage
 }
 
-impl<'a, N:'a + Copy> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
+impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     /// Create a borrowed row or column CsMat matrix from raw data,
     /// without checking their validity
     ///
@@ -223,7 +223,7 @@ impl<'a, N:'a + Copy> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     }
 }
 
-impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
+impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
     pub fn new_borrowed(
@@ -438,8 +438,7 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 
 impl<N, IptrStorage, IndStorage, DataStorage>
 CsMat<N, IptrStorage, IndStorage, DataStorage>
-where N: Copy,
-      IptrStorage: Deref<Target=[usize]>,
+where IptrStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
@@ -452,7 +451,7 @@ where N: Copy,
     /// use sprs::{CsMat};
     /// let eye = CsMat::eye(sprs::CSR, 5);
     /// for (row_ind, row_vec) in eye.outer_iterator() {
-    ///     let (col_ind, val): (_, f64) = row_vec.iter().next().unwrap();
+    ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
     ///     assert_eq!(row_ind, col_ind);
     ///     assert_eq!(val, 1.);
     /// }
@@ -535,7 +534,9 @@ where N: Copy,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N> {
+    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N>
+    where N: Clone
+    {
         assert!(i < self.nrows);
         assert!(j < self.ncols);
 
@@ -655,7 +656,9 @@ where N: Copy,
 
     /// Get an owned version of this matrix. If the matrix was already
     /// owned, this will make a deep copy.
-    pub fn to_owned(&self) -> CsMatOwned<N> {
+    pub fn to_owned(&self) -> CsMatOwned<N>
+    where N: Clone
+    {
         CsMatOwned {
             storage: self.storage,
             nrows: self.nrows,
@@ -676,7 +679,9 @@ where N: Copy,
     /// elements in storage order.
     pub fn at_outer_inner(&self,
                           &(outer_ind, inner_ind): &(usize, usize)
-                         ) -> Option<N> {
+                         ) -> Option<N>
+    where N: Clone
+    {
         self.outer_view(outer_ind).and_then(|vec| vec.at(inner_ind))
     }
 
@@ -877,7 +882,7 @@ pub mod raw {
         }
 
         for (outer_dim, vec) in mat.outer_iterator() {
-            for (inner_dim, val) in vec.iter() {
+            for (inner_dim, &val) in vec.iter() {
                 let dest = indptr[inner_dim];
                 data[dest] = val;
                 indices[dest] = outer_dim;

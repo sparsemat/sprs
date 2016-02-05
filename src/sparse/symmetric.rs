@@ -7,7 +7,7 @@ use sparse::csmat::CsMat;
 pub fn is_symmetric<N, IpStorage, IStorage, DStorage>(
     mat: &CsMat<N, IpStorage, IStorage, DStorage>) -> bool
 where
-N: Clone + Copy + PartialEq,
+N: Copy + PartialEq,
 IpStorage: Deref<Target=[usize]>,
 IStorage: Deref<Target=[usize]>,
 DStorage: Deref<Target=[N]> {
@@ -15,7 +15,7 @@ DStorage: Deref<Target=[N]> {
         return false;
     }
     for (outer_ind, vec) in mat.outer_iterator() {
-        for (inner_ind, value) in vec.iter() {
+        for (inner_ind, &value) in vec.iter() {
             match mat.at_outer_inner(&(inner_ind, outer_ind)) {
                 None => return false,
                 Some(transposed_val) => if transposed_val != value {

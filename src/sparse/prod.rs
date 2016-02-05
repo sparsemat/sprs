@@ -23,7 +23,7 @@ where N: Num + Copy {
 
     for (col_ind, vec) in mat.outer_iterator() {
         let multiplier = &in_vec[col_ind];
-        for (row_ind, value) in vec.iter() {
+        for (row_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
             res_vec[row_ind] =
                 res_vec[row_ind] + *multiplier * value;
@@ -46,7 +46,7 @@ where N: Num + Copy {
     }
 
     for (row_ind, vec) in mat.outer_iterator() {
-        for (col_ind, value) in vec.iter() {
+        for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
             res_vec[row_ind] =
                 res_vec[row_ind] + in_vec[col_ind] * value;
@@ -147,12 +147,12 @@ where N: Num + Copy {
             *wval = N::zero();
         }
         // accumulate the resulting row
-        for (lcol, lval) in lvec.iter() {
+        for (lcol, &lval) in lvec.iter() {
             // we can't be out of bounds thanks to the checks of dimension
             // compatibility and the structure check of CsMat. Therefore it
             // should be safe to call into an unsafe version of outer_view
             let rvec = rhs.outer_view(lcol).unwrap();
-            for (rcol, rval) in rvec.iter() {
+            for (rcol, &rval) in rvec.iter() {
                 let wval = &mut workspace[rcol];
                 let prod = lval * rval;
                 *wval = *wval + prod;
@@ -220,7 +220,7 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
             let axis0 = 0;
             for ((_, line), mut oline) in lblock.outer_iterator()
                                           .zip(oblock.axis_iter_mut(axis0)) {
-                'col_block: for (col_ind, lval) in line.iter() {
+                'col_block: for (col_ind, &lval) in line.iter() {
                     if col_ind < col_start {
                         continue 'col_block;
                     }
@@ -265,7 +265,7 @@ pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
     }
 
     for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
-        for (orow, lval) in lcol.iter() {
+        for (orow, &lval) in lcol.iter() {
             let mut oline = out.row_mut(orow);
             for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
                 let prev = *oval;
@@ -304,7 +304,7 @@ pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (rrow, lcol) in lhs.outer_iterator() {
             let rval = rcol[[rrow]];
-            for (orow, lval) in lcol.iter() {
+            for (orow, &lval) in lcol.iter() {
                 let prev = ocol[[orow]];
                 ocol[[orow]] = prev + lval * rval;
             }
@@ -341,7 +341,7 @@ pub fn csr_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (orow, lrow) in lhs.outer_iterator() {
             let mut prev = ocol[[orow]];
-            for (rrow, lval) in lrow.iter() {
+            for (rrow, &lval) in lrow.iter() {
                 let rval = rcol[[rrow]];
                 prev = prev + lval * rval;
             }

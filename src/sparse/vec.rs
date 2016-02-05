@@ -7,12 +7,12 @@
 /// let vec2 = CsVec::new_owned(8, vec![1, 3, 5], vec![2.; 3]).unwrap();
 /// let res = &vec1 + &vec2;
 /// let mut iter = res.iter();
-/// assert_eq!(iter.next(), Some((0, 1.)));
-/// assert_eq!(iter.next(), Some((1, 2.)));
-/// assert_eq!(iter.next(), Some((2, 1.)));
-/// assert_eq!(iter.next(), Some((3, 2.)));
-/// assert_eq!(iter.next(), Some((5, 3.)));
-/// assert_eq!(iter.next(), Some((6, 1.)));
+/// assert_eq!(iter.next(), Some((0, &1.)));
+/// assert_eq!(iter.next(), Some((1, &2.)));
+/// assert_eq!(iter.next(), Some((2, &1.)));
+/// assert_eq!(iter.next(), Some((3, &2.)));
+/// assert_eq!(iter.next(), Some((5, &3.)));
+/// assert_eq!(iter.next(), Some((6, &1.)));
 /// assert_eq!(iter.next(), None);
 /// ```
 
@@ -76,15 +76,15 @@ pub struct VectorIteratorPerm<'a, N: 'a> {
 }
 
 
-impl <'a, N: 'a + Copy>
+impl <'a, N: 'a>
 Iterator
 for VectorIterator<'a, N> {
-    type Item = (usize, N);
+    type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((*inner_ind, *data))
+            Some((inner_ind, data)) => Some((*inner_ind, data))
         }
     }
 
@@ -93,16 +93,16 @@ for VectorIterator<'a, N> {
     }
 }
 
-impl <'a, N: 'a + Copy>
+impl <'a, N: 'a>
 Iterator
 for VectorIteratorPerm<'a, N> {
-    type Item = (usize, N);
+    type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
             Some((inner_ind, data)) => Some(
-                (self.perm.at(*inner_ind), *data))
+                (self.perm.at(*inner_ind), data))
         }
     }
 
@@ -125,11 +125,11 @@ pub trait SparseIterTools: Iterator {
     /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
     ///                          ).unwrap();
     /// let mut nnz_or_iter = v0.iter().nnz_or_zip(v1.iter());
-    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((0, 1.))));
-    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((1, -1.))));
-    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Both((2, 2., -2.))));
-    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((3, -3.))));
-    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, 3.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((0, &1.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((1, &-1.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Both((2, &2., &-2.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((3, &-3.))));
+    /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, &3.))));
     /// assert_eq!(nnz_or_iter.next(), None);
     /// ```
     fn nnz_or_zip<I, N1: Copy, N2: Copy>(self, other: I)
@@ -154,7 +154,7 @@ pub trait SparseIterTools: Iterator {
     /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
     ///                          ).unwrap();
     /// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());
-    /// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));
+    /// assert_eq!(nnz_zip.next(), Some((2, &2., &-2.)));
     /// assert_eq!(nnz_zip.next(), None);
     /// ```
     fn nnz_zip<I, N1: Copy, N2: Copy>(self, other: I)
@@ -251,7 +251,7 @@ where Ite1: Iterator<Item=(usize, N1)>,
     }
 }
 
-impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
+impl<'a, N: 'a> CsVec<N, &'a[usize], &'a[N]> {
 
     /// Create a borrowed CsVec over slice data.
     pub fn new_borrowed(
@@ -273,10 +273,10 @@ impl<'a, N: 'a + Copy> CsVec<N, &'a[usize], &'a[N]> {
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
     pub unsafe fn new_raw(n: usize,
-                                         nnz: usize,
-                                         indices: *const usize,
-                                         data: *const N,
-                                        ) -> CsVec<N, &'a[usize], &'a[N]> {
+                          nnz: usize,
+                          indices: *const usize,
+                          data: *const N,
+                          ) -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
@@ -363,9 +363,9 @@ DStorage: Deref<Target=[N]> {
 }
 
 impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where N: 'a + Copy,
-IStorage: 'a + Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+where N: 'a,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: Deref<Target=[N]> {
 
     /// Iterate over the non zero values.
     ///
@@ -375,9 +375,9 @@ DStorage: Deref<Target=[N]> {
     /// use sprs::CsVec;
     /// let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
     /// let mut iter = v.iter();
-    /// assert_eq!(iter.next(), Some((0, 1.)));
-    /// assert_eq!(iter.next(), Some((2, 2.)));
-    /// assert_eq!(iter.next(), Some((4, 3.)));
+    /// assert_eq!(iter.next(), Some((0, &1.)));
+    /// assert_eq!(iter.next(), Some((2, &2.)));
+    /// assert_eq!(iter.next(), Some((4, &3.)));
     /// assert_eq!(iter.next(), None);
     /// ```
     pub fn iter(&self) -> VectorIterator<N> {
@@ -433,7 +433,9 @@ DStorage: Deref<Target=[N]> {
     }
 
     /// Allocate a new vector equal to this one.
-    pub fn to_owned(&self) -> CsVecOwned<N> {
+    pub fn to_owned(&self) -> CsVecOwned<N>
+    where N: Clone
+    {
         CsVec {
             dim: self.dim,
             indices: self.indices.to_vec(),
@@ -470,13 +472,14 @@ DStorage: Deref<Target=[N]> {
     /// Access element at given index, with logarithmic complexity
     ///
     /// TODO: use this for CsMat::at_outer_inner
-    pub fn at(&self, index: usize) -> Option<N> {
+    pub fn at(&self, index: usize) -> Option<N>
+    where N: Clone {
         let position = match self.indices.binary_search(&index) {
             Ok(ind) => ind,
             _ => return None
         };
 
-        Some(self.data[position])
+        Some(self.data[position].clone())
     }
 
     /// Vector dot product
@@ -492,21 +495,22 @@ DStorage: Deref<Target=[N]> {
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
     pub fn dot<IS2, DS2>(&self, rhs: &CsVec<N, IS2, DS2>) -> N
-    where N: Num, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
-        self.iter().nnz_zip(rhs.iter()).map(|(_, lval, rval)| lval * rval)
+    where N: Num + Copy, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
+        self.iter().nnz_zip(rhs.iter()).map(|(_, &lval, &rval)| lval * rval)
                                        .fold(N::zero(), |x, y| x + y)
     }
 
     /// Fill a dense vector with our values
-    pub fn scatter(&self, out: &mut [N]) {
+    pub fn scatter(&self, out: &mut [N])
+    where N: Clone {
         for (ind, val) in self.iter() {
-            out[ind] = val;
+            out[ind] = val.clone();
         }
     }
 
     /// Transform this vector into a set of (index, value) tuples
     pub fn to_set(self) -> HashSet<(usize, N)>
-    where N: Hash + Eq {
+    where N: Hash + Eq + Clone {
         self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
     }
 }
@@ -607,9 +611,9 @@ mod test {
         let vec1 = test_vec1();
         let vec2 = test_vec2();
         let mut iter = vec1.iter().nnz_zip(vec2.iter());
-        assert_eq!(iter.next().unwrap(), (0, 0., 0.5));
-        assert_eq!(iter.next().unwrap(), (4, 4., 4.5));
-        assert_eq!(iter.next().unwrap(), (7, 7., 7.5));
+        assert_eq!(iter.next().unwrap(), (0, &0., &0.5));
+        assert_eq!(iter.next().unwrap(), (4, &4., &4.5));
+        assert_eq!(iter.next().unwrap(), (7, &7., &7.5));
         assert!(iter.next().is_none());
     }
 
@@ -619,13 +623,13 @@ mod test {
         let vec1 = test_vec1();
         let vec2 = test_vec2();
         let mut iter = vec1.iter().nnz_or_zip(vec2.iter());
-        assert_eq!(iter.next().unwrap(), Both((0, 0., 0.5)));
-        assert_eq!(iter.next().unwrap(), Left((1, 1.)));
-        assert_eq!(iter.next().unwrap(), Right((2, 2.5)));
-        assert_eq!(iter.next().unwrap(), Both((4, 4., 4.5)));
-        assert_eq!(iter.next().unwrap(), Left((5, 5.)));
-        assert_eq!(iter.next().unwrap(), Right((6, 6.5)));
-        assert_eq!(iter.next().unwrap(), Both((7, 7., 7.5)));
+        assert_eq!(iter.next().unwrap(), Both((0, &0., &0.5)));
+        assert_eq!(iter.next().unwrap(), Left((1, &1.)));
+        assert_eq!(iter.next().unwrap(), Right((2, &2.5)));
+        assert_eq!(iter.next().unwrap(), Both((4, &4., &4.5)));
+        assert_eq!(iter.next().unwrap(), Left((5, &5.)));
+        assert_eq!(iter.next().unwrap(), Right((6, &6.5)));
+        assert_eq!(iter.next().unwrap(), Both((7, &7., &7.5)));
     }
 
     #[test]

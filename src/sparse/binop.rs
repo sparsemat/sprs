@@ -131,9 +131,9 @@ F: Fn(N, N) -> N {
     for ((dim, lv), (_, rv)) in lhs.outer_iterator().zip(rhs.outer_iterator()) {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
             let (ind, binop_val) = match elem {
-                Left((ind, val)) => (ind, binop(val, N::zero())),
-                Right((ind, val)) => (ind, binop(N::zero(), val)),
-                Both((ind, lval, rval)) => (ind, binop(lval, rval)),
+                Left((ind, &val)) => (ind, binop(val, N::zero())),
+                Right((ind, &val)) => (ind, binop(N::zero(), val)),
+                Both((ind, &lval, &rval)) => (ind, binop(lval, rval)),
             };
             if binop_val != N::zero() {
                 out_indices[nnz] = ind;
@@ -220,8 +220,8 @@ where N: 'a + Copy + Num,
             let (mut oval, lr_elems) = items;
             let binop_val = match lr_elems {
                 Left((_, &val)) => binop(val, N::zero()),
-                Right((_, val)) => binop(N::zero(), val),
-                Both((_, &lval, rval)) => binop(lval, rval),
+                Right((_, &val)) => binop(N::zero(), val),
+                Both((_, &lval, &rval)) => binop(lval, rval),
             };
             *oval = binop_val;
         }
@@ -242,9 +242,9 @@ where N: Num + Copy, F: Fn(N, N) -> N {
     res.reserve_exact(max_nnz);
     for elem in lhs.iter().nnz_or_zip(rhs.iter()) {
         let (ind, binop_val) = match elem {
-            Left((ind, val)) => (ind, binop(val, N::zero())),
-            Right((ind, val)) => (ind, binop(N::zero(), val)),
-            Both((ind, lval, rval)) => (ind, binop(lval, rval)),
+            Left((ind, &val)) => (ind, binop(val, N::zero())),
+            Right((ind, &val)) => (ind, binop(N::zero(), val)),
+            Both((ind, &lval, &rval)) => (ind, binop(lval, rval)),
         };
         res.append(ind, binop_val);
     }

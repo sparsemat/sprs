@@ -331,8 +331,8 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         l_nz[k] = 0;
         pattern_workspace.clear_right();
 
-        for (inner_ind, val) in vec.iter_perm(perm.inv())
-                                   .filter(|&(i, _)| i <= k) {
+        for (inner_ind, &val) in vec.iter_perm(perm.inv())
+                                    .filter(|&(i, _)| i <= k) {
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             pattern_workspace.clear_left();
@@ -382,7 +382,7 @@ where N: Clone + Copy + Num,
 {
     for (col_ind, vec) in l.outer_iterator() {
         let x_col = x[col_ind];
-        for (row_ind, value) in vec.iter() {
+        for (row_ind, &value) in vec.iter() {
             x[row_ind] = x[row_ind] - value * x_col;
         }
     }
@@ -396,7 +396,7 @@ where N: Clone + Copy + Num,
 {
     for (outer_ind, vec) in l.outer_iterator().rev() {
         let mut x_outer = x[outer_ind];
-        for (inner_ind, value) in vec.iter() {
+        for (inner_ind, &value) in vec.iter() {
             x_outer = x_outer - value * x[inner_ind];
         }
         x[outer_ind] = x_outer;
