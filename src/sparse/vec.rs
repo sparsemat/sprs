@@ -23,6 +23,7 @@ use std::cmp;
 use std::slice::{self, Iter};
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use num::traits::Num;
 
@@ -132,13 +133,14 @@ pub trait SparseIterTools: Iterator {
     /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, &3.))));
     /// assert_eq!(nnz_or_iter.next(), None);
     /// ```
-    fn nnz_or_zip<I, N1: Copy, N2: Copy>(self, other: I)
-    -> NnzOrZip<Self, I::IntoIter, N1, N2>
-    where Self: Iterator<Item=(usize, N1)> + Sized,
-          I: IntoIterator<Item=(usize, N2)> {
+    fn nnz_or_zip<'a, I, N1, N2>(self, other: I)
+    -> NnzOrZip<'a, Self, I::IntoIter, N1, N2>
+    where Self: Iterator<Item=(usize, &'a N1)> + Sized,
+          I: IntoIterator<Item=(usize, &'a N2)> {
         NnzOrZip {
             left: self.peekable(),
             right: other.into_iter().peekable(),
+            life: PhantomData,
         }
     }
 
@@ -157,58 +159,59 @@ pub trait SparseIterTools: Iterator {
     /// assert_eq!(nnz_zip.next(), Some((2, &2., &-2.)));
     /// assert_eq!(nnz_zip.next(), None);
     /// ```
-    fn nnz_zip<I, N1: Copy, N2: Copy>(self, other: I)
-    -> FilterMap<NnzOrZip<Self, I::IntoIter, N1, N2>,
-                 fn(NnzEither<N1,N2>) -> Option<(usize,N1,N2)>>
-    where Self: Iterator<Item=(usize, N1)> + Sized,
-          I: IntoIterator<Item=(usize, N2)> {
+    fn nnz_zip<'a, I, N1, N2>(self, other: I)
+    -> FilterMap<NnzOrZip<'a, Self, I::IntoIter, N1, N2>,
+                 fn(NnzEither<'a, N1,N2>) -> Option<(usize, &'a N1, &'a N2)>>
+    where Self: Iterator<Item=(usize, &'a N1)> + Sized,
+          I: IntoIterator<Item=(usize, &'a N2)> {
         let nnz_or_iter = NnzOrZip {
             left: self.peekable(),
             right: other.into_iter().peekable(),
+            life: PhantomData,
         };
         nnz_or_iter.filter_map(filter_both_nnz)
     }
 }
 
-impl<T: Iterator> SparseIterTools for Enumerate<T>
-where <T as Iterator>::Item : Copy {
+impl<T: Iterator> SparseIterTools for Enumerate<T> {
 }
 
-impl<'a, N: 'a + Copy> SparseIterTools for VectorIterator<'a, N> {
+impl<'a, N: 'a> SparseIterTools for VectorIterator<'a, N> {
 }
 
 /// An iterator over the non zeros of either of two vector iterators, ordered,
 /// such that the sum of the vectors may be computed
-pub struct NnzOrZip<Ite1, Ite2, N1: Copy, N2: Copy>
-where Ite1: Iterator<Item=(usize, N1)>,
-      Ite2: Iterator<Item=(usize, N2)> {
+pub struct NnzOrZip<'a, Ite1, Ite2, N1: 'a, N2: 'a>
+where Ite1: Iterator<Item=(usize, &'a N1)>,
+      Ite2: Iterator<Item=(usize, &'a N2)> {
     left: Peekable<Ite1>,
     right: Peekable<Ite2>,
+    life: PhantomData<(&'a N1, &'a N2)>,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum NnzEither<N1, N2> {
-    Both((usize, N1, N2)),
-    Left((usize, N1)),
-    Right((usize, N2))
+pub enum NnzEither<'a, N1: 'a, N2: 'a> {
+    Both((usize, &'a N1, &'a N2)),
+    Left((usize, &'a N1)),
+    Right((usize, &'a N2))
 }
 
-fn filter_both_nnz<N: Copy, M: Copy>(elem: NnzEither<N,M>)
--> Option<(usize, N, M)> {
+fn filter_both_nnz<'a, N: 'a, M: 'a>(elem: NnzEither<'a, N, M>)
+-> Option<(usize, &'a N, &'a M)> {
     match elem {
         NnzEither::Both((ind, lval, rval)) => Some((ind, lval, rval)),
         _ => None
     }
 }
 
-impl <Ite1, Ite2, N1: Copy, N2: Copy>
+impl <'a, Ite1, Ite2, N1: 'a, N2: 'a>
 Iterator
-for NnzOrZip<Ite1, Ite2, N1, N2>
-where Ite1: Iterator<Item=(usize, N1)>,
-      Ite2: Iterator<Item=(usize, N2)> {
-    type Item = NnzEither<N1, N2>;
+for NnzOrZip<'a, Ite1, Ite2, N1, N2>
+where Ite1: Iterator<Item=(usize, &'a N1)>,
+      Ite2: Iterator<Item=(usize, &'a N2)> {
+    type Item = NnzEither<'a, N1, N2>;
 
-    fn next(&mut self) -> Option<(NnzEither<N1, N2>)> {
+    fn next(&mut self) -> Option<(NnzEither<'a, N1, N2>)> {
         match (self.left.peek(), self.right.peek()) {
             (None, Some(&(_, _))) => {
                 let (rind, rval) = self.right.next().unwrap();
