@@ -285,7 +285,7 @@ impl<'a, N: 'a> CsVec<N, &'a[usize], &'a[N]> {
     }
 }
 
-impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
+impl<N> CsVec<N, Vec<usize>, Vec<N>> {
     /// Create an owning CsVec from vector data.
     pub fn new_owned(n: usize,
                      indices: Vec<usize>,
@@ -348,9 +348,8 @@ impl<N: Copy> CsVec<N, Vec<usize>, Vec<N>> {
 }
 
 impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where N:  Copy,
-IStorage: Deref<Target=[usize]>,
-DStorage: Deref<Target=[N]> {
+where IStorage: Deref<Target=[usize]>,
+      DStorage: Deref<Target=[N]> {
 
     /// Get a view of this vector.
     pub fn borrowed(&self) -> CsVecView<N> {

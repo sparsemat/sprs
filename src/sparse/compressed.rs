@@ -18,8 +18,7 @@ pub trait SpMatView<N> {
 
 impl<N, IpStorage, IndStorage, DataStorage> SpMatView<N>
 for CsMat<N, IpStorage, IndStorage, DataStorage>
-where N: Copy,
-      IpStorage: Deref<Target=[usize]>,
+where IpStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
@@ -41,8 +40,7 @@ pub trait SpVecView<N> {
 
 impl<N, IndStorage, DataStorage> SpVecView<N>
 for CsVec<N, IndStorage, DataStorage>
-where N: Copy,
-      IndStorage: Deref<Target=[usize]>,
+where IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
     fn borrowed(&self) -> CsVecView<N> {
