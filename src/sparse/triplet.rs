@@ -183,14 +183,14 @@ impl<N> TripletMat<N> {
 
     /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
-    where N: Copy + Num
+    where N: Clone + Num
     {
         self.borrowed().to_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
     pub fn to_csr(&self) -> csmat::CsMatOwned<N>
-    where N: Copy + Num
+    where N: Clone + Num
     {
         self.borrowed().to_csr()
     }
@@ -265,7 +265,7 @@ impl<'a, N> TripletView<'a, N> {
 
     /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
-    where N: Copy + Num
+    where N: Clone + Num
     {
         let mut row_counts = vec![0; self.rows() + 1];
         for &i in self.row_inds.iter() {
@@ -285,11 +285,11 @@ impl<'a, N> TripletView<'a, N> {
             *count = 0;
         }
 
-        for (&val, (&i, &j)) in self.data
-                                    .iter()
-                                    .zip(self.row_inds
-                                             .iter()
-                                             .zip(self.col_inds.iter())) {
+        for (val, (&i, &j)) in self.data
+                                   .iter()
+                                   .zip(self.row_inds
+                                            .iter()
+                                            .zip(self.col_inds.iter())) {
             let start = indptr[i];
             let stop = start + row_counts[i];
             let col_exists = {
@@ -299,7 +299,7 @@ impl<'a, N> TripletView<'a, N> {
                                .zip(data[start..stop].iter_mut());
                 for (&col_cell, mut data_cell) in iter {
                     if col_cell == j {
-                        *data_cell = *data_cell + val;
+                        *data_cell = data_cell.clone() + val.clone();
                         col_exists = true;
                         break;
                     }
@@ -308,7 +308,7 @@ impl<'a, N> TripletView<'a, N> {
             };
             if !col_exists {
                 indices[stop] = j;
-                data[stop] = val;
+                data[stop] = val.clone();
                 row_counts[i] += 1;
             }
         }
@@ -321,7 +321,7 @@ impl<'a, N> TripletView<'a, N> {
             if start != dst_start {
                 for k in 0..col_nnz {
                     indices[dst_start + k] = indices[start + k];
-                    data[dst_start + k] = data[start + k];
+                    data[dst_start + k] = data[start + k].clone();
                 }
             }
             indptr[i] = dst_start;
@@ -355,7 +355,7 @@ impl<'a, N> TripletView<'a, N> {
 
     /// Create a CSR matrix from this triplet matrix
     pub fn to_csr(&self) -> csmat::CsMatOwned<N>
-    where N: Copy + Num
+    where N: Clone + Num
     {
         let res = self.transpose_view().to_csc();
         res.transpose_into()
@@ -438,14 +438,14 @@ impl<'a, N> TripletViewMut<'a, N> {
 
     /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> csmat::CsMatOwned<N>
-    where N: Copy + Num
+    where N: Clone + Num
     {
         self.borrowed().to_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
     pub fn to_csr(&self) -> csmat::CsMatOwned<N>
-    where N: Copy + Num
+    where N: Clone + Num
     {
         self.borrowed().to_csr()
     }
