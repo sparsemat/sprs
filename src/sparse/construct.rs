@@ -11,7 +11,7 @@ use num::traits::{Num, Signed};
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
 pub fn same_storage_fast_stack<'a, N, MatArray>(
     mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
-where N: 'a + Copy,
+where N: 'a + Clone,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
     if mats.len() == 0 {
@@ -43,7 +43,7 @@ where N: 'a + Copy,
 
 /// Construct a sparse matrix by vertically stacking other matrices
 pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
-where N: 'a + Copy + Default,
+where N: 'a + Clone + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csr()) {
@@ -57,7 +57,7 @@ where N: 'a + Copy + Default,
 
 /// Construct a sparse matrix by horizontally stacking other matrices
 pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
-where N: 'a + Copy + Default,
+where N: 'a + Clone + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csc()) {
@@ -83,7 +83,7 @@ where N: 'a + Copy + Default,
 /// ```
 pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray)
 -> Result<CsMatOwned<N>, SprsError>
-where N: 'a + Copy + Default,
+where N: 'a + Clone + Default,
       OuterArray: 'a + AsRef<[InnerArray]>,
       InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]> {
     let mats = mats.as_ref();
@@ -140,7 +140,7 @@ where N: 'a + Copy + Default,
 ///
 /// If epsilon is negative, it will be clamped to zero.
 pub fn csr_from_dense<N>(m: ArrayView<N, (Ix, Ix)>, epsilon: N) -> CsMatOwned<N>
-where N: Num + Copy + cmp::PartialOrd + Signed
+where N: Num + Clone + cmp::PartialOrd + Signed
 {
     let epsilon = if epsilon > N::zero() { epsilon } else { N::zero() };
     let rows = m.shape()[0];
@@ -156,10 +156,10 @@ where N: Num + Copy + cmp::PartialOrd + Signed
     let mut indices = Vec::with_capacity(nnz);
     let mut data = Vec::with_capacity(nnz);
     for row in m.outer_iter() {
-        for (col_ind, &x) in row.iter().enumerate() {
+        for (col_ind, x) in row.iter().enumerate() {
             if x.abs() > epsilon {
                 indices.push(col_ind);
-                data.push(x);
+                data.push(x.clone());
             }
         }
     }
@@ -179,7 +179,7 @@ where N: Num + Copy + cmp::PartialOrd + Signed
 pub fn csc_from_dense<N>(m: ArrayView<N, (Ix, Ix)>,
                          epsilon: N
                         ) -> CsMatOwned<N>
-where N: Num + Copy + cmp::PartialOrd + Signed
+where N: Num + Clone + cmp::PartialOrd + Signed
 {
     csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
 }

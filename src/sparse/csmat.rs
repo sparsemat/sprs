@@ -86,7 +86,7 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, N: 'iter + Copy>
+impl <'iter, N: 'iter>
 Iterator
 for OuterIterator<'iter, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -117,7 +117,7 @@ for OuterIterator<'iter, N> {
 /// Permuted outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, 'perm: 'iter, N: 'iter + Copy>
+impl <'iter, 'perm: 'iter, N: 'iter>
 Iterator
 for OuterIteratorPerm<'iter, 'perm, N> {
     type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
@@ -153,7 +153,7 @@ for OuterIteratorPerm<'iter, 'perm, N> {
 /// Only the outer dimension iteration is reverted. If you wish to also
 /// revert the inner dimension, you should call rev() again when iterating
 /// the vector.
-impl <'iter, N: 'iter + Copy>
+impl <'iter, N: 'iter>
 DoubleEndedIterator
 for OuterIterator<'iter, N> {
     #[inline]
@@ -176,7 +176,7 @@ for OuterIterator<'iter, N> {
     }
 }
 
-impl <'iter, N: 'iter + Copy> ExactSizeIterator for OuterIterator<'iter, N> {
+impl <'iter, N: 'iter> ExactSizeIterator for OuterIterator<'iter, N> {
     fn len(&self) -> usize {
         self.indptr_iter.len()
     }
@@ -197,7 +197,7 @@ where IptrStorage: Deref<Target=[usize]>,
     data : DataStorage
 }
 
-impl<'a, N:'a + Copy> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
+impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     /// Create a borrowed row or column CsMat matrix from raw data,
     /// without checking their validity
     ///
@@ -223,7 +223,7 @@ impl<'a, N:'a + Copy> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     }
 }
 
-impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
+impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
     pub fn new_borrowed(
@@ -299,7 +299,7 @@ impl<'a, N:'a + Copy> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
 
 }
 
-impl<N: Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
+impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// Create an empty CsMat for building purposes
     pub fn empty(storage: CompressedStorage, inner_size: usize
                 ) -> CsMatOwned<N> {
@@ -374,11 +374,12 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
-    pub fn append_outer(mut self, data: &[N]) -> Self where N: Num {
+    pub fn append_outer(mut self, data: &[N]) -> Self
+    where N: Clone + Num {
         for (inner_ind, val) in data.iter().enumerate() {
             if *val != N::zero() {
                 self.indices.push(inner_ind);
-                self.data.push(*val);
+                self.data.push(val.clone());
                 self.nnz += 1;
             }
         }
@@ -391,11 +392,13 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[usize],&[N]>) -> Self {
+    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[usize],&[N]>) -> Self
+    where N: Clone
+    {
         assert_eq!(self.inner_dims(), vec.dim());
         for (ind, val) in vec.indices().iter().zip(vec.data()) {
             self.indices.push(*ind);
-            self.data.push(*val);
+            self.data.push(val.clone());
         }
         match self.storage {
             CSR => self.nrows += 1,
@@ -407,7 +410,7 @@ impl<N: Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     }
 }
 
-impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
+impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// Identity matrix
     ///
     /// ```rust
@@ -418,7 +421,9 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// assert_eq!(x, y);
     /// ```
     pub fn eye(storage: CompressedStorage, dim: usize
-              ) -> CsMatOwned<N> {
+              ) -> CsMatOwned<N>
+    where N: Clone
+    {
         let n = dim;
         let indptr = (0..n+1).collect();
         let indices = (0..n).collect();
@@ -438,8 +443,7 @@ impl<N: Num + Copy> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 
 impl<N, IptrStorage, IndStorage, DataStorage>
 CsMat<N, IptrStorage, IndStorage, DataStorage>
-where N: Copy,
-      IptrStorage: Deref<Target=[usize]>,
+where IptrStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
@@ -452,7 +456,7 @@ where N: Copy,
     /// use sprs::{CsMat};
     /// let eye = CsMat::eye(sprs::CSR, 5);
     /// for (row_ind, row_vec) in eye.outer_iterator() {
-    ///     let (col_ind, val): (_, f64) = row_vec.iter().next().unwrap();
+    ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
     ///     assert_eq!(row_ind, col_ind);
     ///     assert_eq!(val, 1.);
     /// }
@@ -535,7 +539,9 @@ where N: Copy,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N> {
+    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N>
+    where N: Clone
+    {
         assert!(i < self.nrows);
         assert!(j < self.ncols);
 
@@ -655,7 +661,9 @@ where N: Copy,
 
     /// Get an owned version of this matrix. If the matrix was already
     /// owned, this will make a deep copy.
-    pub fn to_owned(&self) -> CsMatOwned<N> {
+    pub fn to_owned(&self) -> CsMatOwned<N>
+    where N: Clone
+    {
         CsMatOwned {
             storage: self.storage,
             nrows: self.nrows,
@@ -676,7 +684,9 @@ where N: Copy,
     /// elements in storage order.
     pub fn at_outer_inner(&self,
                           &(outer_ind, inner_ind): &(usize, usize)
-                         ) -> Option<N> {
+                         ) -> Option<N>
+    where N: Clone
+    {
         self.outer_view(outer_ind).and_then(|vec| vec.at(inner_ind))
     }
 
@@ -742,14 +752,16 @@ where N: Copy,
 
 impl<N, IptrStorage, IndStorage, DataStorage>
 CsMat<N, IptrStorage, IndStorage, DataStorage>
-where N: Copy + Default,
+where N: Default,
       IptrStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
     /// Create a matrix mathematically equal to this one, but with the
     /// opposed storage (a CSC matrix will be converted to CSR, and vice versa)
-    pub fn to_other_storage(&self) -> CsMatOwned<N> {
+    pub fn to_other_storage(&self) -> CsMatOwned<N>
+    where N: Clone
+    {
         let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
@@ -763,7 +775,9 @@ where N: Copy + Default,
 
     /// Create a new CSC matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSC.
-    pub fn to_csc(&self) -> CsMatOwned<N> {
+    pub fn to_csc(&self) -> CsMatOwned<N>
+    where N: Clone
+    {
         match self.storage {
             CSR => self.to_other_storage(),
             CSC => self.to_owned()
@@ -772,7 +786,9 @@ where N: Copy + Default,
 
     /// Create a new CSR matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSR.
-    pub fn to_csr(&self) -> CsMatOwned<N> {
+    pub fn to_csr(&self) -> CsMatOwned<N>
+    where N: Clone
+    {
         match self.storage {
             CSR => self.to_owned(),
             CSC => self.to_other_storage()
@@ -784,7 +800,6 @@ where N: Copy + Default,
 impl<N, IptrStorage, IndStorage, DataStorage>
 CsMat<N, IptrStorage, IndStorage, DataStorage>
 where
-N: Copy,
 IptrStorage: DerefMut<Target=[usize]>,
 IndStorage: DerefMut<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
@@ -822,15 +837,15 @@ pub mod raw {
     ///
     /// Panics if the output slices don't match the input matrices'
     /// corresponding slices.
-    pub fn convert_storage<N: Copy>(in_storage: super::CompressedStorage,
-                                    in_rows: usize,
-                                    in_cols: usize,
-                                    in_indtpr: &[usize],
-                                    in_indices: &[usize],
-                                    in_data: &[N],
-                                    indptr: &mut [usize],
-                                    indices: &mut[usize],
-                                    data: &mut [N]) {
+    pub fn convert_storage<N: Clone>(in_storage: super::CompressedStorage,
+                                     in_rows: usize,
+                                     in_cols: usize,
+                                     in_indtpr: &[usize],
+                                     in_indices: &[usize],
+                                     in_data: &[N],
+                                     indptr: &mut [usize],
+                                     indices: &mut[usize],
+                                     data: &mut [N]) {
         // we're building a csmat even though the indices are not sorted,
         // but it's not a problem since we don't rely on this property.
         // FIXME: this would be better with an explicit unsorted matrix type
@@ -850,7 +865,7 @@ pub mod raw {
     ///
     /// Panics if the output slices don't match the input matrices'
     /// corresponding slices.
-    pub fn convert_mat_storage<N: Copy>(mat: CsMatView<N>,
+    pub fn convert_mat_storage<N: Clone>(mat: CsMatView<N>,
                                         indptr: &mut [usize],
                                         indices: &mut[usize],
                                         data: &mut [N]) {
@@ -879,7 +894,7 @@ pub mod raw {
         for (outer_dim, vec) in mat.outer_iterator() {
             for (inner_dim, val) in vec.iter() {
                 let dest = indptr[inner_dim];
-                data[dest] = val;
+                data[dest] = val.clone();
                 indices[dest] = outer_dim;
                 indptr[inner_dim] += 1;
             }
@@ -1097,7 +1112,7 @@ pub struct ChunkOuterBlocks<'a, N: 'a> {
     bloc_count: usize,
 }
 
-impl<'a, N: 'a + Copy> Iterator for ChunkOuterBlocks<'a, N> {
+impl<'a, N: 'a> Iterator for ChunkOuterBlocks<'a, N> {
     type Item = CsMatView<'a, N>;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let cur_dim = self.dims_in_bloc * self.bloc_count;

@@ -83,8 +83,10 @@ https://vbarrielle.github.io/sprs/doc/sprs/
 Changelog
 ---------
 
-- 0.4.0:
+- 0.4.0-alpha.1:
     - depend on ndarray for dense matrices **breaking change**
+    - iterators return reference where possible **breaking change**
+    - remove unnecessary copy bounds
     - constructors to build sparse matrices from dense matrices
     - forward some LdlSymbolic methods in LdlNumeric
 - 0.3.3

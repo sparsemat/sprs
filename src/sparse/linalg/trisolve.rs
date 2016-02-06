@@ -51,7 +51,7 @@ where N: Copy + Num,
     for (row_ind, row) in lower_tri_mat.outer_iterator() {
         let mut diag_val = N::zero();
         let mut x = rhs[row_ind];
-        for (col_ind, val) in row.iter() {
+        for (col_ind, &val) in row.iter() {
             if col_ind == row_ind {
                 diag_val = val;
                 continue;
@@ -119,7 +119,7 @@ where V: vec::VecDim<N> + IndexMut<usize, Output = N>
         let b = rhs[col_ind];
         let x = b / diag_val;
         rhs[col_ind] = x;
-        for (row_ind, val) in col.iter() {
+        for (row_ind, &val) in col.iter() {
             if row_ind <= col_ind {
                 continue;
             }
@@ -169,7 +169,7 @@ where N: Copy + Num,
             let b = rhs[col_ind];
             let x = b / diag_val;
             rhs[col_ind] = x;
-            for (row_ind, val) in col.iter() {
+            for (row_ind, &val) in col.iter() {
                 if row_ind >= col_ind {
                     continue;
                 }
@@ -211,7 +211,7 @@ where N: Copy + Num,
     for (row_ind, row) in upper_tri_mat.outer_iterator().rev() {
         let mut diag_val = N::zero();
         let mut x = rhs[row_ind];
-        for (col_ind, val) in row.iter() {
+        for (col_ind, &val) in row.iter() {
             if col_ind == row_ind {
                 diag_val = val;
                 continue;

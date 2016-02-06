@@ -64,12 +64,12 @@ mod utils {
 
     /// Create a borrowed CsMat matrix from sliced data without
     /// checking validity. Intended for internal use only.
-    pub fn csmat_borrowed_uchk<'a, N: Copy>(storage: csmat::CompressedStorage,
-                                            nrows : usize, ncols: usize,
-                                            indptr : &'a [usize],
-                                            indices : &'a [usize],
-                                            data : &'a [N]
-                                           ) -> CsMatView<'a, N> {
+    pub fn csmat_borrowed_uchk<'a, N>(storage: csmat::CompressedStorage,
+                                      nrows : usize, ncols: usize,
+                                      indptr : &'a [usize],
+                                      indices : &'a [usize],
+                                      data : &'a [N]
+                                     ) -> CsMatView<'a, N> {
         // not actually memory unsafe here since data comes from slices
         unsafe {
             CsMatView::new_raw(storage, nrows, ncols,
