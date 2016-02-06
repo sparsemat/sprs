@@ -9,6 +9,7 @@
 
     <title>sprs::sparse::compressed::SpVecView - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -45,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-2315' class='srclink' href='../../../src/sprs/sparse/compressed.rs.html#37-40' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2421' class='srclink' href='../../../src/sprs/sparse/compressed.rs.html#36-39' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait SpVecView&lt;N&gt; {
     fn <a href='#tymethod.borrowed' class='fnname'>borrowed</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/vec/type.CsVecView.html' title='sprs::sparse::vec::CsVecView'>CsVecView</a>&lt;N&gt;;
 }</pre><div class='docblock'><p>The SpVecView trait describes types that can be seen as a view into
@@ -57,7 +58,7 @@ a CsVec</p>
 </div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;N, IndStorage, DataStorage&gt; <a class='trait' href='../../../sprs/sparse/compressed/trait.SpVecView.html' title='sprs::sparse::compressed::SpVecView'>SpVecView</a>&lt;N&gt; for <a class='struct' href='../../../sprs/sparse/vec/struct.CsVec.html' title='sprs::sparse::vec::CsVec'>CsVec</a>&lt;N, IndStorage, DataStorage&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, IndStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;, DataStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></li>
+    <li><code>impl&lt;N, IndStorage, DataStorage&gt; <a class='trait' href='../../../sprs/sparse/compressed/trait.SpVecView.html' title='sprs::sparse::compressed::SpVecView'>SpVecView</a>&lt;N&gt; for <a class='struct' href='../../../sprs/sparse/vec/struct.CsVec.html' title='sprs::sparse::vec::CsVec'>CsVec</a>&lt;N, IndStorage, DataStorage&gt; <span class='where'>where IndStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>]</a>&gt;, DataStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></code></li>
 </ul><script type="text/javascript" async
                               src="../../../implementors/sprs/sparse/compressed/trait.SpVecView.js">
                       </script></section>
@@ -119,6 +120,6 @@ a CsVec</p>
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

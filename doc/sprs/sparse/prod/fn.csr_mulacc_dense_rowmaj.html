@@ -9,6 +9,7 @@
 
     <title>sprs::sparse::prod::csr_mulacc_dense_rowmaj - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -45,8 +46,8 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1431' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#190-242' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn csr_mulacc_dense_rowmaj&lt;'a, N: 'a + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>&gt;(lhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, rhs: <a class='type' href='../../../dense_mats/tensor/type.MatView.html' title='dense_mats::tensor::MatView'>MatView</a>&lt;N&gt;, out: <a class='type' href='../../../dense_mats/tensor/type.MatViewMut.html' title='dense_mats::tensor::MatViewMut'>MatViewMut</a>&lt;'a, N&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt;</pre><div class='docblock'><p>CSR-dense rowmaj multiplication</p>
+        </span><a id='src-1506' class='srclink' href='../../../src/sprs/sparse/prod.rs.html#189-241' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn csr_mulacc_dense_rowmaj&lt;'a, N: 'a + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>&gt;(lhs: <a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;N&gt;, rhs: <a class='type' href='../../../ndarray/type.ArrayView.html' title='ndarray::ArrayView'>ArrayView</a>&lt;N, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>, <a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>)</a>&gt;, out: <a class='type' href='../../../ndarray/type.ArrayViewMut.html' title='ndarray::ArrayViewMut'>ArrayViewMut</a>&lt;'a, N, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>, <a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>)</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt;</pre><div class='docblock'><p>CSR-dense rowmaj multiplication</p>
 
 <p>Performs better if out is rowmaj.</p>
 </div></section>
@@ -108,6 +109,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

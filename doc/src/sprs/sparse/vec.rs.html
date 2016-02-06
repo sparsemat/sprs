@@ -9,6 +9,7 @@
 
     <title>vec.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -683,6 +684,12 @@
 <span id="641">641</span>
 <span id="642">642</span>
 <span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
 </pre><pre class='rust '>
 <span class='doccomment'>/// A sparse vector, which can be extracted from a sparse matrix</span>
 <span class='doccomment'>///</span>
@@ -693,12 +700,12 @@
 <span class='doccomment'>/// let vec2 = CsVec::new_owned(8, vec![1, 3, 5], vec![2.; 3]).unwrap();</span>
 <span class='doccomment'>/// let res = &amp;vec1 + &amp;vec2;</span>
 <span class='doccomment'>/// let mut iter = res.iter();</span>
-<span class='doccomment'>/// assert_eq!(iter.next(), Some((0, 1.)));</span>
-<span class='doccomment'>/// assert_eq!(iter.next(), Some((1, 2.)));</span>
-<span class='doccomment'>/// assert_eq!(iter.next(), Some((2, 1.)));</span>
-<span class='doccomment'>/// assert_eq!(iter.next(), Some((3, 2.)));</span>
-<span class='doccomment'>/// assert_eq!(iter.next(), Some((5, 3.)));</span>
-<span class='doccomment'>/// assert_eq!(iter.next(), Some((6, 1.)));</span>
+<span class='doccomment'>/// assert_eq!(iter.next(), Some((0, &amp;1.)));</span>
+<span class='doccomment'>/// assert_eq!(iter.next(), Some((1, &amp;2.)));</span>
+<span class='doccomment'>/// assert_eq!(iter.next(), Some((2, &amp;1.)));</span>
+<span class='doccomment'>/// assert_eq!(iter.next(), Some((3, &amp;2.)));</span>
+<span class='doccomment'>/// assert_eq!(iter.next(), Some((5, &amp;3.)));</span>
+<span class='doccomment'>/// assert_eq!(iter.next(), Some((6, &amp;1.)));</span>
 <span class='doccomment'>/// assert_eq!(iter.next(), None);</span>
 <span class='doccomment'>/// ```</span>
 
@@ -709,6 +716,7 @@
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>slice</span>::{<span class='self'>self</span>, <span class='ident'>Iter</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>HashSet</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>hash</span>::<span class='ident'>Hash</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>marker</span>::<span class='ident'>PhantomData</span>;
 
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 
@@ -762,15 +770,15 @@
 }
 
 
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>
 <span class='ident'>Iterator</span>
 <span class='kw'>for</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
-    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>usize</span>, <span class='ident'>N</span>);
+    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N</span>);
 
     <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;&lt;</span><span class='kw'>Self</span> <span class='kw'>as</span> <span class='ident'>Iterator</span><span class='op'>&gt;</span>::<span class='ident'>Item</span><span class='op'>&gt;</span> {
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>ind_data</span>.<span class='ident'>next</span>() {
             <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> <span class='prelude-val'>None</span>,
-            <span class='prelude-val'>Some</span>((<span class='ident'>inner_ind</span>, <span class='ident'>data</span>)) <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>((<span class='op'>*</span><span class='ident'>inner_ind</span>, <span class='op'>*</span><span class='ident'>data</span>))
+            <span class='prelude-val'>Some</span>((<span class='ident'>inner_ind</span>, <span class='ident'>data</span>)) <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>((<span class='op'>*</span><span class='ident'>inner_ind</span>, <span class='ident'>data</span>))
         }
     }
 
@@ -779,16 +787,16 @@
     }
 }
 
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>
 <span class='ident'>Iterator</span>
 <span class='kw'>for</span> <span class='ident'>VectorIteratorPerm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
-    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>usize</span>, <span class='ident'>N</span>);
+    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N</span>);
 
     <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;&lt;</span><span class='kw'>Self</span> <span class='kw'>as</span> <span class='ident'>Iterator</span><span class='op'>&gt;</span>::<span class='ident'>Item</span><span class='op'>&gt;</span> {
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>ind_data</span>.<span class='ident'>next</span>() {
             <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> <span class='prelude-val'>None</span>,
             <span class='prelude-val'>Some</span>((<span class='ident'>inner_ind</span>, <span class='ident'>data</span>)) <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(
-                (<span class='self'>self</span>.<span class='ident'>perm</span>.<span class='ident'>at</span>(<span class='op'>*</span><span class='ident'>inner_ind</span>), <span class='op'>*</span><span class='ident'>data</span>))
+                (<span class='self'>self</span>.<span class='ident'>perm</span>.<span class='ident'>at</span>(<span class='op'>*</span><span class='ident'>inner_ind</span>), <span class='ident'>data</span>))
         }
     }
 
@@ -811,20 +819,21 @@
     <span class='doccomment'>/// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]</span>
     <span class='doccomment'>///                          ).unwrap();</span>
     <span class='doccomment'>/// let mut nnz_or_iter = v0.iter().nnz_or_zip(v1.iter());</span>
-    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((0, 1.))));</span>
-    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((1, -1.))));</span>
-    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Both((2, 2., -2.))));</span>
-    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((3, -3.))));</span>
-    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, 3.))));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((0, &amp;1.))));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((1, &amp;-1.))));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Both((2, &amp;2., &amp;-2.))));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((3, &amp;-3.))));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, &amp;3.))));</span>
     <span class='doccomment'>/// assert_eq!(nnz_or_iter.next(), None);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>nnz_or_zip</span><span class='op'>&lt;</span><span class='ident'>I</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='self'>self</span>, <span class='ident'>other</span>: <span class='ident'>I</span>)
-    <span class='op'>-&gt;</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>I</span>::<span class='ident'>IntoIter</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>
-    <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sized</span>,
-          <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>nnz_or_zip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>I</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>(<span class='self'>self</span>, <span class='ident'>other</span>: <span class='ident'>I</span>)
+    <span class='op'>-&gt;</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='kw'>Self</span>, <span class='ident'>I</span>::<span class='ident'>IntoIter</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>)<span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sized</span>,
+          <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
         <span class='ident'>NnzOrZip</span> {
             <span class='ident'>left</span>: <span class='self'>self</span>.<span class='ident'>peekable</span>(),
             <span class='ident'>right</span>: <span class='ident'>other</span>.<span class='ident'>into_iter</span>().<span class='ident'>peekable</span>(),
+            <span class='ident'>life</span>: <span class='ident'>PhantomData</span>,
         }
     }
 
@@ -840,61 +849,62 @@
     <span class='doccomment'>/// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]</span>
     <span class='doccomment'>///                          ).unwrap();</span>
     <span class='doccomment'>/// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());</span>
-    <span class='doccomment'>/// assert_eq!(nnz_zip.next(), Some((2, 2., -2.)));</span>
+    <span class='doccomment'>/// assert_eq!(nnz_zip.next(), Some((2, &amp;2., &amp;-2.)));</span>
     <span class='doccomment'>/// assert_eq!(nnz_zip.next(), None);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>nnz_zip</span><span class='op'>&lt;</span><span class='ident'>I</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='self'>self</span>, <span class='ident'>other</span>: <span class='ident'>I</span>)
-    <span class='op'>-&gt;</span> <span class='ident'>FilterMap</span><span class='op'>&lt;</span><span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='kw'>Self</span>, <span class='ident'>I</span>::<span class='ident'>IntoIter</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>,
-                 <span class='kw'>fn</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>,<span class='ident'>N2</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>,<span class='ident'>N1</span>,<span class='ident'>N2</span>)<span class='op'>&gt;&gt;</span>
-    <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sized</span>,
-          <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>nnz_zip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>I</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>(<span class='self'>self</span>, <span class='ident'>other</span>: <span class='ident'>I</span>)
+    <span class='op'>-&gt;</span> <span class='ident'>FilterMap</span><span class='op'>&lt;</span><span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='kw'>Self</span>, <span class='ident'>I</span>::<span class='ident'>IntoIter</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>,
+                 <span class='kw'>fn</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>,<span class='ident'>N2</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)<span class='op'>&gt;&gt;</span>
+    <span class='kw'>where</span> <span class='kw'>Self</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>)<span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sized</span>,
+          <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='ident'>nnz_or_iter</span> <span class='op'>=</span> <span class='ident'>NnzOrZip</span> {
             <span class='ident'>left</span>: <span class='self'>self</span>.<span class='ident'>peekable</span>(),
             <span class='ident'>right</span>: <span class='ident'>other</span>.<span class='ident'>into_iter</span>().<span class='ident'>peekable</span>(),
+            <span class='ident'>life</span>: <span class='ident'>PhantomData</span>,
         };
         <span class='ident'>nnz_or_iter</span>.<span class='ident'>filter_map</span>(<span class='ident'>filter_both_nnz</span>)
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Iterator</span><span class='op'>&gt;</span> <span class='ident'>SparseIterTools</span> <span class='kw'>for</span> <span class='ident'>Enumerate</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='op'>&lt;</span><span class='ident'>T</span> <span class='kw'>as</span> <span class='ident'>Iterator</span><span class='op'>&gt;</span>::<span class='ident'>Item</span> : <span class='ident'>Copy</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span>: <span class='ident'>Iterator</span><span class='op'>&gt;</span> <span class='ident'>SparseIterTools</span> <span class='kw'>for</span> <span class='ident'>Enumerate</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>SparseIterTools</span> <span class='kw'>for</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>SparseIterTools</span> <span class='kw'>for</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
 }
 
 <span class='doccomment'>/// An iterator over the non zeros of either of two vector iterators, ordered,</span>
 <span class='doccomment'>/// such that the sum of the vectors may be computed</span>
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>Ite1</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span>,
-      <span class='ident'>Ite2</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>: <span class='lifetime'>&#39;a</span>, <span class='ident'>N2</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>Ite1</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>)<span class='op'>&gt;</span>,
+      <span class='ident'>Ite2</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
     <span class='ident'>left</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Ite1</span><span class='op'>&gt;</span>,
     <span class='ident'>right</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Ite2</span><span class='op'>&gt;</span>,
+    <span class='ident'>life</span>: <span class='ident'>PhantomData</span><span class='op'>&lt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)<span class='op'>&gt;</span>,
 }
 
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Debug</span>)]</span>
-<span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span> {
-    <span class='ident'>Both</span>((<span class='ident'>usize</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span>)),
-    <span class='ident'>Left</span>((<span class='ident'>usize</span>, <span class='ident'>N1</span>)),
-    <span class='ident'>Right</span>((<span class='ident'>usize</span>, <span class='ident'>N2</span>))
+<span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>: <span class='lifetime'>&#39;a</span>, <span class='ident'>N2</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
+    <span class='ident'>Both</span>((<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)),
+    <span class='ident'>Left</span>((<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>)),
+    <span class='ident'>Right</span>((<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>))
 }
 
-<span class='kw'>fn</span> <span class='ident'>filter_both_nnz</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span>, <span class='ident'>M</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='ident'>elem</span>: <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N</span>,<span class='ident'>M</span><span class='op'>&gt;</span>)
-<span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>, <span class='ident'>N</span>, <span class='ident'>M</span>)<span class='op'>&gt;</span> {
+<span class='kw'>fn</span> <span class='ident'>filter_both_nnz</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span>, <span class='ident'>M</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='ident'>elem</span>: <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>M</span><span class='op'>&gt;</span>)
+<span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>M</span>)<span class='op'>&gt;</span> {
     <span class='kw'>match</span> <span class='ident'>elem</span> {
         <span class='ident'>NnzEither</span>::<span class='ident'>Both</span>((<span class='ident'>ind</span>, <span class='ident'>lval</span>, <span class='ident'>rval</span>)) <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>((<span class='ident'>ind</span>, <span class='ident'>lval</span>, <span class='ident'>rval</span>)),
         _ <span class='op'>=&gt;</span> <span class='prelude-val'>None</span>
     }
 }
 
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>: <span class='ident'>Copy</span>, <span class='ident'>N2</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>: <span class='lifetime'>&#39;a</span>, <span class='ident'>N2</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>
 <span class='ident'>Iterator</span>
-<span class='kw'>for</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>Ite1</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N1</span>)<span class='op'>&gt;</span>,
-      <span class='ident'>Ite2</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
-    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>;
+<span class='kw'>for</span> <span class='ident'>NnzOrZip</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>Ite1</span>, <span class='ident'>Ite2</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>Ite1</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N1</span>)<span class='op'>&gt;</span>,
+      <span class='ident'>Ite2</span>: <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span>(<span class='ident'>usize</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>N2</span>)<span class='op'>&gt;</span> {
+    <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>;
 
-    <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>)<span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span>(<span class='ident'>NnzEither</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N1</span>, <span class='ident'>N2</span><span class='op'>&gt;</span>)<span class='op'>&gt;</span> {
         <span class='kw'>match</span> (<span class='self'>self</span>.<span class='ident'>left</span>.<span class='ident'>peek</span>(), <span class='self'>self</span>.<span class='ident'>right</span>.<span class='ident'>peek</span>()) {
             (<span class='prelude-val'>None</span>, <span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span>(_, _))) <span class='op'>=&gt;</span> {
                 <span class='kw'>let</span> (<span class='ident'>rind</span>, <span class='ident'>rval</span>) <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>right</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>();
@@ -937,7 +947,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
     <span class='doccomment'>/// Create a borrowed CsVec over slice data.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new_borrowed</span>(
@@ -959,10 +969,10 @@
     <span class='doccomment'>/// For instance, non out-of-bounds indices can be relied upon to</span>
     <span class='doccomment'>/// perform unchecked slice access.</span>
     <span class='kw'>pub</span> <span class='kw'>unsafe</span> <span class='kw'>fn</span> <span class='ident'>new_raw</span>(<span class='ident'>n</span>: <span class='ident'>usize</span>,
-                                         <span class='ident'>nnz</span>: <span class='ident'>usize</span>,
-                                         <span class='ident'>indices</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>usize</span>,
-                                         <span class='ident'>data</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>N</span>,
-                                        ) <span class='op'>-&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+                          <span class='ident'>nnz</span>: <span class='ident'>usize</span>,
+                          <span class='ident'>indices</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>usize</span>,
+                          <span class='ident'>data</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>N</span>,
+                          ) <span class='op'>-&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
         <span class='ident'>CsVec</span> {
             <span class='ident'>dim</span>: <span class='ident'>n</span>,
             <span class='ident'>indices</span>: <span class='ident'>slice</span>::<span class='ident'>from_raw_parts</span>(<span class='ident'>indices</span>, <span class='ident'>nnz</span>),
@@ -971,7 +981,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
     <span class='doccomment'>/// Create an owning CsVec from vector data.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new_owned</span>(<span class='ident'>n</span>: <span class='ident'>usize</span>,
                      <span class='ident'>indices</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>,
@@ -1034,9 +1044,8 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>:  <span class='ident'>Copy</span>,
-<span class='ident'>IStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
-<span class='ident'>DStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+<span class='kw'>where</span> <span class='ident'>IStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+      <span class='ident'>DStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
     <span class='doccomment'>/// Get a view of this vector.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>borrowed</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsVecView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
@@ -1049,9 +1058,9 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span>,
-<span class='ident'>IStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
-<span class='ident'>DStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span>,
+      <span class='ident'>IStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+      <span class='ident'>DStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
     <span class='doccomment'>/// Iterate over the non zero values.</span>
     <span class='doccomment'>///</span>
@@ -1061,9 +1070,9 @@
     <span class='doccomment'>/// use sprs::CsVec;</span>
     <span class='doccomment'>/// let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();</span>
     <span class='doccomment'>/// let mut iter = v.iter();</span>
-    <span class='doccomment'>/// assert_eq!(iter.next(), Some((0, 1.)));</span>
-    <span class='doccomment'>/// assert_eq!(iter.next(), Some((2, 2.)));</span>
-    <span class='doccomment'>/// assert_eq!(iter.next(), Some((4, 3.)));</span>
+    <span class='doccomment'>/// assert_eq!(iter.next(), Some((0, &amp;1.)));</span>
+    <span class='doccomment'>/// assert_eq!(iter.next(), Some((2, &amp;2.)));</span>
+    <span class='doccomment'>/// assert_eq!(iter.next(), Some((4, &amp;3.)));</span>
     <span class='doccomment'>/// assert_eq!(iter.next(), None);</span>
     <span class='doccomment'>/// ```</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>iter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>VectorIterator</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
@@ -1119,7 +1128,9 @@
     }
 
     <span class='doccomment'>/// Allocate a new vector equal to this one.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_owned</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsVecOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_owned</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsVecOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='ident'>CsVec</span> {
             <span class='ident'>dim</span>: <span class='self'>self</span>.<span class='ident'>dim</span>,
             <span class='ident'>indices</span>: <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>to_vec</span>(),
@@ -1156,13 +1167,14 @@
     <span class='doccomment'>/// Access element at given index, with logarithmic complexity</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// TODO: use this for CsMat::at_outer_inner</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>at</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>index</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>at</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>index</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span> {
         <span class='kw'>let</span> <span class='ident'>position</span> <span class='op'>=</span> <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>binary_search</span>(<span class='kw-2'>&amp;</span><span class='ident'>index</span>) {
             <span class='prelude-val'>Ok</span>(<span class='ident'>ind</span>) <span class='op'>=&gt;</span> <span class='ident'>ind</span>,
             _ <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='prelude-val'>None</span>
         };
 
-        <span class='prelude-val'>Some</span>(<span class='self'>self</span>.<span class='ident'>data</span>[<span class='ident'>position</span>])
+        <span class='prelude-val'>Some</span>(<span class='self'>self</span>.<span class='ident'>data</span>[<span class='ident'>position</span>].<span class='ident'>clone</span>())
     }
 
     <span class='doccomment'>/// Vector dot product</span>
@@ -1178,21 +1190,22 @@
     <span class='doccomment'>/// assert_eq!(16., v2.dot(&amp;v2));</span>
     <span class='doccomment'>/// ```</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>dot</span><span class='op'>&lt;</span><span class='ident'>IS2</span>, <span class='ident'>DS2</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IS2</span>, <span class='ident'>DS2</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>N</span>
-    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span>, <span class='ident'>IS2</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>, <span class='ident'>DS2</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
-        <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>nnz_zip</span>(<span class='ident'>rhs</span>.<span class='ident'>iter</span>()).<span class='ident'>map</span>(<span class='op'>|</span>(_, <span class='ident'>lval</span>, <span class='ident'>rval</span>)<span class='op'>|</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>)
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>, <span class='ident'>IS2</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>, <span class='ident'>DS2</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+        <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>nnz_zip</span>(<span class='ident'>rhs</span>.<span class='ident'>iter</span>()).<span class='ident'>map</span>(<span class='op'>|</span>(_, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>, <span class='kw-2'>&amp;</span><span class='ident'>rval</span>)<span class='op'>|</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>)
                                        .<span class='ident'>fold</span>(<span class='ident'>N</span>::<span class='ident'>zero</span>(), <span class='op'>|</span><span class='ident'>x</span>, <span class='ident'>y</span><span class='op'>|</span> <span class='ident'>x</span> <span class='op'>+</span> <span class='ident'>y</span>)
     }
 
     <span class='doccomment'>/// Fill a dense vector with our values</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>scatter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>out</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>N</span>]) {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>scatter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>out</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>N</span>])
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span> {
         <span class='kw'>for</span> (<span class='ident'>ind</span>, <span class='ident'>val</span>) <span class='kw'>in</span> <span class='self'>self</span>.<span class='ident'>iter</span>() {
-            <span class='ident'>out</span>[<span class='ident'>ind</span>] <span class='op'>=</span> <span class='ident'>val</span>;
+            <span class='ident'>out</span>[<span class='ident'>ind</span>] <span class='op'>=</span> <span class='ident'>val</span>.<span class='ident'>clone</span>();
         }
     }
 
     <span class='doccomment'>/// Transform this vector into a set of (index, value) tuples</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_set</span>(<span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>HashSet</span><span class='op'>&lt;</span>(<span class='ident'>usize</span>, <span class='ident'>N</span>)<span class='op'>&gt;</span>
-    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Hash</span> <span class='op'>+</span> <span class='ident'>Eq</span> {
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Hash</span> <span class='op'>+</span> <span class='ident'>Eq</span> <span class='op'>+</span> <span class='ident'>Clone</span> {
         <span class='self'>self</span>.<span class='ident'>indices</span>().<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>zip</span>(<span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>iter</span>().<span class='ident'>cloned</span>()).<span class='ident'>collect</span>()
     }
 }
@@ -1293,9 +1306,9 @@
         <span class='kw'>let</span> <span class='ident'>vec1</span> <span class='op'>=</span> <span class='ident'>test_vec1</span>();
         <span class='kw'>let</span> <span class='ident'>vec2</span> <span class='op'>=</span> <span class='ident'>test_vec2</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>iter</span> <span class='op'>=</span> <span class='ident'>vec1</span>.<span class='ident'>iter</span>().<span class='ident'>nnz_zip</span>(<span class='ident'>vec2</span>.<span class='ident'>iter</span>());
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), (<span class='number'>0</span>, <span class='number'>0.</span>, <span class='number'>0.5</span>));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), (<span class='number'>4</span>, <span class='number'>4.</span>, <span class='number'>4.5</span>));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), (<span class='number'>7</span>, <span class='number'>7.</span>, <span class='number'>7.5</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), (<span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='number'>0.</span>, <span class='kw-2'>&amp;</span><span class='number'>0.5</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), (<span class='number'>4</span>, <span class='kw-2'>&amp;</span><span class='number'>4.</span>, <span class='kw-2'>&amp;</span><span class='number'>4.5</span>));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), (<span class='number'>7</span>, <span class='kw-2'>&amp;</span><span class='number'>7.</span>, <span class='kw-2'>&amp;</span><span class='number'>7.5</span>));
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>is_none</span>());
     }
 
@@ -1305,13 +1318,13 @@
         <span class='kw'>let</span> <span class='ident'>vec1</span> <span class='op'>=</span> <span class='ident'>test_vec1</span>();
         <span class='kw'>let</span> <span class='ident'>vec2</span> <span class='op'>=</span> <span class='ident'>test_vec2</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>iter</span> <span class='op'>=</span> <span class='ident'>vec1</span>.<span class='ident'>iter</span>().<span class='ident'>nnz_or_zip</span>(<span class='ident'>vec2</span>.<span class='ident'>iter</span>());
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Both</span>((<span class='number'>0</span>, <span class='number'>0.</span>, <span class='number'>0.5</span>)));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Left</span>((<span class='number'>1</span>, <span class='number'>1.</span>)));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Right</span>((<span class='number'>2</span>, <span class='number'>2.5</span>)));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Both</span>((<span class='number'>4</span>, <span class='number'>4.</span>, <span class='number'>4.5</span>)));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Left</span>((<span class='number'>5</span>, <span class='number'>5.</span>)));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Right</span>((<span class='number'>6</span>, <span class='number'>6.5</span>)));
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Both</span>((<span class='number'>7</span>, <span class='number'>7.</span>, <span class='number'>7.5</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Both</span>((<span class='number'>0</span>, <span class='kw-2'>&amp;</span><span class='number'>0.</span>, <span class='kw-2'>&amp;</span><span class='number'>0.5</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Left</span>((<span class='number'>1</span>, <span class='kw-2'>&amp;</span><span class='number'>1.</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Right</span>((<span class='number'>2</span>, <span class='kw-2'>&amp;</span><span class='number'>2.5</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Both</span>((<span class='number'>4</span>, <span class='kw-2'>&amp;</span><span class='number'>4.</span>, <span class='kw-2'>&amp;</span><span class='number'>4.5</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Left</span>((<span class='number'>5</span>, <span class='kw-2'>&amp;</span><span class='number'>5.</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Right</span>((<span class='number'>6</span>, <span class='kw-2'>&amp;</span><span class='number'>6.5</span>)));
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>iter</span>.<span class='ident'>next</span>().<span class='ident'>unwrap</span>(), <span class='ident'>Both</span>((<span class='number'>7</span>, <span class='kw-2'>&amp;</span><span class='number'>7.</span>, <span class='kw-2'>&amp;</span><span class='number'>7.5</span>)));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1387,6 +1400,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

@@ -4,14 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/home/vincent/.multirust/toolchains/stable/cargo/registry/src/github.com-0a35038f75765ae4/num-0.1.27/src/integer.rs`.">
+    <meta name="description" content="Source to the Rust file `/home/vincent/.multirust/toolchains/stable/cargo/registry/src/github.com-88ac128001ac3a9a/num-0.1.30/src/integer.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>integer.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
 
-    <link rel="shortcut icon" href="http://www.rust-lang.org/favicon.ico">
+    <link rel="shortcut icon" href="http://rust-num.github.io/num/favicon.ico">
     
 </head>
 <body class="rustdoc">
@@ -25,7 +26,7 @@
     
 
     <nav class="sidebar">
-        <a href='../../num/index.html'><img src='http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
+        <a href='../../num/index.html'><img src='http://rust-num.github.io/num/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         
     </nav>
 
@@ -547,6 +548,129 @@
 <span id="505">505</span>
 <span id="506">506</span>
 <span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013-2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -767,15 +891,41 @@
             <span class='doccomment'>/// `other`. The result is always positive.</span>
             <span class='attribute'>#[<span class='ident'>inline</span>]</span>
             <span class='kw'>fn</span> <span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>) <span class='op'>-&gt;</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span> {
-                <span class='comment'>// Use Euclid&#39;s algorithm</span>
+                <span class='comment'>// Use Stein&#39;s algorithm</span>
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>m</span> <span class='op'>=</span> <span class='op'>*</span><span class='self'>self</span>;
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='op'>*</span><span class='ident'>other</span>;
-                <span class='kw'>while</span> <span class='ident'>m</span> <span class='op'>!=</span> <span class='number'>0</span> {
-                    <span class='kw'>let</span> <span class='ident'>temp</span> <span class='op'>=</span> <span class='ident'>m</span>;
-                    <span class='ident'>m</span> <span class='op'>=</span> <span class='ident'>n</span> <span class='op'>%</span> <span class='ident'>temp</span>;
-                    <span class='ident'>n</span> <span class='op'>=</span> <span class='ident'>temp</span>;
+                <span class='kw'>if</span> <span class='ident'>m</span> <span class='op'>==</span> <span class='number'>0</span> <span class='op'>||</span> <span class='ident'>n</span> <span class='op'>==</span> <span class='number'>0</span> { <span class='kw'>return</span> (<span class='ident'>m</span> <span class='op'>|</span> <span class='ident'>n</span>).<span class='ident'>abs</span>() }
+
+                <span class='comment'>// find common factors of 2</span>
+                <span class='kw'>let</span> <span class='ident'>shift</span> <span class='op'>=</span> (<span class='ident'>m</span> <span class='op'>|</span> <span class='ident'>n</span>).<span class='ident'>trailing_zeros</span>();
+
+                <span class='comment'>// The algorithm needs positive numbers, but the minimum value</span>
+                <span class='comment'>// can&#39;t be represented as a positive one.</span>
+                <span class='comment'>// It&#39;s also a power of two, so the gcd can be</span>
+                <span class='comment'>// calculated by bitshifting in that case</span>
+
+                <span class='comment'>// Assuming two&#39;s complement, the number created by the shift</span>
+                <span class='comment'>// is positive for all numbers except gcd = abs(min value)</span>
+                <span class='comment'>// The call to .abs() causes a panic in debug mode</span>
+                <span class='kw'>if</span> <span class='ident'>m</span> <span class='op'>==</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>min_value</span>() <span class='op'>||</span> <span class='ident'>n</span> <span class='op'>==</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>min_value</span>() {
+                    <span class='kw'>return</span> (<span class='number'>1</span> <span class='op'>&lt;&lt;</span> <span class='ident'>shift</span>).<span class='ident'>abs</span>()
                 }
-                <span class='ident'>n</span>.<span class='ident'>abs</span>()
+
+                <span class='comment'>// guaranteed to be positive now, rest like unsigned algorithm</span>
+                <span class='ident'>m</span> <span class='op'>=</span> <span class='ident'>m</span>.<span class='ident'>abs</span>();
+                <span class='ident'>n</span> <span class='op'>=</span> <span class='ident'>n</span>.<span class='ident'>abs</span>();
+
+                <span class='comment'>// divide n and m by 2 until odd</span>
+                <span class='comment'>// m inside loop</span>
+                <span class='ident'>n</span> <span class='op'>&gt;&gt;=</span> <span class='ident'>n</span>.<span class='ident'>trailing_zeros</span>();
+
+                <span class='kw'>while</span> <span class='ident'>m</span> <span class='op'>!=</span> <span class='number'>0</span> {
+                    <span class='ident'>m</span> <span class='op'>&gt;&gt;=</span> <span class='ident'>m</span>.<span class='ident'>trailing_zeros</span>();
+                    <span class='kw'>if</span> <span class='ident'>n</span> <span class='op'>&gt;</span> <span class='ident'>m</span> { ::<span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>swap</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>n</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>m</span>) }
+                    <span class='ident'>m</span> <span class='op'>-=</span> <span class='ident'>n</span>;
+                }
+
+                <span class='ident'>n</span> <span class='op'>&lt;&lt;</span> <span class='ident'>shift</span>
             }
 
             <span class='doccomment'>/// Calculates the Lowest Common Multiple (LCM) of the number and</span>
@@ -886,6 +1036,68 @@
             }
 
             <span class='attribute'>#[<span class='ident'>test</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>test_gcd_cmp_with_euclidean</span>() {
+                <span class='kw'>fn</span> <span class='ident'>euclidean_gcd</span>(<span class='kw-2'>mut</span> <span class='ident'>m</span>: <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>, <span class='kw-2'>mut</span> <span class='ident'>n</span>: <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>) <span class='op'>-&gt;</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span> {
+                    <span class='kw'>while</span> <span class='ident'>m</span> <span class='op'>!=</span> <span class='number'>0</span> {
+                        ::<span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>swap</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>m</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>n</span>);
+                        <span class='ident'>m</span> <span class='op'>%=</span> <span class='ident'>n</span>;
+                    }
+
+                    <span class='ident'>n</span>.<span class='ident'>abs</span>()
+                }
+
+                <span class='comment'>// gcd(-128, b) = 128 is not representable as positive value</span>
+                <span class='comment'>// for i8</span>
+                <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='op'>-</span><span class='number'>127</span>..<span class='number'>127</span> {
+                    <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='op'>-</span><span class='number'>127</span>..<span class='number'>127</span> {
+                        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>euclidean_gcd</span>(<span class='ident'>i</span>,<span class='ident'>j</span>), <span class='ident'>i</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>j</span>));
+                    }
+                }
+
+                <span class='comment'>// last value</span>
+                <span class='comment'>// FIXME: Use inclusive ranges for above loop when implemented</span>
+                <span class='kw'>let</span> <span class='ident'>i</span> <span class='op'>=</span> <span class='number'>127</span>;
+                <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='op'>-</span><span class='number'>127</span>..<span class='number'>127</span> {
+                    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>euclidean_gcd</span>(<span class='ident'>i</span>,<span class='ident'>j</span>), <span class='ident'>i</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>j</span>));
+                }
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='number'>127</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>127</span>), <span class='number'>127</span>);
+            }
+
+            <span class='attribute'>#[<span class='ident'>test</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>test_gcd_min_val</span>() {
+                <span class='kw'>let</span> <span class='ident'>min</span> <span class='op'>=</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>min_value</span>();
+                <span class='kw'>let</span> <span class='ident'>max</span> <span class='op'>=</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>max_value</span>();
+                <span class='kw'>let</span> <span class='ident'>max_pow2</span> <span class='op'>=</span> <span class='ident'>max</span> <span class='op'>/</span> <span class='number'>2</span> <span class='op'>+</span> <span class='number'>1</span>;
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>min</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>max</span>), <span class='number'>1</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>max</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>min</span>), <span class='number'>1</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>min</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>max_pow2</span>), <span class='ident'>max_pow2</span>);
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>max_pow2</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>min</span>), <span class='ident'>max_pow2</span>);
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>min</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>42</span>), <span class='number'>2</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='number'>42</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>min</span>), <span class='number'>2</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
+            }
+
+            <span class='attribute'>#[<span class='ident'>test</span>]</span>
+            <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>test_gcd_min_val_min_val</span>() {
+                <span class='kw'>let</span> <span class='ident'>min</span> <span class='op'>=</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>min_value</span>();
+                <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>min</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>min</span>) <span class='op'>&gt;=</span> <span class='number'>0</span>);
+            }
+
+            <span class='attribute'>#[<span class='ident'>test</span>]</span>
+            <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>test_gcd_min_val_0</span>() {
+                <span class='kw'>let</span> <span class='ident'>min</span> <span class='op'>=</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>min_value</span>();
+                <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>min</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>) <span class='op'>&gt;=</span> <span class='number'>0</span>);
+            }
+
+            <span class='attribute'>#[<span class='ident'>test</span>]</span>
+            <span class='attribute'>#[<span class='ident'>should_panic</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>test_gcd_0_min_val</span>() {
+                <span class='kw'>let</span> <span class='ident'>min</span> <span class='op'>=</span> <span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span><span class='op'>&gt;</span>::<span class='ident'>min_value</span>();
+                <span class='macro'>assert</span><span class='macro'>!</span>((<span class='number'>0</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>min</span>) <span class='op'>&gt;=</span> <span class='number'>0</span>);
+            }
+
+            <span class='attribute'>#[<span class='ident'>test</span>]</span>
             <span class='kw'>fn</span> <span class='ident'>test_lcm</span>() {
                 <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='number'>1</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>lcm</span>(<span class='kw-2'>&amp;</span><span class='number'>0</span>), <span class='number'>0</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
                 <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='number'>0</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>lcm</span>(<span class='kw-2'>&amp;</span><span class='number'>1</span>), <span class='number'>0</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
@@ -946,15 +1158,25 @@
             <span class='doccomment'>/// Calculates the Greatest Common Divisor (GCD) of the number and `other`</span>
             <span class='attribute'>#[<span class='ident'>inline</span>]</span>
             <span class='kw'>fn</span> <span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>) <span class='op'>-&gt;</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span> {
-                <span class='comment'>// Use Euclid&#39;s algorithm</span>
+                <span class='comment'>// Use Stein&#39;s algorithm</span>
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>m</span> <span class='op'>=</span> <span class='op'>*</span><span class='self'>self</span>;
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='op'>*</span><span class='ident'>other</span>;
+                <span class='kw'>if</span> <span class='ident'>m</span> <span class='op'>==</span> <span class='number'>0</span> <span class='op'>||</span> <span class='ident'>n</span> <span class='op'>==</span> <span class='number'>0</span> { <span class='kw'>return</span> <span class='ident'>m</span> <span class='op'>|</span> <span class='ident'>n</span> }
+
+                <span class='comment'>// find common factors of 2</span>
+                <span class='kw'>let</span> <span class='ident'>shift</span> <span class='op'>=</span> (<span class='ident'>m</span> <span class='op'>|</span> <span class='ident'>n</span>).<span class='ident'>trailing_zeros</span>();
+
+                <span class='comment'>// divide n and m by 2 until odd</span>
+                <span class='comment'>// m inside loop</span>
+                <span class='ident'>n</span> <span class='op'>&gt;&gt;=</span> <span class='ident'>n</span>.<span class='ident'>trailing_zeros</span>();
+
                 <span class='kw'>while</span> <span class='ident'>m</span> <span class='op'>!=</span> <span class='number'>0</span> {
-                    <span class='kw'>let</span> <span class='ident'>temp</span> <span class='op'>=</span> <span class='ident'>m</span>;
-                    <span class='ident'>m</span> <span class='op'>=</span> <span class='ident'>n</span> <span class='op'>%</span> <span class='ident'>temp</span>;
-                    <span class='ident'>n</span> <span class='op'>=</span> <span class='ident'>temp</span>;
+                    <span class='ident'>m</span> <span class='op'>&gt;&gt;=</span> <span class='ident'>m</span>.<span class='ident'>trailing_zeros</span>();
+                    <span class='kw'>if</span> <span class='ident'>n</span> <span class='op'>&gt;</span> <span class='ident'>m</span> { ::<span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>swap</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>n</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>m</span>) }
+                    <span class='ident'>m</span> <span class='op'>-=</span> <span class='ident'>n</span>;
                 }
-                <span class='ident'>n</span>
+
+                <span class='ident'>n</span> <span class='op'>&lt;&lt;</span> <span class='ident'>shift</span>
             }
 
             <span class='doccomment'>/// Calculates the Lowest Common Multiple (LCM) of the number and `other`.</span>
@@ -1010,6 +1232,31 @@
                 <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='number'>0</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>3</span>), <span class='number'>3</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
                 <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='number'>3</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>3</span>), <span class='number'>3</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
                 <span class='macro'>assert_eq</span><span class='macro'>!</span>((<span class='number'>56</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>).<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>42</span>), <span class='number'>14</span> <span class='kw'>as</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>);
+            }
+
+            <span class='attribute'>#[<span class='ident'>test</span>]</span>
+            <span class='kw'>fn</span> <span class='ident'>test_gcd_cmp_with_euclidean</span>() {
+                <span class='kw'>fn</span> <span class='ident'>euclidean_gcd</span>(<span class='kw-2'>mut</span> <span class='ident'>m</span>: <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>, <span class='kw-2'>mut</span> <span class='ident'>n</span>: <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span>) <span class='op'>-&gt;</span> <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>T</span> {
+                    <span class='kw'>while</span> <span class='ident'>m</span> <span class='op'>!=</span> <span class='number'>0</span> {
+                        ::<span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>swap</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>m</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>n</span>);
+                        <span class='ident'>m</span> <span class='op'>%=</span> <span class='ident'>n</span>;
+                    }
+                    <span class='ident'>n</span>
+                }
+
+                <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='number'>255</span> {
+                    <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='number'>255</span> {
+                        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>euclidean_gcd</span>(<span class='ident'>i</span>,<span class='ident'>j</span>), <span class='ident'>i</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>j</span>));
+                    }
+                }
+
+                <span class='comment'>// last value</span>
+                <span class='comment'>// FIXME: Use inclusive ranges for above loop when implemented</span>
+                <span class='kw'>let</span> <span class='ident'>i</span> <span class='op'>=</span> <span class='number'>255</span>;
+                <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='number'>255</span> {
+                    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>euclidean_gcd</span>(<span class='ident'>i</span>,<span class='ident'>j</span>), <span class='ident'>i</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='ident'>j</span>));
+                }
+                <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='number'>255</span>.<span class='ident'>gcd</span>(<span class='kw-2'>&amp;</span><span class='number'>255</span>), <span class='number'>255</span>);
             }
 
             <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1115,6 +1362,6 @@
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     <script src="../../playpen.js"></script>
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

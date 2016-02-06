@@ -9,6 +9,7 @@
 
     <title>lib.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
 
     
@@ -175,7 +176,7 @@ assert_eq!(a, b.to_csc());
 */</span>
 
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>num</span>;
-<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>dense_mats</span>;
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>ndarray</span>;
 
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>sparse</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>errors</span>;
@@ -191,12 +192,12 @@ assert_eq!(a, b.to_csc());
 
     <span class='doccomment'>/// Create a borrowed CsMat matrix from sliced data without</span>
     <span class='doccomment'>/// checking validity. Intended for internal use only.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csmat_borrowed_uchk</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='ident'>storage</span>: <span class='ident'>csmat</span>::<span class='ident'>CompressedStorage</span>,
-                                            <span class='ident'>nrows</span> : <span class='ident'>usize</span>, <span class='ident'>ncols</span>: <span class='ident'>usize</span>,
-                                            <span class='ident'>indptr</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>],
-                                            <span class='ident'>indices</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>],
-                                            <span class='ident'>data</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]
-                                           ) <span class='op'>-&gt;</span> <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csmat_borrowed_uchk</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>storage</span>: <span class='ident'>csmat</span>::<span class='ident'>CompressedStorage</span>,
+                                      <span class='ident'>nrows</span> : <span class='ident'>usize</span>, <span class='ident'>ncols</span>: <span class='ident'>usize</span>,
+                                      <span class='ident'>indptr</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>],
+                                      <span class='ident'>indices</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>],
+                                      <span class='ident'>data</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]
+                                     ) <span class='op'>-&gt;</span> <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
         <span class='comment'>// not actually memory unsafe here since data comes from slices</span>
         <span class='kw'>unsafe</span> {
             <span class='ident'>CsMatView</span>::<span class='ident'>new_raw</span>(<span class='ident'>storage</span>, <span class='ident'>nrows</span>, <span class='ident'>ncols</span>,
@@ -269,6 +270,6 @@ assert_eq!(a, b.to_csc());
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

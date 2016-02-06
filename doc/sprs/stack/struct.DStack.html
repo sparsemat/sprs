@@ -9,6 +9,7 @@
 
     <title>sprs::stack::DStack - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
 
     
@@ -45,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-2398' class='srclink' href='../../src/sprs/stack.rs.html#13-17' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2523' class='srclink' href='../../src/sprs/stack.rs.html#13-17' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct DStack&lt;I&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>A double stack of fixed capacity, growing from the left to the right
@@ -53,13 +54,13 @@ or conversely.</p>
 
 <p>Used in sparse triangular / sparse vector solves, where it is guaranteed
 that the two parts of the stack cannot overlap.</p>
-</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;I&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h3><div class='impl-items'><h4 id='method.with_capacity' class='method'><code>fn <a href='#method.with_capacity' class='fnname'>with_capacity</a>(n: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;I&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h3><div class='impl-items'><h4 id='method.with_capacity' class='method'><code>fn <a href='#method.with_capacity' class='fnname'>with_capacity</a>(n: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../sprs/stack/struct.DStack.html' title='sprs::stack::DStack'>DStack</a>&lt;I&gt; <span class='where'>where I: <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h4>
 <div class='docblock'><p>Create a new double stacked suited for containing at most n elements</p>
-</div><h4 id='method.capacity' class='method'><code>fn <a href='#method.capacity' class='fnname'>capacity</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.capacity' class='method'><code>fn <a href='#method.capacity' class='fnname'>capacity</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>Capacity of the dstack</p>
-</div><h4 id='method.is_left_empty' class='method'><code>fn <a href='#method.is_left_empty' class='fnname'>is_left_empty</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div><h4 id='method.is_left_empty' class='method'><code>fn <a href='#method.is_left_empty' class='fnname'>is_left_empty</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <div class='docblock'><p>Test whether the left stack is empty</p>
-</div><h4 id='method.is_right_empty' class='method'><code>fn <a href='#method.is_right_empty' class='fnname'>is_right_empty</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div><h4 id='method.is_right_empty' class='method'><code>fn <a href='#method.is_right_empty' class='fnname'>is_right_empty</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <div class='docblock'><p>Test whether the right stack is empty</p>
 </div><h4 id='method.push_left' class='method'><code>fn <a href='#method.push_left' class='fnname'>push_left</a>(&amp;mut self, value: I)</code></h4>
 <div class='docblock'><p>Push a value on the left stack</p>
@@ -69,7 +70,7 @@ that the two parts of the stack cannot overlap.</p>
 <div class='docblock'><p>Pop a value from the left stack</p>
 </div><h4 id='method.pop_right' class='method'><code>fn <a href='#method.pop_right' class='fnname'>pop_right</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;I&gt;</code></h4>
 <div class='docblock'><p>Pop a value from the right stack</p>
-</div><h4 id='method.len_right' class='method'><code>fn <a href='#method.len_right' class='fnname'>len_right</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.len_right' class='method'><code>fn <a href='#method.len_right' class='fnname'>len_right</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>Number of right elements this double stack contains</p>
 </div><h4 id='method.clear_right' class='method'><code>fn <a href='#method.clear_right' class='fnname'>clear_right</a>(&amp;mut self)</code></h4>
 <div class='docblock'><p>Clear the right stack</p>
@@ -141,6 +142,6 @@ that the two parts of the stack cannot overlap.</p>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

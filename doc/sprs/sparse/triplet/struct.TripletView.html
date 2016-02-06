@@ -9,6 +9,7 @@
 
     <title>sprs::sparse::triplet::TripletView - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -45,31 +46,31 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-738' class='srclink' href='../../../src/sprs/sparse/triplet.rs.html#200-206' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-798' class='srclink' href='../../../src/sprs/sparse/triplet.rs.html#200-206' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct TripletView&lt;'a, N: 'a&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>Triplet matrix view</p>
-</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;'a, N&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletView.html' title='sprs::sparse::triplet::TripletView'>TripletView</a>&lt;'a, N&gt;</code></h3><div class='impl-items'><h4 id='method.rows' class='method'><code>fn <a href='#method.rows' class='fnname'>rows</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;'a, N&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletView.html' title='sprs::sparse::triplet::TripletView'>TripletView</a>&lt;'a, N&gt;</code></h3><div class='impl-items'><h4 id='method.rows' class='method'><code>fn <a href='#method.rows' class='fnname'>rows</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>The number of rows of the matrix</p>
-</div><h4 id='method.cols' class='method'><code>fn <a href='#method.cols' class='fnname'>cols</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.cols' class='method'><code>fn <a href='#method.cols' class='fnname'>cols</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>The number of cols of the matrix</p>
-</div><h4 id='method.shape' class='method'><code>fn <a href='#method.shape' class='fnname'>shape</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</a></code></h4>
+</div><h4 id='method.shape' class='method'><code>fn <a href='#method.shape' class='fnname'>shape</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</a></code></h4>
 <div class='docblock'><p>The shape of the matrix, as a <code>(rows, cols)</code> tuple</p>
-</div><h4 id='method.nnz' class='method'><code>fn <a href='#method.nnz' class='fnname'>nnz</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.nnz' class='method'><code>fn <a href='#method.nnz' class='fnname'>nnz</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>The number of non-zero entries</p>
-</div><h4 id='method.row_inds' class='method'><code>fn <a href='#method.row_inds' class='fnname'>row_inds</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+</div><h4 id='method.row_inds' class='method'><code>fn <a href='#method.row_inds' class='fnname'>row_inds</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
 <div class='docblock'><p>The non-zero row indices</p>
-</div><h4 id='method.col_inds' class='method'><code>fn <a href='#method.col_inds' class='fnname'>col_inds</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a><a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+</div><h4 id='method.col_inds' class='method'><code>fn <a href='#method.col_inds' class='fnname'>col_inds</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
 <div class='docblock'><p>The non-zero column indices</p>
-</div><h4 id='method.data' class='method'><code>fn <a href='#method.data' class='fnname'>data</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>N<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+</div><h4 id='method.data' class='method'><code>fn <a href='#method.data' class='fnname'>data</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a>N<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
 <div class='docblock'><p>The non-zero values</p>
-</div><h4 id='method.find_locations' class='method'><code>fn <a href='#method.find_locations' class='fnname'>find_locations</a>(&amp;self, row: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, col: <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../sprs/sparse/triplet/struct.TripletIndex.html' title='sprs::sparse::triplet::TripletIndex'>TripletIndex</a>&gt;</code></h4>
+</div><h4 id='method.find_locations' class='method'><code>fn <a href='#method.find_locations' class='fnname'>find_locations</a>(&amp;self, row: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, col: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../../sprs/sparse/triplet/struct.TripletIndex.html' title='sprs::sparse::triplet::TripletIndex'>TripletIndex</a>&gt;</code></h4>
 <div class='docblock'><p>Find all non-zero entries at the location given by <code>row</code> and <code>col</code></p>
 </div><h4 id='method.transpose_view' class='method'><code>fn <a href='#method.transpose_view' class='fnname'>transpose_view</a>(&amp;self) -&gt; <a class='struct' href='../../../sprs/sparse/triplet/struct.TripletView.html' title='sprs::sparse::triplet::TripletView'>TripletView</a>&lt;'a, N&gt;</code></h4>
 <div class='docblock'><p>Get a transposed view of this matrix</p>
-</div><h4 id='method.to_csc' class='method'><code>fn <a href='#method.to_csc' class='fnname'>to_csc</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a></span></code></h4>
+</div><h4 id='method.to_csc' class='method'><code>fn <a href='#method.to_csc' class='fnname'>to_csc</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a></span></code></h4>
 <div class='docblock'><p>Create a CSC matrix from this triplet matrix</p>
-</div><h4 id='method.to_csr' class='method'><code>fn <a href='#method.to_csr' class='fnname'>to_csr</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a></span></code></h4>
+</div><h4 id='method.to_csr' class='method'><code>fn <a href='#method.to_csr' class='fnname'>to_csr</a>(&amp;self) -&gt; <a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt; <span class='where'>where N: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a></span></code></h4>
 <div class='docblock'><p>Create a CSR matrix from this triplet matrix</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
@@ -130,6 +131,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
 
     <title>compressed.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -89,8 +90,6 @@
 <span id="47">47</span>
 <span id="48">48</span>
 <span id="49">49</span>
-<span id="50">50</span>
-<span id="51">51</span>
 </pre><pre class='rust '>
 <span class='doccomment'>///! Traits to generalize over compressed sparse matrices storages</span>
 
@@ -112,8 +111,7 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span> <span class='ident'>SpMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
 <span class='kw'>for</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span>,
-      <span class='ident'>IpStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+<span class='kw'>where</span> <span class='ident'>IpStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>IndStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>DataStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
@@ -135,8 +133,7 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span> <span class='ident'>SpVecView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
 <span class='kw'>for</span> <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span>,
-      <span class='ident'>IndStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+<span class='kw'>where</span> <span class='ident'>IndStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>DataStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
     <span class='kw'>fn</span> <span class='ident'>borrowed</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsVecView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
@@ -203,6 +200,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

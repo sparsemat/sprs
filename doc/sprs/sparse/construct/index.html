@@ -9,6 +9,7 @@
 
     <title>sprs::sparse::construct - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -45,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1750' class='srclink' href='../../../src/sprs/sparse/construct.rs.html#1-265' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1823' class='srclink' href='../../../src/sprs/sparse/construct.rs.html#1-363' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>High level construction of sparse matrices by stacking, by block, ...</p>
 </div><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
 <table>
@@ -54,6 +55,26 @@
                                title='sprs::sparse::construct::bmat'>bmat</a></td>
                         <td class='docblock short'>
                              <p>Specify a sparse matrix by constructing it from blocks of other matrices</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csc_from_dense.html'
+                               title='sprs::sparse::construct::csc_from_dense'>csc_from_dense</a></td>
+                        <td class='docblock short'>
+                             <p>Create a CSC matrix from a dense matrix, ignoring elements
+lower than <code>epsilon</code>.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csr_from_dense.html'
+                               title='sprs::sparse::construct::csr_from_dense'>csr_from_dense</a></td>
+                        <td class='docblock short'>
+                             <p>Create a CSR matrix from a dense matrix, ignoring elements
+lower than <code>epsilon</code>.</p>
 
                         </td>
                     </tr>
@@ -144,6 +165,6 @@ direction (ie vertical stack for CSR matrices, horizontal stack for CSC)</p>
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

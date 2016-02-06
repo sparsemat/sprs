@@ -9,6 +9,7 @@
 
     <title>prod.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -633,6 +634,23 @@
 <span id="591">591</span>
 <span id="592">592</span>
 <span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
 </pre><pre class='rust '>
 <span class='doccomment'>///! Sparse matrix product</span>
 
@@ -640,8 +658,7 @@
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>vec</span>::{<span class='ident'>CsVecView</span>, <span class='ident'>CsVecOwned</span>};
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>compressed</span>::<span class='ident'>SpMatView</span>;
-<span class='kw'>use</span> <span class='ident'>dense_mats</span>::{<span class='ident'>StorageOrder</span>, <span class='ident'>MatView</span>, <span class='ident'>MatViewMut</span>};
-<span class='kw'>use</span> <span class='ident'>dense_mats</span>::<span class='ident'>tensor</span>;
+<span class='kw'>use</span> <span class='ident'>ndarray</span>::{<span class='ident'>ArrayView</span>, <span class='ident'>ArrayViewMut</span>, <span class='ident'>Ix</span>};
 <span class='kw'>use</span> <span class='ident'>errors</span>::<span class='ident'>SprsError</span>;
 
 <span class='doccomment'>/// Multiply a sparse CSC matrix with a dense vector and accumulate the result</span>
@@ -660,7 +677,7 @@
 
     <span class='kw'>for</span> (<span class='ident'>col_ind</span>, <span class='ident'>vec</span>) <span class='kw'>in</span> <span class='ident'>mat</span>.<span class='ident'>outer_iterator</span>() {
         <span class='kw'>let</span> <span class='ident'>multiplier</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>in_vec</span>[<span class='ident'>col_ind</span>];
-        <span class='kw'>for</span> (<span class='ident'>row_ind</span>, <span class='ident'>value</span>) <span class='kw'>in</span> <span class='ident'>vec</span>.<span class='ident'>iter</span>() {
+        <span class='kw'>for</span> (<span class='ident'>row_ind</span>, <span class='kw-2'>&amp;</span><span class='ident'>value</span>) <span class='kw'>in</span> <span class='ident'>vec</span>.<span class='ident'>iter</span>() {
             <span class='comment'>// TODO: unsafe access to value? needs bench</span>
             <span class='ident'>res_vec</span>[<span class='ident'>row_ind</span>] <span class='op'>=</span>
                 <span class='ident'>res_vec</span>[<span class='ident'>row_ind</span>] <span class='op'>+</span> <span class='op'>*</span><span class='ident'>multiplier</span> <span class='op'>*</span> <span class='ident'>value</span>;
@@ -683,7 +700,7 @@
     }
 
     <span class='kw'>for</span> (<span class='ident'>row_ind</span>, <span class='ident'>vec</span>) <span class='kw'>in</span> <span class='ident'>mat</span>.<span class='ident'>outer_iterator</span>() {
-        <span class='kw'>for</span> (<span class='ident'>col_ind</span>, <span class='ident'>value</span>) <span class='kw'>in</span> <span class='ident'>vec</span>.<span class='ident'>iter</span>() {
+        <span class='kw'>for</span> (<span class='ident'>col_ind</span>, <span class='kw-2'>&amp;</span><span class='ident'>value</span>) <span class='kw'>in</span> <span class='ident'>vec</span>.<span class='ident'>iter</span>() {
             <span class='comment'>// TODO: unsafe access to value? needs bench</span>
             <span class='ident'>res_vec</span>[<span class='ident'>row_ind</span>] <span class='op'>=</span>
                 <span class='ident'>res_vec</span>[<span class='ident'>row_ind</span>] <span class='op'>+</span> <span class='ident'>in_vec</span>[<span class='ident'>col_ind</span>] <span class='op'>*</span> <span class='ident'>value</span>;
@@ -784,12 +801,12 @@
             <span class='op'>*</span><span class='ident'>wval</span> <span class='op'>=</span> <span class='ident'>N</span>::<span class='ident'>zero</span>();
         }
         <span class='comment'>// accumulate the resulting row</span>
-        <span class='kw'>for</span> (<span class='ident'>lcol</span>, <span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lvec</span>.<span class='ident'>iter</span>() {
+        <span class='kw'>for</span> (<span class='ident'>lcol</span>, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lvec</span>.<span class='ident'>iter</span>() {
             <span class='comment'>// we can&#39;t be out of bounds thanks to the checks of dimension</span>
             <span class='comment'>// compatibility and the structure check of CsMat. Therefore it</span>
             <span class='comment'>// should be safe to call into an unsafe version of outer_view</span>
             <span class='kw'>let</span> <span class='ident'>rvec</span> <span class='op'>=</span> <span class='ident'>rhs</span>.<span class='ident'>outer_view</span>(<span class='ident'>lcol</span>).<span class='ident'>unwrap</span>();
-            <span class='kw'>for</span> (<span class='ident'>rcol</span>, <span class='ident'>rval</span>) <span class='kw'>in</span> <span class='ident'>rvec</span>.<span class='ident'>iter</span>() {
+            <span class='kw'>for</span> (<span class='ident'>rcol</span>, <span class='kw-2'>&amp;</span><span class='ident'>rval</span>) <span class='kw'>in</span> <span class='ident'>rvec</span>.<span class='ident'>iter</span>() {
                 <span class='kw'>let</span> <span class='ident'>wval</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>workspace</span>[<span class='ident'>rcol</span>];
                 <span class='kw'>let</span> <span class='ident'>prod</span> <span class='op'>=</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>;
                 <span class='op'>*</span><span class='ident'>wval</span> <span class='op'>=</span> <span class='op'>*</span><span class='ident'>wval</span> <span class='op'>+</span> <span class='ident'>prod</span>;
@@ -821,51 +838,51 @@
 }
 
 <span class='doccomment'>/// CSR-dense rowmaj multiplication</span>
-<span class='doccomment'>/// </span>
+<span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is rowmaj.</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mulacc_dense_rowmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>rhs</span>: <span class='ident'>MatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>MatViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>)
+    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+    <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
+    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
 <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>cols</span>() {
+    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
     <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>lhs</span>.<span class='ident'>is_csr</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>ordering</span>() <span class='op'>!=</span> <span class='ident'>StorageOrder</span>::<span class='ident'>C</span> {
+    <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
     <span class='comment'>// for now we implement a naive strategy, but later on it would</span>
     <span class='comment'>// be nice to pick a data dependent block-size to optimize caching effects</span>
     <span class='kw'>let</span> <span class='ident'>lblock_size</span> <span class='op'>=</span> <span class='number'>4</span>;
     <span class='kw'>let</span> <span class='ident'>rblock_size</span> <span class='op'>=</span> <span class='number'>4</span>;
-    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>oblock</span>, <span class='ident'>lblock</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>outer_block_iter_mut</span>(<span class='ident'>lblock_size</span>)
+    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>oblock</span>, <span class='ident'>lblock</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_chunks_iter_mut</span>(<span class='number'>0</span>, <span class='ident'>lblock_size</span>)
                                    .<span class='ident'>zip</span>(<span class='ident'>lhs</span>.<span class='ident'>outer_block_iter</span>(<span class='ident'>lblock_size</span>)) {
-        <span class='kw'>for</span> (<span class='ident'>rcount</span>, <span class='ident'>rblock</span>) <span class='kw'>in</span> <span class='ident'>rhs</span>.<span class='ident'>outer_block_iter</span>(<span class='ident'>rblock_size</span>).<span class='ident'>enumerate</span>() {
+        <span class='kw'>for</span> (<span class='ident'>rcount</span>, <span class='ident'>rblock</span>) <span class='kw'>in</span> <span class='ident'>rhs</span>.<span class='ident'>axis_chunks_iter</span>(<span class='number'>0</span>, <span class='ident'>rblock_size</span>)
+                                   .<span class='ident'>enumerate</span>() {
             <span class='kw'>let</span> <span class='ident'>col_start</span> <span class='op'>=</span> <span class='ident'>rblock_size</span> <span class='op'>*</span> <span class='ident'>rcount</span>;
             <span class='kw'>let</span> <span class='ident'>col_end</span> <span class='op'>=</span> <span class='ident'>col_start</span> <span class='op'>+</span> <span class='ident'>rblock_size</span>;
 
-            <span class='kw'>let</span> <span class='ident'>axis0</span> <span class='op'>=</span> <span class='ident'>tensor</span>::<span class='ident'>Axis</span>(<span class='number'>0</span>);
+            <span class='kw'>let</span> <span class='ident'>axis0</span> <span class='op'>=</span> <span class='number'>0</span>;
             <span class='kw'>for</span> ((_, <span class='ident'>line</span>), <span class='kw-2'>mut</span> <span class='ident'>oline</span>) <span class='kw'>in</span> <span class='ident'>lblock</span>.<span class='ident'>outer_iterator</span>()
-                                          .<span class='ident'>zip</span>(<span class='ident'>oblock</span>.<span class='ident'>iter_axis_mut</span>(<span class='ident'>axis0</span>)) {
-                <span class='lifetime'>&#39;col_block</span>: <span class='kw'>for</span> (<span class='ident'>col_ind</span>, <span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>line</span>.<span class='ident'>iter</span>() {
+                                          .<span class='ident'>zip</span>(<span class='ident'>oblock</span>.<span class='ident'>axis_iter_mut</span>(<span class='ident'>axis0</span>)) {
+                <span class='lifetime'>&#39;col_block</span>: <span class='kw'>for</span> (<span class='ident'>col_ind</span>, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>line</span>.<span class='ident'>iter</span>() {
                     <span class='kw'>if</span> <span class='ident'>col_ind</span> <span class='op'>&lt;</span> <span class='ident'>col_start</span> {
                         <span class='kw'>continue</span> <span class='lifetime'>&#39;col_block</span>;
                     }
                     <span class='kw'>if</span> <span class='ident'>col_ind</span> <span class='op'>&gt;=</span> <span class='ident'>col_end</span> {
                         <span class='kw'>break</span> <span class='lifetime'>&#39;col_block</span>;
                     }
-                    <span class='comment'>//let i_inblock = line_ind;</span>
-                    <span class='comment'>//let mut oline = oblock.slice_dim_mut(tensor::Axis(0), </span>
-                    <span class='comment'>//                                     i_inblock);</span>
                     <span class='kw'>let</span> <span class='ident'>k_inblock</span> <span class='op'>=</span> <span class='ident'>col_ind</span> <span class='op'>-</span> <span class='ident'>col_start</span>;
-                    <span class='kw'>let</span> <span class='ident'>rline</span> <span class='op'>=</span> <span class='ident'>rblock</span>.<span class='ident'>slice_dim</span>(<span class='ident'>axis0</span>, <span class='ident'>k_inblock</span>);
+                    <span class='kw'>let</span> <span class='ident'>rline</span> <span class='op'>=</span> <span class='ident'>rblock</span>.<span class='ident'>subview</span>(<span class='ident'>axis0</span>, <span class='ident'>k_inblock</span>);
                     <span class='kw'>for</span> (<span class='ident'>oval</span>, <span class='kw-2'>&amp;</span><span class='ident'>rval</span>) <span class='kw'>in</span> <span class='ident'>oline</span>.<span class='ident'>iter_mut</span>().<span class='ident'>zip</span>(<span class='ident'>rline</span>.<span class='ident'>iter</span>()) {
                         <span class='kw'>let</span> <span class='ident'>prev</span> <span class='op'>=</span> <span class='op'>*</span><span class='ident'>oval</span>;
                         <span class='op'>*</span><span class='ident'>oval</span> <span class='op'>=</span> <span class='ident'>prev</span> <span class='op'>+</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>;
@@ -881,28 +898,29 @@
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is rowmaj</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mulacc_dense_rowmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>rhs</span>: <span class='ident'>MatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>MatViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>)
+    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+    <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
+    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
 <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>cols</span>() {
+    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
     <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>lhs</span>.<span class='ident'>is_csc</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>ordering</span>() <span class='op'>!=</span> <span class='ident'>StorageOrder</span>::<span class='ident'>C</span> {
+    <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
 
-    <span class='kw'>let</span> <span class='ident'>axis0</span> <span class='op'>=</span> <span class='ident'>tensor</span>::<span class='ident'>Axis</span>(<span class='number'>0</span>);
-    <span class='kw'>for</span> ((_, <span class='ident'>lcol</span>), <span class='ident'>rline</span>) <span class='kw'>in</span> <span class='ident'>lhs</span>.<span class='ident'>outer_iterator</span>().<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>iter_axis</span>(<span class='ident'>axis0</span>)) {
-        <span class='kw'>for</span> (<span class='ident'>orow</span>, <span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lcol</span>.<span class='ident'>iter</span>() {
-            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>oline</span> <span class='op'>=</span> <span class='ident'>out</span>.<span class='ident'>slice_dim_mut</span>(<span class='ident'>axis0</span>, <span class='ident'>orow</span>);
+    <span class='kw'>for</span> ((_, <span class='ident'>lcol</span>), <span class='ident'>rline</span>) <span class='kw'>in</span> <span class='ident'>lhs</span>.<span class='ident'>outer_iterator</span>().<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>outer_iter</span>()) {
+        <span class='kw'>for</span> (<span class='ident'>orow</span>, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lcol</span>.<span class='ident'>iter</span>() {
+            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>oline</span> <span class='op'>=</span> <span class='ident'>out</span>.<span class='ident'>row_mut</span>(<span class='ident'>orow</span>);
             <span class='kw'>for</span> (<span class='ident'>oval</span>, <span class='kw-2'>&amp;</span><span class='ident'>rval</span>) <span class='kw'>in</span> <span class='ident'>oline</span>.<span class='ident'>iter_mut</span>().<span class='ident'>zip</span>(<span class='ident'>rline</span>.<span class='ident'>iter</span>()) {
                 <span class='kw'>let</span> <span class='ident'>prev</span> <span class='op'>=</span> <span class='op'>*</span><span class='ident'>oval</span>;
                 <span class='op'>*</span><span class='ident'>oval</span> <span class='op'>=</span> <span class='ident'>prev</span> <span class='op'>+</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>;
@@ -913,31 +931,34 @@
 }
 
 <span class='doccomment'>/// CSC-dense colmaj multiplication</span>
-<span class='doccomment'>/// </span>
+<span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is colmaj</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mulacc_dense_colmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>rhs</span>: <span class='ident'>MatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>MatViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>)
+    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+    <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
+    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
 <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>cols</span>() {
+    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
     <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>lhs</span>.<span class='ident'>is_csc</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>ordering</span>() <span class='op'>!=</span> <span class='ident'>StorageOrder</span>::<span class='ident'>F</span> {
+    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='ident'>tensor</span>::<span class='ident'>Axis</span>(<span class='number'>1</span>);
-    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>ocol</span>, <span class='ident'>rcol</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>iter_axis_mut</span>(<span class='ident'>axis1</span>).<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>iter_axis</span>(<span class='ident'>axis1</span>)) {
+
+    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='number'>1</span>;
+    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>ocol</span>, <span class='ident'>rcol</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_iter_mut</span>(<span class='ident'>axis1</span>).<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>axis_iter</span>(<span class='ident'>axis1</span>)) {
         <span class='kw'>for</span> (<span class='ident'>rrow</span>, <span class='ident'>lcol</span>) <span class='kw'>in</span> <span class='ident'>lhs</span>.<span class='ident'>outer_iterator</span>() {
             <span class='kw'>let</span> <span class='ident'>rval</span> <span class='op'>=</span> <span class='ident'>rcol</span>[[<span class='ident'>rrow</span>]];
-            <span class='kw'>for</span> (<span class='ident'>orow</span>, <span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lcol</span>.<span class='ident'>iter</span>() {
+            <span class='kw'>for</span> (<span class='ident'>orow</span>, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lcol</span>.<span class='ident'>iter</span>() {
                 <span class='kw'>let</span> <span class='ident'>prev</span> <span class='op'>=</span> <span class='ident'>ocol</span>[[<span class='ident'>orow</span>]];
                 <span class='ident'>ocol</span>[[<span class='ident'>orow</span>]] <span class='op'>=</span> <span class='ident'>prev</span> <span class='op'>+</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>;
             }
@@ -946,32 +967,35 @@
     <span class='prelude-val'>Ok</span>(())
 }
 
+
 <span class='doccomment'>/// CSR-dense colmaj multiplication</span>
-<span class='doccomment'>/// </span>
+<span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is colmaj</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mulacc_dense_colmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>rhs</span>: <span class='ident'>MatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>MatViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>)
+    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>rhs</span>:
+    <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
+    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
 <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>rows</span>() {
+    <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>cols</span>() {
+    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] <span class='op'>!=</span> <span class='ident'>out</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
     <span class='kw'>if</span> <span class='op'>!</span><span class='ident'>lhs</span>.<span class='ident'>is_csr</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>ordering</span>() <span class='op'>!=</span> <span class='ident'>StorageOrder</span>::<span class='ident'>F</span> {
+    <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='ident'>tensor</span>::<span class='ident'>Axis</span>(<span class='number'>1</span>);
-    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>ocol</span>, <span class='ident'>rcol</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>iter_axis_mut</span>(<span class='ident'>axis1</span>).<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>iter_axis</span>(<span class='ident'>axis1</span>)) {
+    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='number'>1</span>;
+    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>ocol</span>, <span class='ident'>rcol</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_iter_mut</span>(<span class='ident'>axis1</span>).<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>axis_iter</span>(<span class='ident'>axis1</span>)) {
         <span class='kw'>for</span> (<span class='ident'>orow</span>, <span class='ident'>lrow</span>) <span class='kw'>in</span> <span class='ident'>lhs</span>.<span class='ident'>outer_iterator</span>() {
             <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>prev</span> <span class='op'>=</span> <span class='ident'>ocol</span>[[<span class='ident'>orow</span>]];
-            <span class='kw'>for</span> (<span class='ident'>rrow</span>, <span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lrow</span>.<span class='ident'>iter</span>() {
+            <span class='kw'>for</span> (<span class='ident'>rrow</span>, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>lrow</span>.<span class='ident'>iter</span>() {
                 <span class='kw'>let</span> <span class='ident'>rval</span> <span class='op'>=</span> <span class='ident'>rcol</span>[[<span class='ident'>rrow</span>]];
                 <span class='ident'>prev</span> <span class='op'>=</span> <span class='ident'>prev</span> <span class='op'>+</span> <span class='ident'>lval</span> <span class='op'>*</span> <span class='ident'>rval</span>;
             }
@@ -986,12 +1010,11 @@
     <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>csmat</span>::{<span class='ident'>CsMat</span>, <span class='ident'>CsMatOwned</span>};
     <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>vec</span>::{<span class='ident'>CsVec</span>};
     <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>csmat</span>::<span class='ident'>CompressedStorage</span>::{<span class='ident'>CSC</span>, <span class='ident'>CSR</span>};
-    <span class='kw'>use</span> <span class='ident'>dense_mats</span>::{<span class='ident'>MatOwned</span>};
-    <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>mul_acc_mat_vec_csc</span>, <span class='ident'>mul_acc_mat_vec_csr</span>, <span class='ident'>csr_mul_csr</span>,
-                <span class='ident'>csr_mulacc_dense_rowmaj</span>};
+    <span class='kw'>use</span> <span class='ident'>super</span>::{<span class='ident'>mul_acc_mat_vec_csc</span>, <span class='ident'>mul_acc_mat_vec_csr</span>, <span class='ident'>csr_mul_csr</span>};
     <span class='kw'>use</span> <span class='ident'>test_data</span>::{<span class='ident'>mat1</span>, <span class='ident'>mat2</span>, <span class='ident'>mat1_self_matprod</span>, <span class='ident'>mat1_matprod_mat2</span>,
-                    <span class='ident'>mat1_csc</span>, <span class='ident'>mat4</span>, <span class='ident'>mat1_csc_matprod_mat4</span>,
-                    <span class='ident'>mat_dense1</span>, <span class='ident'>mat5</span>, <span class='ident'>mat_dense2</span>, <span class='ident'>mat_dense1_colmaj</span>};
+                    <span class='ident'>mat1_csc</span>, <span class='ident'>mat4</span>, <span class='ident'>mat1_csc_matprod_mat4</span>, <span class='ident'>mat_dense1</span>,
+                    <span class='ident'>mat5</span>, <span class='ident'>mat_dense1_colmaj</span>, <span class='ident'>mat_dense2</span>};
+    <span class='kw'>use</span> <span class='ident'>ndarray</span>::{<span class='ident'>OwnedArray</span>, <span class='ident'>arr2</span>};
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>mul_csc_vec</span>() {
@@ -1130,24 +1153,27 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>mul_csr_dense_rowmaj</span>() {
-        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>MatOwned</span><span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>eye</span>(<span class='number'>3</span>);
+        <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>eye</span>(<span class='number'>3</span>);
         <span class='kw'>let</span> <span class='ident'>e</span>: <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>CsMat</span>::<span class='ident'>eye</span>(<span class='ident'>CSR</span>, <span class='number'>3</span>);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>zeros</span>([<span class='number'>3</span>, <span class='number'>3</span>]);
-        <span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='ident'>e</span>.<span class='ident'>borrowed</span>(), <span class='ident'>a</span>.<span class='ident'>borrowed</span>(),
-                                <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros</span>((<span class='number'>3</span>, <span class='number'>3</span>));
+        <span class='ident'>super</span>::<span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='ident'>e</span>.<span class='ident'>borrowed</span>(),
+                                       <span class='ident'>a</span>.<span class='ident'>view</span>(),
+                                       <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                      ).<span class='ident'>unwrap</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>res</span>, <span class='ident'>a</span>);
 
         <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>mat1</span>();
         <span class='kw'>let</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>mat_dense1</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>zeros</span>([<span class='number'>5</span>, <span class='number'>5</span>]);
-        <span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(), <span class='ident'>b</span>.<span class='ident'>borrowed</span>(),
-                                <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>new_owned</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>24.</span>, <span class='number'>31.</span>, <span class='number'>24.</span>, <span class='number'>17.</span>, <span class='number'>10.</span>,
-                                                       <span class='number'>11.</span>, <span class='number'>18.</span>, <span class='number'>11.</span>,  <span class='number'>9.</span>,  <span class='number'>2.</span>,
-                                                       <span class='number'>20.</span>, <span class='number'>25.</span>, <span class='number'>20.</span>, <span class='number'>15.</span>, <span class='number'>10.</span>,
-                                                       <span class='number'>40.</span>, <span class='number'>48.</span>, <span class='number'>40.</span>, <span class='number'>32.</span>, <span class='number'>24.</span>,
-                                                       <span class='number'>21.</span>, <span class='number'>28.</span>, <span class='number'>21.</span>, <span class='number'>14.</span>,  <span class='number'>7.</span>],
-                                                  <span class='number'>5</span>, <span class='number'>5</span>, [<span class='number'>5</span>, <span class='number'>1</span>]);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros</span>((<span class='number'>5</span>, <span class='number'>5</span>));
+        <span class='ident'>super</span>::<span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(),
+                                       <span class='ident'>b</span>.<span class='ident'>view</span>(),
+                                       <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                      ).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>arr2</span>(<span class='kw-2'>&amp;</span>[[<span class='number'>24.</span>, <span class='number'>31.</span>, <span class='number'>24.</span>, <span class='number'>17.</span>, <span class='number'>10.</span>],
+                                     [<span class='number'>11.</span>, <span class='number'>18.</span>, <span class='number'>11.</span>,  <span class='number'>9.</span>,  <span class='number'>2.</span>],
+                                     [<span class='number'>20.</span>, <span class='number'>25.</span>, <span class='number'>20.</span>, <span class='number'>15.</span>, <span class='number'>10.</span>],
+                                     [<span class='number'>40.</span>, <span class='number'>48.</span>, <span class='number'>40.</span>, <span class='number'>32.</span>, <span class='number'>24.</span>],
+                                     [<span class='number'>21.</span>, <span class='number'>28.</span>, <span class='number'>21.</span>, <span class='number'>14.</span>,  <span class='number'>7.</span>]]);
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>res</span>, <span class='ident'>expected_output</span>);
 
         <span class='kw'>let</span> <span class='ident'>c</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
@@ -1155,34 +1181,35 @@
 
         <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>mat5</span>();
         <span class='kw'>let</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>mat_dense2</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>zeros</span>([<span class='number'>5</span>, <span class='number'>7</span>]);
-        <span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(), <span class='ident'>b</span>.<span class='ident'>borrowed</span>(),
-                                <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>new_owned</span>(
-            <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>130.04</span>, <span class='number'>150.1</span>, <span class='number'>87.19</span>, <span class='number'>90.89</span>, <span class='number'>99.48</span>, <span class='number'>80.43</span>, <span class='number'>99.3</span>,
-                 <span class='number'>217.72</span>, <span class='number'>161.61</span>, <span class='number'>79.47</span>, <span class='number'>121.5</span> , <span class='number'>124.23</span>, <span class='number'>146.91</span>, <span class='number'>157.79</span>,
-                 <span class='number'>55.6</span> , <span class='number'>59.95</span>, <span class='number'>86.7</span> , <span class='number'>0.9</span> , <span class='number'>37.4</span> , <span class='number'>71.66</span>, <span class='number'>51.94</span>,
-                 <span class='number'>118.18</span>, <span class='number'>123.16</span>, <span class='number'>128.04</span>, <span class='number'>92.02</span>, <span class='number'>106.84</span>, <span class='number'>175.1</span> , <span class='number'>87.36</span>,
-                 <span class='number'>43.4</span> , <span class='number'>54.1</span> , <span class='number'>12.65</span>, <span class='number'>44.35</span>, <span class='number'>39.9</span> , <span class='number'>23.4</span> , <span class='number'>76.6</span>],
-            <span class='number'>5</span>, <span class='number'>7</span>, [<span class='number'>7</span>, <span class='number'>1</span>]);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros</span>((<span class='number'>5</span>, <span class='number'>7</span>));
+        <span class='ident'>super</span>::<span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(),
+                                       <span class='ident'>b</span>.<span class='ident'>view</span>(),
+                                       <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                      ).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>arr2</span>(
+            <span class='kw-2'>&amp;</span>[[<span class='number'>130.04</span>,  <span class='number'>150.1</span>,  <span class='number'>87.19</span>, <span class='number'>90.89</span>,  <span class='number'>99.48</span>,  <span class='number'>80.43</span>,   <span class='number'>99.3</span>],
+              [<span class='number'>217.72</span>, <span class='number'>161.61</span>,  <span class='number'>79.47</span>, <span class='number'>121.5</span>, <span class='number'>124.23</span>, <span class='number'>146.91</span>, <span class='number'>157.79</span>],
+              [  <span class='number'>55.6</span>,  <span class='number'>59.95</span>,   <span class='number'>86.7</span>,   <span class='number'>0.9</span>,   <span class='number'>37.4</span>,  <span class='number'>71.66</span>,  <span class='number'>51.94</span>],
+              [<span class='number'>118.18</span>, <span class='number'>123.16</span>, <span class='number'>128.04</span>, <span class='number'>92.02</span>, <span class='number'>106.84</span>,  <span class='number'>175.1</span>,  <span class='number'>87.36</span>],
+              [  <span class='number'>43.4</span>,   <span class='number'>54.1</span>,  <span class='number'>12.65</span>, <span class='number'>44.35</span>,   <span class='number'>39.9</span>,   <span class='number'>23.4</span>,   <span class='number'>76.6</span>]]);
         <span class='kw'>let</span> <span class='ident'>eps</span> <span class='op'>=</span> <span class='number'>1e-8</span>;
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>res</span>.<span class='ident'>data</span>().<span class='ident'>iter</span>().<span class='ident'>zip</span>(<span class='ident'>expected_output</span>.<span class='ident'>data</span>().<span class='ident'>iter</span>())
-                .<span class='ident'>all</span>(<span class='op'>|</span>(<span class='kw-2'>&amp;</span><span class='ident'>x</span>, <span class='kw-2'>&amp;</span><span class='ident'>y</span>)<span class='op'>|</span> (<span class='ident'>x</span> <span class='op'>-</span> <span class='ident'>y</span>).<span class='ident'>abs</span>() <span class='op'>&lt;=</span> <span class='ident'>eps</span>));
+        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>res</span>.<span class='ident'>iter</span>().<span class='ident'>zip</span>(<span class='ident'>expected_output</span>.<span class='ident'>iter</span>())
+                   .<span class='ident'>all</span>(<span class='op'>|</span>(<span class='kw-2'>&amp;</span><span class='ident'>x</span>, <span class='kw-2'>&amp;</span><span class='ident'>y</span>)<span class='op'>|</span> (<span class='ident'>x</span> <span class='op'>-</span> <span class='ident'>y</span>).<span class='ident'>abs</span>() <span class='op'>&lt;=</span> <span class='ident'>eps</span>));
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>mul_csc_dense_rowmaj</span>() {
         <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>mat1_csc</span>();
         <span class='kw'>let</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>mat_dense1</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>zeros</span>([<span class='number'>5</span>, <span class='number'>5</span>]);
-        <span class='ident'>super</span>::<span class='ident'>csc_mulacc_dense_rowmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(), <span class='ident'>b</span>.<span class='ident'>borrowed</span>(),
-                                       <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>new_owned</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>24.</span>, <span class='number'>31.</span>, <span class='number'>24.</span>, <span class='number'>17.</span>, <span class='number'>10.</span>,
-                                                       <span class='number'>11.</span>, <span class='number'>18.</span>, <span class='number'>11.</span>,  <span class='number'>9.</span>,  <span class='number'>2.</span>,
-                                                       <span class='number'>20.</span>, <span class='number'>25.</span>, <span class='number'>20.</span>, <span class='number'>15.</span>, <span class='number'>10.</span>,
-                                                       <span class='number'>40.</span>, <span class='number'>48.</span>, <span class='number'>40.</span>, <span class='number'>32.</span>, <span class='number'>24.</span>,
-                                                       <span class='number'>21.</span>, <span class='number'>28.</span>, <span class='number'>21.</span>, <span class='number'>14.</span>,  <span class='number'>7.</span>],
-                                                  <span class='number'>5</span>, <span class='number'>5</span>, [<span class='number'>5</span>, <span class='number'>1</span>]);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros</span>((<span class='number'>5</span>, <span class='number'>5</span>));
+        <span class='ident'>super</span>::<span class='ident'>csc_mulacc_dense_rowmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(),
+                                       <span class='ident'>b</span>.<span class='ident'>view</span>(),
+                                       <span class='ident'>res</span>.<span class='ident'>view_mut</span>()).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>arr2</span>(<span class='kw-2'>&amp;</span>[[<span class='number'>24.</span>, <span class='number'>31.</span>, <span class='number'>24.</span>, <span class='number'>17.</span>, <span class='number'>10.</span>],
+                                     [<span class='number'>11.</span>, <span class='number'>18.</span>, <span class='number'>11.</span>,  <span class='number'>9.</span>,  <span class='number'>2.</span>],
+                                     [<span class='number'>20.</span>, <span class='number'>25.</span>, <span class='number'>20.</span>, <span class='number'>15.</span>, <span class='number'>10.</span>],
+                                     [<span class='number'>40.</span>, <span class='number'>48.</span>, <span class='number'>40.</span>, <span class='number'>32.</span>, <span class='number'>24.</span>],
+                                     [<span class='number'>21.</span>, <span class='number'>28.</span>, <span class='number'>21.</span>, <span class='number'>14.</span>, <span class='number'>7.</span> ]]);
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>res</span>, <span class='ident'>expected_output</span>);
 
         <span class='kw'>let</span> <span class='ident'>c</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
@@ -1193,34 +1220,42 @@
     <span class='kw'>fn</span> <span class='ident'>mul_csc_dense_colmaj</span>() {
         <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>mat1_csc</span>();
         <span class='kw'>let</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>mat_dense1_colmaj</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>zeros_f</span>([<span class='number'>5</span>, <span class='number'>5</span>]);
-        <span class='ident'>super</span>::<span class='ident'>csc_mulacc_dense_colmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(), <span class='ident'>b</span>.<span class='ident'>borrowed</span>(),
-                                       <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>new_owned</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
-                                                       <span class='number'>31.</span>, <span class='number'>18.</span>, <span class='number'>25.</span>, <span class='number'>48.</span>, <span class='number'>28.</span>,
-                                                       <span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
-                                                       <span class='number'>17.</span>, <span class='number'>9.</span>, <span class='number'>15.</span>, <span class='number'>32.</span>, <span class='number'>14.</span>,
-                                                       <span class='number'>10.</span>, <span class='number'>2.</span>, <span class='number'>10.</span>, <span class='number'>24.</span>, <span class='number'>7.</span>],
-                                                  <span class='number'>5</span>, <span class='number'>5</span>, [<span class='number'>1</span>, <span class='number'>5</span>]);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros_f</span>((<span class='number'>5</span>, <span class='number'>5</span>));
+        <span class='ident'>super</span>::<span class='ident'>csc_mulacc_dense_colmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(),
+                                       <span class='ident'>b</span>.<span class='ident'>view</span>(),
+                                       <span class='ident'>res</span>.<span class='ident'>view_mut</span>()).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
+                     <span class='number'>31.</span>, <span class='number'>18.</span>, <span class='number'>25.</span>, <span class='number'>48.</span>, <span class='number'>28.</span>,
+                     <span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
+                     <span class='number'>17.</span>, <span class='number'>9.</span>, <span class='number'>15.</span>, <span class='number'>32.</span>, <span class='number'>14.</span>,
+                     <span class='number'>10.</span>, <span class='number'>2.</span>, <span class='number'>10.</span>, <span class='number'>24.</span>, <span class='number'>7.</span>];
+        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>from_vec_dim_stride</span>((<span class='number'>5</span>, <span class='number'>5</span>),
+                                                              (<span class='number'>1</span>, <span class='number'>5</span>),
+                                                              <span class='ident'>v</span>).<span class='ident'>unwrap</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>res</span>, <span class='ident'>expected_output</span>);
 
         <span class='kw'>let</span> <span class='ident'>c</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>c</span>, <span class='ident'>expected_output</span>);
     }
 
+
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>mul_csr_dense_colmaj</span>() {
         <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>mat1</span>();
         <span class='kw'>let</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>mat_dense1_colmaj</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>zeros_f</span>([<span class='number'>5</span>, <span class='number'>5</span>]);
-        <span class='ident'>super</span>::<span class='ident'>csr_mulacc_dense_colmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(), <span class='ident'>b</span>.<span class='ident'>borrowed</span>(),
-                                       <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span>::<span class='ident'>new_owned</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
-                                                       <span class='number'>31.</span>, <span class='number'>18.</span>, <span class='number'>25.</span>, <span class='number'>48.</span>, <span class='number'>28.</span>,
-                                                       <span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
-                                                       <span class='number'>17.</span>, <span class='number'>9.</span>, <span class='number'>15.</span>, <span class='number'>32.</span>, <span class='number'>14.</span>,
-                                                       <span class='number'>10.</span>, <span class='number'>2.</span>, <span class='number'>10.</span>, <span class='number'>24.</span>, <span class='number'>7.</span>],
-                                                  <span class='number'>5</span>, <span class='number'>5</span>, [<span class='number'>1</span>, <span class='number'>5</span>]);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros_f</span>((<span class='number'>5</span>, <span class='number'>5</span>));
+        <span class='ident'>super</span>::<span class='ident'>csr_mulacc_dense_colmaj</span>(<span class='ident'>a</span>.<span class='ident'>borrowed</span>(),
+                                       <span class='ident'>b</span>.<span class='ident'>view</span>(),
+                                       <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                      ).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
+                    <span class='number'>31.</span>, <span class='number'>18.</span>, <span class='number'>25.</span>, <span class='number'>48.</span>, <span class='number'>28.</span>,
+                    <span class='number'>24.</span>, <span class='number'>11.</span>, <span class='number'>20.</span>, <span class='number'>40.</span>, <span class='number'>21.</span>,
+                    <span class='number'>17.</span>, <span class='number'>9.</span>, <span class='number'>15.</span>, <span class='number'>32.</span>, <span class='number'>14.</span>,
+                    <span class='number'>10.</span>, <span class='number'>2.</span>, <span class='number'>10.</span>, <span class='number'>24.</span>, <span class='number'>7.</span>];
+        <span class='kw'>let</span> <span class='ident'>expected_output</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>from_vec_dim_stride</span>((<span class='number'>5</span>, <span class='number'>5</span>),
+                                                              (<span class='number'>1</span>, <span class='number'>5</span>),
+                                                              <span class='ident'>v</span>).<span class='ident'>unwrap</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>res</span>, <span class='ident'>expected_output</span>);
 
         <span class='kw'>let</span> <span class='ident'>c</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>*</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
@@ -1287,6 +1322,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

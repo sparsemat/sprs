@@ -9,6 +9,7 @@
 
     <title>csmat.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -1297,6 +1298,43 @@
 <span id="1255">1255</span>
 <span id="1256">1256</span>
 <span id="1257">1257</span>
+<span id="1258">1258</span>
+<span id="1259">1259</span>
+<span id="1260">1260</span>
+<span id="1261">1261</span>
+<span id="1262">1262</span>
+<span id="1263">1263</span>
+<span id="1264">1264</span>
+<span id="1265">1265</span>
+<span id="1266">1266</span>
+<span id="1267">1267</span>
+<span id="1268">1268</span>
+<span id="1269">1269</span>
+<span id="1270">1270</span>
+<span id="1271">1271</span>
+<span id="1272">1272</span>
+<span id="1273">1273</span>
+<span id="1274">1274</span>
+<span id="1275">1275</span>
+<span id="1276">1276</span>
+<span id="1277">1277</span>
+<span id="1278">1278</span>
+<span id="1279">1279</span>
+<span id="1280">1280</span>
+<span id="1281">1281</span>
+<span id="1282">1282</span>
+<span id="1283">1283</span>
+<span id="1284">1284</span>
+<span id="1285">1285</span>
+<span id="1286">1286</span>
+<span id="1287">1287</span>
+<span id="1288">1288</span>
+<span id="1289">1289</span>
+<span id="1290">1290</span>
+<span id="1291">1291</span>
+<span id="1292">1292</span>
+<span id="1293">1293</span>
+<span id="1294">1294</span>
 </pre><pre class='rust '>
 <span class='doccomment'>///! A sparse matrix in the Compressed Sparse Row/Column format</span>
 <span class='doccomment'>///</span>
@@ -1315,7 +1353,7 @@
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>mem</span>;
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 
-<span class='kw'>use</span> <span class='ident'>dense_mats</span>::{<span class='ident'>StorageOrder</span>, <span class='ident'>Tensor</span>, <span class='ident'>MatOwned</span>};
+<span class='kw'>use</span> <span class='ident'>ndarray</span>::{<span class='self'>self</span>, <span class='ident'>ArrayBase</span>, <span class='ident'>OwnedArray</span>, <span class='ident'>Ix</span>};
 
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>permutation</span>::<span class='ident'>PermView</span>;
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>vec</span>::{<span class='ident'>CsVec</span>, <span class='ident'>CsVecView</span>};
@@ -1386,7 +1424,7 @@
 <span class='doccomment'>/// Outer iteration on a compressed matrix yields</span>
 <span class='doccomment'>/// a tuple consisting of the outer index and of a sparse vector</span>
 <span class='doccomment'>/// containing the associated inner dimension</span>
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span><span class='op'>&gt;</span>
 <span class='ident'>Iterator</span>
 <span class='kw'>for</span> <span class='ident'>OuterIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>usize</span>, <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;iter</span>[<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;iter</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span>);
@@ -1417,7 +1455,7 @@
 <span class='doccomment'>/// Permuted outer iteration on a compressed matrix yields</span>
 <span class='doccomment'>/// a tuple consisting of the outer index and of a sparse vector</span>
 <span class='doccomment'>/// containing the associated inner dimension</span>
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='lifetime'>&#39;perm</span>: <span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='lifetime'>&#39;perm</span>: <span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span><span class='op'>&gt;</span>
 <span class='ident'>Iterator</span>
 <span class='kw'>for</span> <span class='ident'>OuterIteratorPerm</span><span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='lifetime'>&#39;perm</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>usize</span>, <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;iter</span>[<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;iter</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span>);
@@ -1453,7 +1491,7 @@
 <span class='doccomment'>/// Only the outer dimension iteration is reverted. If you wish to also</span>
 <span class='doccomment'>/// revert the inner dimension, you should call rev() again when iterating</span>
 <span class='doccomment'>/// the vector.</span>
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span><span class='op'>&gt;</span>
 <span class='ident'>DoubleEndedIterator</span>
 <span class='kw'>for</span> <span class='ident'>OuterIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
@@ -1476,7 +1514,7 @@
     }
 }
 
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>ExactSizeIterator</span> <span class='kw'>for</span> <span class='ident'>OuterIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;iter</span><span class='op'>&gt;</span> <span class='ident'>ExactSizeIterator</span> <span class='kw'>for</span> <span class='ident'>OuterIterator</span><span class='op'>&lt;</span><span class='lifetime'>&#39;iter</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
     <span class='kw'>fn</span> <span class='ident'>len</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
         <span class='self'>self</span>.<span class='ident'>indptr_iter</span>.<span class='ident'>len</span>()
     }
@@ -1497,7 +1535,7 @@
     <span class='ident'>data</span> : <span class='ident'>DataStorage</span>
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span> {
     <span class='doccomment'>/// Create a borrowed row or column CsMat matrix from raw data,</span>
     <span class='doccomment'>/// without checking their validity</span>
     <span class='doccomment'>///</span>
@@ -1523,7 +1561,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>:<span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>usize</span>], <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>N</span>]<span class='op'>&gt;</span> {
     <span class='doccomment'>/// Create a borrowed CsMat matrix from sliced data,</span>
     <span class='doccomment'>/// checking their validity</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new_borrowed</span>(
@@ -1599,7 +1637,7 @@
 
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
     <span class='doccomment'>/// Create an empty CsMat for building purposes</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>empty</span>(<span class='ident'>storage</span>: <span class='ident'>CompressedStorage</span>, <span class='ident'>inner_size</span>: <span class='ident'>usize</span>
                 ) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
@@ -1674,11 +1712,12 @@
     }
 
     <span class='doccomment'>/// Append an outer dim to an existing matrix, compressing it in the process</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>append_outer</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>data</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>N</span>]) <span class='op'>-&gt;</span> <span class='kw'>Self</span> <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>append_outer</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>data</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>N</span>]) <span class='op'>-&gt;</span> <span class='kw'>Self</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span> <span class='op'>+</span> <span class='ident'>Num</span> {
         <span class='kw'>for</span> (<span class='ident'>inner_ind</span>, <span class='ident'>val</span>) <span class='kw'>in</span> <span class='ident'>data</span>.<span class='ident'>iter</span>().<span class='ident'>enumerate</span>() {
             <span class='kw'>if</span> <span class='op'>*</span><span class='ident'>val</span> <span class='op'>!=</span> <span class='ident'>N</span>::<span class='ident'>zero</span>() {
                 <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>push</span>(<span class='ident'>inner_ind</span>);
-                <span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>push</span>(<span class='op'>*</span><span class='ident'>val</span>);
+                <span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>push</span>(<span class='ident'>val</span>.<span class='ident'>clone</span>());
                 <span class='self'>self</span>.<span class='ident'>nnz</span> <span class='op'>+=</span> <span class='number'>1</span>;
             }
         }
@@ -1691,11 +1730,13 @@
     }
 
     <span class='doccomment'>/// Append an outer dim to an existing matrix, provided by a sparse vector</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>append_outer_csvec</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>vec</span>: <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>,<span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>],<span class='kw-2'>&amp;</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>append_outer_csvec</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>vec</span>: <span class='ident'>CsVec</span><span class='op'>&lt;</span><span class='ident'>N</span>,<span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>],<span class='kw-2'>&amp;</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='kw'>Self</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='self'>self</span>.<span class='ident'>inner_dims</span>(), <span class='ident'>vec</span>.<span class='ident'>dim</span>());
         <span class='kw'>for</span> (<span class='ident'>ind</span>, <span class='ident'>val</span>) <span class='kw'>in</span> <span class='ident'>vec</span>.<span class='ident'>indices</span>().<span class='ident'>iter</span>().<span class='ident'>zip</span>(<span class='ident'>vec</span>.<span class='ident'>data</span>()) {
             <span class='self'>self</span>.<span class='ident'>indices</span>.<span class='ident'>push</span>(<span class='op'>*</span><span class='ident'>ind</span>);
-            <span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>push</span>(<span class='op'>*</span><span class='ident'>val</span>);
+            <span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>push</span>(<span class='ident'>val</span>.<span class='ident'>clone</span>());
         }
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>storage</span> {
             <span class='ident'>CSR</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>nrows</span> <span class='op'>+=</span> <span class='number'>1</span>,
@@ -1707,7 +1748,7 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Num</span><span class='op'>&gt;</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span>, <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span> {
     <span class='doccomment'>/// Identity matrix</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// ```rust</span>
@@ -1718,7 +1759,9 @@
     <span class='doccomment'>/// assert_eq!(x, y);</span>
     <span class='doccomment'>/// ```</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>eye</span>(<span class='ident'>storage</span>: <span class='ident'>CompressedStorage</span>, <span class='ident'>dim</span>: <span class='ident'>usize</span>
-              ) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+              ) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='kw'>let</span> <span class='ident'>n</span> <span class='op'>=</span> <span class='ident'>dim</span>;
         <span class='kw'>let</span> <span class='ident'>indptr</span> <span class='op'>=</span> (<span class='number'>0</span>..<span class='ident'>n</span><span class='op'>+</span><span class='number'>1</span>).<span class='ident'>collect</span>();
         <span class='kw'>let</span> <span class='ident'>indices</span> <span class='op'>=</span> (<span class='number'>0</span>..<span class='ident'>n</span>).<span class='ident'>collect</span>();
@@ -1738,8 +1781,7 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IptrStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
 <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IptrStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span>,
-      <span class='ident'>IptrStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+<span class='kw'>where</span> <span class='ident'>IptrStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>IndStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>DataStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
@@ -1752,7 +1794,7 @@
     <span class='doccomment'>/// use sprs::{CsMat};</span>
     <span class='doccomment'>/// let eye = CsMat::eye(sprs::CSR, 5);</span>
     <span class='doccomment'>/// for (row_ind, row_vec) in eye.outer_iterator() {</span>
-    <span class='doccomment'>///     let (col_ind, val): (_, f64) = row_vec.iter().next().unwrap();</span>
+    <span class='doccomment'>///     let (col_ind, &amp;val): (_, &amp;f64) = row_vec.iter().next().unwrap();</span>
     <span class='doccomment'>///     assert_eq!(row_ind, col_ind);</span>
     <span class='doccomment'>///     assert_eq!(val, 1.);</span>
     <span class='doccomment'>/// }</span>
@@ -1835,7 +1877,9 @@
     <span class='doccomment'>/// in the corresponding outer slice. It is therefore advisable not to rely</span>
     <span class='doccomment'>/// on this for algorithms, and prefer outer_iterator() which accesses</span>
     <span class='doccomment'>/// elements in storage order.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>at</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='kw-2'>&amp;</span>(<span class='ident'>i</span>,<span class='ident'>j</span>) : <span class='kw-2'>&amp;</span>(<span class='ident'>usize</span>, <span class='ident'>usize</span>)) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>at</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='kw-2'>&amp;</span>(<span class='ident'>i</span>,<span class='ident'>j</span>) : <span class='kw-2'>&amp;</span>(<span class='ident'>usize</span>, <span class='ident'>usize</span>)) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>i</span> <span class='op'>&lt;</span> <span class='self'>self</span>.<span class='ident'>nrows</span>);
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>j</span> <span class='op'>&lt;</span> <span class='self'>self</span>.<span class='ident'>ncols</span>);
 
@@ -1955,7 +1999,9 @@
 
     <span class='doccomment'>/// Get an owned version of this matrix. If the matrix was already</span>
     <span class='doccomment'>/// owned, this will make a deep copy.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_owned</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_owned</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='ident'>CsMatOwned</span> {
             <span class='ident'>storage</span>: <span class='self'>self</span>.<span class='ident'>storage</span>,
             <span class='ident'>nrows</span>: <span class='self'>self</span>.<span class='ident'>nrows</span>,
@@ -1976,7 +2022,9 @@
     <span class='doccomment'>/// elements in storage order.</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>at_outer_inner</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>,
                           <span class='kw-2'>&amp;</span>(<span class='ident'>outer_ind</span>, <span class='ident'>inner_ind</span>): <span class='kw-2'>&amp;</span>(<span class='ident'>usize</span>, <span class='ident'>usize</span>)
-                         ) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+                         ) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='self'>self</span>.<span class='ident'>outer_view</span>(<span class='ident'>outer_ind</span>).<span class='ident'>and_then</span>(<span class='op'>|</span><span class='ident'>vec</span><span class='op'>|</span> <span class='ident'>vec</span>.<span class='ident'>at</span>(<span class='ident'>inner_ind</span>))
     }
 
@@ -2042,14 +2090,16 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IptrStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
 <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IptrStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Default</span>,
+<span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Default</span>,
       <span class='ident'>IptrStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>IndStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>DataStorage</span>: <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
 
     <span class='doccomment'>/// Create a matrix mathematically equal to this one, but with the</span>
     <span class='doccomment'>/// opposed storage (a CSC matrix will be converted to CSR, and vice versa)</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_other_storage</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_other_storage</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>indptr</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>; <span class='self'>self</span>.<span class='ident'>inner_dims</span>() <span class='op'>+</span> <span class='number'>1</span>];
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>indices</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0</span>; <span class='self'>self</span>.<span class='ident'>nb_nonzero</span>()];
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>data</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='ident'>N</span>::<span class='ident'>default</span>(); <span class='self'>self</span>.<span class='ident'>nb_nonzero</span>()];
@@ -2063,7 +2113,9 @@
 
     <span class='doccomment'>/// Create a new CSC matrix equivalent to this one.</span>
     <span class='doccomment'>/// A new matrix will be created even if this matrix was already CSC.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_csc</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_csc</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>storage</span> {
             <span class='ident'>CSR</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>to_other_storage</span>(),
             <span class='ident'>CSC</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>to_owned</span>()
@@ -2072,7 +2124,9 @@
 
     <span class='doccomment'>/// Create a new CSR matrix equivalent to this one.</span>
     <span class='doccomment'>/// A new matrix will be created even if this matrix was already CSR.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_csr</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_csr</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Clone</span>
+    {
         <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>storage</span> {
             <span class='ident'>CSR</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>to_owned</span>(),
             <span class='ident'>CSC</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>to_other_storage</span>()
@@ -2084,7 +2138,6 @@
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IptrStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
 <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IptrStorage</span>, <span class='ident'>IndStorage</span>, <span class='ident'>DataStorage</span><span class='op'>&gt;</span>
 <span class='kw'>where</span>
-<span class='ident'>N</span>: <span class='ident'>Copy</span>,
 <span class='ident'>IptrStorage</span>: <span class='ident'>DerefMut</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
 <span class='ident'>IndStorage</span>: <span class='ident'>DerefMut</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
 <span class='ident'>DataStorage</span>: <span class='ident'>DerefMut</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
@@ -2122,15 +2175,15 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// Panics if the output slices don&#39;t match the input matrices&#39;</span>
     <span class='doccomment'>/// corresponding slices.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>convert_storage</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='ident'>in_storage</span>: <span class='ident'>super</span>::<span class='ident'>CompressedStorage</span>,
-                                    <span class='ident'>in_rows</span>: <span class='ident'>usize</span>,
-                                    <span class='ident'>in_cols</span>: <span class='ident'>usize</span>,
-                                    <span class='ident'>in_indtpr</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>],
-                                    <span class='ident'>in_indices</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>],
-                                    <span class='ident'>in_data</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>N</span>],
-                                    <span class='ident'>indptr</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>usize</span>],
-                                    <span class='ident'>indices</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>usize</span>],
-                                    <span class='ident'>data</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>N</span>]) {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>convert_storage</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Clone</span><span class='op'>&gt;</span>(<span class='ident'>in_storage</span>: <span class='ident'>super</span>::<span class='ident'>CompressedStorage</span>,
+                                     <span class='ident'>in_rows</span>: <span class='ident'>usize</span>,
+                                     <span class='ident'>in_cols</span>: <span class='ident'>usize</span>,
+                                     <span class='ident'>in_indtpr</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>],
+                                     <span class='ident'>in_indices</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>],
+                                     <span class='ident'>in_data</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>N</span>],
+                                     <span class='ident'>indptr</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>usize</span>],
+                                     <span class='ident'>indices</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>usize</span>],
+                                     <span class='ident'>data</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>N</span>]) {
         <span class='comment'>// we&#39;re building a csmat even though the indices are not sorted,</span>
         <span class='comment'>// but it&#39;s not a problem since we don&#39;t rely on this property.</span>
         <span class='comment'>// FIXME: this would be better with an explicit unsorted matrix type</span>
@@ -2150,7 +2203,7 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// Panics if the output slices don&#39;t match the input matrices&#39;</span>
     <span class='doccomment'>/// corresponding slices.</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>convert_mat_storage</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Copy</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>convert_mat_storage</span><span class='op'>&lt;</span><span class='ident'>N</span>: <span class='ident'>Clone</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
                                         <span class='ident'>indptr</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>usize</span>],
                                         <span class='ident'>indices</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>usize</span>],
                                         <span class='ident'>data</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> [<span class='ident'>N</span>]) {
@@ -2179,7 +2232,7 @@
         <span class='kw'>for</span> (<span class='ident'>outer_dim</span>, <span class='ident'>vec</span>) <span class='kw'>in</span> <span class='ident'>mat</span>.<span class='ident'>outer_iterator</span>() {
             <span class='kw'>for</span> (<span class='ident'>inner_dim</span>, <span class='ident'>val</span>) <span class='kw'>in</span> <span class='ident'>vec</span>.<span class='ident'>iter</span>() {
                 <span class='kw'>let</span> <span class='ident'>dest</span> <span class='op'>=</span> <span class='ident'>indptr</span>[<span class='ident'>inner_dim</span>];
-                <span class='ident'>data</span>[<span class='ident'>dest</span>] <span class='op'>=</span> <span class='ident'>val</span>;
+                <span class='ident'>data</span>[<span class='ident'>dest</span>] <span class='op'>=</span> <span class='ident'>val</span>.<span class='ident'>clone</span>();
                 <span class='ident'>indices</span>[<span class='ident'>dest</span>] <span class='op'>=</span> <span class='ident'>outer_dim</span>;
                 <span class='ident'>indptr</span>[<span class='ident'>inner_dim</span>] <span class='op'>+=</span> <span class='number'>1</span>;
             }
@@ -2231,18 +2284,30 @@
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>IpStorage</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span> <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>
-<span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpStorage</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span>
-<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span>,
-      <span class='ident'>IpStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
-      <span class='ident'>IStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
-      <span class='ident'>DStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>;
+<span class='macro'>macro_rules</span><span class='macro'>!</span> <span class='ident'>sparse_scalar_mul</span> {
+    (<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span>: <span class='ident'>ident</span>) <span class='op'>=&gt;</span> (
+        <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>IpStorage</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span> <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span><span class='op'>&gt;</span>
+        <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span>, <span class='ident'>IpStorage</span>, <span class='ident'>IStorage</span>, <span class='ident'>DStorage</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>IpStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+              <span class='ident'>IStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
+              <span class='ident'>DStorage</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span>]<span class='op'>&gt;</span> {
+            <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span><span class='op'>&gt;</span>;
 
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='ident'>N</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
-        <span class='ident'>binop</span>::<span class='ident'>scalar_mul_mat</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>)
-    }
+            <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span>) <span class='op'>-&gt;</span> <span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='macro-nonterminal'>$</span><span class='macro-nonterminal'>scalar</span><span class='op'>&gt;</span> {
+                <span class='ident'>binop</span>::<span class='ident'>scalar_mul_mat</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>)
+            }
+        }
+    )
 }
+
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>u32</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>i32</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>u64</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>i64</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>isize</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>usize</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>f32</span>);
+<span class='macro'>sparse_scalar_mul</span><span class='macro'>!</span>(<span class='ident'>f64</span>);
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span>, <span class='ident'>N</span>, <span class='ident'>IpS1</span>, <span class='ident'>IS1</span>, <span class='ident'>DS1</span>, <span class='ident'>IpS2</span>, <span class='ident'>IS2</span>, <span class='ident'>DS2</span><span class='op'>&gt;</span>
 <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS2</span>, <span class='ident'>IS2</span>, <span class='ident'>DS2</span><span class='op'>&gt;&gt;</span>
@@ -2282,87 +2347,97 @@
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span>, <span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span>, <span class='ident'>DS2</span><span class='op'>&gt;</span>
-<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Tensor</span><span class='op'>&lt;</span><span class='ident'>N</span>, [<span class='ident'>usize</span>; <span class='number'>2</span>], <span class='ident'>DS2</span><span class='op'>&gt;&gt;</span>
+<span class='ident'>Add</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>ArrayBase</span><span class='op'>&lt;</span><span class='ident'>DS2</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;&gt;</span>
 <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>
 <span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Default</span>,
       <span class='ident'>IpS</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>IS</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>DS</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span>,
-      <span class='ident'>DS2</span>: <span class='lifetime'>&#39;b</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>;
+      <span class='ident'>DS2</span>: <span class='lifetime'>&#39;b</span> <span class='op'>+</span> <span class='ident'>ndarray</span>::<span class='ident'>Data</span><span class='op'>&lt;</span><span class='ident'>Elem</span><span class='op'>=</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>;
 
-    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Tensor</span><span class='op'>&lt;</span><span class='ident'>N</span>, [<span class='ident'>usize</span>; <span class='number'>2</span>], <span class='ident'>DS2</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>MatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
-        <span class='kw'>let</span> <span class='ident'>rows</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>rows</span>();
-        <span class='kw'>let</span> <span class='ident'>cols</span> <span class='op'>=</span> <span class='ident'>rhs</span>.<span class='ident'>cols</span>();
-        <span class='kw'>match</span> (<span class='self'>self</span>.<span class='ident'>storage</span>(), <span class='ident'>rhs</span>.<span class='ident'>ordering</span>()) {
-            (<span class='ident'>CSR</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>C</span>) <span class='op'>=&gt;</span> {
-                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>Tensor</span>::<span class='ident'>zeros</span>([<span class='ident'>rows</span>, <span class='ident'>cols</span>]);
-                <span class='ident'>prod</span>::<span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(), <span class='ident'>rhs</span>.<span class='ident'>borrowed</span>(),
-                                              <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-                <span class='ident'>res</span>
-            }
-            (<span class='ident'>CSR</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>F</span>) <span class='op'>=&gt;</span> {
-                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>Tensor</span>::<span class='ident'>zeros_f</span>([<span class='ident'>rows</span>, <span class='ident'>cols</span>]);
-                <span class='ident'>prod</span>::<span class='ident'>csr_mulacc_dense_colmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(), <span class='ident'>rhs</span>.<span class='ident'>borrowed</span>(),
-                                              <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-                <span class='ident'>res</span>
-            }
-            (<span class='ident'>CSC</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>C</span>) <span class='op'>=&gt;</span> {
-                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>Tensor</span>::<span class='ident'>zeros</span>([<span class='ident'>rows</span>, <span class='ident'>cols</span>]);
-                <span class='ident'>prod</span>::<span class='ident'>csc_mulacc_dense_rowmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(), <span class='ident'>rhs</span>.<span class='ident'>borrowed</span>(),
-                                              <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-                <span class='ident'>res</span>
-            }
-            (<span class='ident'>CSC</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>F</span>) <span class='op'>=&gt;</span> {
-                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>Tensor</span>::<span class='ident'>zeros_f</span>([<span class='ident'>rows</span>, <span class='ident'>cols</span>]);
-                <span class='ident'>prod</span>::<span class='ident'>csc_mulacc_dense_colmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(), <span class='ident'>rhs</span>.<span class='ident'>borrowed</span>(),
-                                              <span class='ident'>res</span>.<span class='ident'>borrowed_mut</span>()).<span class='ident'>unwrap</span>();
-                <span class='ident'>res</span>
-            }
-            (_, <span class='ident'>StorageOrder</span>::<span class='ident'>Unordered</span>) <span class='op'>=&gt;</span> <span class='macro'>unreachable</span><span class='macro'>!</span>(<span class='string'>&quot;mats are ordered&quot;</span>)
+    <span class='kw'>fn</span> <span class='ident'>add</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>ArrayBase</span><span class='op'>&lt;</span><span class='ident'>DS2</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>OwnedArray</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span> {
+        <span class='kw'>match</span> (<span class='self'>self</span>.<span class='ident'>storage</span>(), <span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>()) {
+            (<span class='ident'>CSR</span>, <span class='boolval'>true</span>) <span class='op'>=&gt;</span> {
+                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='self'>self</span>,
+                                                       <span class='ident'>rhs</span>,
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()
+                                                      ).<span class='ident'>unwrap</span>()
+                }
+                (<span class='ident'>CSR</span>, <span class='boolval'>false</span>) <span class='op'>=&gt;</span> {
+                    <span class='kw'>let</span> <span class='ident'>lhs</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>to_other_storage</span>();
+                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='kw-2'>&amp;</span><span class='ident'>lhs</span>,
+                                                       <span class='ident'>rhs</span>,
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()
+                                                      ).<span class='ident'>unwrap</span>()
+                }
+                (<span class='ident'>CSC</span>, <span class='boolval'>true</span>) <span class='op'>=&gt;</span> {
+                    <span class='kw'>let</span> <span class='ident'>lhs</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>to_other_storage</span>();
+                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='kw-2'>&amp;</span><span class='ident'>lhs</span>,
+                                                       <span class='ident'>rhs</span>,
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()
+                                                      ).<span class='ident'>unwrap</span>()
+                }
+                (<span class='ident'>CSC</span>, <span class='boolval'>false</span>) <span class='op'>=&gt;</span> {
+                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='self'>self</span>,
+                                                       <span class='ident'>rhs</span>,
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
+                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()
+                                                      ).<span class='ident'>unwrap</span>()
+                }
         }
     }
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span>, <span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span>, <span class='ident'>DS2</span><span class='op'>&gt;</span>
-<span class='ident'>Add</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Tensor</span><span class='op'>&lt;</span><span class='ident'>N</span>, [<span class='ident'>usize</span>; <span class='number'>2</span>], <span class='ident'>DS2</span><span class='op'>&gt;&gt;</span>
+<span class='ident'>Mul</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>ArrayBase</span><span class='op'>&lt;</span><span class='ident'>DS2</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;&gt;</span>
 <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>CsMat</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>IpS</span>, <span class='ident'>IS</span>, <span class='ident'>DS</span><span class='op'>&gt;</span>
 <span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Default</span>,
       <span class='ident'>IpS</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>IS</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>usize</span>]<span class='op'>&gt;</span>,
       <span class='ident'>DS</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span>,
-      <span class='ident'>DS2</span>: <span class='lifetime'>&#39;b</span> <span class='op'>+</span> <span class='ident'>Deref</span><span class='op'>&lt;</span><span class='ident'>Target</span><span class='op'>=</span>[<span class='ident'>N</span>]<span class='op'>&gt;</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>MatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>;
+      <span class='ident'>DS2</span>: <span class='lifetime'>&#39;b</span> <span class='op'>+</span> <span class='ident'>ndarray</span>::<span class='ident'>Data</span><span class='op'>&lt;</span><span class='ident'>Elem</span><span class='op'>=</span><span class='ident'>N</span><span class='op'>&gt;</span> {
+    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>;
 
-    <span class='kw'>fn</span> <span class='ident'>add</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Tensor</span><span class='op'>&lt;</span><span class='ident'>N</span>, [<span class='ident'>usize</span>; <span class='number'>2</span>], <span class='ident'>DS2</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>MatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span> {
-        <span class='kw'>match</span> (<span class='self'>self</span>.<span class='ident'>storage</span>(), <span class='ident'>rhs</span>.<span class='ident'>ordering</span>()) {
-            (<span class='ident'>CSR</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>C</span>) <span class='op'>=&gt;</span> {
-                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='self'>self</span>,
-                                                       <span class='ident'>rhs</span>,
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()).<span class='ident'>unwrap</span>()
-                }
-                (<span class='ident'>CSR</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>F</span>) <span class='op'>=&gt;</span> {
-                    <span class='kw'>let</span> <span class='ident'>lhs</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>to_other_storage</span>();
-                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='kw-2'>&amp;</span><span class='ident'>lhs</span>,
-                                                       <span class='ident'>rhs</span>,
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()).<span class='ident'>unwrap</span>()
-                }
-                (<span class='ident'>CSC</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>C</span>) <span class='op'>=&gt;</span> {
-                    <span class='kw'>let</span> <span class='ident'>lhs</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>to_other_storage</span>();
-                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='kw-2'>&amp;</span><span class='ident'>lhs</span>,
-                                                       <span class='ident'>rhs</span>,
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()).<span class='ident'>unwrap</span>()
-                }
-                (<span class='ident'>CSC</span>, <span class='ident'>StorageOrder</span>::<span class='ident'>F</span>) <span class='op'>=&gt;</span> {
-                    <span class='ident'>binop</span>::<span class='ident'>add_dense_mat_same_ordering</span>(<span class='self'>self</span>,
-                                                       <span class='ident'>rhs</span>,
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>(),
-                                                       <span class='ident'>N</span>::<span class='ident'>one</span>()).<span class='ident'>unwrap</span>()
-                }
-                (_, <span class='ident'>StorageOrder</span>::<span class='ident'>Unordered</span>) <span class='op'>=&gt;</span> <span class='macro'>unreachable</span><span class='macro'>!</span>(<span class='string'>&quot;mats are ordered&quot;</span>)
+    <span class='kw'>fn</span> <span class='ident'>mul</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>ArrayBase</span><span class='op'>&lt;</span><span class='ident'>DS2</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>OwnedArray</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span> {
+        <span class='kw'>let</span> <span class='ident'>rows</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>rows</span>();
+        <span class='kw'>let</span> <span class='ident'>cols</span> <span class='op'>=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>1</span>];
+        <span class='kw'>match</span> (<span class='self'>self</span>.<span class='ident'>storage</span>(), <span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>()) {
+            (<span class='ident'>CSR</span>, <span class='boolval'>true</span>) <span class='op'>=&gt;</span> {
+                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros</span>((<span class='ident'>rows</span>, <span class='ident'>cols</span>));
+                <span class='ident'>prod</span>::<span class='ident'>csr_mulacc_dense_rowmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(),
+                                              <span class='ident'>rhs</span>.<span class='ident'>view</span>(),
+                                              <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                             ).<span class='ident'>unwrap</span>();
+                <span class='ident'>res</span>
+            }
+            (<span class='ident'>CSR</span>, <span class='boolval'>false</span>) <span class='op'>=&gt;</span> {
+                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros_f</span>((<span class='ident'>rows</span>, <span class='ident'>cols</span>));
+                <span class='ident'>prod</span>::<span class='ident'>csr_mulacc_dense_colmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(),
+                                              <span class='ident'>rhs</span>.<span class='ident'>view</span>(),
+                                              <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                             ).<span class='ident'>unwrap</span>();
+                <span class='ident'>res</span>
+            }
+            (<span class='ident'>CSC</span>, <span class='boolval'>true</span>) <span class='op'>=&gt;</span> {
+                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros</span>((<span class='ident'>rows</span>, <span class='ident'>cols</span>));
+                <span class='ident'>prod</span>::<span class='ident'>csc_mulacc_dense_rowmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(),
+                                              <span class='ident'>rhs</span>.<span class='ident'>view</span>(),
+                                              <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                             ).<span class='ident'>unwrap</span>();
+                <span class='ident'>res</span>
+            }
+            (<span class='ident'>CSC</span>, <span class='boolval'>false</span>) <span class='op'>=&gt;</span> {
+                <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='ident'>OwnedArray</span>::<span class='ident'>zeros_f</span>((<span class='ident'>rows</span>, <span class='ident'>cols</span>));
+                <span class='ident'>prod</span>::<span class='ident'>csc_mulacc_dense_colmaj</span>(<span class='self'>self</span>.<span class='ident'>borrowed</span>(),
+                                              <span class='ident'>rhs</span>.<span class='ident'>view</span>(),
+                                              <span class='ident'>res</span>.<span class='ident'>view_mut</span>()
+                                             ).<span class='ident'>unwrap</span>();
+                <span class='ident'>res</span>
+            }
         }
     }
 }
@@ -2375,7 +2450,7 @@
     <span class='ident'>bloc_count</span>: <span class='ident'>usize</span>,
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span> <span class='ident'>Iterator</span> <span class='kw'>for</span> <span class='ident'>ChunkOuterBlocks</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>Iterator</span> <span class='kw'>for</span> <span class='ident'>ChunkOuterBlocks</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span> {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>;
     <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;&lt;</span><span class='kw'>Self</span> <span class='kw'>as</span> <span class='ident'>Iterator</span><span class='op'>&gt;</span>::<span class='ident'>Item</span><span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='ident'>cur_dim</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>dims_in_bloc</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>bloc_count</span>;
@@ -2615,6 +2690,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
 
     <title>sprs::sparse::binop::add_dense_mat_same_ordering - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -45,8 +46,8 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1675' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#152-166' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn add_dense_mat_same_ordering&lt;N, Mat, DenseStorage&gt;(lhs: &amp;Mat, rhs: &amp;<a class='struct' href='../../../dense_mats/tensor/struct.Tensor.html' title='dense_mats::tensor::Tensor'>Tensor</a>&lt;N, <a href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>; 2]</a>, DenseStorage&gt;, alpha: N, beta: N) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../dense_mats/tensor/type.MatOwned.html' title='dense_mats::tensor::MatOwned'>MatOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;, DenseStorage: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html' title='core::ops::Deref'>Deref</a>&lt;Target=<a href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[N]</a>&gt;</span></pre><div class='docblock'><p>Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
+        </span><a id='src-1748' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#151-171' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn add_dense_mat_same_ordering&lt;N, Mat, DenseStorage&gt;(lhs: &amp;Mat, rhs: &amp;<a class='struct' href='../../../ndarray/struct.ArrayBase.html' title='ndarray::ArrayBase'>ArrayBase</a>&lt;DenseStorage, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>, <a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>)</a>&gt;, alpha: N, beta: N) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../ndarray/type.OwnedArray.html' title='ndarray::OwnedArray'>OwnedArray</a>&lt;N, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>, <a class='type' href='../../../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>)</a>&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, Mat: <a class='trait' href='../../../sprs/sparse/compressed/trait.SpMatView.html' title='sprs::sparse::compressed::SpMatView'>SpMatView</a>&lt;N&gt;, DenseStorage: <a class='trait' href='../../../ndarray/trait.Data.html' title='ndarray::Data'>Data</a>&lt;Elem=N&gt;</span></pre><div class='docblock'><p>Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 and alpha and beta scalars</p>
 </div></section>
     <section id='search' class="content hidden"></section>
@@ -107,6 +108,6 @@ and alpha and beta scalars</p>
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>
