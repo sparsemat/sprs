@@ -43,6 +43,9 @@ where DStorage: Deref<Target=[N]> {
     data : DStorage
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct NnzIndex(pub usize);
+
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
 pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
@@ -476,12 +479,15 @@ where N: 'a,
     /// TODO: use this for CsMat::at_outer_inner
     pub fn at(&self, index: usize) -> Option<N>
     where N: Clone {
-        let position = match self.indices.binary_search(&index) {
-            Ok(ind) => ind,
-            _ => return None
-        };
+        self.nnz_index(index).map(|NnzIndex(position)| {
+            self.data[position].clone()
+        })
+    }
 
-        Some(self.data[position].clone())
+    /// Find the non-zero index of the requested dimension index,
+    /// returning None if no non-zero is present at the requested location.
+    pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
+        self.indices.binary_search(&index).map(|i| NnzIndex(i)).ok()
     }
 
     /// Vector dot product
