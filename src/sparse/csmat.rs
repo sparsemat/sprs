@@ -798,8 +798,8 @@ where N: Default,
 impl<N, IptrStorage, IndStorage, DataStorage>
 CsMat<N, IptrStorage, IndStorage, DataStorage>
 where
-IptrStorage: DerefMut<Target=[usize]>,
-IndStorage: DerefMut<Target=[usize]>,
+IptrStorage: Deref<Target=[usize]>,
+IndStorage: Deref<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
 
     /// Mutable access to the non zero values
