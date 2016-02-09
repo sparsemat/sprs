@@ -17,7 +17,7 @@
 /// ```
 
 use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
-use std::ops::{Deref, Mul, Add, Sub};
+use std::ops::{Deref, DerefMut, Mul, Add, Sub};
 use std::convert::AsRef;
 use std::cmp;
 use std::slice::{self, Iter};
@@ -47,6 +47,7 @@ where DStorage: Deref<Target=[N]> {
 pub struct NnzIndex(pub usize);
 
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
+pub type CsVecViewMut<'a, N> = CsVec<N, &'a [usize], &'a mut [N]>;
 pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 /// A trait to represent types which can be interpreted as vectors
@@ -524,6 +525,48 @@ where N: 'a,
     pub fn to_set(self) -> HashSet<(usize, N)>
     where N: Hash + Eq + Clone {
         self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
+    }
+}
+
+impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where N: 'a,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: DerefMut<Target=[N]> {
+
+    pub fn borrowed_mut(&mut self) -> CsVecViewMut<N> {
+        CsVec {
+            dim: self.dim,
+            indices: &self.indices[..],
+            data: &mut self.data[..],
+        }
+    }
+
+    /// Access element at given index, with logarithmic complexity
+    pub fn at_mut(&self, index: usize) -> Option<&mut N> {
+        self.nnz_index(index).map(|NnzIndex(position)| {
+            &mut self.data[position]
+        })
+    }
+}
+
+impl<'a, N> CsVecViewMut<'a, N>
+where N: 'a {
+
+    /// Create a borrowed CsVec over slice data without checking the structure
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_raw_mut(n: usize,
+                              nnz: usize,
+                              indices: *const usize,
+                              data: *mut N,
+                             ) -> CsVecViewMut<'a, N> {
+        CsVec {
+            dim: n,
+            indices: slice::from_raw_parts(indices, nnz),
+            data: slice::from_raw_parts(data, nnz),
+        }
     }
 }
 
