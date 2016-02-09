@@ -18,7 +18,7 @@ use num::traits::Num;
 use ndarray::{self, ArrayBase, OwnedArray, Ix};
 
 use sparse::permutation::PermView;
-use sparse::vec::{CsVec, CsVecView};
+use sparse::vec::{CsVec, CsVecView, CsVecViewMut, NnzIndex};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
@@ -27,6 +27,7 @@ use errors::SprsError;
 
 pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
+pub type CsMatViewMut<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a mut [N]>;
 
 // FIXME: a fixed size array would be better, but no Deref impl
 pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
@@ -810,6 +811,23 @@ DataStorage: DerefMut<Target=[N]> {
     pub fn scale(&mut self, val: N) where N: Num + Copy {
         for data in self.data_mut() {
             *data = *data * val;
+        }
+    }
+
+    /// Get a mutable view into the i-th outer dimension
+    /// (eg i-th row for a CSR matrix)
+    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMut<N>> {
+        if i >= self.outer_dims() {
+            return None;
+        }
+        let start = self.indptr[i];
+        let stop = self.indptr[i+1];
+        // safety derives from the structure checks in the constructors
+        unsafe {
+            Some(CsVec::new_raw_mut(self.inner_dims(),
+                                    self.indices[start..stop].len(),
+                                    self.indices[start..stop].as_ptr(),
+                                    self.data[start..stop].as_mut_ptr()))
         }
     }
 

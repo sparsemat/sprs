@@ -542,10 +542,13 @@ where N: 'a,
     }
 
     /// Access element at given index, with logarithmic complexity
-    pub fn at_mut(&self, index: usize) -> Option<&mut N> {
-        self.nnz_index(index).map(|NnzIndex(position)| {
-            &mut self.data[position]
-        })
+    pub fn at_mut(&mut self, index: usize) -> Option<&mut N> {
+        if let Some(NnzIndex(position)) = self.nnz_index(index) {
+            Some(&mut self.data[position])
+        }
+        else {
+            None
+        }
     }
 }
 
@@ -565,7 +568,7 @@ where N: 'a {
         CsVec {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts(data, nnz),
+            data: slice::from_raw_parts_mut(data, nnz),
         }
     }
 }
