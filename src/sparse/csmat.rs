@@ -539,15 +539,13 @@ where IptrStorage: Deref<Target=[usize]>,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N>
-    where N: Clone
-    {
+    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<&N> {
         assert!(i < self.nrows);
         assert!(j < self.ncols);
 
         match self.storage {
-            CSR => self.at_outer_inner(&(i,j)),
-            CSC => self.at_outer_inner(&(j,i))
+            CSR => self.at_outer_inner(i, j),
+            CSC => self.at_outer_inner(j, i)
         }
     }
 
@@ -683,11 +681,10 @@ where IptrStorage: Deref<Target=[usize]>,
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
     pub fn at_outer_inner(&self,
-                          &(outer_ind, inner_ind): &(usize, usize)
-                         ) -> Option<N>
-    where N: Clone
-    {
-        self.outer_view(outer_ind).and_then(|vec| vec.at(inner_ind))
+                          outer_ind: usize,
+                          inner_ind: usize
+                         ) -> Option<&N> {
+        self.outer_view(outer_ind).and_then(|vec| vec.at_(inner_ind))
     }
 
     /// Check the structure of CsMat components

@@ -112,7 +112,7 @@ fn lspsolve_csc_process_col<N: Copy + Num, V: ?Sized>
                                                        -> Result<(), SprsError>
 where V: vec::VecDim<N> + IndexMut<usize, Output = N>
 {
-    if let Some(diag_val) = col.at(col_ind) {
+    if let Some(&diag_val) = col.at(col_ind) {
         if diag_val == N::zero() {
             return Err(SprsError::SingularMatrix);
         }
@@ -162,7 +162,7 @@ where N: Copy + Num,
     // U_0_0 x0 = b_0 - x1*u_0_1
 
     for (col_ind, col) in upper_tri_mat.outer_iterator().rev() {
-        if let Some(diag_val) = col.at(col_ind) {
+        if let Some(&diag_val) = col.at(col_ind) {
             if diag_val == N::zero() {
                 return Err(SprsError::SingularMatrix);
             }

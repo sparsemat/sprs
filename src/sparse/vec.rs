@@ -257,7 +257,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
     }
 }
 
-impl<'a, N: 'a> CsVec<N, &'a[usize], &'a[N]> {
+impl<'a, N: 'a> CsVecView<'a, N> {
 
     /// Create a borrowed CsVec over slice data.
     pub fn new_borrowed(
@@ -271,6 +271,15 @@ impl<'a, N: 'a> CsVec<N, &'a[usize], &'a[N]> {
             data: data,
         };
         v.check_structure().and(Ok(v))
+    }
+
+    /// Access element at given index, with logarithmic complexity
+    ///
+    /// Re-borrowing version of `at()`.
+    pub fn at_(&self, index: usize) -> Option<&'a N> {
+        self.nnz_index(index).map(|NnzIndex(position)| {
+            &self.data[position]
+        })
     }
 
     /// Create a borrowed CsVec over slice data without checking the structure
@@ -475,13 +484,8 @@ where N: 'a,
     }
 
     /// Access element at given index, with logarithmic complexity
-    ///
-    /// TODO: use this for CsMat::at_outer_inner
-    pub fn at(&self, index: usize) -> Option<N>
-    where N: Clone {
-        self.nnz_index(index).map(|NnzIndex(position)| {
-            self.data[position].clone()
-        })
+    pub fn at(&self, index: usize) -> Option<&N> {
+        self.borrowed().at_(index)
     }
 
     /// Find the non-zero index of the requested dimension index,

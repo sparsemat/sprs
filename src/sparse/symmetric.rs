@@ -16,9 +16,9 @@ DStorage: Deref<Target=[N]> {
     }
     for (outer_ind, vec) in mat.outer_iterator() {
         for (inner_ind, &value) in vec.iter() {
-            match mat.at_outer_inner(&(inner_ind, outer_ind)) {
+            match mat.at_outer_inner(inner_ind, outer_ind) {
                 None => return false,
-                Some(transposed_val) => if transposed_val != value {
+                Some(&transposed_val) => if transposed_val != value {
                     return false;
                 }
             }
