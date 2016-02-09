@@ -61,6 +61,16 @@ pub fn outer_dimension(storage: CompressedStorage,
     }
 }
 
+pub fn inner_dimension(storage: CompressedStorage,
+                       rows: usize,
+                       cols: usize)
+                       -> usize {
+    match storage {
+        CSR => cols,
+        CSC => rows
+    }
+}
+
 pub use self::CompressedStorage::{CSC, CSR};
 
 /// Iterator on the matrix' outer dimension
@@ -831,6 +841,36 @@ DataStorage: DerefMut<Target=[N]> {
         }
     }
 
+    /// Get a mutable reference to an element given its outer_ind and inner_ind.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator_mut() which accesses
+    /// elements in storage order.
+    /// TODO: outer_iterator_mut is not yet implemented
+    pub fn at_outer_inner_mut(&mut self,
+                              outer_ind: usize,
+                              inner_ind: usize
+                             ) -> Option<&mut N> {
+        unimplemented!();
+        //self.outer_view_mut(outer_ind).and_then(|vec| vec.at_mut_(inner_ind))
+    }
+
+    /// Set the value of the non-zero element located at (row, col)
+    ///
+    /// # Panics
+    ///
+    /// - on out-of-bounds access
+    /// - if no non-zero element exists at the given location
+    pub fn set(&mut self, row: usize, col: usize, val: N) {
+        let outer = outer_dimension(self.storage(), row, col);
+        let inner = inner_dimension(self.storage(), row, col);
+        let NnzIndex(index) = self.outer_view(outer).and_then(|vec| {
+            vec.nnz_index(inner)
+        }).unwrap();
+        self.data[index] = val;
+    }
 }
 
 pub mod raw {
