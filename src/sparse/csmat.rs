@@ -18,7 +18,7 @@ use num::traits::Num;
 use ndarray::{self, ArrayBase, OwnedArray, Ix};
 
 use sparse::permutation::PermView;
-use sparse::vec::{CsVec, CsVecView, CsVecViewMut, NnzIndex};
+use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
@@ -72,6 +72,10 @@ pub fn inner_dimension(storage: CompressedStorage,
 }
 
 pub use self::CompressedStorage::{CSC, CSR};
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// Hold the index of a non-zero element in the compressed storage
+pub struct NnzIndex(pub usize);
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
@@ -698,6 +702,24 @@ where IptrStorage: Deref<Target=[usize]>,
         self.outer_view(outer_ind).and_then(|vec| vec.at_(inner_ind))
     }
 
+    /// Find the non-zero index of the element specified by outer_ind and
+    /// inner_ind.
+    ///
+    /// Searching this index is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice.
+    pub fn nnz_index_outer_inner(&self,
+                                 outer_ind: usize,
+                                 inner_ind: usize,
+                                ) -> Option<NnzIndex> {
+        if outer_ind >= self.outer_dims() {
+            return None;
+        }
+        let offset = self.indptr[outer_ind];
+        self.outer_view(outer_ind)
+            .and_then(|vec| vec.nnz_index(inner_ind))
+            .map(|vec::NnzIndex(ind)| NnzIndex(ind + offset))
+    }
+
     /// Check the structure of CsMat components
     /// This will ensure that:
     /// * indptr is of length outer_dim() + 1
@@ -853,8 +875,13 @@ DataStorage: DerefMut<Target=[N]> {
                               outer_ind: usize,
                               inner_ind: usize
                              ) -> Option<&mut N> {
-        unimplemented!();
-        //self.outer_view_mut(outer_ind).and_then(|vec| vec.at_mut_(inner_ind))
+        if let Some(NnzIndex(index)) = self.nnz_index_outer_inner(outer_ind,
+                                                                  inner_ind) {
+            Some(&mut self.data[index])
+        }
+        else {
+            None
+        }
     }
 
     /// Set the value of the non-zero element located at (row, col)
@@ -866,7 +893,7 @@ DataStorage: DerefMut<Target=[N]> {
     pub fn set(&mut self, row: usize, col: usize, val: N) {
         let outer = outer_dimension(self.storage(), row, col);
         let inner = inner_dimension(self.storage(), row, col);
-        let NnzIndex(index) = self.outer_view(outer).and_then(|vec| {
+        let vec::NnzIndex(index) = self.outer_view(outer).and_then(|vec| {
             vec.nnz_index(inner)
         }).unwrap();
         self.data[index] = val;

@@ -44,6 +44,7 @@ where DStorage: Deref<Target=[N]> {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// Hold the index of a non-zero element in the compressed storage
 pub struct NnzIndex(pub usize);
 
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
