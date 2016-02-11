@@ -17,7 +17,7 @@
 /// ```
 
 use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
-use std::ops::{Deref, DerefMut, Mul, Add, Sub};
+use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index};
 use std::convert::AsRef;
 use std::cmp;
 use std::slice::{self, Iter};
@@ -643,6 +643,17 @@ where N: Copy + Num,
     }
 }
 
+impl<N, IS, DS> Index<usize> for CsVec<N, IS, DS>
+where IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]> {
+
+    type Output = N;
+
+    fn index(&self, index: usize) -> &N {
+        self.at(index).unwrap()
+    }
+}
+
 
 #[cfg(test)]
 mod test {
@@ -728,5 +739,17 @@ mod test {
                                        ).unwrap();
 
         assert_eq!(vec, expected);
+    }
+
+    #[test]
+    fn indexing() {
+        let vec = CsVec::new_owned(8,
+                                   vec![0, 2, 4, 6],
+                                   vec![1., 2., 3., 4.]
+                                  ).unwrap();
+        assert_eq!(vec[0], 1.);
+        assert_eq!(vec[2], 2.);
+        assert_eq!(vec[4], 3.);
+        assert_eq!(vec[6], 4.);
     }
 }
