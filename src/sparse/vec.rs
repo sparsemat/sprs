@@ -703,4 +703,30 @@ mod test {
         assert_eq!(6., vec1.dot(&vec3));
         assert_eq!(12., vec2.dot(&vec3));
     }
+
+    #[test]
+    fn nnz_index() {
+        let vec = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        assert_eq!(vec.nnz_index(1), None);
+        assert_eq!(vec.nnz_index(9), None);
+        assert_eq!(vec.nnz_index(0), Some(super::NnzIndex(0)));
+        assert_eq!(vec.nnz_index(4), Some(super::NnzIndex(2)));
+    }
+
+    #[test]
+    fn at_mut() {
+        let mut vec = CsVec::new_owned(8,
+                                       vec![0, 2, 4, 6],
+                                       vec![1.; 4]
+                                      ).unwrap();
+
+        *vec.at_mut(4).unwrap() = 0.;
+
+        let expected = CsVec::new_owned(8,
+                                        vec![0, 2, 4, 6],
+                                        vec![1., 1., 0., 1.],
+                                       ).unwrap();
+
+        assert_eq!(vec, expected);
+    }
 }
