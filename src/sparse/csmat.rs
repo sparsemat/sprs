@@ -863,6 +863,25 @@ DataStorage: DerefMut<Target=[N]> {
         }
     }
 
+    /// Get a mutable reference to the element located at row i and column j.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator_mut() which accesses
+    /// elements in storage order.
+    /// TODO: outer_iterator_mut is not yet implemented
+    pub fn at_mut(&mut self, i: usize, j: usize) -> Option<&mut N> {
+        // FIXME: maybe we want to return None for out of bounds
+        assert!(i < self.nrows);
+        assert!(j < self.ncols);
+
+        match self.storage {
+            CSR => self.at_outer_inner_mut(i, j),
+            CSC => self.at_outer_inner_mut(j, i)
+        }
+    }
+
     /// Get a mutable reference to an element given its outer_ind and inner_ind.
     /// Will return None if there is no non-zero element at this location.
     ///
