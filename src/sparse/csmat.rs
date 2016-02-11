@@ -1415,4 +1415,30 @@ mod test {
         assert_eq!(mat.nnz_index(7, 7), Some(super::NnzIndex(7)));
         assert_eq!(mat.nnz_index(10, 10), Some(super::NnzIndex(10)));
     }
+
+    #[test]
+    fn at_mut() {
+        // | 0 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        let mut mat = CsMatOwned::new_owned(CSC,
+                                            3,
+                                            3,
+                                            vec![0, 1, 3, 4],
+                                            vec![1, 0, 2, 2],
+                                            vec![1.; 4]
+                                           ).unwrap();
+
+        *mat.at_mut(2, 1).unwrap() = 3.;
+
+        let exp = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1., 1., 3., 1.]
+                                       ).unwrap();
+
+        assert_eq!(mat, exp);
+    }
 }
