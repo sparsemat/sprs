@@ -1403,4 +1403,16 @@ mod test {
         block_iter.next().unwrap();
         assert_eq!(block_iter.next(), None);
     }
+
+    #[test]
+    fn nnz_index() {
+        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+
+        assert_eq!(mat.nnz_index(2, 3), None);
+        assert_eq!(mat.nnz_index(5, 7), None);
+        assert_eq!(mat.nnz_index(0, 11), None);
+        assert_eq!(mat.nnz_index(0, 0), Some(super::NnzIndex(0)));
+        assert_eq!(mat.nnz_index(7, 7), Some(super::NnzIndex(7)));
+        assert_eq!(mat.nnz_index(10, 10), Some(super::NnzIndex(10)));
+    }
 }
