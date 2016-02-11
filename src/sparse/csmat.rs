@@ -702,6 +702,17 @@ where IptrStorage: Deref<Target=[usize]>,
         self.outer_view(outer_ind).and_then(|vec| vec.at_(inner_ind))
     }
 
+    /// Find the non-zero index of the element specified by row and col
+    ///
+    /// Searching this index is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice.
+    pub fn nnz_index(&self, row: usize, col: usize) -> Option<NnzIndex> {
+        match self.storage() {
+            CSR => self.nnz_index_outer_inner(row, col),
+            CSC => self.nnz_index_outer_inner(col, row),
+        }
+    }
+
     /// Find the non-zero index of the element specified by outer_ind and
     /// inner_ind.
     ///
