@@ -11,7 +11,7 @@
 use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{self, Windows};
-use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range};
+use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
 use num::traits::Num;
 
@@ -1209,6 +1209,32 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
+impl<N, IpS, IS, DS> Index<[usize; 2]> for CsMat<N, IpS, IS, DS>
+where IpS: Deref<Target=[usize]>,
+      IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]>
+{
+    type Output = N;
+
+    fn index(&self, index: [usize; 2]) -> &N {
+        let i = index[0];
+        let j = index[1];
+        self.at(i, j).unwrap()
+    }
+}
+
+impl<N, IpS, IS, DS> IndexMut<[usize; 2]> for CsMat<N, IpS, IS, DS>
+where IpS: Deref<Target=[usize]>,
+      IS: Deref<Target=[usize]>,
+      DS: DerefMut<Target=[N]>
+{
+    fn index_mut(&mut self, index: [usize; 2]) -> &mut N {
+        let i = index[0];
+        let j = index[1];
+        self.at_mut(i, j).unwrap()
+    }
+}
+
 /// An iterator over non-overlapping blocks of a matrix,
 /// along the least-varying dimension
 pub struct ChunkOuterBlocks<'a, N: 'a> {
@@ -1410,6 +1436,26 @@ mod test {
     }
 
     #[test]
+    fn index() {
+        // | 0 2 0 |
+        // | 1 0 0 |
+        // | 0 3 4 |
+        let mat = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1., 2., 3., 4.]
+                                       ).unwrap();
+        assert_eq!(mat[[1, 0]], 1.);
+        assert_eq!(mat[[0, 1]], 2.);
+        assert_eq!(mat[[2, 1]], 3.);
+        assert_eq!(mat[[2, 2]], 4.);
+        assert_eq!(mat.at(0, 0), None);
+        assert_eq!(mat.at(4, 4), None);
+    }
+
+    #[test]
     fn at_mut() {
         // | 0 1 0 |
         // | 1 0 0 |
@@ -1430,6 +1476,17 @@ mod test {
                                         vec![0, 1, 3, 4],
                                         vec![1, 0, 2, 2],
                                         vec![1., 1., 3., 1.]
+                                       ).unwrap();
+
+        assert_eq!(mat, exp);
+
+        mat[[2, 2]] = 5.;
+        let exp = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1., 1., 3., 5.]
                                        ).unwrap();
 
         assert_eq!(mat, exp);
