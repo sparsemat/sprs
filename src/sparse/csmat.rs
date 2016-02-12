@@ -554,10 +554,7 @@ where IptrStorage: Deref<Target=[usize]>,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<&N> {
-        assert!(i < self.nrows);
-        assert!(j < self.ncols);
-
+    pub fn at(&self, i: usize, j: usize) -> Option<&N> {
         match self.storage {
             CSR => self.at_outer_inner(i, j),
             CSC => self.at_outer_inner(j, i)
@@ -883,10 +880,6 @@ DataStorage: DerefMut<Target=[N]> {
     /// elements in storage order.
     /// TODO: outer_iterator_mut is not yet implemented
     pub fn at_mut(&mut self, i: usize, j: usize) -> Option<&mut N> {
-        // FIXME: maybe we want to return None for out of bounds
-        assert!(i < self.nrows);
-        assert!(j < self.ncols);
-
         match self.storage {
             CSR => self.at_outer_inner_mut(i, j),
             CSC => self.at_outer_inner_mut(j, i)
