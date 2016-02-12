@@ -17,7 +17,7 @@
 /// ```
 
 use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
-use std::ops::{Deref, Mul, Add, Sub};
+use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut};
 use std::convert::AsRef;
 use std::cmp;
 use std::slice::{self, Iter};
@@ -43,7 +43,12 @@ where DStorage: Deref<Target=[N]> {
     data : DStorage
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// Hold the index of a non-zero element in the compressed storage
+pub struct NnzIndex(pub usize);
+
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
+pub type CsVecViewMut<'a, N> = CsVec<N, &'a [usize], &'a mut [N]>;
 pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 /// A trait to represent types which can be interpreted as vectors
@@ -254,7 +259,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
     }
 }
 
-impl<'a, N: 'a> CsVec<N, &'a[usize], &'a[N]> {
+impl<'a, N: 'a> CsVecView<'a, N> {
 
     /// Create a borrowed CsVec over slice data.
     pub fn new_borrowed(
@@ -268,6 +273,15 @@ impl<'a, N: 'a> CsVec<N, &'a[usize], &'a[N]> {
             data: data,
         };
         v.check_structure().and(Ok(v))
+    }
+
+    /// Access element at given index, with logarithmic complexity
+    ///
+    /// Re-borrowing version of `at()`.
+    pub fn at_(&self, index: usize) -> Option<&'a N> {
+        self.nnz_index(index).map(|NnzIndex(position)| {
+            &self.data[position]
+        })
     }
 
     /// Create a borrowed CsVec over slice data without checking the structure
@@ -472,16 +486,14 @@ where N: 'a,
     }
 
     /// Access element at given index, with logarithmic complexity
-    ///
-    /// TODO: use this for CsMat::at_outer_inner
-    pub fn at(&self, index: usize) -> Option<N>
-    where N: Clone {
-        let position = match self.indices.binary_search(&index) {
-            Ok(ind) => ind,
-            _ => return None
-        };
+    pub fn at(&self, index: usize) -> Option<&N> {
+        self.borrowed().at_(index)
+    }
 
-        Some(self.data[position].clone())
+    /// Find the non-zero index of the requested dimension index,
+    /// returning None if no non-zero is present at the requested location.
+    pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
+        self.indices.binary_search(&index).map(|i| NnzIndex(i)).ok()
     }
 
     /// Vector dot product
@@ -514,6 +526,51 @@ where N: 'a,
     pub fn to_set(self) -> HashSet<(usize, N)>
     where N: Hash + Eq + Clone {
         self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
+    }
+}
+
+impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where N: 'a,
+      IStorage: 'a + Deref<Target=[usize]>,
+      DStorage: DerefMut<Target=[N]> {
+
+    pub fn borrowed_mut(&mut self) -> CsVecViewMut<N> {
+        CsVec {
+            dim: self.dim,
+            indices: &self.indices[..],
+            data: &mut self.data[..],
+        }
+    }
+
+    /// Access element at given index, with logarithmic complexity
+    pub fn at_mut(&mut self, index: usize) -> Option<&mut N> {
+        if let Some(NnzIndex(position)) = self.nnz_index(index) {
+            Some(&mut self.data[position])
+        }
+        else {
+            None
+        }
+    }
+}
+
+impl<'a, N> CsVecViewMut<'a, N>
+where N: 'a {
+
+    /// Create a borrowed CsVec over slice data without checking the structure
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_raw_mut(n: usize,
+                              nnz: usize,
+                              indices: *const usize,
+                              data: *mut N,
+                             ) -> CsVecViewMut<'a, N> {
+        CsVec {
+            dim: n,
+            indices: slice::from_raw_parts(indices, nnz),
+            data: slice::from_raw_parts_mut(data, nnz),
+        }
     }
 }
 
@@ -586,6 +643,26 @@ where N: Copy + Num,
     }
 }
 
+impl<N, IS, DS> Index<usize> for CsVec<N, IS, DS>
+where IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]> {
+
+    type Output = N;
+
+    fn index(&self, index: usize) -> &N {
+        self.at(index).unwrap()
+    }
+}
+
+impl<N, IS, DS> IndexMut<usize> for CsVec<N, IS, DS>
+where IS: Deref<Target=[usize]>,
+      DS: DerefMut<Target=[N]> {
+
+    fn index_mut(&mut self, index: usize) -> &mut N {
+        self.at_mut(index).unwrap()
+    }
+}
+
 
 #[cfg(test)]
 mod test {
@@ -645,5 +722,52 @@ mod test {
         assert_eq!(16., vec2.dot(&vec2));
         assert_eq!(6., vec1.dot(&vec3));
         assert_eq!(12., vec2.dot(&vec3));
+    }
+
+    #[test]
+    fn nnz_index() {
+        let vec = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        assert_eq!(vec.nnz_index(1), None);
+        assert_eq!(vec.nnz_index(9), None);
+        assert_eq!(vec.nnz_index(0), Some(super::NnzIndex(0)));
+        assert_eq!(vec.nnz_index(4), Some(super::NnzIndex(2)));
+    }
+
+    #[test]
+    fn at_mut() {
+        let mut vec = CsVec::new_owned(8,
+                                       vec![0, 2, 4, 6],
+                                       vec![1.; 4]
+                                      ).unwrap();
+
+        *vec.at_mut(4).unwrap() = 2.;
+
+        let expected = CsVec::new_owned(8,
+                                        vec![0, 2, 4, 6],
+                                        vec![1., 1., 2., 1.],
+                                       ).unwrap();
+
+        assert_eq!(vec, expected);
+
+        vec[6] = 3.;
+
+        let expected = CsVec::new_owned(8,
+                                        vec![0, 2, 4, 6],
+                                        vec![1., 1., 2., 3.],
+                                       ).unwrap();
+
+        assert_eq!(vec, expected);
+    }
+
+    #[test]
+    fn indexing() {
+        let vec = CsVec::new_owned(8,
+                                   vec![0, 2, 4, 6],
+                                   vec![1., 2., 3., 4.]
+                                  ).unwrap();
+        assert_eq!(vec[0], 1.);
+        assert_eq!(vec[2], 2.);
+        assert_eq!(vec[4], 3.);
+        assert_eq!(vec[6], 4.);
     }
 }

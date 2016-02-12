@@ -11,14 +11,14 @@
 use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{self, Windows};
-use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range};
+use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
 use num::traits::Num;
 
 use ndarray::{self, ArrayBase, OwnedArray, Ix};
 
 use sparse::permutation::PermView;
-use sparse::vec::{CsVec, CsVecView};
+use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
@@ -27,6 +27,7 @@ use errors::SprsError;
 
 pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
 pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
+pub type CsMatViewMut<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a mut [N]>;
 
 // FIXME: a fixed size array would be better, but no Deref impl
 pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
@@ -60,7 +61,21 @@ pub fn outer_dimension(storage: CompressedStorage,
     }
 }
 
+pub fn inner_dimension(storage: CompressedStorage,
+                       rows: usize,
+                       cols: usize)
+                       -> usize {
+    match storage {
+        CSR => cols,
+        CSC => rows
+    }
+}
+
 pub use self::CompressedStorage::{CSC, CSR};
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// Hold the index of a non-zero element in the compressed storage
+pub struct NnzIndex(pub usize);
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
@@ -539,15 +554,10 @@ where IptrStorage: Deref<Target=[usize]>,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at(&self, &(i,j) : &(usize, usize)) -> Option<N>
-    where N: Clone
-    {
-        assert!(i < self.nrows);
-        assert!(j < self.ncols);
-
+    pub fn at(&self, i: usize, j: usize) -> Option<&N> {
         match self.storage {
-            CSR => self.at_outer_inner(&(i,j)),
-            CSC => self.at_outer_inner(&(j,i))
+            CSR => self.at_outer_inner(i, j),
+            CSC => self.at_outer_inner(j, i)
         }
     }
 
@@ -683,11 +693,39 @@ where IptrStorage: Deref<Target=[usize]>,
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
     pub fn at_outer_inner(&self,
-                          &(outer_ind, inner_ind): &(usize, usize)
-                         ) -> Option<N>
-    where N: Clone
-    {
-        self.outer_view(outer_ind).and_then(|vec| vec.at(inner_ind))
+                          outer_ind: usize,
+                          inner_ind: usize
+                         ) -> Option<&N> {
+        self.outer_view(outer_ind).and_then(|vec| vec.at_(inner_ind))
+    }
+
+    /// Find the non-zero index of the element specified by row and col
+    ///
+    /// Searching this index is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice.
+    pub fn nnz_index(&self, row: usize, col: usize) -> Option<NnzIndex> {
+        match self.storage() {
+            CSR => self.nnz_index_outer_inner(row, col),
+            CSC => self.nnz_index_outer_inner(col, row),
+        }
+    }
+
+    /// Find the non-zero index of the element specified by outer_ind and
+    /// inner_ind.
+    ///
+    /// Searching this index is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice.
+    pub fn nnz_index_outer_inner(&self,
+                                 outer_ind: usize,
+                                 inner_ind: usize,
+                                ) -> Option<NnzIndex> {
+        if outer_ind >= self.outer_dims() {
+            return None;
+        }
+        let offset = self.indptr[outer_ind];
+        self.outer_view(outer_ind)
+            .and_then(|vec| vec.nnz_index(inner_ind))
+            .map(|vec::NnzIndex(ind)| NnzIndex(ind + offset))
     }
 
     /// Check the structure of CsMat components
@@ -800,8 +838,8 @@ where N: Default,
 impl<N, IptrStorage, IndStorage, DataStorage>
 CsMat<N, IptrStorage, IndStorage, DataStorage>
 where
-IptrStorage: DerefMut<Target=[usize]>,
-IndStorage: DerefMut<Target=[usize]>,
+IptrStorage: Deref<Target=[usize]>,
+IndStorage: Deref<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
 
     /// Mutable access to the non zero values
@@ -816,6 +854,73 @@ DataStorage: DerefMut<Target=[N]> {
         }
     }
 
+    /// Get a mutable view into the i-th outer dimension
+    /// (eg i-th row for a CSR matrix)
+    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMut<N>> {
+        if i >= self.outer_dims() {
+            return None;
+        }
+        let start = self.indptr[i];
+        let stop = self.indptr[i+1];
+        // safety derives from the structure checks in the constructors
+        unsafe {
+            Some(CsVec::new_raw_mut(self.inner_dims(),
+                                    self.indices[start..stop].len(),
+                                    self.indices[start..stop].as_ptr(),
+                                    self.data[start..stop].as_mut_ptr()))
+        }
+    }
+
+    /// Get a mutable reference to the element located at row i and column j.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator_mut() which accesses
+    /// elements in storage order.
+    /// TODO: outer_iterator_mut is not yet implemented
+    pub fn at_mut(&mut self, i: usize, j: usize) -> Option<&mut N> {
+        match self.storage {
+            CSR => self.at_outer_inner_mut(i, j),
+            CSC => self.at_outer_inner_mut(j, i)
+        }
+    }
+
+    /// Get a mutable reference to an element given its outer_ind and inner_ind.
+    /// Will return None if there is no non-zero element at this location.
+    ///
+    /// This access is logarithmic in the number of non-zeros
+    /// in the corresponding outer slice. It is therefore advisable not to rely
+    /// on this for algorithms, and prefer outer_iterator_mut() which accesses
+    /// elements in storage order.
+    /// TODO: outer_iterator_mut is not yet implemented
+    pub fn at_outer_inner_mut(&mut self,
+                              outer_ind: usize,
+                              inner_ind: usize
+                             ) -> Option<&mut N> {
+        if let Some(NnzIndex(index)) = self.nnz_index_outer_inner(outer_ind,
+                                                                  inner_ind) {
+            Some(&mut self.data[index])
+        }
+        else {
+            None
+        }
+    }
+
+    /// Set the value of the non-zero element located at (row, col)
+    ///
+    /// # Panics
+    ///
+    /// - on out-of-bounds access
+    /// - if no non-zero element exists at the given location
+    pub fn set(&mut self, row: usize, col: usize, val: N) {
+        let outer = outer_dimension(self.storage(), row, col);
+        let inner = inner_dimension(self.storage(), row, col);
+        let vec::NnzIndex(index) = self.outer_view(outer).and_then(|vec| {
+            vec.nnz_index(inner)
+        }).unwrap();
+        self.data[index] = val;
+    }
 }
 
 pub mod raw {
@@ -1104,6 +1209,32 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
+impl<N, IpS, IS, DS> Index<[usize; 2]> for CsMat<N, IpS, IS, DS>
+where IpS: Deref<Target=[usize]>,
+      IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]>
+{
+    type Output = N;
+
+    fn index(&self, index: [usize; 2]) -> &N {
+        let i = index[0];
+        let j = index[1];
+        self.at(i, j).unwrap()
+    }
+}
+
+impl<N, IpS, IS, DS> IndexMut<[usize; 2]> for CsMat<N, IpS, IS, DS>
+where IpS: Deref<Target=[usize]>,
+      IS: Deref<Target=[usize]>,
+      DS: DerefMut<Target=[N]>
+{
+    fn index_mut(&mut self, index: [usize; 2]) -> &mut N {
+        let i = index[0];
+        let j = index[1];
+        self.at_mut(i, j).unwrap()
+    }
+}
+
 /// An iterator over non-overlapping blocks of a matrix,
 /// along the least-varying dimension
 pub struct ChunkOuterBlocks<'a, N: 'a> {
@@ -1290,5 +1421,74 @@ mod test {
         block_iter.next().unwrap();
         block_iter.next().unwrap();
         assert_eq!(block_iter.next(), None);
+    }
+
+    #[test]
+    fn nnz_index() {
+        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+
+        assert_eq!(mat.nnz_index(2, 3), None);
+        assert_eq!(mat.nnz_index(5, 7), None);
+        assert_eq!(mat.nnz_index(0, 11), None);
+        assert_eq!(mat.nnz_index(0, 0), Some(super::NnzIndex(0)));
+        assert_eq!(mat.nnz_index(7, 7), Some(super::NnzIndex(7)));
+        assert_eq!(mat.nnz_index(10, 10), Some(super::NnzIndex(10)));
+    }
+
+    #[test]
+    fn index() {
+        // | 0 2 0 |
+        // | 1 0 0 |
+        // | 0 3 4 |
+        let mat = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1., 2., 3., 4.]
+                                       ).unwrap();
+        assert_eq!(mat[[1, 0]], 1.);
+        assert_eq!(mat[[0, 1]], 2.);
+        assert_eq!(mat[[2, 1]], 3.);
+        assert_eq!(mat[[2, 2]], 4.);
+        assert_eq!(mat.at(0, 0), None);
+        assert_eq!(mat.at(4, 4), None);
+    }
+
+    #[test]
+    fn at_mut() {
+        // | 0 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        let mut mat = CsMatOwned::new_owned(CSC,
+                                            3,
+                                            3,
+                                            vec![0, 1, 3, 4],
+                                            vec![1, 0, 2, 2],
+                                            vec![1.; 4]
+                                           ).unwrap();
+
+        *mat.at_mut(2, 1).unwrap() = 3.;
+
+        let exp = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1., 1., 3., 1.]
+                                       ).unwrap();
+
+        assert_eq!(mat, exp);
+
+        mat[[2, 2]] = 5.;
+        let exp = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1., 1., 3., 5.]
+                                       ).unwrap();
+
+        assert_eq!(mat, exp);
     }
 }
