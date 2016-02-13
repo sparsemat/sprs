@@ -86,6 +86,7 @@ Changelog
 - 0.4.0-alpha.2:
     - functions in the `at` family will return references **breaking change**
     - simpler arguments for `at_outer_inner` **breaking change**
+    - mutable view types
 - 0.4.0-alpha.1:
     - depend on ndarray for dense matrices **breaking change**
     - iterators return reference where possible **breaking change**
