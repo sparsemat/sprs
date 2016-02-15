@@ -22,3 +22,8 @@ num = "0.1.30"
 
 [dependencies.ndarray]
 version = "0.4"
+
+[features]
+
+# some linear algebra functionality requires opting into the LGPL license
+lgpl = []

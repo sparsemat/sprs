@@ -33,7 +33,7 @@ Algorithms
 - Outer iterator on compressed sparse matrices
 - sparse vector iteration
 - sparse vectors joint non zero iterations
-- simple sparse Cholesky decomposition
+- simple sparse Cholesky decomposition (requires opting into an LGPL license)
 - sparse triangular solves with dense right-hand side
 
 
@@ -133,6 +133,10 @@ Licensed under either of
 * MIT license (./LICENSE-MIT or http://opensource.org/licenses/MIT)
 
 at your option.
+
+Some parts of the library require opting into the LGPL license. Opting into the
+LGPL-licensed features can be done by specifying `features = ["lgpl"]` in
+Cargo.toml.
 
 Contribution
 ............
