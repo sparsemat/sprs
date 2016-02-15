@@ -83,6 +83,9 @@ https://vbarrielle.github.io/sprs/doc/sprs/
 Changelog
 ---------
 
+- 0.4.0-alpha.3:
+    - rename `at` family of functions into `get`, consistent with the naming
+      scheme in standard library.
 - 0.4.0-alpha.2:
     - functions in the `at` family will return references **breaking change**
     - simpler arguments for `at_outer_inner` **breaking change**
