@@ -554,10 +554,10 @@ where IptrStorage: Deref<Target=[usize]>,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at(&self, i: usize, j: usize) -> Option<&N> {
+    pub fn get(&self, i: usize, j: usize) -> Option<&N> {
         match self.storage {
-            CSR => self.at_outer_inner(i, j),
-            CSC => self.at_outer_inner(j, i)
+            CSR => self.get_outer_inner(i, j),
+            CSC => self.get_outer_inner(j, i)
         }
     }
 
@@ -692,7 +692,7 @@ where IptrStorage: Deref<Target=[usize]>,
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator() which accesses
     /// elements in storage order.
-    pub fn at_outer_inner(&self,
+    pub fn get_outer_inner(&self,
                           outer_ind: usize,
                           inner_ind: usize
                          ) -> Option<&N> {
@@ -879,10 +879,10 @@ DataStorage: DerefMut<Target=[N]> {
     /// on this for algorithms, and prefer outer_iterator_mut() which accesses
     /// elements in storage order.
     /// TODO: outer_iterator_mut is not yet implemented
-    pub fn at_mut(&mut self, i: usize, j: usize) -> Option<&mut N> {
+    pub fn get_mut(&mut self, i: usize, j: usize) -> Option<&mut N> {
         match self.storage {
-            CSR => self.at_outer_inner_mut(i, j),
-            CSC => self.at_outer_inner_mut(j, i)
+            CSR => self.get_outer_inner_mut(i, j),
+            CSC => self.get_outer_inner_mut(j, i)
         }
     }
 
@@ -894,7 +894,7 @@ DataStorage: DerefMut<Target=[N]> {
     /// on this for algorithms, and prefer outer_iterator_mut() which accesses
     /// elements in storage order.
     /// TODO: outer_iterator_mut is not yet implemented
-    pub fn at_outer_inner_mut(&mut self,
+    pub fn get_outer_inner_mut(&mut self,
                               outer_ind: usize,
                               inner_ind: usize
                              ) -> Option<&mut N> {
@@ -1219,7 +1219,7 @@ where IpS: Deref<Target=[usize]>,
     fn index(&self, index: [usize; 2]) -> &N {
         let i = index[0];
         let j = index[1];
-        self.at(i, j).unwrap()
+        self.get(i, j).unwrap()
     }
 }
 
@@ -1231,7 +1231,7 @@ where IpS: Deref<Target=[usize]>,
     fn index_mut(&mut self, index: [usize; 2]) -> &mut N {
         let i = index[0];
         let j = index[1];
-        self.at_mut(i, j).unwrap()
+        self.get_mut(i, j).unwrap()
     }
 }
 
@@ -1451,12 +1451,12 @@ mod test {
         assert_eq!(mat[[0, 1]], 2.);
         assert_eq!(mat[[2, 1]], 3.);
         assert_eq!(mat[[2, 2]], 4.);
-        assert_eq!(mat.at(0, 0), None);
-        assert_eq!(mat.at(4, 4), None);
+        assert_eq!(mat.get(0, 0), None);
+        assert_eq!(mat.get(4, 4), None);
     }
 
     #[test]
-    fn at_mut() {
+    fn get_mut() {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
@@ -1468,7 +1468,7 @@ mod test {
                                             vec![1.; 4]
                                            ).unwrap();
 
-        *mat.at_mut(2, 1).unwrap() = 3.;
+        *mat.get_mut(2, 1).unwrap() = 3.;
 
         let exp = CsMatOwned::new_owned(CSC,
                                         3,
