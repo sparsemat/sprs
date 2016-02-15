@@ -85,7 +85,9 @@ Changelog
 
 - 0.4.0-alpha.3:
     - rename `at` family of functions into `get`, consistent with the naming
-      scheme in standard library.
+      scheme in standard library. **breaking change**
+    - move cholesky factorization behind the "lgpl" feature flag
+      **rbeaking change**
 - 0.4.0-alpha.2:
     - functions in the `at` family will return references **breaking change**
     - simpler arguments for `at_outer_inner` **breaking change**
