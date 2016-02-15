@@ -278,7 +278,7 @@ impl<'a, N: 'a> CsVecView<'a, N> {
     /// Access element at given index, with logarithmic complexity
     ///
     /// Re-borrowing version of `at()`.
-    pub fn at_(&self, index: usize) -> Option<&'a N> {
+    pub fn get_(&self, index: usize) -> Option<&'a N> {
         self.nnz_index(index).map(|NnzIndex(position)| {
             &self.data[position]
         })
@@ -486,8 +486,8 @@ where N: 'a,
     }
 
     /// Access element at given index, with logarithmic complexity
-    pub fn at(&self, index: usize) -> Option<&N> {
-        self.borrowed().at_(index)
+    pub fn get(&self, index: usize) -> Option<&N> {
+        self.borrowed().get_(index)
     }
 
     /// Find the non-zero index of the requested dimension index,
@@ -543,7 +543,7 @@ where N: 'a,
     }
 
     /// Access element at given index, with logarithmic complexity
-    pub fn at_mut(&mut self, index: usize) -> Option<&mut N> {
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut N> {
         if let Some(NnzIndex(position)) = self.nnz_index(index) {
             Some(&mut self.data[position])
         }
@@ -650,7 +650,7 @@ where IS: Deref<Target=[usize]>,
     type Output = N;
 
     fn index(&self, index: usize) -> &N {
-        self.at(index).unwrap()
+        self.get(index).unwrap()
     }
 }
 
@@ -659,7 +659,7 @@ where IS: Deref<Target=[usize]>,
       DS: DerefMut<Target=[N]> {
 
     fn index_mut(&mut self, index: usize) -> &mut N {
-        self.at_mut(index).unwrap()
+        self.get_mut(index).unwrap()
     }
 }
 
@@ -734,13 +734,13 @@ mod test {
     }
 
     #[test]
-    fn at_mut() {
+    fn get_mut() {
         let mut vec = CsVec::new_owned(8,
                                        vec![0, 2, 4, 6],
                                        vec![1.; 4]
                                       ).unwrap();
 
-        *vec.at_mut(4).unwrap() = 2.;
+        *vec.get_mut(4).unwrap() = 2.;
 
         let expected = CsVec::new_owned(8,
                                         vec![0, 2, 4, 6],
