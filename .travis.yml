@@ -3,8 +3,8 @@ language: rust
 script:
     - rustc --version
     - cargo --version
-    - cargo build --verbose
-    - cargo test --verbose
+    - cargo build --verbose --features "lgpl"
+    - cargo test --verbose --features "lgpl"
 
 notifications:
   email:
