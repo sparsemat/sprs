@@ -184,6 +184,72 @@ impl<T: Iterator> SparseIterTools for Enumerate<T> {
 impl<'a, N: 'a> SparseIterTools for VectorIterator<'a, N> {
 }
 
+/// Trait for types that can be iterated as sparse vectors
+pub trait IntoSparseVecIter<N> {
+
+    type IterType;
+
+    /// Transform self into an iterator that yields (usize, &N) tuples
+    /// where the usize is the index of the value in the sparse vector.
+    /// The indices should be sorted.
+    fn into_sparse_vec_iter(self) -> <Self as IntoSparseVecIter<N>>::IterType
+    where <Self as IntoSparseVecIter<N>>::IterType: Iterator<Item=(usize, N)>;
+
+    /// The dimension of the vector
+    fn dim(&self) -> usize;
+}
+
+impl<'a, N: 'a> IntoSparseVecIter<&'a N> for CsVecView<'a, N> {
+    type IterType = VectorIterator<'a, N>;
+
+    fn dim(&self) -> usize {
+        self.dim()
+    }
+
+    fn into_sparse_vec_iter(self) -> VectorIterator<'a, N> {
+        self.iter_()
+    }
+}
+
+impl<'a, N: 'a, IS, DS> IntoSparseVecIter<&'a N> for &'a CsVec<N, IS, DS>
+where IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]>
+{
+    type IterType = VectorIterator<'a, N>;
+
+    fn dim(&self) -> usize {
+        (*self).dim()
+    }
+
+    fn into_sparse_vec_iter(self) -> VectorIterator<'a, N> {
+        self.iter()
+    }
+}
+
+impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a [N] {
+    type IterType = Enumerate<Iter<'a, N>>;
+
+    fn dim(&self) -> usize {
+        self.len()
+    }
+
+    fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
+        self.into_iter().enumerate()
+    }
+}
+
+impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a Vec<N> {
+    type IterType = Enumerate<Iter<'a, N>>;
+
+    fn dim(&self) -> usize {
+        self.len()
+    }
+
+    fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
+        self.into_iter().enumerate()
+    }
+}
+
 /// An iterator over the non zeros of either of two vector iterators, ordered,
 /// such that the sum of the vectors may be computed
 pub struct NnzOrZip<'a, Ite1, Ite2, N1: 'a, N2: 'a>
@@ -282,6 +348,13 @@ impl<'a, N: 'a> CsVecView<'a, N> {
         self.nnz_index(index).map(|NnzIndex(position)| {
             &self.data[position]
         })
+    }
+
+    /// Re-borrowing version of `iter()`
+    fn iter_(&self) -> VectorIterator<'a, N> {
+        VectorIterator {
+            ind_data: self.indices.iter().zip(self.data.iter()),
+        }
     }
 
     /// Create a borrowed CsVec over slice data without checking the structure
@@ -508,10 +581,14 @@ where N: 'a,
     /// assert_eq!(4., v1.dot(&v1));
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
-    pub fn dot<IS2, DS2>(&self, rhs: &CsVec<N, IS2, DS2>) -> N
-    where N: Num + Copy, IS2: Deref<Target=[usize]>, DS2: Deref<Target=[N]> {
-        self.iter().nnz_zip(rhs.iter()).map(|(_, &lval, &rval)| lval * rval)
-                                       .fold(N::zero(), |x, y| x + y)
+    pub fn dot<'b, T: IntoSparseVecIter<&'b N>>(&'b self, rhs: T) -> N
+    where N: Num + Copy,
+          <T as IntoSparseVecIter<&'b N>>::IterType: Iterator<Item=(usize, &'b N)>
+    {
+        assert_eq!(self.dim(), rhs.dim());
+        self.iter().nnz_zip(rhs.into_sparse_vec_iter())
+                   .map(|(_, &lval, &rval)| lval * rval)
+                   .fold(N::zero(), |x, y| x + y)
     }
 
     /// Fill a dense vector with our values
@@ -721,7 +798,28 @@ mod test {
         assert_eq!(4., vec1.dot(&vec1));
         assert_eq!(16., vec2.dot(&vec2));
         assert_eq!(6., vec1.dot(&vec3));
-        assert_eq!(12., vec2.dot(&vec3));
+        assert_eq!(12., vec2.dot(vec3.borrowed()));
+
+        let dense_vec = vec![1., 2., 3., 4., 5., 6., 7., 8.];
+        let slice = &dense_vec[..];
+        assert_eq!(16., vec1.dot(&dense_vec));
+        assert_eq!(16., vec1.dot(slice));
+    }
+
+    #[test]
+    #[should_panic]
+    fn dot_product_panics() {
+        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        let vec2 = CsVec::new_owned(9, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
+        vec1.dot(&vec2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn dot_product_panics2() {
+        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        let dense_vec = vec![0., 1., 2., 3., 4., 5., 6., 7., 8.];
+        vec1.dot(&dense_vec);
     }
 
     #[test]
