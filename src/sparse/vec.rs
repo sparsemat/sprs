@@ -24,6 +24,7 @@ use std::slice::{self, Iter};
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::marker::PhantomData;
+use ndarray::{self, ArrayBase, Ix};
 
 use num::traits::Num;
 
@@ -247,6 +248,20 @@ impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a Vec<N> {
 
     fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
         self.into_iter().enumerate()
+    }
+}
+
+impl<'a, N: 'a, S> IntoSparseVecIter<&'a N> for &'a ArrayBase<S, Ix>
+where S: ndarray::Data<Elem=N>
+{
+    type IterType = Enumerate<ndarray::Elements<'a, N, Ix>>;
+
+    fn dim(&self) -> usize {
+        self.shape()[0]
+    }
+
+    fn into_sparse_vec_iter(self) -> Enumerate<ndarray::Elements<'a, N, Ix>> {
+        self.iter().enumerate()
     }
 }
 
@@ -569,7 +584,13 @@ where N: 'a,
         self.indices.binary_search(&index).map(|i| NnzIndex(i)).ok()
     }
 
-    /// Vector dot product
+    /// Sparse vector dot product. The right-hand-side can be any type
+    /// that can be interpreted as a sparse vector (hence sparse vectors, std
+    /// vectors and slices, and ndarray's dense vectors work).
+    ///
+    /// # Panics
+    ///
+    /// If the dimension of the vectors do not match.
     ///
     /// # Example
     ///
@@ -745,6 +766,7 @@ where IS: Deref<Target=[usize]>,
 mod test {
     use super::CsVec;
     use super::SparseIterTools;
+    use ndarray::OwnedArray;
 
     fn test_vec1() -> CsVec<f64, Vec<usize>, Vec<f64>> {
         let n = 8;
@@ -804,6 +826,9 @@ mod test {
         let slice = &dense_vec[..];
         assert_eq!(16., vec1.dot(&dense_vec));
         assert_eq!(16., vec1.dot(slice));
+
+        let ndarray_vec = OwnedArray::linspace(1., 8., 8);
+        assert_eq!(16., vec1.dot(&ndarray_vec));
     }
 
     #[test]
