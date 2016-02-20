@@ -466,9 +466,8 @@ where IStorage: Deref<Target=[usize]>,
     }
 }
 
-impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where N: 'a,
-      IStorage: 'a + Deref<Target=[usize]>,
+impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where IStorage: Deref<Target=[usize]>,
       DStorage: Deref<Target=[N]> {
 
     /// Iterate over the non zero values.
@@ -492,9 +491,11 @@ where N: 'a,
 
     /// Permuted iteration. Not finished
     #[doc(hidden)]
-    pub fn iter_perm<'perm: 'a>(&'a self,
-                                perm: PermView<'perm>)
-                               -> VectorIteratorPerm<'a, N> {
+    pub fn iter_perm<'a, 'perm: 'a>(&'a self,
+                                    perm: PermView<'perm>)
+    -> VectorIteratorPerm<'a, N>
+    where N: 'a
+    {
         VectorIteratorPerm {
             ind_data: self.indices.iter().zip(self.data.iter()),
             perm: perm
