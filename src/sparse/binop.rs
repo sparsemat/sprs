@@ -12,24 +12,21 @@ use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    let binop = |x, y| x + y;
-    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
+    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x + y)
 }
 
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    let binop = |x, y| x - y;
-    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
+    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x - y)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    let binop = |x, y| x * y;
-    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
+    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x * y)
 }
 
 /// Sparse matrix multiplication by a scalar
@@ -74,11 +71,24 @@ where N: Num + Copy {
     }
 }
 
-fn csmat_binop_same_storage_alloc<N, F>(
-    lhs: CsMatView<N>, rhs: CsMatView<N>, binop: F) -> Result<CsMatOwned<N>, SprsError>
-where
-N: Num + Copy,
-F: Fn(N, N) -> N {
+/// Applies a binary operation to matching non-zero elements
+/// of two sparse matrices. When e.g. only the `lhs` has a non-zero at a
+/// given location, `0` is inferred for the non-zero value of the other matrix.
+/// Both matrices should have the same storage.
+///
+/// Thus the behaviour is correct iff `binop(N::zero(), N::zero()) == N::zero()`
+///
+/// # Errors
+///
+/// - on incompatible dimensions
+/// - on incomatible storage
+pub fn csmat_binop<N, F>(lhs: CsMatView<N>,
+                         rhs: CsMatView<N>,
+                         binop: F
+                        ) -> Result<CsMatOwned<N>, SprsError>
+where N: Num,
+      F: Fn(&N, &N) -> N
+{
     let nrows = lhs.rows();
     let ncols = lhs.cols();
     let storage_type = lhs.storage();
@@ -92,7 +102,15 @@ F: Fn(N, N) -> N {
     let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
     let mut out_indptr = vec![0; lhs.outer_dims() + 1];
     let mut out_indices = vec![0; max_nnz];
-    let mut out_data = vec![N::zero(); max_nnz];
+
+    // Sadly the vec! macro requires Clone, but we don't want to force
+    // Clone on our consumers, so we have to use this workaround.
+    // This should compile to decent code however.
+    let mut out_data = Vec::with_capacity(max_nnz);
+    for _ in 0..max_nnz {
+        out_data.push(N::zero());
+    }
+
     let nnz = csmat_binop_same_storage_raw(lhs, rhs, binop,
                                            &mut out_indptr[..],
                                            &mut out_indices[..],
@@ -108,17 +126,16 @@ F: Fn(N, N) -> N {
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
 /// Returns the nnz count
-pub fn csmat_binop_same_storage_raw<N, F>(
-    lhs: CsMatView<N>,
-    rhs: CsMatView<N>,
-    binop: F,
-    out_indptr: &mut [usize],
-    out_indices: &mut [usize],
-    out_data: &mut [N]
-    ) -> usize
-where
-N: Num + Copy,
-F: Fn(N, N) -> N {
+pub fn csmat_binop_same_storage_raw<N, F>(lhs: CsMatView<N>,
+                                          rhs: CsMatView<N>,
+                                          binop: F,
+                                          out_indptr: &mut [usize],
+                                          out_indices: &mut [usize],
+                                          out_data: &mut [N]
+                                         ) -> usize
+where N: Num,
+      F: Fn(&N, &N) -> N
+{
     assert_eq!(lhs.cols(), rhs.cols());
     assert_eq!(lhs.rows(), rhs.rows());
     assert_eq!(lhs.storage(), rhs.storage());
@@ -131,9 +148,9 @@ F: Fn(N, N) -> N {
     for ((dim, lv), (_, rv)) in lhs.outer_iterator().zip(rhs.outer_iterator()) {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
             let (ind, binop_val) = match elem {
-                Left((ind, &val)) => (ind, binop(val, N::zero())),
-                Right((ind, &val)) => (ind, binop(N::zero(), val)),
-                Both((ind, &lval, &rval)) => (ind, binop(lval, rval)),
+                Left((ind, val)) => (ind, binop(val, &N::zero())),
+                Right((ind, val)) => (ind, binop(&N::zero(), val)),
+                Both((ind, lval, rval)) => (ind, binop(lval, rval)),
             };
             if binop_val != N::zero() {
                 out_indices[nnz] = ind;
