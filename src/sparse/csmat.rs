@@ -685,6 +685,15 @@ where IptrStorage: Deref<Target=[usize]>,
         }
     }
 
+    pub fn map<F>(&self, f: F) -> CsMatOwned<N>
+    where F: FnMut(&N) -> N,
+          N: Clone
+    {
+        let mut res = self.to_owned();
+        res.map_inplace(f);
+        res
+    }
+
     /// Access an element given its outer_ind and inner_ind.
     /// Will return None if there is no non-zero element at this location.
     ///
@@ -920,6 +929,15 @@ DataStorage: DerefMut<Target=[N]> {
             vec.nnz_index(inner)
         }).unwrap();
         self.data[index] = val;
+    }
+
+    /// Apply a function to every non-zero element
+    pub fn map_inplace<F>(&mut self, mut f: F)
+    where F: FnMut(&N) -> N
+    {
+        for val in &mut self.data[..] {
+            *val = f(val);
+        }
     }
 }
 
@@ -1490,5 +1508,32 @@ mod test {
                                        ).unwrap();
 
         assert_eq!(mat, exp);
+    }
+
+    #[test]
+    fn map() {
+        // | 0 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        let mat = CsMatOwned::new_owned(CSC,
+                                        3,
+                                        3,
+                                        vec![0, 1, 3, 4],
+                                        vec![1, 0, 2, 2],
+                                        vec![1.; 4]
+                                       ).unwrap();
+
+        let mut res = mat.map(|&x| x + 2.);
+        let expected = CsMatOwned::new_owned(CSC,
+                                             3,
+                                             3,
+                                             vec![0, 1, 3, 4],
+                                             vec![1, 0, 2, 2],
+                                             vec![3.; 4]
+                                            ).unwrap();
+        assert_eq!(res, expected);
+
+        res.map_inplace(|&x| x / 3.);
+        assert_eq!(res, mat);
     }
 }
