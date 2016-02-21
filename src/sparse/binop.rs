@@ -8,6 +8,8 @@ use sparse::compressed::SpMatView;
 use errors::SprsError;
 use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
 
+pub type Ix2 = (Ix, Ix);
+
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
@@ -133,10 +135,10 @@ where N: Num,
 /// and alpha and beta scalars
 pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
     lhs: &Mat,
-    rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
+    rhs: &ArrayBase<DenseStorage, Ix2>,
     alpha: N,
     beta: N)
--> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
+-> Result<OwnedArray<N, Ix2>, SprsError>
 where N: Num + Copy,
       Mat: SpMatView<N>,
       DenseStorage: ndarray::Data<Elem=N> {
@@ -156,9 +158,9 @@ where N: Num + Copy,
 /// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
 /// and alpha a scalar
 pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat, rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
+    lhs: &Mat, rhs: &ArrayBase<DenseStorage, Ix2>,
     alpha: N)
--> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
+-> Result<OwnedArray<N, Ix2>, SprsError>
 where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
     let binop = |x, y| alpha * x * y;
     let shape = (rhs.shape()[0], rhs.shape()[1]);
@@ -177,9 +179,9 @@ where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
 pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
-                                                     rhs: ArrayView<'a, N, (Ix, Ix)>,
+                                                     rhs: ArrayView<'a, N, Ix2>,
                                                      binop: F,
-                                                     mut out: ArrayViewMut<'a, N, (Ix, Ix)>
+                                                     mut out: ArrayViewMut<'a, N, Ix2>
                                                     ) -> Result<(), SprsError>
 where N: 'a + Copy + Num,
       F: Fn(N, N) -> N {
