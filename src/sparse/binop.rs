@@ -5,28 +5,28 @@ use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
-use errors::SprsError;
+use errors::{SprsError, SpRes};
 use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
 
 pub type Ix2 = (Ix, Ix);
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x + y)
 }
 
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x - y)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x * y)
 }
@@ -53,7 +53,7 @@ where N: Num + Copy, Mat: SpMatView<N> {
 pub fn csmat_binop<N, F>(lhs: CsMatView<N>,
                          rhs: CsMatView<N>,
                          binop: F
-                        ) -> Result<CsMatOwned<N>, SprsError>
+                        ) -> SpRes<CsMatOwned<N>>
 where N: Num,
       F: Fn(&N, &N) -> N
 {
@@ -133,54 +133,57 @@ where N: Num,
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
-pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat,
-    rhs: &ArrayBase<DenseStorage, Ix2>,
-    alpha: N,
-    beta: N)
--> Result<OwnedArray<N, Ix2>, SprsError>
+pub fn add_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
+                                              rhs: &ArrayBase<D, Ix2>,
+                                              alpha: N,
+                                              beta: N
+                                             ) -> SpRes<OwnedArray<N, Ix2>>
 where N: Num + Copy,
       Mat: SpMatView<N>,
-      DenseStorage: ndarray::Data<Elem=N> {
+      D: ndarray::Data<Elem=N>
+{
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
-                                             rhs.view(),
-                                             |&x, &y| alpha * x + beta * y,
-                                             res.view_mut()));
+    try!(csmat_binop_dense_raw(lhs.borrowed(),
+                               rhs.view(),
+                               |&x, &y| alpha * x + beta * y,
+                               res.view_mut()));
     Ok(res)
 }
 
-/// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
-/// and alpha a scalar
-pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat, rhs: &ArrayBase<DenseStorage, Ix2>,
-    alpha: N)
--> Result<OwnedArray<N, Ix2>, SprsError>
-where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
+/// Compute coeff wise `alpha * lhs * rhs` with `lhs` a sparse matrix,
+/// `rhs` a dense matrix, and `alpha` a scalar
+pub fn mul_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
+                                              rhs: &ArrayBase<D, Ix2>,
+                                              alpha: N
+                                             ) -> SpRes<OwnedArray<N, Ix2>>
+where N: Num + Copy,
+      Mat: SpMatView<N>,
+      D: ndarray::Data<Elem=N>
+{
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
-                                             rhs.view(),
-                                             |&x, &y| alpha * x * y,
-                                             res.view_mut()));
+    try!(csmat_binop_dense_raw(lhs.borrowed(),
+                               rhs.view(),
+                               |&x, &y| alpha * x * y,
+                               res.view_mut()));
     Ok(res)
 }
 
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
-pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
-                                                     rhs: ArrayView<'a, N, Ix2>,
-                                                     binop: F,
-                                                     mut out: ArrayViewMut<'a, N, Ix2>
-                                                    ) -> Result<(), SprsError>
+pub fn csmat_binop_dense_raw<'a, N, F>(lhs: CsMatView<'a, N>,
+                                       rhs: ArrayView<'a, N, Ix2>,
+                                       binop: F,
+                                       mut out: ArrayViewMut<'a, N, Ix2>
+                                      ) -> SpRes<()>
 where N: 'a + Num,
       F: Fn(&N, &N) -> N
 {
@@ -223,7 +226,7 @@ where N: 'a + Num,
 pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
                          rhs: CsVecView<N>,
                          binop: F
-                        ) -> Result<CsVecOwned<N>, SprsError>
+                        ) -> SpRes<CsVecOwned<N>>
 where N: Num,
       F: Fn(&N, &N) -> N
 {
