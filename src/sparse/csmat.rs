@@ -1253,6 +1253,31 @@ where IpS: Deref<Target=[usize]>,
     }
 }
 
+
+impl<N, IpS, IS, DS> Index<NnzIndex> for CsMat<N, IpS, IS, DS>
+where IpS: Deref<Target=[usize]>,
+      IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]>
+{
+    type Output = N;
+
+    fn index(&self, index: NnzIndex) -> &N {
+        let NnzIndex(i) = index;
+        self.data().get(i).unwrap()
+    }
+}
+
+impl<N, IpS, IS, DS> IndexMut<NnzIndex> for CsMat<N, IpS, IS, DS>
+where IpS: Deref<Target=[usize]>,
+      IS: Deref<Target=[usize]>,
+      DS: DerefMut<Target=[N]>
+{
+    fn index_mut(&mut self, index: NnzIndex) -> &mut N {
+        let NnzIndex(i) = index;
+        self.data_mut().get_mut(i).unwrap()
+    }
+}
+
 /// An iterator over non-overlapping blocks of a matrix,
 /// along the least-varying dimension
 pub struct ChunkOuterBlocks<'a, N: 'a> {
@@ -1451,6 +1476,12 @@ mod test {
         assert_eq!(mat.nnz_index(0, 0), Some(super::NnzIndex(0)));
         assert_eq!(mat.nnz_index(7, 7), Some(super::NnzIndex(7)));
         assert_eq!(mat.nnz_index(10, 10), Some(super::NnzIndex(10)));
+
+        let index = mat.nnz_index(8, 8).unwrap();
+        assert_eq!(mat[index], 1.);
+        let mut mat = mat;
+        mat[index] = 2.;
+        assert_eq!(mat[index], 2.);
     }
 
     #[test]
