@@ -142,7 +142,6 @@ pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
 where N: Num + Copy,
       Mat: SpMatView<N>,
       DenseStorage: ndarray::Data<Elem=N> {
-    let binop = |x, y| alpha * x + beta * y;
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
         true => OwnedArray::zeros(shape),
@@ -150,7 +149,7 @@ where N: Num + Copy,
     };
     try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
                                              rhs.view(),
-                                             binop,
+                                             |&x, &y| alpha * x + beta * y,
                                              res.view_mut()));
     Ok(res)
 }
@@ -162,7 +161,6 @@ pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
     alpha: N)
 -> Result<OwnedArray<N, Ix2>, SprsError>
 where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
-    let binop = |x, y| alpha * x * y;
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
         true => OwnedArray::zeros(shape),
@@ -170,7 +168,7 @@ where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
     };
     try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
                                              rhs.view(),
-                                             binop,
+                                             |&x, &y| alpha * x * y,
                                              res.view_mut()));
     Ok(res)
 }
@@ -183,8 +181,9 @@ pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
                                                      binop: F,
                                                      mut out: ArrayViewMut<'a, N, Ix2>
                                                     ) -> Result<(), SprsError>
-where N: 'a + Copy + Num,
-      F: Fn(N, N) -> N {
+where N: 'a + Num,
+      F: Fn(&N, &N) -> N
+{
     if         lhs.cols() != rhs.shape()[1] || lhs.cols() != out.shape()[1]
             || lhs.rows() != rhs.shape()[0] || lhs.rows() != out.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
@@ -204,9 +203,9 @@ where N: 'a + Copy + Num,
                          .zip(rrow.iter().enumerate().nnz_or_zip(lrow.iter())) {
             let (mut oval, lr_elems) = items;
             let binop_val = match lr_elems {
-                Left((_, &val)) => binop(val, N::zero()),
-                Right((_, &val)) => binop(N::zero(), val),
-                Both((_, &lval, &rval)) => binop(lval, rval),
+                Left((_, val)) => binop(val, &N::zero()),
+                Right((_, val)) => binop(&N::zero(), val),
+                Both((_, lval, rval)) => binop(lval, rval),
             };
             *oval = binop_val;
         }
