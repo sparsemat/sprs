@@ -34,41 +34,7 @@ pub fn scalar_mul_mat<N, Mat>(
     mat: &Mat, val: N) -> CsMatOwned<N>
 where N: Num + Copy, Mat: SpMatView<N> {
     let mat = mat.borrowed();
-    let mut out_indptr = vec![0; mat.outer_dims() + 1];
-    let mut out_indices = vec![0; mat.nb_nonzero()];
-    let mut out_data = vec![N::zero(); mat.nb_nonzero()];
-    let nrows = mat.rows();
-    let ncols = mat.cols();
-    let storage_type = mat.storage();
-    scalar_mul_mat_raw(mat, val, &mut out_indptr[..],
-                       &mut out_indices[..], &mut out_data[..]);
-    CsMat::new_owned(storage_type, nrows, ncols,
-                     out_indptr, out_indices, out_data).unwrap()
-}
-
-/// Sparse matrix multiplication by a scalar, raw version
-///
-/// Writes into the provided output.
-/// Panics if the sizes don't match
-pub fn scalar_mul_mat_raw<N>(
-    mat: CsMatView<N>,
-    val: N,
-    out_indptr: &mut [usize],
-    out_indices: &mut [usize],
-    out_data: &mut [N])
-where N: Num + Copy {
-    assert_eq!(out_indptr.len(), mat.outer_dims() + 1);
-    assert!(out_data.len() >= mat.nb_nonzero());
-    assert!(out_indices.len() >= mat.nb_nonzero());
-    for (optr, iptr) in out_indptr.iter_mut().zip(mat.indptr()) {
-        *optr = *iptr;
-    }
-    for (oind, iind) in out_indices.iter_mut().zip(mat.indices()) {
-        *oind = *iind;
-    }
-    for (odata, idata) in out_data.iter_mut().zip(mat.data()) {
-        *odata = *idata * val;
-    }
+    mat.map(|&x| x * val)
 }
 
 /// Applies a binary operation to matching non-zero elements
