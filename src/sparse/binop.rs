@@ -230,10 +230,19 @@ where N: 'a + Copy + Num,
 }
 
 /// Binary operations for CsVec
+///
+/// This function iterates the non-zero locations of `lhs` and `rhs`
+/// and applies the function `binop` to the matching elements (defaulting
+/// to zero when e.g. only `lhs` has a non-zero at a given location).
+///
+/// The function thus has a correct behavior iff `binop(0, 0) == 0`.
 pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
-                         rhs: CsVecView<N>, binop: F
+                         rhs: CsVecView<N>,
+                         binop: F
                         ) -> Result<CsVecOwned<N>, SprsError>
-where N: Num + Copy, F: Fn(N, N) -> N {
+where N: Num,
+      F: Fn(&N, &N) -> N
+{
     if lhs.dim() != rhs.dim() {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -242,9 +251,9 @@ where N: Num + Copy, F: Fn(N, N) -> N {
     res.reserve_exact(max_nnz);
     for elem in lhs.iter().nnz_or_zip(rhs.iter()) {
         let (ind, binop_val) = match elem {
-            Left((ind, &val)) => (ind, binop(val, N::zero())),
-            Right((ind, &val)) => (ind, binop(N::zero(), val)),
-            Both((ind, &lval, &rval)) => (ind, binop(lval, rval)),
+            Left((ind, val)) => (ind, binop(val, &N::zero())),
+            Right((ind, val)) => (ind, binop(&N::zero(), val)),
+            Both((ind, lval, rval)) => (ind, binop(lval, rval)),
         };
         res.append(ind, binop_val);
     }

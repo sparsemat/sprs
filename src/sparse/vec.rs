@@ -742,8 +742,10 @@ where N: Copy + Num,
     type Output = CsVecOwned<N>;
 
     fn add(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
-        let binop = |x, y| x + y;
-        binop::csvec_binop(self.borrowed(), rhs.borrowed(), binop).unwrap()
+        binop::csvec_binop(self.borrowed(),
+                           rhs.borrowed(),
+                           |&x, &y| x + y
+                          ).unwrap()
     }
 }
 
@@ -758,8 +760,10 @@ where N: Copy + Num,
     type Output = CsVecOwned<N>;
 
     fn sub(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
-        let binop = |x, y| x - y;
-        binop::csvec_binop(self.borrowed(), rhs.borrowed(), binop).unwrap()
+        binop::csvec_binop(self.borrowed(),
+                           rhs.borrowed(),
+                           |&x, &y| x - y
+                          ).unwrap()
     }
 }
 
