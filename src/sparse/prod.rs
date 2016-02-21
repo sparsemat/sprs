@@ -4,14 +4,16 @@ use sparse::csmat::{CsMatOwned, CsMatView};
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
-use ndarray::{ArrayView, ArrayViewMut, Ix};
+use ndarray::{ArrayView, ArrayViewMut};
 use errors::SprsError;
+use ::SpRes;
+use ::Ix2;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
 pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
                               in_vec: &[N],
-                              res_vec: &mut[N]) -> Result<(), SprsError>
+                              res_vec: &mut[N]) -> SpRes<()>
 where N: Num + Copy {
     let mat = mat.borrowed();
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
@@ -36,7 +38,7 @@ where N: Num + Copy {
 /// into another dense vector
 pub fn mul_acc_mat_vec_csr<N>(mat: CsMatView<N>,
                               in_vec: &[N],
-                              res_vec: &mut[N]) -> Result<(), SprsError>
+                              res_vec: &mut[N]) -> SpRes<()>
 where N: Num + Copy {
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
         return Err(SprsError::IncompatibleDimensions);
@@ -69,7 +71,7 @@ where N: Num + Copy {
 pub fn csr_mul_csr<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
                                   workspace: &mut[N]
-                                 ) -> Result<CsMatOwned<N>, SprsError>
+                                 ) -> SpRes<CsMatOwned<N>>
 where
 N: Num + Copy,
 Mat1: SpMatView<N>,
@@ -89,7 +91,7 @@ Mat2: SpMatView<N> {
 pub fn csc_mul_csc<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
                                   workspace: &mut[N]
-                                 ) -> Result<CsMatOwned<N>, SprsError>
+                                 ) -> SpRes<CsMatOwned<N>>
 where
 N: Num + Copy,
 Mat1: SpMatView<N>,
@@ -122,7 +124,7 @@ where N: Copy + Num,
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
                            workspace: &mut[N]
-                          ) -> Result<CsMatOwned<N>, SprsError>
+                          ) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy {
     let res_rows = lhs.rows();
     let res_cols = rhs.cols();
@@ -168,7 +170,7 @@ where N: Num + Copy {
 
 /// CSR-vector multiplication
 pub fn csr_mul_csvec<N>(lhs: CsMatView<N>,
-                        rhs: CsVecView<N>) -> Result<CsVecOwned<N>, SprsError>
+                        rhs: CsVecView<N>) -> SpRes<CsVecOwned<N>>
 where N: Copy + Num {
     if lhs.cols() != rhs.dim() {
         return Err(SprsError::IncompatibleDimensions);
@@ -186,11 +188,12 @@ where N: Copy + Num {
 /// CSR-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj.
-pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>,
-    rhs: ArrayView<N, (Ix, Ix)>,
-    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
--> Result<(), SprsError> {
+pub fn csr_mulacc_dense_rowmaj<'a, N>(lhs: CsMatView<N>,
+                                      rhs: ArrayView<N, Ix2>,
+                                      mut out: ArrayViewMut<'a, N, Ix2>
+                                     ) -> SpRes<()>
+where N: 'a + Num + Copy
+{
     if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -243,11 +246,12 @@ pub fn csr_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
 /// CSC-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj
-pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>,
-    rhs: ArrayView<N, (Ix, Ix)>,
-    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
--> Result<(), SprsError> {
+pub fn csc_mulacc_dense_rowmaj<'a, N>(lhs: CsMatView<N>,
+                                      rhs: ArrayView<N, Ix2>,
+                                      mut out: ArrayViewMut<'a, N, Ix2>
+                                     ) -> SpRes<()>
+where N: 'a + Num + Copy
+{
     if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -279,11 +283,12 @@ pub fn csc_mulacc_dense_rowmaj<'a, N: 'a + Num + Copy>(
 /// CSC-dense colmaj multiplication
 ///
 /// Performs better if out is colmaj
-pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>,
-    rhs: ArrayView<N, (Ix, Ix)>,
-    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
--> Result<(), SprsError> {
+pub fn csc_mulacc_dense_colmaj<'a, N>(lhs: CsMatView<N>,
+                                      rhs: ArrayView<N, Ix2>,
+                                      mut out: ArrayViewMut<'a, N, Ix2>
+                                     ) -> SpRes<()>
+where N: 'a + Num + Copy
+{
     if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -317,11 +322,12 @@ pub fn csc_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
 /// CSR-dense colmaj multiplication
 ///
 /// Performs better if out is colmaj
-pub fn csr_mulacc_dense_colmaj<'a, N: 'a + Num + Copy>(
-    lhs: CsMatView<N>, rhs:
-    ArrayView<N, (Ix, Ix)>,
-    mut out: ArrayViewMut<'a, N, (Ix, Ix)>)
--> Result<(), SprsError> {
+pub fn csr_mulacc_dense_colmaj<'a, N>(lhs: CsMatView<N>,
+                                      rhs: ArrayView<N, Ix2>,
+                                      mut out: ArrayViewMut<'a, N, Ix2>
+                                     ) -> SpRes<()>
+where N: 'a + Num + Copy
+{
     if lhs.cols() != rhs.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
     }

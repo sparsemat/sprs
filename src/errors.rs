@@ -3,8 +3,6 @@
 use std::error::Error;
 use std::fmt;
 
-pub type SpRes<T> = Result<T, SprsError>;
-
 #[derive(PartialEq, Debug)]
 pub enum SprsError {
     IncompatibleDimensions,

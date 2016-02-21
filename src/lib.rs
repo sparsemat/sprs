@@ -54,10 +54,17 @@ pub mod sparse;
 pub mod errors;
 pub mod stack;
 
+pub use ndarray::Ix as Ix_;
+
 pub use sparse::{CsMat, CsMatOwned, CsMatView,
                  CsVec, CsVecView, CsVecOwned};
 pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
+
+pub type Ix2 = (Ix_, Ix_);
+pub type SpRes<T> = Result<T, errors::SprsError>;
+
+
 
 mod utils {
     use sparse::csmat::{self, CsMatView};

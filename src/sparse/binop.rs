@@ -5,10 +5,11 @@ use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
-use errors::{SprsError, SpRes};
-use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
+use errors::SprsError;
+use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut};
 
-pub type Ix2 = (Ix, Ix);
+use ::Ix2;
+use ::SpRes;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
