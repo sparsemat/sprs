@@ -644,6 +644,11 @@ where N: 'a,
       IStorage: 'a + Deref<Target=[usize]>,
       DStorage: DerefMut<Target=[N]> {
 
+    /// The underlying non zero values as a mutable slice.
+    fn data_mut(&mut self) -> &mut [N] {
+        &mut self.data[..]
+    }
+
     pub fn borrowed_mut(&mut self) -> CsVecViewMut<N> {
         CsVec {
             dim: self.dim,
@@ -787,6 +792,27 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
+impl<N, IS, DS> Index<NnzIndex> for CsVec<N, IS, DS>
+where IS: Deref<Target=[usize]>,
+      DS: Deref<Target=[N]>
+{
+    type Output = N;
+
+    fn index(&self, index: NnzIndex) -> &N {
+        let NnzIndex(i) = index;
+        self.data().get(i).unwrap()
+    }
+}
+
+impl<N, IS, DS> IndexMut<NnzIndex> for CsVec<N, IS, DS>
+where IS: Deref<Target=[usize]>,
+      DS: DerefMut<Target=[N]>
+{
+    fn index_mut(&mut self, index: NnzIndex) -> &mut N {
+        let NnzIndex(i) = index;
+        self.data_mut().get_mut(i).unwrap()
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -880,6 +906,13 @@ mod test {
         assert_eq!(vec.nnz_index(9), None);
         assert_eq!(vec.nnz_index(0), Some(super::NnzIndex(0)));
         assert_eq!(vec.nnz_index(4), Some(super::NnzIndex(2)));
+
+        let index = vec.nnz_index(2).unwrap();
+
+        assert_eq!(vec[index], 1.);
+        let mut vec = vec;
+        vec[index] = 2.;
+        assert_eq!(vec[index], 2.);
     }
 
     #[test]
