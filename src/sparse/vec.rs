@@ -626,6 +626,17 @@ where IStorage: Deref<Target=[usize]>,
     where N: Hash + Eq + Clone {
         self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
     }
+
+    /// Apply a function to each non-zero element, yielding a new matrix
+    /// with the same sparsity structure.
+    pub fn map<F>(&self, f: F) -> CsVecOwned<N>
+    where F: FnMut(&N) -> N,
+          N: Clone
+    {
+        let mut res = self.to_owned();
+        res.map_inplace(f);
+        res
+    }
 }
 
 impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
@@ -650,6 +661,16 @@ where N: 'a,
             None
         }
     }
+
+    /// Apply a function to each non-zero element, mutating it
+    pub fn map_inplace<F>(&mut self, mut f: F)
+    where F: FnMut(&N) -> N
+    {
+        for val in &mut self.data[..] {
+            *val = f(val);
+        }
+    }
+
 }
 
 impl<'a, N> CsVecViewMut<'a, N>
@@ -721,8 +742,10 @@ where N: Copy + Num,
     type Output = CsVecOwned<N>;
 
     fn add(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
-        let binop = |x, y| x + y;
-        binop::csvec_binop(self.borrowed(), rhs.borrowed(), binop).unwrap()
+        binop::csvec_binop(self.borrowed(),
+                           rhs.borrowed(),
+                           |&x, &y| x + y
+                          ).unwrap()
     }
 }
 
@@ -737,8 +760,10 @@ where N: Copy + Num,
     type Output = CsVecOwned<N>;
 
     fn sub(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
-        let binop = |x, y| x - y;
-        binop::csvec_binop(self.borrowed(), rhs.borrowed(), binop).unwrap()
+        binop::csvec_binop(self.borrowed(),
+                           rhs.borrowed(),
+                           |&x, &y| x - y
+                          ).unwrap()
     }
 }
 
@@ -893,5 +918,33 @@ mod test {
         assert_eq!(vec[2], 2.);
         assert_eq!(vec[4], 3.);
         assert_eq!(vec[6], 4.);
+    }
+
+    #[test]
+    fn map_inplace() {
+        let mut vec = CsVec::new_owned(8,
+                                       vec![0, 2, 4, 6],
+                                       vec![1., 2., 3., 4.]
+                                      ).unwrap();
+        vec.map_inplace(|&x| x + 1.);
+        let expected = CsVec::new_owned(8,
+                                        vec![0, 2, 4, 6],
+                                        vec![2., 3., 4., 5.]
+                                       ).unwrap();
+        assert_eq!(vec, expected);
+    }
+
+    #[test]
+    fn map() {
+        let vec = CsVec::new_owned(8,
+                                   vec![0, 2, 4, 6],
+                                   vec![1., 2., 3., 4.]
+                                  ).unwrap();
+        let res = vec.map(|&x| x * 2.);
+        let expected = CsVec::new_owned(8,
+                                        vec![0, 2, 4, 6],
+                                        vec![2., 4., 6., 8.]
+                                       ).unwrap();
+        assert_eq!(res, expected);
     }
 }

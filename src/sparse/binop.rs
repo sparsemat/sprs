@@ -6,30 +6,30 @@ use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
 use errors::SprsError;
-use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Ix};
+use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut};
+
+use ::Ix2;
+use ::SpRes;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    let binop = |x, y| x + y;
-    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
+    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x + y)
 }
 
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    let binop = |x, y| x - y;
-    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
+    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x - y)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> Result<CsMatOwned<N>, SprsError>
+    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    let binop = |x, y| x * y;
-    csmat_binop_same_storage_alloc(lhs.borrowed(), rhs.borrowed(), binop)
+    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x * y)
 }
 
 /// Sparse matrix multiplication by a scalar
@@ -37,48 +37,27 @@ pub fn scalar_mul_mat<N, Mat>(
     mat: &Mat, val: N) -> CsMatOwned<N>
 where N: Num + Copy, Mat: SpMatView<N> {
     let mat = mat.borrowed();
-    let mut out_indptr = vec![0; mat.outer_dims() + 1];
-    let mut out_indices = vec![0; mat.nb_nonzero()];
-    let mut out_data = vec![N::zero(); mat.nb_nonzero()];
-    let nrows = mat.rows();
-    let ncols = mat.cols();
-    let storage_type = mat.storage();
-    scalar_mul_mat_raw(mat, val, &mut out_indptr[..],
-                       &mut out_indices[..], &mut out_data[..]);
-    CsMat::new_owned(storage_type, nrows, ncols,
-                     out_indptr, out_indices, out_data).unwrap()
+    mat.map(|&x| x * val)
 }
 
-/// Sparse matrix multiplication by a scalar, raw version
+/// Applies a binary operation to matching non-zero elements
+/// of two sparse matrices. When e.g. only the `lhs` has a non-zero at a
+/// given location, `0` is inferred for the non-zero value of the other matrix.
+/// Both matrices should have the same storage.
 ///
-/// Writes into the provided output.
-/// Panics if the sizes don't match
-pub fn scalar_mul_mat_raw<N>(
-    mat: CsMatView<N>,
-    val: N,
-    out_indptr: &mut [usize],
-    out_indices: &mut [usize],
-    out_data: &mut [N])
-where N: Num + Copy {
-    assert_eq!(out_indptr.len(), mat.outer_dims() + 1);
-    assert!(out_data.len() >= mat.nb_nonzero());
-    assert!(out_indices.len() >= mat.nb_nonzero());
-    for (optr, iptr) in out_indptr.iter_mut().zip(mat.indptr()) {
-        *optr = *iptr;
-    }
-    for (oind, iind) in out_indices.iter_mut().zip(mat.indices()) {
-        *oind = *iind;
-    }
-    for (odata, idata) in out_data.iter_mut().zip(mat.data()) {
-        *odata = *idata * val;
-    }
-}
-
-fn csmat_binop_same_storage_alloc<N, F>(
-    lhs: CsMatView<N>, rhs: CsMatView<N>, binop: F) -> Result<CsMatOwned<N>, SprsError>
-where
-N: Num + Copy,
-F: Fn(N, N) -> N {
+/// Thus the behaviour is correct iff `binop(N::zero(), N::zero()) == N::zero()`
+///
+/// # Errors
+///
+/// - on incompatible dimensions
+/// - on incomatible storage
+pub fn csmat_binop<N, F>(lhs: CsMatView<N>,
+                         rhs: CsMatView<N>,
+                         binop: F
+                        ) -> SpRes<CsMatOwned<N>>
+where N: Num,
+      F: Fn(&N, &N) -> N
+{
     let nrows = lhs.rows();
     let ncols = lhs.cols();
     let storage_type = lhs.storage();
@@ -92,7 +71,15 @@ F: Fn(N, N) -> N {
     let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
     let mut out_indptr = vec![0; lhs.outer_dims() + 1];
     let mut out_indices = vec![0; max_nnz];
-    let mut out_data = vec![N::zero(); max_nnz];
+
+    // Sadly the vec! macro requires Clone, but we don't want to force
+    // Clone on our consumers, so we have to use this workaround.
+    // This should compile to decent code however.
+    let mut out_data = Vec::with_capacity(max_nnz);
+    for _ in 0..max_nnz {
+        out_data.push(N::zero());
+    }
+
     let nnz = csmat_binop_same_storage_raw(lhs, rhs, binop,
                                            &mut out_indptr[..],
                                            &mut out_indices[..],
@@ -108,17 +95,16 @@ F: Fn(N, N) -> N {
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
 /// Returns the nnz count
-pub fn csmat_binop_same_storage_raw<N, F>(
-    lhs: CsMatView<N>,
-    rhs: CsMatView<N>,
-    binop: F,
-    out_indptr: &mut [usize],
-    out_indices: &mut [usize],
-    out_data: &mut [N]
-    ) -> usize
-where
-N: Num + Copy,
-F: Fn(N, N) -> N {
+pub fn csmat_binop_same_storage_raw<N, F>(lhs: CsMatView<N>,
+                                          rhs: CsMatView<N>,
+                                          binop: F,
+                                          out_indptr: &mut [usize],
+                                          out_indices: &mut [usize],
+                                          out_data: &mut [N]
+                                         ) -> usize
+where N: Num,
+      F: Fn(&N, &N) -> N
+{
     assert_eq!(lhs.cols(), rhs.cols());
     assert_eq!(lhs.rows(), rhs.rows());
     assert_eq!(lhs.storage(), rhs.storage());
@@ -131,9 +117,9 @@ F: Fn(N, N) -> N {
     for ((dim, lv), (_, rv)) in lhs.outer_iterator().zip(rhs.outer_iterator()) {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
             let (ind, binop_val) = match elem {
-                Left((ind, &val)) => (ind, binop(val, N::zero())),
-                Right((ind, &val)) => (ind, binop(N::zero(), val)),
-                Both((ind, &lval, &rval)) => (ind, binop(lval, rval)),
+                Left((ind, val)) => (ind, binop(val, &N::zero())),
+                Right((ind, val)) => (ind, binop(&N::zero(), val)),
+                Both((ind, lval, rval)) => (ind, binop(lval, rval)),
             };
             if binop_val != N::zero() {
                 out_indices[nnz] = ind;
@@ -148,58 +134,60 @@ F: Fn(N, N) -> N {
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
-pub fn add_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat,
-    rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
-    alpha: N,
-    beta: N)
--> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
+pub fn add_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
+                                              rhs: &ArrayBase<D, Ix2>,
+                                              alpha: N,
+                                              beta: N
+                                             ) -> SpRes<OwnedArray<N, Ix2>>
 where N: Num + Copy,
       Mat: SpMatView<N>,
-      DenseStorage: ndarray::Data<Elem=N> {
-    let binop = |x, y| alpha * x + beta * y;
+      D: ndarray::Data<Elem=N>
+{
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
-                                             rhs.view(),
-                                             binop,
-                                             res.view_mut()));
+    try!(csmat_binop_dense_raw(lhs.borrowed(),
+                               rhs.view(),
+                               |&x, &y| alpha * x + beta * y,
+                               res.view_mut()));
     Ok(res)
 }
 
-/// Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
-/// and alpha a scalar
-pub fn mul_dense_mat_same_ordering<N, Mat, DenseStorage>(
-    lhs: &Mat, rhs: &ArrayBase<DenseStorage, (Ix, Ix)>,
-    alpha: N)
--> Result<OwnedArray<N, (Ix, Ix)>, SprsError>
-where N: Num + Copy, Mat: SpMatView<N>, DenseStorage: ndarray::Data<Elem=N> {
-    let binop = |x, y| alpha * x * y;
+/// Compute coeff wise `alpha * lhs * rhs` with `lhs` a sparse matrix,
+/// `rhs` a dense matrix, and `alpha` a scalar
+pub fn mul_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
+                                              rhs: &ArrayBase<D, Ix2>,
+                                              alpha: N
+                                             ) -> SpRes<OwnedArray<N, Ix2>>
+where N: Num + Copy,
+      Mat: SpMatView<N>,
+      D: ndarray::Data<Elem=N>
+{
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_same_ordering_raw(lhs.borrowed(),
-                                             rhs.view(),
-                                             binop,
-                                             res.view_mut()));
+    try!(csmat_binop_dense_raw(lhs.borrowed(),
+                               rhs.view(),
+                               |&x, &y| alpha * x * y,
+                               res.view_mut()));
     Ok(res)
 }
 
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
-pub fn csmat_binop_dense_same_ordering_raw<'a, N, F>(lhs: CsMatView<'a, N>,
-                                                     rhs: ArrayView<'a, N, (Ix, Ix)>,
-                                                     binop: F,
-                                                     mut out: ArrayViewMut<'a, N, (Ix, Ix)>
-                                                    ) -> Result<(), SprsError>
-where N: 'a + Copy + Num,
-      F: Fn(N, N) -> N {
+pub fn csmat_binop_dense_raw<'a, N, F>(lhs: CsMatView<'a, N>,
+                                       rhs: ArrayView<'a, N, Ix2>,
+                                       binop: F,
+                                       mut out: ArrayViewMut<'a, N, Ix2>
+                                      ) -> SpRes<()>
+where N: 'a + Num,
+      F: Fn(&N, &N) -> N
+{
     if         lhs.cols() != rhs.shape()[1] || lhs.cols() != out.shape()[1]
             || lhs.rows() != rhs.shape()[0] || lhs.rows() != out.shape()[0] {
         return Err(SprsError::IncompatibleDimensions);
@@ -219,9 +207,9 @@ where N: 'a + Copy + Num,
                          .zip(rrow.iter().enumerate().nnz_or_zip(lrow.iter())) {
             let (mut oval, lr_elems) = items;
             let binop_val = match lr_elems {
-                Left((_, &val)) => binop(val, N::zero()),
-                Right((_, &val)) => binop(N::zero(), val),
-                Both((_, &lval, &rval)) => binop(lval, rval),
+                Left((_, val)) => binop(val, &N::zero()),
+                Right((_, val)) => binop(&N::zero(), val),
+                Both((_, lval, rval)) => binop(lval, rval),
             };
             *oval = binop_val;
         }
@@ -230,10 +218,19 @@ where N: 'a + Copy + Num,
 }
 
 /// Binary operations for CsVec
+///
+/// This function iterates the non-zero locations of `lhs` and `rhs`
+/// and applies the function `binop` to the matching elements (defaulting
+/// to zero when e.g. only `lhs` has a non-zero at a given location).
+///
+/// The function thus has a correct behavior iff `binop(0, 0) == 0`.
 pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
-                         rhs: CsVecView<N>, binop: F
-                        ) -> Result<CsVecOwned<N>, SprsError>
-where N: Num + Copy, F: Fn(N, N) -> N {
+                         rhs: CsVecView<N>,
+                         binop: F
+                        ) -> SpRes<CsVecOwned<N>>
+where N: Num,
+      F: Fn(&N, &N) -> N
+{
     if lhs.dim() != rhs.dim() {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -242,9 +239,9 @@ where N: Num + Copy, F: Fn(N, N) -> N {
     res.reserve_exact(max_nnz);
     for elem in lhs.iter().nnz_or_zip(rhs.iter()) {
         let (ind, binop_val) = match elem {
-            Left((ind, &val)) => (ind, binop(val, N::zero())),
-            Right((ind, &val)) => (ind, binop(N::zero(), val)),
-            Both((ind, &lval, &rval)) => (ind, binop(lval, rval)),
+            Left((ind, val)) => (ind, binop(val, &N::zero())),
+            Right((ind, val)) => (ind, binop(&N::zero(), val)),
+            Both((ind, lval, rval)) => (ind, binop(lval, rval)),
         };
         res.append(ind, binop_val);
     }

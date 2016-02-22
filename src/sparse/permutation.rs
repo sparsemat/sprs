@@ -132,7 +132,7 @@ where IndStorage: 'b + Deref<Target=[usize]>,
 
 
 mod test {
-    
+
     #[test]
     fn perm_mul() {
         // |0 0 1 0 0| |5|   |2|

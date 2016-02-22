@@ -88,6 +88,9 @@ Changelog
       scheme in standard library. **breaking change**
     - move cholesky factorization behind the "lgpl" feature flag
       **rbeaking change**
+    - per-nnz-element function application (`map`, `map_inplace`).
+    - binary operations operating on matching non-zero elements
+      (`csvec_binop`, `csmat_binop`).
 - 0.4.0-alpha.2:
     - functions in the `at` family will return references **breaking change**
     - simpler arguments for `at_outer_inner` **breaking change**
