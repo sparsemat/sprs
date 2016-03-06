@@ -651,6 +651,12 @@
 <span id="608">608</span>
 <span id="609">609</span>
 <span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
 </pre><pre class='rust '>
 <span class='doccomment'>///! Sparse matrix product</span>
 
@@ -658,14 +664,16 @@
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>vec</span>::{<span class='ident'>CsVecView</span>, <span class='ident'>CsVecOwned</span>};
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 <span class='kw'>use</span> <span class='ident'>sparse</span>::<span class='ident'>compressed</span>::<span class='ident'>SpMatView</span>;
-<span class='kw'>use</span> <span class='ident'>ndarray</span>::{<span class='ident'>ArrayView</span>, <span class='ident'>ArrayViewMut</span>, <span class='ident'>Ix</span>};
+<span class='kw'>use</span> <span class='ident'>ndarray</span>::{<span class='ident'>ArrayView</span>, <span class='ident'>ArrayViewMut</span>, <span class='ident'>Axis</span>};
 <span class='kw'>use</span> <span class='ident'>errors</span>::<span class='ident'>SprsError</span>;
+<span class='kw'>use</span> ::<span class='ident'>SpRes</span>;
+<span class='kw'>use</span> ::<span class='ident'>Ix2</span>;
 
 <span class='doccomment'>/// Multiply a sparse CSC matrix with a dense vector and accumulate the result</span>
 <span class='doccomment'>/// into another dense vector</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>mul_acc_mat_vec_csc</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
                               <span class='ident'>in_vec</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>N</span>],
-                              <span class='ident'>res_vec</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span>
+                              <span class='ident'>res_vec</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
 <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span> {
     <span class='kw'>let</span> <span class='ident'>mat</span> <span class='op'>=</span> <span class='ident'>mat</span>.<span class='ident'>borrowed</span>();
     <span class='kw'>if</span> <span class='ident'>mat</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>in_vec</span>.<span class='ident'>len</span>() <span class='op'>||</span> <span class='ident'>mat</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>res_vec</span>.<span class='ident'>len</span>() {
@@ -690,7 +698,7 @@
 <span class='doccomment'>/// into another dense vector</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>mul_acc_mat_vec_csr</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>mat</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
                               <span class='ident'>in_vec</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>N</span>],
-                              <span class='ident'>res_vec</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span>
+                              <span class='ident'>res_vec</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
 <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span> {
     <span class='kw'>if</span> <span class='ident'>mat</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>in_vec</span>.<span class='ident'>len</span>() <span class='op'>||</span> <span class='ident'>mat</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>res_vec</span>.<span class='ident'>len</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
@@ -723,7 +731,7 @@
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mul_csr</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Mat1</span>, <span class='ident'>Mat2</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Mat1</span>,
                                   <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Mat2</span>,
                                   <span class='ident'>workspace</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]
-                                 ) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>SprsError</span><span class='op'>&gt;</span>
+                                 ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span><span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span>
 <span class='kw'>where</span>
 <span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>,
 <span class='ident'>Mat1</span>: <span class='ident'>SpMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
@@ -743,7 +751,7 @@
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mul_csc</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Mat1</span>, <span class='ident'>Mat2</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Mat1</span>,
                                   <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Mat2</span>,
                                   <span class='ident'>workspace</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]
-                                 ) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>SprsError</span><span class='op'>&gt;</span>
+                                 ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span><span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span>
 <span class='kw'>where</span>
 <span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>,
 <span class='ident'>Mat1</span>: <span class='ident'>SpMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
@@ -776,7 +784,7 @@
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mul_csr_impl</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
                            <span class='ident'>rhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
                            <span class='ident'>workspace</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span>[<span class='ident'>N</span>]
-                          ) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>SprsError</span><span class='op'>&gt;</span>
+                          ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span><span class='ident'>CsMatOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span>
 <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span> {
     <span class='kw'>let</span> <span class='ident'>res_rows</span> <span class='op'>=</span> <span class='ident'>lhs</span>.<span class='ident'>rows</span>();
     <span class='kw'>let</span> <span class='ident'>res_cols</span> <span class='op'>=</span> <span class='ident'>rhs</span>.<span class='ident'>cols</span>();
@@ -822,7 +830,7 @@
 
 <span class='doccomment'>/// CSR-vector multiplication</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mul_csvec</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
-                        <span class='ident'>rhs</span>: <span class='ident'>CsVecView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CsVecOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>SprsError</span><span class='op'>&gt;</span>
+                        <span class='ident'>rhs</span>: <span class='ident'>CsVecView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span><span class='ident'>CsVecOwned</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;&gt;</span>
 <span class='kw'>where</span> <span class='ident'>N</span>: <span class='ident'>Copy</span> <span class='op'>+</span> <span class='ident'>Num</span> {
     <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>dim</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
@@ -840,11 +848,12 @@
 <span class='doccomment'>/// CSR-dense rowmaj multiplication</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is rowmaj.</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mulacc_dense_rowmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
-    <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
-    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
-<span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mulacc_dense_rowmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+                                      <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>,
+                                      <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>
+                                     ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>
+{
     <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
@@ -864,14 +873,14 @@
     <span class='comment'>// be nice to pick a data dependent block-size to optimize caching effects</span>
     <span class='kw'>let</span> <span class='ident'>lblock_size</span> <span class='op'>=</span> <span class='number'>4</span>;
     <span class='kw'>let</span> <span class='ident'>rblock_size</span> <span class='op'>=</span> <span class='number'>4</span>;
-    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>oblock</span>, <span class='ident'>lblock</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_chunks_iter_mut</span>(<span class='number'>0</span>, <span class='ident'>lblock_size</span>)
+    <span class='kw'>let</span> <span class='ident'>axis0</span> <span class='op'>=</span> <span class='ident'>Axis</span>(<span class='number'>0</span>);
+    <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>oblock</span>, <span class='ident'>lblock</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_chunks_iter_mut</span>(<span class='ident'>axis0</span>, <span class='ident'>lblock_size</span>)
                                    .<span class='ident'>zip</span>(<span class='ident'>lhs</span>.<span class='ident'>outer_block_iter</span>(<span class='ident'>lblock_size</span>)) {
-        <span class='kw'>for</span> (<span class='ident'>rcount</span>, <span class='ident'>rblock</span>) <span class='kw'>in</span> <span class='ident'>rhs</span>.<span class='ident'>axis_chunks_iter</span>(<span class='number'>0</span>, <span class='ident'>rblock_size</span>)
+        <span class='kw'>for</span> (<span class='ident'>rcount</span>, <span class='ident'>rblock</span>) <span class='kw'>in</span> <span class='ident'>rhs</span>.<span class='ident'>axis_chunks_iter</span>(<span class='ident'>axis0</span>, <span class='ident'>rblock_size</span>)
                                    .<span class='ident'>enumerate</span>() {
             <span class='kw'>let</span> <span class='ident'>col_start</span> <span class='op'>=</span> <span class='ident'>rblock_size</span> <span class='op'>*</span> <span class='ident'>rcount</span>;
             <span class='kw'>let</span> <span class='ident'>col_end</span> <span class='op'>=</span> <span class='ident'>col_start</span> <span class='op'>+</span> <span class='ident'>rblock_size</span>;
 
-            <span class='kw'>let</span> <span class='ident'>axis0</span> <span class='op'>=</span> <span class='number'>0</span>;
             <span class='kw'>for</span> ((_, <span class='ident'>line</span>), <span class='kw-2'>mut</span> <span class='ident'>oline</span>) <span class='kw'>in</span> <span class='ident'>lblock</span>.<span class='ident'>outer_iterator</span>()
                                           .<span class='ident'>zip</span>(<span class='ident'>oblock</span>.<span class='ident'>axis_iter_mut</span>(<span class='ident'>axis0</span>)) {
                 <span class='lifetime'>&#39;col_block</span>: <span class='kw'>for</span> (<span class='ident'>col_ind</span>, <span class='kw-2'>&amp;</span><span class='ident'>lval</span>) <span class='kw'>in</span> <span class='ident'>line</span>.<span class='ident'>iter</span>() {
@@ -897,11 +906,12 @@
 <span class='doccomment'>/// CSC-dense rowmaj multiplication</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is rowmaj</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mulacc_dense_rowmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
-    <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
-    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
-<span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mulacc_dense_rowmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+                                      <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>,
+                                      <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>
+                                     ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>
+{
     <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
@@ -933,11 +943,12 @@
 <span class='doccomment'>/// CSC-dense colmaj multiplication</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is colmaj</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mulacc_dense_colmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
-    <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
-    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
-<span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csc_mulacc_dense_colmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+                                      <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>,
+                                      <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>
+                                     ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>
+{
     <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
@@ -954,7 +965,7 @@
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
 
-    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='number'>1</span>;
+    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='ident'>Axis</span>(<span class='number'>1</span>);
     <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>ocol</span>, <span class='ident'>rcol</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_iter_mut</span>(<span class='ident'>axis1</span>).<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>axis_iter</span>(<span class='ident'>axis1</span>)) {
         <span class='kw'>for</span> (<span class='ident'>rrow</span>, <span class='ident'>lcol</span>) <span class='kw'>in</span> <span class='ident'>lhs</span>.<span class='ident'>outer_iterator</span>() {
             <span class='kw'>let</span> <span class='ident'>rval</span> <span class='op'>=</span> <span class='ident'>rcol</span>[[<span class='ident'>rrow</span>]];
@@ -971,11 +982,12 @@
 <span class='doccomment'>/// CSR-dense colmaj multiplication</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// Performs better if out is colmaj</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mulacc_dense_colmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span><span class='op'>&gt;</span>(
-    <span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>, <span class='ident'>rhs</span>:
-    <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>,
-    <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, (<span class='ident'>Ix</span>, <span class='ident'>Ix</span>)<span class='op'>&gt;</span>)
-<span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SprsError</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>csr_mulacc_dense_colmaj</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span><span class='op'>&gt;</span>(<span class='ident'>lhs</span>: <span class='ident'>CsMatView</span><span class='op'>&lt;</span><span class='ident'>N</span><span class='op'>&gt;</span>,
+                                      <span class='ident'>rhs</span>: <span class='ident'>ArrayView</span><span class='op'>&lt;</span><span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>,
+                                      <span class='kw-2'>mut</span> <span class='ident'>out</span>: <span class='ident'>ArrayViewMut</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>N</span>, <span class='ident'>Ix2</span><span class='op'>&gt;</span>
+                                     ) <span class='op'>-&gt;</span> <span class='ident'>SpRes</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
+<span class='kw'>where</span> <span class='ident'>N</span>: <span class='lifetime'>&#39;a</span> <span class='op'>+</span> <span class='ident'>Num</span> <span class='op'>+</span> <span class='ident'>Copy</span>
+{
     <span class='kw'>if</span> <span class='ident'>lhs</span>.<span class='ident'>cols</span>() <span class='op'>!=</span> <span class='ident'>rhs</span>.<span class='ident'>shape</span>()[<span class='number'>0</span>] {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>IncompatibleDimensions</span>);
     }
@@ -991,7 +1003,7 @@
     <span class='kw'>if</span> <span class='ident'>rhs</span>.<span class='ident'>is_standard_layout</span>() {
         <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>SprsError</span>::<span class='ident'>BadStorageType</span>);
     }
-    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='number'>1</span>;
+    <span class='kw'>let</span> <span class='ident'>axis1</span> <span class='op'>=</span> <span class='ident'>Axis</span>(<span class='number'>1</span>);
     <span class='kw'>for</span> (<span class='kw-2'>mut</span> <span class='ident'>ocol</span>, <span class='ident'>rcol</span>) <span class='kw'>in</span> <span class='ident'>out</span>.<span class='ident'>axis_iter_mut</span>(<span class='ident'>axis1</span>).<span class='ident'>zip</span>(<span class='ident'>rhs</span>.<span class='ident'>axis_iter</span>(<span class='ident'>axis1</span>)) {
         <span class='kw'>for</span> (<span class='ident'>orow</span>, <span class='ident'>lrow</span>) <span class='kw'>in</span> <span class='ident'>lhs</span>.<span class='ident'>outer_iterator</span>() {
             <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>prev</span> <span class='op'>=</span> <span class='ident'>ocol</span>[[<span class='ident'>orow</span>]];

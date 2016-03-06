@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["Field","Trait union for a field."],["Ring","Trait union for a ring with 1."]]});
+initSidebarItems({"trait":[["LinalgScalar","Elements that support linear algebra operations."],["NdFloat","Floating-point element types `f32` and `f64`."]]});

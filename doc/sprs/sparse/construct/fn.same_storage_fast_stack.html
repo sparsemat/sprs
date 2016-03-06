@@ -46,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1831' class='srclink' href='../../../src/sprs/sparse/construct.rs.html#12-42' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2092' class='srclink' href='../../../src/sprs/sparse/construct.rs.html#12-42' title='goto source code'>[src]</a></span></h1>
 <pre class='rust fn'>pub fn same_storage_fast_stack&lt;'a, N, MatArray&gt;(mats: &amp;MatArray) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../sprs/sparse/csmat/type.CsMatOwned.html' title='sprs::sparse::csmat::CsMatOwned'>CsMatOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: 'a + <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>, MatArray: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html' title='core::convert::AsRef'>AsRef</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[<a class='type' href='../../../sprs/sparse/csmat/type.CsMatView.html' title='sprs::sparse::csmat::CsMatView'>CsMatView</a>&lt;'a, N&gt;]</a>&gt;</span></pre><div class='docblock'><p>Stack the given matrices into a new one, using the most efficient stacking
 direction (ie vertical stack for CSR matrices, horizontal stack for CSC)</p>
 </div></section>

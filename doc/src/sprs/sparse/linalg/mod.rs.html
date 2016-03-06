@@ -66,6 +66,10 @@
 <span id="23">23</span>
 <span id="24">24</span>
 <span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
 </pre><pre class='rust '>
 <span class='doccomment'>///! Sparse linear algebra</span>
 <span class='doccomment'>///!</span>
@@ -73,11 +77,15 @@
 <span class='doccomment'>///! there are solver for sparse triangular systems and symmetric systems.</span>
 
 
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>cholesky</span>::<span class='ident'>ldl_symbolic</span>;
 <span class='kw'>use</span> <span class='ident'>num</span>::<span class='ident'>traits</span>::<span class='ident'>Num</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::<span class='ident'>IntoIterator</span>;
 
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;lgpl&quot;</span>)]</span>
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>cholesky</span>::<span class='ident'>ldl_symbolic</span>;
+
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;lgpl&quot;</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>cholesky</span>;
+
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>trisolve</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>etree</span>;
 

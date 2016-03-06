@@ -46,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1602' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#1-412' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-1895' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#1-409' title='goto source code'>[src]</a></span></h1>
 <h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
 <table>
                     <tr class=' module-item'>
@@ -69,8 +69,20 @@ and alpha and beta scalars</p>
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.csmat_binop_dense_same_ordering_raw.html'
-                               title='sprs::sparse::binop::csmat_binop_dense_same_ordering_raw'>csmat_binop_dense_same_ordering_raw</a></td>
+                        <td><a class='fn' href='fn.csmat_binop.html'
+                               title='sprs::sparse::binop::csmat_binop'>csmat_binop</a></td>
+                        <td class='docblock short'>
+                             <p>Applies a binary operation to matching non-zero elements
+of two sparse matrices. When e.g. only the <code>lhs</code> has a non-zero at a
+given location, <code>0</code> is inferred for the non-zero value of the other matrix.
+Both matrices should have the same storage.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.csmat_binop_dense_raw.html'
+                               title='sprs::sparse::binop::csmat_binop_dense_raw'>csmat_binop_dense_raw</a></td>
                         <td class='docblock short'>
                              <p>Raw implementation of sparse/dense binary operations with the same
 ordering</p>
@@ -101,8 +113,8 @@ sharing the same storage. The output arrays are assumed to be preallocated</p>
                         <td><a class='fn' href='fn.mul_dense_mat_same_ordering.html'
                                title='sprs::sparse::binop::mul_dense_mat_same_ordering'>mul_dense_mat_same_ordering</a></td>
                         <td class='docblock short'>
-                             <p>Compute coeff wise alpha * lhs * rhs with lhs a sparse matrix and rhs dense
-and alpha a scalar</p>
+                             <p>Compute coeff wise <code>alpha * lhs * rhs</code> with <code>lhs</code> a sparse matrix,
+<code>rhs</code> a dense matrix, and <code>alpha</code> a scalar</p>
 
                         </td>
                     </tr>
@@ -121,15 +133,6 @@ and alpha a scalar</p>
                                title='sprs::sparse::binop::scalar_mul_mat'>scalar_mul_mat</a></td>
                         <td class='docblock short'>
                              <p>Sparse matrix multiplication by a scalar</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.scalar_mul_mat_raw.html'
-                               title='sprs::sparse::binop::scalar_mul_mat_raw'>scalar_mul_mat_raw</a></td>
-                        <td class='docblock short'>
-                             <p>Sparse matrix multiplication by a scalar, raw version</p>
 
                         </td>
                     </tr>

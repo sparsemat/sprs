@@ -46,10 +46,15 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1696' class='srclink' href='../src/ndarray/lib.rs.html#502' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-2073' class='srclink' href='../src/ndarray/lib.rs.html#438' title='goto source code'>[src]</a></span></h1>
 <pre class='rust typedef'>type ArrayView&lt;'a, A, D&gt; = <a class='struct' href='../ndarray/struct.ArrayBase.html' title='ndarray::ArrayBase'>ArrayBase</a>&lt;<a class='struct' href='../ndarray/struct.ViewRepr.html' title='ndarray::ViewRepr'>ViewRepr</a>&lt;&amp;'a A&gt;, D&gt;;</pre><div class='docblock'><p>A lightweight array view.</p>
 
-<p><code>ArrayView</code> implements <code>IntoIterator</code>.</p>
+<p>An array view represents an array or a part of it, created from
+an iterator, subview or slice of an array.</p>
+
+<p>Array views have all the methods of an array (see <a href="struct.ArrayBase.html"><code>ArrayBase</code></a>).</p>
+
+<p>See also specific <a href="struct.ArrayBase.html#methods-for-array-views"><strong>Methods for Array Views</strong></a>.</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 

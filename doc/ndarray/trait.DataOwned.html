@@ -46,15 +46,13 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1667' class='srclink' href='../src/ndarray/lib.rs.html#470-473' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub unsafe trait DataOwned: <a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Data</a> {
-    fn <a href='#tymethod.new' class='fnname'>new</a>(elements: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;Self::<a class='trait' href='../ndarray/trait.DataOwned.html' title='ndarray::DataOwned'>Elem</a>&gt;) -&gt; Self;
-    fn <a href='#tymethod.into_shared' class='fnname'>into_shared</a>(self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;Self::<a class='trait' href='../ndarray/trait.DataOwned.html' title='ndarray::DataOwned'>Elem</a>&gt;&gt;;
-}</pre><div class='docblock'><p>Array representation that is a unique or shared owner of its data.</p>
+        </span><a id='src-368' class='srclink' href='../src/ndarray/data_traits.rs.html#174-179' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub unsafe trait DataOwned: <a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Data</a> { }</pre><div class='docblock'><p>Array representation trait.</p>
+
+<p>A representation that is a unique or shared owner of its data.</p>
+
+<p><strong><em>Internal trait, see <code>Data</code>.</em></strong></p>
 </div>
-            <h2 id='required-methods'>Required Methods</h2>
-            <div class='methods'>
-        <h3 id='tymethod.new' class='method stab '><code>fn <a href='#tymethod.new' class='fnname'>new</a>(elements: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;Self::<a class='trait' href='../ndarray/trait.DataOwned.html' title='ndarray::DataOwned'>Elem</a>&gt;) -&gt; Self</code></h3><h3 id='tymethod.into_shared' class='method stab '><code>fn <a href='#tymethod.into_shared' class='fnname'>into_shared</a>(self) -&gt; <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;Self::<a class='trait' href='../ndarray/trait.DataOwned.html' title='ndarray::DataOwned'>Elem</a>&gt;&gt;</code></h3></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
     <li><code>impl&lt;A&gt; <a class='trait' href='../ndarray/trait.DataOwned.html' title='ndarray::DataOwned'>DataOwned</a> for <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;A&gt;</code></li>

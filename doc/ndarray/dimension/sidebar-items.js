@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["Dimension","Trait for the shape and index types of arrays."],["NdIndex","A tuple or fixed size array that can be used to index an array."],["RemoveAxis","Helper trait to define a larger-than relation for array shapes: removing one axis from *Self* gives smaller dimension *Smaller*."]]});
+initSidebarItems({"struct":[["Axis","An axis index."]],"trait":[["Dimension","Array shape and index trait."],["NdIndex","Tuple or fixed size arrays that can be used to index an array."],["RemoveAxis","Array shape with a next smaller dimension."]]});

@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["errors","Error type for sprs"],["sparse",""],["stack",""]]});
+initSidebarItems({"mod":[["errors","Error type for sprs"],["sparse",""],["stack",""]],"type":[["Ix2",""],["Ix_",""],["SpRes",""]]});

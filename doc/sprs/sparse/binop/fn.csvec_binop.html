@@ -46,8 +46,14 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1803' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#233-252' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn csvec_binop&lt;N, F&gt;(lhs: <a class='type' href='../../../sprs/sparse/vec/type.CsVecView.html' title='sprs::sparse::vec::CsVecView'>CsVecView</a>&lt;N&gt;, rhs: <a class='type' href='../../../sprs/sparse/vec/type.CsVecView.html' title='sprs::sparse::vec::CsVecView'>CsVecView</a>&lt;N&gt;, binop: F) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='type' href='../../../sprs/sparse/vec/type.CsVecOwned.html' title='sprs::sparse::vec::CsVecOwned'>CsVecOwned</a>&lt;N&gt;, <a class='enum' href='../../../sprs/errors/enum.SprsError.html' title='sprs::errors::SprsError'>SprsError</a>&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(N, N) -&gt; N</span></pre><div class='docblock'><p>Binary operations for CsVec</p>
+        </span><a id='src-2064' class='srclink' href='../../../src/sprs/sparse/binop.rs.html#227-249' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn csvec_binop&lt;N, F&gt;(lhs: <a class='type' href='../../../sprs/sparse/vec/type.CsVecView.html' title='sprs::sparse::vec::CsVecView'>CsVecView</a>&lt;N&gt;, rhs: <a class='type' href='../../../sprs/sparse/vec/type.CsVecView.html' title='sprs::sparse::vec::CsVecView'>CsVecView</a>&lt;N&gt;, binop: F) -&gt; <a class='type' href='../../../sprs/type.SpRes.html' title='sprs::SpRes'>SpRes</a>&lt;<a class='type' href='../../../sprs/sparse/vec/type.CsVecOwned.html' title='sprs::sparse::vec::CsVecOwned'>CsVecOwned</a>&lt;N&gt;&gt; <span class='where'>where N: <a class='trait' href='../../../num/traits/trait.Num.html' title='num::traits::Num'>Num</a>, F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(&amp;N, &amp;N) -&gt; N</span></pre><div class='docblock'><p>Binary operations for CsVec</p>
+
+<p>This function iterates the non-zero locations of <code>lhs</code> and <code>rhs</code>
+and applies the function <code>binop</code> to the matching elements (defaulting
+to zero when e.g. only <code>lhs</code> has a non-zero at a given location).</p>
+
+<p>The function thus has a correct behavior iff <code>binop(0, 0) == 0</code>.</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 

@@ -46,18 +46,17 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-0' class='srclink' href='../src/ndarray/lib.rs.html#1-2884' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-0' class='srclink' href='../src/ndarray/lib.rs.html#8-707' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>The <code>ndarray</code> crate provides an N-dimensional container similar to numpy’s
 ndarray.</p>
 
 <ul>
 <li><a href="struct.ArrayBase.html"><code>ArrayBase</code></a>:
 The N-dimensional array type itself.</li>
-<li><a href="type.Array.html"><code>Array</code></a>:
-An array where the data is shared and copy on write, it
-can act as both an owner of the data as well as a lightweight view.</li>
 <li><a href="type.OwnedArray.html"><code>OwnedArray</code></a>:
 An array where the data is owned uniquely.</li>
+<li><a href="type.RcArray.html"><code>RcArray</code></a>:
+An array where the data has shared ownership and is copy on write.</li>
 <li><a href="type.ArrayView.html"><code>ArrayView</code></a>, <a href="type.ArrayViewMut.html"><code>ArrayViewMut</code></a>:
 Lightweight array views.</li>
 </ul>
@@ -67,16 +66,26 @@ Lightweight array views.</li>
 <li>Generic N-dimensional array</li>
 <li>Slicing, also with arbitrary step size, and negative indices to mean
 elements from the end of the axis.</li>
-<li>There is both a copy on write array (<code>Array</code>), or a regular uniquely owned array
+<li>There is both a copy on write array (<code>RcArray</code>), or a regular uniquely owned array
 (<code>OwnedArray</code>), and both can use read-only and read-write array views.</li>
 <li>Iteration and most operations are efficient on arrays with contiguous
 innermost dimension.</li>
-<li>Array views can be used to slice and mutate any <code>[T]</code> data.</li>
+<li>Array views can be used to slice and mutate any <code>[T]</code> data using
+<code>ArrayView::from</code> and <code>ArrayViewMut::from</code>.</li>
 </ul>
 
 <h2 id='crate-status' class='section-header'><a href='#crate-status'>Crate Status</a></h2>
 <ul>
-<li>Still iterating on the API</li>
+<li>Still iterating on and evolving the API
+
+<ul>
+<li>The crate is continuously developing, and breaking changes are expected
+during evolution from version to version. We adhere to semver,
+but alpha releases break at will.</li>
+<li>We adopt the newest stable rust features we need. In place methods like <code>iadd</code>
+<em>will be deprecated</em> when Rust supports <code>+=</code> and similar in Rust 1.8.</li>
+<li>We try to introduce more static checking gradually.</li>
+</ul></li>
 <li>Performance status:
 
 <ul>
@@ -89,11 +98,14 @@ perform single traversal and lock step traversal respectively.</li>
 </ul>
 
 <h2 id='crate-feature-flags' class='section-header'><a href='#crate-feature-flags'>Crate Feature Flags</a></h2>
+<p>The following crate feature flags are available. The are configured in your
+<code>Cargo.toml</code>.</p>
+
 <ul>
 <li><code>assign_ops</code>
 
 <ul>
-<li>Optional, requires nightly</li>
+<li>Requires Rust 1.8, will be default soon.</li>
 <li>Enables the compound assignment operators</li>
 </ul></li>
 <li><code>rustc-serialize</code>
@@ -109,23 +121,22 @@ perform single traversal and lock step traversal respectively.</li>
 <li>Enables <code>rblas</code> integration</li>
 </ul></li>
 </ul>
-</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
-<table>
-                    <tr class=' module-item'>
-                        <td><a class='mod' href='linalg/index.html'
-                               title='ndarray::linalg'>linalg</a></td>
-                        <td class='docblock short'>
-                             <p><strong><em>Deprecated: linalg is not in good shape.</em></strong></p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
+</div><h2 id='macros' class='section-header'><a href="#macros">Macros</a></h2>
 <table>
                     <tr class=' module-item'>
                         <td><a class='macro' href='macro.s!.html'
                                title='ndarray::s!'>s!</a></td>
                         <td class='docblock short'>
                              <p>Slice argument constructor.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='macro' href='macro.stack!.html'
+                               title='ndarray::stack!'>stack!</a></td>
+                        <td class='docblock short'>
+                             <p>Stack arrays along the given axis.</p>
 
                         </td>
                     </tr>
@@ -136,6 +147,15 @@ perform single traversal and lock step traversal respectively.</li>
                                title='ndarray::ArrayBase'>ArrayBase</a></td>
                         <td class='docblock short'>
                              <p>An <em>N</em>-dimensional array.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.Axis.html'
+                               title='ndarray::Axis'>Axis</a></td>
+                        <td class='docblock short'>
+                             <p>An axis index.</p>
 
                         </td>
                     </tr>
@@ -246,6 +266,15 @@ and yields each subview (mutable).</p>
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='struct' href='struct.ShapeError.html'
+                               title='ndarray::ShapeError'>ShapeError</a></td>
+                        <td class='docblock short'>
+                             <p>An error related to array shape or layout.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='struct' href='struct.Si.html'
                                title='ndarray::Si'>Si</a></td>
                         <td class='docblock short'>
@@ -265,19 +294,10 @@ and yields each subview (mutable).</p>
                 </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
 <table>
                     <tr class=' module-item'>
-                        <td><a class='enum' href='enum.ShapeError.html'
-                               title='ndarray::ShapeError'>ShapeError</a></td>
+                        <td><a class='enum' href='enum.ErrorKind.html'
+                               title='ndarray::ErrorKind'>ErrorKind</a></td>
                         <td class='docblock short'>
-                             <p>An error that can be produced by <code>.into_shape()</code></p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.StrideError.html'
-                               title='ndarray::StrideError'>StrideError</a></td>
-                        <td class='docblock short'>
-                             <p>An error to describe invalid stride states</p>
+                             <p>Error code for an error related to array shape or layout.</p>
 
                         </td>
                     </tr>
@@ -294,10 +314,19 @@ and yields each subview (mutable).</p>
                 </table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
 <table>
                     <tr class=' module-item'>
+                        <td><a class='trait' href='trait.AsArray.html'
+                               title='ndarray::AsArray'>AsArray</a></td>
+                        <td class='docblock short'>
+                             <p>Argument conversion into an array view</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='trait' href='trait.Data.html'
                                title='ndarray::Data'>Data</a></td>
                         <td class='docblock short'>
-                             <p>Array’s inner representation.</p>
+                             <p>Array representation trait.</p>
 
                         </td>
                     </tr>
@@ -306,7 +335,7 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.DataClone.html'
                                title='ndarray::DataClone'>DataClone</a></td>
                         <td class='docblock short'>
-                             <p>Clone an Array’s storage.</p>
+                             <p>Array representation trait.</p>
 
                         </td>
                     </tr>
@@ -315,7 +344,7 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.DataMut.html'
                                title='ndarray::DataMut'>DataMut</a></td>
                         <td class='docblock short'>
-                             <p>Array’s writable inner representation.</p>
+                             <p>Array representation trait.</p>
 
                         </td>
                     </tr>
@@ -324,7 +353,7 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.DataOwned.html'
                                title='ndarray::DataOwned'>DataOwned</a></td>
                         <td class='docblock short'>
-                             <p>Array representation that is a unique or shared owner of its data.</p>
+                             <p>Array representation trait.</p>
 
                         </td>
                     </tr>
@@ -333,7 +362,7 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.DataShared.html'
                                title='ndarray::DataShared'>DataShared</a></td>
                         <td class='docblock short'>
-                             <p>Array representation that is a lightweight view.</p>
+                             <p>Array representation trait.</p>
 
                         </td>
                     </tr>
@@ -342,7 +371,7 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.Dimension.html'
                                title='ndarray::Dimension'>Dimension</a></td>
                         <td class='docblock short'>
-                             <p>Trait for the shape and index types of arrays.</p>
+                             <p>Array shape and index trait.</p>
 
                         </td>
                     </tr>
@@ -357,10 +386,19 @@ and yields each subview (mutable).</p>
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Initializer.html'
-                               title='ndarray::Initializer'>Initializer</a></td>
+                        <td><a class='trait' href='trait.LinalgScalar.html'
+                               title='ndarray::LinalgScalar'>LinalgScalar</a></td>
                         <td class='docblock short'>
-                             <p>Slice or fixed-size array used for array initialization</p>
+                             <p>Elements that support linear algebra operations.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='trait' href='trait.NdFloat.html'
+                               title='ndarray::NdFloat'>NdFloat</a></td>
+                        <td class='docblock short'>
+                             <p>Floating-point element types <code>f32</code> and <code>f64</code>.</p>
 
                         </td>
                     </tr>
@@ -369,7 +407,7 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.NdIndex.html'
                                title='ndarray::NdIndex'>NdIndex</a></td>
                         <td class='docblock short'>
-                             <p>A tuple or fixed size array that can be used to index an array.</p>
+                             <p>Tuple or fixed size arrays that can be used to index an array.</p>
 
                         </td>
                     </tr>
@@ -378,15 +416,14 @@ and yields each subview (mutable).</p>
                         <td><a class='trait' href='trait.RemoveAxis.html'
                                title='ndarray::RemoveAxis'>RemoveAxis</a></td>
                         <td class='docblock short'>
-                             <p>Helper trait to define a larger-than relation for array shapes:
-removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</p>
+                             <p>Array shape with a next smaller dimension.</p>
 
                         </td>
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='trait' href='trait.Scalar.html'
-                               title='ndarray::Scalar'>Scalar</a></td>
+                        <td><a class='trait' href='trait.ScalarOperand.html'
+                               title='ndarray::ScalarOperand'>ScalarOperand</a></td>
                         <td class='docblock short'>
                              <p>Elements that can be used as direct operands in arithmetic with arrays.</p>
 
@@ -398,7 +435,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.arr0.html'
                                title='ndarray::arr0'>arr0</a></td>
                         <td class='docblock short'>
-                             <p>Return a zero-dimensional array with the element <code>x</code>.</p>
+                             <p>Create a zero-dimensional array with the element <code>x</code>.</p>
 
                         </td>
                     </tr>
@@ -407,7 +444,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.arr1.html'
                                title='ndarray::arr1'>arr1</a></td>
                         <td class='docblock short'>
-                             <p>Return a one-dimensional array with elements from <code>xs</code>.</p>
+                             <p>Create a one-dimensional array with elements from <code>xs</code>.</p>
 
                         </td>
                     </tr>
@@ -416,7 +453,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.arr2.html'
                                title='ndarray::arr2'>arr2</a></td>
                         <td class='docblock short'>
-                             <p>Return a two-dimensional array with elements from <code>xs</code>.</p>
+                             <p>Create a two-dimensional array with elements from <code>xs</code>.</p>
 
                         </td>
                     </tr>
@@ -425,7 +462,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.arr3.html'
                                title='ndarray::arr3'>arr3</a></td>
                         <td class='docblock short'>
-                             <p>Return a three-dimensional array with elements from <code>xs</code>.</p>
+                             <p>Create a three-dimensional array with elements from <code>xs</code>.</p>
 
                         </td>
                     </tr>
@@ -434,7 +471,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.aview0.html'
                                title='ndarray::aview0'>aview0</a></td>
                         <td class='docblock short'>
-                             <p>Return a zero-dimensional array view borrowing <code>x</code>.</p>
+                             <p>Create a zero-dimensional array view borrowing <code>x</code>.</p>
 
                         </td>
                     </tr>
@@ -443,7 +480,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.aview1.html'
                                title='ndarray::aview1'>aview1</a></td>
                         <td class='docblock short'>
-                             <p>Return a one-dimensional array view with elements borrowing <code>xs</code>.</p>
+                             <p>Create a one-dimensional array view with elements borrowing <code>xs</code>.</p>
 
                         </td>
                     </tr>
@@ -452,7 +489,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.aview2.html'
                                title='ndarray::aview2'>aview2</a></td>
                         <td class='docblock short'>
-                             <p>Return a two-dimensional array view with elements borrowing <code>xs</code>.</p>
+                             <p>Create a two-dimensional array view with elements borrowing <code>xs</code>.</p>
 
                         </td>
                     </tr>
@@ -461,7 +498,43 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.aview_mut1.html'
                                title='ndarray::aview_mut1'>aview_mut1</a></td>
                         <td class='docblock short'>
-                             <p>Return a one-dimensional read-write array view with elements borrowing <code>xs</code>.</p>
+                             <p>Create a one-dimensional read-write array view with elements borrowing <code>xs</code>.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.rcarr1.html'
+                               title='ndarray::rcarr1'>rcarr1</a></td>
+                        <td class='docblock short'>
+                             <p>Create a one-dimensional array with elements from <code>xs</code>.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.rcarr2.html'
+                               title='ndarray::rcarr2'>rcarr2</a></td>
+                        <td class='docblock short'>
+                             <p>Create a two-dimensional array with elements from <code>xs</code>.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.rcarr3.html'
+                               title='ndarray::rcarr3'>rcarr3</a></td>
+                        <td class='docblock short'>
+                             <p>Create a three-dimensional array with elements from <code>xs</code>.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.stack.html'
+                               title='ndarray::stack'>stack</a></td>
+                        <td class='docblock short'>
+                             <p>Stack arrays along the given axis.</p>
 
                         </td>
                     </tr>
@@ -470,7 +543,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='fn' href='fn.zeros.html'
                                title='ndarray::zeros'>zeros</a></td>
                         <td class='docblock short'>
-                             <p>Return an array filled with zeros</p>
+                             <p><strong><em>Deprecated: Use <code>ArrayBase::zeros</code> instead.</em></strong></p>
 
                         </td>
                     </tr>
@@ -480,8 +553,7 @@ removing one axis from <em>Self</em> gives smaller dimension <em>Smaller</em>.</
                         <td><a class='type' href='type.Array.html'
                                title='ndarray::Array'>Array</a></td>
                         <td class='docblock short'>
-                             <p>Array where the data is reference counted and copy on write, it
-can act as both an owner as the data as well as a lightweight view.</p>
+                             <p><strong><em>Deprecated: Use <code>RcArray</code> instead</em></strong></p>
 
                         </td>
                     </tr>
@@ -527,6 +599,16 @@ can act as both an owner as the data as well as a lightweight view.</p>
                                title='ndarray::OwnedArray'>OwnedArray</a></td>
                         <td class='docblock short'>
                              <p>Array where the data is owned uniquely.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.RcArray.html'
+                               title='ndarray::RcArray'>RcArray</a></td>
+                        <td class='docblock short'>
+                             <p>Array where the data is reference counted and copy on write, it
+can act as both an owner as the data as well as a lightweight view.</p>
 
                         </td>
                     </tr>

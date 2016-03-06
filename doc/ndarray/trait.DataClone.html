@@ -46,15 +46,13 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1600' class='srclink' href='../src/ndarray/lib.rs.html#377-380' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub unsafe trait DataClone: <a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Data</a> {
-    unsafe fn <a href='#tymethod.clone_with_ptr' class='fnname'>clone_with_ptr</a>(&amp;self, ptr: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut Self::<a class='trait' href='../ndarray/trait.DataClone.html' title='ndarray::DataClone'>Elem</a></a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(Self, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut Self::<a class='trait' href='../ndarray/trait.DataClone.html' title='ndarray::DataClone'>Elem</a></a>)</a>;
-}</pre><div class='docblock'><p>Clone an Array’s storage.</p>
+        </span><a id='src-303' class='srclink' href='../src/ndarray/data_traits.rs.html#59-63' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub unsafe trait DataClone: <a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Data</a> { }</pre><div class='docblock'><p>Array representation trait.</p>
+
+<p>An array representation that can be cloned.</p>
+
+<p><strong><em>Internal trait, see <code>Data</code>.</em></strong></p>
 </div>
-            <h2 id='required-methods'>Required Methods</h2>
-            <div class='methods'>
-        <h3 id='tymethod.clone_with_ptr' class='method stab '><code>unsafe fn <a href='#tymethod.clone_with_ptr' class='fnname'>clone_with_ptr</a>(&amp;self, ptr: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut Self::<a class='trait' href='../ndarray/trait.DataClone.html' title='ndarray::DataClone'>Elem</a></a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(Self, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut Self::<a class='trait' href='../ndarray/trait.DataClone.html' title='ndarray::DataClone'>Elem</a></a>)</a></code></h3><div class='docblock'><p>Unsafe because, <code>ptr</code> must point inside the current storage.</p>
-</div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
     <li><code>impl&lt;A&gt; <a class='trait' href='../ndarray/trait.DataClone.html' title='ndarray::DataClone'>DataClone</a> for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;A&gt;&gt;</code></li>

@@ -46,11 +46,10 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1588' class='srclink' href='../src/ndarray/lib.rs.html#359-362' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-291' class='srclink' href='../src/ndarray/data_traits.rs.html#25-30' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub unsafe trait Data {
     type Elem;
-    fn <a href='#tymethod.slice' class='fnname'>slice</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>Self::<a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Elem</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>;
-}</pre><div class='docblock'><p>Array’s inner representation.</p>
+}</pre><div class='docblock'><p>Array representation trait.</p>
 
 <p><strong><em>Note:</em></strong> <code>Data</code> is not an extension interface at this point.
 Traits in Rust can serve many different roles. This trait is public because
@@ -58,10 +57,8 @@ it is used as a bound on public methods.</p>
 </div>
             <h2 id='associated-types'>Associated Types</h2>
             <div class='methods'>
-        <h3 id='associatedtype.Elem' class='method stab '><code>type Elem</code></h3></div>
-            <h2 id='required-methods'>Required Methods</h2>
-            <div class='methods'>
-        <h3 id='tymethod.slice' class='method stab '><code>fn <a href='#tymethod.slice' class='fnname'>slice</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>Self::<a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Elem</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h3></div>
+        <h3 id='associatedtype.Elem' class='method stab '><code>type Elem</code></h3><div class='docblock'><p>The array element type.</p>
+</div></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
     <li><code>impl&lt;A&gt; <a class='trait' href='../ndarray/trait.Data.html' title='ndarray::Data'>Data</a> for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;A&gt;&gt;</code></li>

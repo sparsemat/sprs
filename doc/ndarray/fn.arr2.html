@@ -46,10 +46,8 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-2375' class='srclink' href='../src/ndarray/lib.rs.html#2104-2119' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn arr2&lt;A: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>, V: <a class='trait' href='../ndarray/trait.Initializer.html' title='ndarray::Initializer'>Initializer</a>&lt;Elem=A&gt;&gt;(xs: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>V<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../ndarray/type.Array.html' title='ndarray::Array'>Array</a>&lt;A, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='type' href='../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>, <a class='type' href='../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>)</a>&gt;</pre><div class='docblock'><p>Return a two-dimensional array with elements from <code>xs</code>.</p>
-
-<p><strong>Panics</strong> if the slices are not all of the same length.</p>
+        </span><a id='src-1167' class='srclink' href='../src/ndarray/free_functions.rs.html#135-145' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn arr2&lt;A: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>, V: <a class='trait' href='../ndarray/trait.FixedInitializer.html' title='ndarray::FixedInitializer'>FixedInitializer</a>&lt;Elem=A&gt;&gt;(xs: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>V<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>) -&gt; <a class='type' href='../ndarray/type.OwnedArray.html' title='ndarray::OwnedArray'>OwnedArray</a>&lt;A, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='type' href='../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>, <a class='type' href='../ndarray/type.Ix.html' title='ndarray::Ix'>Ix</a>)</a>&gt;</pre><div class='docblock'><p>Create a two-dimensional array with elements from <code>xs</code>.</p>
 <pre class='rust rust-example-rendered'>
 <span class='kw'>use</span> <span class='ident'>ndarray</span>::<span class='ident'>arr2</span>;
 

@@ -46,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-10' class='srclink' href='../../../src/sprs/sparse/csmat.rs.html#1-1294' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-10' class='srclink' href='../../../src/sprs/sparse/csmat.rs.html#1-1575' title='goto source code'>[src]</a></span></h1>
 <h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
 <table><tr><td><code>pub use self::CompressedStorage::{<a class='enum' href='../../../sprs/sparse/csmat/enum.CompressedStorage.html' title='sprs::sparse::csmat::CompressedStorage'>CSC</a>, <a class='enum' href='../../../sprs/sparse/csmat/enum.CompressedStorage.html' title='sprs::sparse::csmat::CompressedStorage'>CSR</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
@@ -74,6 +74,15 @@ along the least-varying dimension</p>
                                title='sprs::sparse::csmat::CsMat'>CsMat</a></td>
                         <td class='docblock short'>
                              <p>Compressed matrix in the CSR or CSC format.</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.NnzIndex.html'
+                               title='sprs::sparse::csmat::NnzIndex'>NnzIndex</a></td>
+                        <td class='docblock short'>
+                             <p>Hold the index of a non-zero element in the compressed storage</p>
 
                         </td>
                     </tr>
@@ -110,6 +119,14 @@ Implemented over an iterator on the indptr array</p>
                 </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
 <table>
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.inner_dimension.html'
+                               title='sprs::sparse::csmat::inner_dimension'>inner_dimension</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.outer_dimension.html'
                                title='sprs::sparse::csmat::outer_dimension'>outer_dimension</a></td>
                         <td class='docblock short'>
@@ -137,6 +154,14 @@ Implemented over an iterator on the indptr array</p>
                     <tr class=' module-item'>
                         <td><a class='type' href='type.CsMatView.html'
                                title='sprs::sparse::csmat::CsMatView'>CsMatView</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.CsMatViewMut.html'
+                               title='sprs::sparse::csmat::CsMatViewMut'>CsMatViewMut</a></td>
                         <td class='docblock short'>
                              
                         </td>
