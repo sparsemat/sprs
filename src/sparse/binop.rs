@@ -6,7 +6,7 @@ use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
 use errors::SprsError;
-use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut};
+use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Axis};
 
 use ::Ix2;
 use ::SpRes;
@@ -198,7 +198,7 @@ where N: 'a + Num,
         (_, _, _) => return Err(SprsError::IncompatibleStorages),
     }
     //let outer_axis = tensor::Axis(rhs.outer_dim().unwrap());
-    let outer_axis = if rhs.is_standard_layout() { 0 } else { 1 };
+    let outer_axis = if rhs.is_standard_layout() { Axis(0) } else { Axis(1) };
     for ((mut orow, (_, lrow)), rrow) in out.axis_iter_mut(outer_axis)
                                             .zip(lhs.outer_iterator())
                                             .zip(rhs.axis_iter(outer_axis)) {

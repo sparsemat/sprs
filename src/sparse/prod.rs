@@ -4,7 +4,7 @@ use sparse::csmat::{CsMatOwned, CsMatView};
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
-use ndarray::{ArrayView, ArrayViewMut};
+use ndarray::{ArrayView, ArrayViewMut, Axis};
 use errors::SprsError;
 use ::SpRes;
 use ::Ix2;
@@ -213,14 +213,14 @@ where N: 'a + Num + Copy
     // be nice to pick a data dependent block-size to optimize caching effects
     let lblock_size = 4;
     let rblock_size = 4;
-    for (mut oblock, lblock) in out.axis_chunks_iter_mut(0, lblock_size)
+    let axis0 = Axis(0);
+    for (mut oblock, lblock) in out.axis_chunks_iter_mut(axis0, lblock_size)
                                    .zip(lhs.outer_block_iter(lblock_size)) {
-        for (rcount, rblock) in rhs.axis_chunks_iter(0, rblock_size)
+        for (rcount, rblock) in rhs.axis_chunks_iter(axis0, rblock_size)
                                    .enumerate() {
             let col_start = rblock_size * rcount;
             let col_end = col_start + rblock_size;
 
-            let axis0 = 0;
             for ((_, line), mut oline) in lblock.outer_iterator()
                                           .zip(oblock.axis_iter_mut(axis0)) {
                 'col_block: for (col_ind, &lval) in line.iter() {
@@ -305,7 +305,7 @@ where N: 'a + Num + Copy
         return Err(SprsError::BadStorageType);
     }
 
-    let axis1 = 1;
+    let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (rrow, lcol) in lhs.outer_iterator() {
             let rval = rcol[[rrow]];
@@ -343,7 +343,7 @@ where N: 'a + Num + Copy
     if rhs.is_standard_layout() {
         return Err(SprsError::BadStorageType);
     }
-    let axis1 = 1;
+    let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (orow, lrow) in lhs.outer_iterator() {
             let mut prev = ocol[[orow]];
