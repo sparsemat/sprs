@@ -78,7 +78,11 @@ Matrix matrix multiplication, addition
 Documentation
 -------------
 
-https://vbarrielle.github.io/sprs/doc/sprs/
+- master_
+- 0.3_
+
+.. _master : https://vbarrielle.github.io/sprs/doc/sprs/
+.. _0.3 : https://vbarrielle.github.io/sprs/0.3/sprs/
 
 Changelog
 ---------
