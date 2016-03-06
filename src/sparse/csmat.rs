@@ -75,6 +75,9 @@ pub use self::CompressedStorage::{CSC, CSR};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
+///
+/// An NnzIndex can be used to later access the non-zero element in constant
+/// time.
 pub struct NnzIndex(pub usize);
 
 /// Iterator on the matrix' outer dimension
@@ -712,6 +715,8 @@ where IptrStorage: Deref<Target=[usize]>,
     ///
     /// Searching this index is logarithmic in the number of non-zeros
     /// in the corresponding outer slice.
+    /// Once it is available, the NnzIndex enables retrieving the data with
+    /// O(1) complexity.
     pub fn nnz_index(&self, row: usize, col: usize) -> Option<NnzIndex> {
         match self.storage() {
             CSR => self.nnz_index_outer_inner(row, col),

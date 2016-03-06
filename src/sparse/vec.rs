@@ -46,6 +46,9 @@ where DStorage: Deref<Target=[N]> {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
+///
+/// An NnzIndex can be used to later access the non-zero element in constant
+/// time.
 pub struct NnzIndex(pub usize);
 
 pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
@@ -581,6 +584,10 @@ where IStorage: Deref<Target=[usize]>,
 
     /// Find the non-zero index of the requested dimension index,
     /// returning None if no non-zero is present at the requested location.
+    ///
+    /// Looking for the NnzIndex is done with logarithmic complexity, but
+    /// once it is available, the NnzIndex enables retrieving the data with
+    /// O(1) complexity.
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
         self.indices.binary_search(&index).map(|i| NnzIndex(i)).ok()
     }
