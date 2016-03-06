@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["SpMatView","The SpMatView trait describes data that can be seen as a view into a CsMat"],["SpVecView","The SpVecView trait describes types that can be seen as a view into a CsVec"]]});
