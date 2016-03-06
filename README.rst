@@ -88,18 +88,18 @@ Changelog
 ---------
 
 - 0.4.0-alpha.3:
-    - rename `at` family of functions into `get`, consistent with the naming
+    - rename ``at`` family of functions into ``get``, consistent with the naming
       scheme in standard library. **breaking change**
     - move cholesky factorization behind the "lgpl" feature flag
       **rbeaking change**
-    - per-nnz-element function application (`map`, `map_inplace`).
+    - per-nnz-element function application (``map``, ``map_inplace``).
     - binary operations operating on matching non-zero elements
-      (`csvec_binop`, `csmat_binop`).
+      (``csvec_binop``, ``csmat_binop``).
     - introduce ``nnz_index`` to retrieve an index of an element allowing
       for later constant time access.
 - 0.4.0-alpha.2:
-    - functions in the `at` family will return references **breaking change**
-    - simpler arguments for `at_outer_inner` **breaking change**
+    - functions in the ``at`` family will return references **breaking change**
+    - simpler arguments for ``at_outer_inner`` **breaking change**
     - mutable view types
 - 0.4.0-alpha.1:
     - depend on ndarray for dense matrices **breaking change**
@@ -146,7 +146,7 @@ Licensed under either of
 at your option.
 
 Some parts of the library require opting into the LGPL license. Opting into the
-LGPL-licensed features can be done by specifying `features = ["lgpl"]` in
+LGPL-licensed features can be done by specifying ``features = ["lgpl"]`` in
 Cargo.toml.
 
 Contribution
