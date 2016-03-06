@@ -91,6 +91,8 @@ Changelog
     - per-nnz-element function application (`map`, `map_inplace`).
     - binary operations operating on matching non-zero elements
       (`csvec_binop`, `csmat_binop`).
+    - introduce ``nnz_index`` to retrieve an index of an element allowing
+      for later constant time access.
 - 0.4.0-alpha.2:
     - functions in the `at` family will return references **breaking change**
     - simpler arguments for `at_outer_inner` **breaking change**
