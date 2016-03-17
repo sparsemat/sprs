@@ -131,10 +131,10 @@ impl LdlSymbolic {
         let mut parents = linalg::etree::ParentsOwned::new(n);
         let mut l_nz = vec![0; n];
         let mut flag_workspace = vec![0; n];
-        ldl_symbolic(mat.borrowed(),
+        ldl_symbolic(mat.view(),
                      &perm,
                      &mut l_colptr,
-                     parents.borrowed_mut(),
+                     parents.view_mut(),
                      &mut l_nz,
                      &mut flag_workspace,
                      SymmetryCheck::CheckSymmetry);
@@ -236,9 +236,9 @@ impl<N> LdlNumeric<N> {
           IS: Deref<Target = [usize]>,
           DS: Deref<Target = [N]>
     {
-        ldl_numeric(mat.borrowed(),
+        ldl_numeric(mat.view(),
                     &self.symbolic.colptr,
-                    self.symbolic.parents.borrowed(),
+                    self.symbolic.parents.view(),
                     &self.symbolic.perm,
                     &mut self.symbolic.nz,
                     &mut self.l_indices,
@@ -306,7 +306,7 @@ where N: Clone + Copy + PartialEq,
 
     let n = mat.rows();
 
-    let outer_it = mat.outer_iterator_perm(perm.borrowed());
+    let outer_it = mat.outer_iterator_perm(perm.view());
     // compute the elimination tree of L
     for (k, (_, vec)) in outer_it.enumerate() {
 
@@ -354,7 +354,7 @@ pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
 where N: Clone + Copy + PartialEq + Num + PartialOrd,
       PStorage: Deref<Target = [usize]>
 {
-    let outer_it = mat.outer_iterator_perm(perm.borrowed());
+    let outer_it = mat.outer_iterator_perm(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
 
         // compute the nonzero pattern of the kth row of L
@@ -537,10 +537,10 @@ mod test {
         let mut flag_workspace = [0; 10];
         let perm: Permutation<&[usize]> = Permutation::identity();
         let mat = test_mat1();
-        super::ldl_symbolic(mat.borrowed(),
+        super::ldl_symbolic(mat.view(),
                             &perm,
                             &mut l_colptr,
-                            parents.borrowed_mut(),
+                            parents.view_mut(),
                             &mut l_nz,
                             &mut flag_workspace,
                             SymmetryCheck::CheckSymmetry);
@@ -551,9 +551,9 @@ mod test {
         let mut diag = [0.; 10];
         let mut y_workspace = [0.; 10];
         let mut pattern_workspace = DStack::with_capacity(10);
-        super::ldl_numeric(mat.borrowed(),
+        super::ldl_numeric(mat.view(),
                            &l_colptr,
-                           parents.borrowed(),
+                           parents.view(),
                            &perm,
                            &mut l_nz,
                            &mut l_indices,
