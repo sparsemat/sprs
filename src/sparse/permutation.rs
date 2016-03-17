@@ -70,7 +70,7 @@ where IndStorage: Deref<Target=[usize]> {
     }
 
     // TODO: either the trait Deref or Borrow should be implemnted for this
-    pub fn borrowed(&self) -> PermView {
+    pub fn view(&self) -> PermView {
         match self {
             &Identity => Identity,
             &FinitePerm {
