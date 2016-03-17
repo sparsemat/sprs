@@ -13,9 +13,10 @@ use std::default::Default;
 use std::slice::{self, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
-use num::traits::Num;
+use num::traits::{Num, Zero};
 
 use ndarray::{self, ArrayBase, OwnedArray, Ix};
+use ::Ix2;
 
 use sparse::permutation::PermView;
 use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
@@ -23,6 +24,7 @@ use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
 use errors::SprsError;
+use sparse::to_dense::assign_to_dense;
 
 
 pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
@@ -799,6 +801,14 @@ where IptrStorage: Deref<Target=[usize]>,
             indices: &self.indices[..],
             data: &self.data[..],
         }
+    }
+
+    pub fn to_dense(&self) -> OwnedArray<N, Ix2>
+    where N: Clone + Zero
+    {
+        let mut res = OwnedArray::zeros((self.rows(), self.cols()));
+        assign_to_dense(res.view_mut(), self.borrowed()).unwrap();
+        res
     }
 }
 

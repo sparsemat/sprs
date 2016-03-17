@@ -197,7 +197,6 @@ where N: 'a + Num,
         (CompressedStorage::CSC, false, false) => (),
         (_, _, _) => return Err(SprsError::IncompatibleStorages),
     }
-    //let outer_axis = tensor::Axis(rhs.outer_dim().unwrap());
     let outer_axis = if rhs.is_standard_layout() { Axis(0) } else { Axis(1) };
     for ((mut orow, (_, lrow)), rrow) in out.axis_iter_mut(outer_axis)
                                             .zip(lhs.outer_iterator())
