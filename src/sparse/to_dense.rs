@@ -34,9 +34,10 @@ where N: Clone
 
 #[cfg(test)]
 mod test {
-    use ndarray::OwnedArray;
+    use ndarray::{OwnedArray, arr2};
     use ::CsMatOwned;
     use ::{CSR, CSC};
+    use test_data::{mat1};
 
     #[test]
     fn to_dense() {
@@ -54,5 +55,13 @@ mod test {
         super::assign_to_dense(deye.view_mut(), speye.borrowed()).unwrap();
 
         assert_eq!(deye, res);
+
+        let res = mat1().to_dense();
+        let expected = arr2(&[[0., 0., 3., 4., 0.],
+                              [0., 0., 0., 2., 5.],
+                              [0., 0., 5., 0., 0.],
+                              [0., 8., 0., 0., 0.],
+                              [0., 0., 0., 7., 0.]]);
+        assert_eq!(expected, res);
     }
 }
