@@ -791,7 +791,7 @@ where IptrStorage: Deref<Target=[usize]>,
     }
 
     /// Return a view into the current matrix
-    pub fn borrowed(&self) -> CsMatView<N> {
+    pub fn view(&self) -> CsMatView<N> {
         CsMat {
             storage: self.storage,
             nrows: self.nrows,
@@ -807,7 +807,7 @@ where IptrStorage: Deref<Target=[usize]>,
     where N: Clone + Zero
     {
         let mut res = OwnedArray::zeros((self.rows(), self.cols()));
-        assign_to_dense(res.view_mut(), self.borrowed()).unwrap();
+        assign_to_dense(res.view_mut(), self.view()).unwrap();
         res
     }
 }
@@ -827,8 +827,7 @@ where N: Default,
         let mut indptr = vec![0; self.inner_dims() + 1];
         let mut indices = vec![0; self.nb_nonzero()];
         let mut data = vec![N::default(); self.nb_nonzero()];
-        let borrowed = self.borrowed();
-        raw::convert_mat_storage(borrowed,
+        raw::convert_mat_storage(self.view(),
                                  &mut indptr, &mut indices, &mut data);
         CsMat::new_owned(self.storage().other_storage(),
                          self.rows(), self.cols(),
@@ -1058,9 +1057,9 @@ where N: 'a + Copy + Num + Default,
     type Output = CsMatOwned<N>;
 
     fn add(self, rhs: &'b CsMat<N, IpS2, IS2, DS2>) -> CsMatOwned<N> {
-        if self.storage() != rhs.borrowed().storage() {
+        if self.storage() != rhs.view().storage() {
             return binop::add_mat_same_storage(
-                self, &rhs.borrowed().to_other_storage()).unwrap()
+                self, &rhs.view().to_other_storage()).unwrap()
         }
         binop::add_mat_same_storage(self, rhs).unwrap()
     }
@@ -1076,9 +1075,9 @@ where N: 'a + Copy + Num + Default,
     type Output = CsMatOwned<N>;
 
     fn sub(self, rhs: &'b Mat) -> CsMatOwned<N> {
-        if self.storage() != rhs.borrowed().storage() {
+        if self.storage() != rhs.view().storage() {
             return binop::sub_mat_same_storage(
-                self, &rhs.borrowed().to_other_storage()).unwrap()
+                self, &rhs.view().to_other_storage()).unwrap()
         }
         binop::sub_mat_same_storage(self, rhs).unwrap()
     }
@@ -1208,7 +1207,7 @@ where N: 'a + Copy + Num + Default,
         match (self.storage(), rhs.is_standard_layout()) {
             (CSR, true) => {
                 let mut res = OwnedArray::zeros((rows, cols));
-                prod::csr_mulacc_dense_rowmaj(self.borrowed(),
+                prod::csr_mulacc_dense_rowmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
                                              ).unwrap();
@@ -1216,7 +1215,7 @@ where N: 'a + Copy + Num + Default,
             }
             (CSR, false) => {
                 let mut res = OwnedArray::zeros_f((rows, cols));
-                prod::csr_mulacc_dense_colmaj(self.borrowed(),
+                prod::csr_mulacc_dense_colmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
                                              ).unwrap();
@@ -1224,7 +1223,7 @@ where N: 'a + Copy + Num + Default,
             }
             (CSC, true) => {
                 let mut res = OwnedArray::zeros((rows, cols));
-                prod::csc_mulacc_dense_rowmaj(self.borrowed(),
+                prod::csc_mulacc_dense_rowmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
                                              ).unwrap();
@@ -1232,7 +1231,7 @@ where N: 'a + Copy + Num + Default,
             }
             (CSC, false) => {
                 let mut res = OwnedArray::zeros_f((rows, cols));
-                prod::csc_mulacc_dense_colmaj(self.borrowed(),
+                prod::csc_mulacc_dense_colmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
                                              ).unwrap();

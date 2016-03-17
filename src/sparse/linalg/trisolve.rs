@@ -341,7 +341,7 @@ mod test {
         let b = vec![3, 2, 4];
         let mut x = b.clone();
 
-        super::lsolve_csr_dense_rhs(l.borrowed(), &mut x).unwrap();
+        super::lsolve_csr_dense_rhs(l.view(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
     }
 
@@ -360,7 +360,7 @@ mod test {
         let b = vec![3, 5, 3];
         let mut x = b.clone();
 
-        super::lsolve_csc_dense_rhs(l.borrowed(), &mut x).unwrap();
+        super::lsolve_csc_dense_rhs(l.view(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
     }
 
@@ -379,7 +379,7 @@ mod test {
         let b = vec![4, 2, 3];
         let mut x = b.clone();
 
-        super::usolve_csc_dense_rhs(u.borrowed(), &mut x).unwrap();
+        super::usolve_csc_dense_rhs(u.view(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
     }
 
@@ -398,7 +398,7 @@ mod test {
         let b = vec![4, 8, 1];
         let mut x = b.clone();
 
-        super::usolve_csr_dense_rhs(u.borrowed(), &mut x).unwrap();
+        super::usolve_csr_dense_rhs(u.view(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
     }
 
@@ -421,8 +421,8 @@ mod test {
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
         let mut dstack = DStack::with_capacity(2 * 5);
-        super::lsolve_csc_sparse_rhs(l.borrowed(),
-                                     b.borrowed(),
+        super::lsolve_csc_sparse_rhs(l.view(),
+                                     b.view(),
                                      &mut dstack,
                                      &mut xw,
                                      &mut visited)
@@ -465,8 +465,8 @@ mod test {
         let mut xw = vec![1; 7]; // inital values should not matter
         let mut visited = vec![false; 7]; // inital values matter here
 
-        super::lsolve_csc_sparse_rhs(l.borrowed(),
-                                     b.borrowed(),
+        super::lsolve_csc_sparse_rhs(l.view(),
+                                     b.view(),
                                      &mut dstack,
                                      &mut xw,
                                      &mut visited)

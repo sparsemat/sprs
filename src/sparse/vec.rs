@@ -460,7 +460,7 @@ where IStorage: Deref<Target=[usize]>,
       DStorage: Deref<Target=[N]> {
 
     /// Get a view of this vector.
-    pub fn borrowed(&self) -> CsVecView<N> {
+    pub fn view(&self) -> CsVecView<N> {
         CsVec {
             dim: self.dim,
             indices: &self.indices[..],
@@ -579,7 +579,7 @@ where IStorage: Deref<Target=[usize]>,
 
     /// Access element at given index, with logarithmic complexity
     pub fn get(&self, index: usize) -> Option<&N> {
-        self.borrowed().get_(index)
+        self.view().get_(index)
     }
 
     /// Find the non-zero index of the requested dimension index,
@@ -656,7 +656,7 @@ where N: 'a,
         &mut self.data[..]
     }
 
-    pub fn borrowed_mut(&mut self) -> CsVecViewMut<N> {
+    pub fn view_mut(&mut self) -> CsVecViewMut<N> {
         CsVec {
             dim: self.dim,
             indices: &self.indices[..],
@@ -735,7 +735,7 @@ where N: Copy + Num + Default,
 
     fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
         if self.is_csr() {
-            prod::csr_mul_csvec(self.borrowed(), rhs.borrowed()).unwrap()
+            prod::csr_mul_csvec(self.view(), rhs.view()).unwrap()
         }
         else {
             (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
@@ -754,8 +754,8 @@ where N: Copy + Num,
     type Output = CsVecOwned<N>;
 
     fn add(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
-        binop::csvec_binop(self.borrowed(),
-                           rhs.borrowed(),
+        binop::csvec_binop(self.view(),
+                           rhs.view(),
                            |&x, &y| x + y
                           ).unwrap()
     }
@@ -772,8 +772,8 @@ where N: Copy + Num,
     type Output = CsVecOwned<N>;
 
     fn sub(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
-        binop::csvec_binop(self.borrowed(),
-                           rhs.borrowed(),
+        binop::csvec_binop(self.view(),
+                           rhs.view(),
                            |&x, &y| x - y
                           ).unwrap()
     }
@@ -879,7 +879,7 @@ mod test {
         assert_eq!(4., vec1.dot(&vec1));
         assert_eq!(16., vec2.dot(&vec2));
         assert_eq!(6., vec1.dot(&vec3));
-        assert_eq!(12., vec2.dot(vec3.borrowed()));
+        assert_eq!(12., vec2.dot(vec3.view()));
 
         let dense_vec = vec![1., 2., 3., 4., 5., 6., 7., 8.];
         let slice = &dense_vec[..];
