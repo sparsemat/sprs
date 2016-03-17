@@ -87,6 +87,9 @@ Documentation
 Changelog
 ---------
 
+- next version:
+    - add ``to_dense()`` method for sparse matrices
+    - rename ``borrowed()`` into ``view()`` **breaking change**
 - 0.4.0-alpha.3:
     - rename ``at`` family of functions into ``get``, consistent with the naming
       scheme in standard library. **breaking change**
