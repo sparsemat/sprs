@@ -346,7 +346,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
 impl<'a, N: 'a> CsVecView<'a, N> {
 
     /// Create a borrowed CsVec over slice data.
-    pub fn new_borrowed(
+    pub fn new_view(
         n: usize,
         indices: &'a [usize],
         data: &'a [N])

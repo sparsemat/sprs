@@ -376,7 +376,7 @@ mod test {
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
 
-        let mat = CsMat::new_borrowed(CSC, 5, 5, indptr, indices, data).unwrap();
+        let mat = CsMat::new_view(CSC, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csc(mat, &vector, &mut res_vec).unwrap();
@@ -398,7 +398,7 @@ mod test {
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
 
-        let mat = CsMat::new_borrowed(CSR, 5, 5, indptr, indices, data).unwrap();
+        let mat = CsMat::new_view(CSR, 5, 5, indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csr(mat, &vector, &mut res_vec).unwrap();

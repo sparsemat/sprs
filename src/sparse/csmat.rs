@@ -245,7 +245,7 @@ impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
 impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
-    pub fn new_borrowed(
+    pub fn new_view(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         )
@@ -1363,7 +1363,7 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let m = CsMat::new_borrowed(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
+        let m = CsMat::new_view(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
         assert!(m.is_ok());
     }
 
@@ -1379,26 +1379,26 @@ mod test {
         let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3, indptr_fail1,
+        assert_eq!(CsMat::new_view(CSR, 3, 3, indptr_fail1,
                                       indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_fail2, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSR, 3, 3,
+                                   indptr_fail2, indices_ok, data_ok),
                    Err(SprsError::OutOfBoundsIndptr));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_fail3, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSR, 3, 3,
+                                   indptr_fail3, indices_ok, data_ok),
                    Err(SprsError::UnsortedIndptr));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_fail1, data_ok),
+        assert_eq!(CsMat::new_view(CSR, 3, 3,
+                                   indptr_ok, indices_fail1, data_ok),
                    Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_fail2, data_ok),
+        assert_eq!(CsMat::new_view(CSR, 3, 3,
+                                   indptr_ok, indices_fail2, data_ok),
                    Err(SprsError::OutOfBoundsIndex));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_ok, data_fail1),
+        assert_eq!(CsMat::new_view(CSR, 3, 3,
+                                   indptr_ok, indices_ok, data_fail1),
                    Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_ok, data_fail2),
+        assert_eq!(CsMat::new_view(CSR, 3, 3,
+                                   indptr_ok, indices_ok, data_fail2),
                    Err(SprsError::DataIndicesMismatch));
     }
 
@@ -1410,8 +1410,8 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        assert_eq!(CsMat::new_borrowed(CSR, 5, 5,
-                                      indptr, indices, data),
+        assert_eq!(CsMat::new_view(CSR, 5, 5,
+                                   indptr, indices, data),
                    Err(SprsError::NonSortedIndices));
     }
 
@@ -1422,10 +1422,10 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert!(CsMat::new_borrowed(CSR, 3, 4,
-                                   indptr_ok, indices_ok, data_ok).is_ok());
-        assert!(CsMat::new_borrowed(CSC, 4, 3,
-                                   indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::new_view(CSR, 3, 4,
+                                indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::new_view(CSC, 4, 3,
+                                indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -1435,11 +1435,11 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert_eq!(CsMat::new_borrowed(CSR, 4, 3,
-                                      indptr_ok, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSR, 4, 3,
+                                   indptr_ok, indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::new_borrowed(CSC, 3, 4,
-                                      indptr_ok, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSC, 3, 4,
+                                   indptr_ok, indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
     }
 
@@ -1449,8 +1449,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::new_borrowed(CSR, 3, 3,
-                                   &indptr_ok, &indices_ok, &data_ok).is_ok());
+        assert!(CsMat::new_view(CSR, 3, 3,
+                                &indptr_ok, &indices_ok, &data_ok).is_ok());
     }
 
     #[test]
@@ -1469,7 +1469,7 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        assert!(CsMat::new_borrowed(CSR, 5, 5, indptr, indices, data).is_ok());
+        assert!(CsMat::new_view(CSR, 5, 5, indptr, indices, data).is_ok());
     }
 
     #[test]

@@ -59,7 +59,7 @@ mod test {
             0.13, 0.52, 0.11, 1.4,
             0.01, 0.53, 0.56, 3.1];
 
-        let a = CsMat::new_borrowed(CSR, 10, 10, indptr, indices, data).unwrap();
+        let a = CsMat::new_view(CSR, 10, 10, indptr, indices, data).unwrap();
 
         assert!(is_symmetric(&a));
     }
