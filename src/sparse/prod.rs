@@ -23,7 +23,7 @@ where N: Num + Copy {
         return Err(SprsError::IncompatibleStorages);
     }
 
-    for (col_ind, vec) in mat.outer_iterator() {
+    for (col_ind, vec) in mat.outer_iterator().enumerate() {
         let multiplier = &in_vec[col_ind];
         for (row_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
@@ -47,7 +47,7 @@ where N: Num + Copy {
         return Err(SprsError::IncompatibleStorages);
     }
 
-    for (row_ind, vec) in mat.outer_iterator() {
+    for (row_ind, vec) in mat.outer_iterator().enumerate() {
         for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
             res_vec[row_ind] =
@@ -143,7 +143,7 @@ where N: Num + Copy {
 
     let mut res = CsMatOwned::empty(lhs.storage(), res_cols);
     res.reserve_nnz_exact(lhs.nb_nonzero() + rhs.nb_nonzero());
-    for (_, lvec) in lhs.outer_iterator() {
+    for lvec in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
             *wval = N::zero();
@@ -176,7 +176,7 @@ where N: Copy + Num {
         return Err(SprsError::IncompatibleDimensions);
     }
     let mut res = CsVecOwned::empty(lhs.rows());
-    for (row_ind, lvec) in lhs.outer_iterator() {
+    for (row_ind, lvec) in lhs.outer_iterator().enumerate() {
         let val = lvec.dot(&rhs);
         if val != N::zero() {
             res.append(row_ind, val);
@@ -221,8 +221,8 @@ where N: 'a + Num + Copy
             let col_start = rblock_size * rcount;
             let col_end = col_start + rblock_size;
 
-            for ((_, line), mut oline) in lblock.outer_iterator()
-                                          .zip(oblock.axis_iter_mut(axis0)) {
+            for (line, mut oline) in lblock.outer_iterator()
+                                           .zip(oblock.axis_iter_mut(axis0)) {
                 'col_block: for (col_ind, &lval) in line.iter() {
                     if col_ind < col_start {
                         continue 'col_block;
@@ -268,7 +268,7 @@ where N: 'a + Num + Copy
         return Err(SprsError::BadStorageType);
     }
 
-    for ((_, lcol), rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
+    for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
         for (orow, &lval) in lcol.iter() {
             let mut oline = out.row_mut(orow);
             for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
@@ -307,7 +307,7 @@ where N: 'a + Num + Copy
 
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
-        for (rrow, lcol) in lhs.outer_iterator() {
+        for (rrow, lcol) in lhs.outer_iterator().enumerate() {
             let rval = rcol[[rrow]];
             for (orow, &lval) in lcol.iter() {
                 let prev = ocol[[orow]];
@@ -345,7 +345,7 @@ where N: 'a + Num + Copy
     }
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
-        for (orow, lrow) in lhs.outer_iterator() {
+        for (orow, lrow) in lhs.outer_iterator().enumerate() {
             let mut prev = ocol[[orow]];
             for (rrow, &lval) in lrow.iter() {
                 let rval = rcol[[rrow]];

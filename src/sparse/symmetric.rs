@@ -14,7 +14,7 @@ DStorage: Deref<Target=[N]> {
     if mat.rows() != mat.cols() {
         return false;
     }
-    for (outer_ind, vec) in mat.outer_iterator() {
+    for (outer_ind, vec) in mat.outer_iterator().enumerate() {
         for (inner_ind, &value) in vec.iter() {
             match mat.get_outer_inner(inner_ind, outer_ind) {
                 None => return false,

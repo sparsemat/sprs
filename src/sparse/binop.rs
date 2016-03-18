@@ -114,7 +114,8 @@ where N: Num,
     assert!(out_indices.len() >= max_nnz);
     let mut nnz = 0;
     out_indptr[0] = 0;
-    for ((dim, lv), (_, rv)) in lhs.outer_iterator().zip(rhs.outer_iterator()) {
+    let iter = lhs.outer_iterator().zip(rhs.outer_iterator()).enumerate();
+    for (dim, (lv, rv)) in iter {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
             let (ind, binop_val) = match elem {
                 Left((ind, val)) => (ind, binop(val, &N::zero())),
@@ -198,7 +199,7 @@ where N: 'a + Num,
         (_, _, _) => return Err(SprsError::IncompatibleStorages),
     }
     let outer_axis = if rhs.is_standard_layout() { Axis(0) } else { Axis(1) };
-    for ((mut orow, (_, lrow)), rrow) in out.axis_iter_mut(outer_axis)
+    for ((mut orow, lrow), rrow) in out.axis_iter_mut(outer_axis)
                                             .zip(lhs.outer_iterator())
                                             .zip(rhs.axis_iter(outer_axis)) {
         // now some equivalent of nnz_or_zip is needed

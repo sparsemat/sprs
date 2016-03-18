@@ -414,7 +414,7 @@ pub fn ldl_lsolve<N, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
 where N: Clone + Copy + Num,
       V: IndexMut<usize, Output = N>
 {
-    for (col_ind, vec) in l.outer_iterator() {
+    for (col_ind, vec) in l.outer_iterator().enumerate() {
         let x_col = x[col_ind];
         for (row_ind, &value) in vec.iter() {
             x[row_ind] = x[row_ind] - value * x_col;
@@ -428,7 +428,7 @@ pub fn ldl_ltsolve<N, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
 where N: Clone + Copy + Num,
       V: IndexMut<usize, Output = N>
 {
-    for (outer_ind, vec) in l.outer_iterator().rev() {
+    for (outer_ind, vec) in l.outer_iterator().enumerate().rev() {
         let mut x_outer = x[outer_ind];
         for (inner_ind, &value) in vec.iter() {
             x_outer = x_outer - value * x[inner_ind];
