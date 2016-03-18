@@ -380,11 +380,11 @@ impl<'a, N: 'a> CsVecView<'a, N> {
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_raw(n: usize,
-                          nnz: usize,
-                          indices: *const usize,
-                          data: *const N,
-                          ) -> CsVec<N, &'a[usize], &'a[N]> {
+    pub unsafe fn new_view_raw(n: usize,
+                               nnz: usize,
+                               indices: *const usize,
+                               data: *const N,
+                              ) -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
@@ -693,11 +693,11 @@ where N: 'a {
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_raw_mut(n: usize,
-                              nnz: usize,
-                              indices: *const usize,
-                              data: *mut N,
-                             ) -> CsVecViewMut<'a, N> {
+    pub unsafe fn new_view_mut_raw(n: usize,
+                                   nnz: usize,
+                                   indices: *const usize,
+                                   data: *mut N,
+                                  ) -> CsVecViewMut<'a, N> {
         CsVec {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),

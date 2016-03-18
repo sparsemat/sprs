@@ -96,6 +96,7 @@ Changelog
     - ``eye()`` returns a csr matrix by default, a csc matrix can be obtained
       using ``eye_csc()``.
     - rename ``new_borrowed()`` into ``new_view()``.
+    - rename ``new_raw()`` into ``new_view_raw()``.
 - 0.4.0-alpha.3:
     - rename ``at`` family of functions into ``get``, consistent with the naming
       scheme in standard library. **breaking change**

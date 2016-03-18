@@ -79,10 +79,10 @@ mod utils {
                                      ) -> CsMatView<'a, N> {
         // not actually memory unsafe here since data comes from slices
         unsafe {
-            CsMatView::new_raw(storage, nrows, ncols,
-                               indptr.as_ptr(),
-                               indices.as_ptr(),
-                               data.as_ptr())
+            CsMatView::new_view_raw(storage, nrows, ncols,
+                                    indptr.as_ptr(),
+                                    indices.as_ptr(),
+                                    data.as_ptr())
         }
     }
 }

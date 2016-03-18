@@ -120,8 +120,10 @@ for OuterIterator<'iter, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
-                                             indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_view_raw(self.inner_len,
+                                                  indices.len(),
+                                                  indices.as_ptr(),
+                                                  data.as_ptr());
                     Some(vec)
                 }
             }
@@ -152,8 +154,10 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
-                                             indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_view_raw(self.inner_len,
+                                                  indices.len(),
+                                                  indices.as_ptr(),
+                                                  data.as_ptr());
                     Some((outer_ind_perm, vec))
                 }
             }
@@ -186,8 +190,10 @@ for OuterIterator<'iter, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
-                                             indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_view_raw(self.inner_len,
+                                                  indices.len(),
+                                                  indices.as_ptr(),
+                                                  data.as_ptr());
                     Some(vec)
                 }
             }
@@ -269,7 +275,7 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_raw(
+    pub unsafe fn new_view_raw(
         storage: CompressedStorage, nrows : usize, ncols: usize,
         indptr : *const usize, indices : *const usize, data : *const N
         )
@@ -602,10 +608,10 @@ where IptrStorage: Deref<Target=[usize]>,
         let stop = self.indptr[i+1];
         // safety derives from the structure checks in the constructors
         unsafe {
-            Some(CsVec::new_raw(self.inner_dims(),
-                                self.indices[start..stop].len(),
-                                self.indices[start..stop].as_ptr(),
-                                self.data[start..stop].as_ptr()))
+            Some(CsVec::new_view_raw(self.inner_dims(),
+                                     self.indices[start..stop].len(),
+                                     self.indices[start..stop].as_ptr(),
+                                     self.data[start..stop].as_ptr()))
         }
     }
 
@@ -914,10 +920,10 @@ DataStorage: DerefMut<Target=[N]> {
         let stop = self.indptr[i+1];
         // safety derives from the structure checks in the constructors
         unsafe {
-            Some(CsVec::new_raw_mut(self.inner_dims(),
-                                    self.indices[start..stop].len(),
-                                    self.indices[start..stop].as_ptr(),
-                                    self.data[start..stop].as_mut_ptr()))
+            Some(CsVec::new_view_mut_raw(self.inner_dims(),
+                                         self.indices[start..stop].len(),
+                                         self.indices[start..stop].as_ptr(),
+                                         self.data[start..stop].as_mut_ptr()))
         }
     }
 
