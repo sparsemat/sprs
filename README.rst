@@ -93,6 +93,9 @@ Changelog
     - ``outer_iterator()`` no longer returns the index of the dimension we're
       iterating. The old behavior can be obtained by chaining a call
       to ``enumerate()``.
+    - ``eye()`` returns a csr matrix by default, a csc matrix can be obtained
+      using ``eye_csc()``.
+    - rename ``new_borrowed()`` into ``new_view()``.
 - 0.4.0-alpha.3:
     - rename ``at`` family of functions into ``get``, consistent with the naming
       scheme in standard library. **breaking change**
