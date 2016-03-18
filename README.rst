@@ -90,6 +90,9 @@ Changelog
 - next version:
     - add ``to_dense()`` method for sparse matrices
     - rename ``borrowed()`` into ``view()`` **breaking change**
+    - ``outer_iterator()`` no longer returns the index of the dimension we're
+      iterating. The old behavior can be obtained by chaining a call
+      to ``enumerate()``.
 - 0.4.0-alpha.3:
     - rename ``at`` family of functions into ``get``, consistent with the naming
       scheme in standard library. **breaking change**
