@@ -34,7 +34,7 @@ where N: 'a + Clone,
     res.reserve_nnz_exact(nnz);
     for mat in mats {
         for (_, vec) in mat.outer_iterator() {
-            res = res.append_outer_csvec(vec.borrowed());
+            res = res.append_outer_csvec(vec.view());
         }
     }
 
@@ -51,7 +51,7 @@ where N: 'a + Clone + Default,
     }
 
     let mats_csr: Vec<_> = mats.iter().map(|x| x.to_csr()).collect();
-    let mats_csr_views: Vec<_> = mats_csr.iter().map(|x| x.borrowed()).collect();
+    let mats_csr_views: Vec<_> = mats_csr.iter().map(|x| x.view()).collect();
     same_storage_fast_stack(&mats_csr_views)
 }
 
@@ -65,7 +65,7 @@ where N: 'a + Clone + Default,
     }
 
     let mats_csc: Vec<_> = mats.iter().map(|x| x.to_csc()).collect();
-    let mats_csc_views: Vec<_> = mats_csc.iter().map(|x| x.borrowed()).collect();
+    let mats_csc_views: Vec<_> = mats_csc.iter().map(|x| x.view()).collect();
     same_storage_fast_stack(&mats_csc_views)
 }
 
@@ -77,8 +77,8 @@ where N: 'a + Clone + Default,
 /// use sprs::CsMatOwned;
 /// let a = CsMatOwned::<f64>::eye(CSR, 3);
 /// let b = CsMatOwned::<f64>::eye(CSR, 4);
-/// let c = sprs::bmat(&[[Some(a.borrowed()), None],
-///                      [None, Some(b.borrowed())]]).unwrap();
+/// let c = sprs::bmat(&[[Some(a.view()), None],
+///                      [None, Some(b.view())]]).unwrap();
 /// assert_eq!(c.rows(), 7);
 /// ```
 pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray)
@@ -127,11 +127,11 @@ where N: 'a + Clone + Default,
             m.as_ref().map_or(CsMatOwned::zero(rows_per_row[i], cols_per_col[j]),
                               |x| x.to_owned())
         }).collect();
-        let borrows: Vec<_> = with_zeros.iter().map(|x| x.borrowed()).collect();
+        let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
         let stacked = try!(hstack(&borrows));
         to_vstack.push(stacked);
     }
-    let borrows: Vec<_> = to_vstack.iter().map(|x| x.borrowed()).collect();
+    let borrows: Vec<_> = to_vstack.iter().map(|x| x.view()).collect();
     vstack(&borrows)
 }
 
@@ -209,9 +209,9 @@ mod test {
         let c = mat3();
         let d = mat4();
         let _: Result<CsMatOwned<f64>, _> = super::same_storage_fast_stack(&[]);
-        let res = super::same_storage_fast_stack(&[a.borrowed(), c.borrowed()]);
+        let res = super::same_storage_fast_stack(&[a.view(), c.view()]);
         assert_eq!(res, Err(IncompatibleDimensions));
-        let res = super::same_storage_fast_stack(&[a.borrowed(), d.borrowed()]);
+        let res = super::same_storage_fast_stack(&[a.view(), d.view()]);
         assert_eq!(res, Err(IncompatibleStorages));
     }
 
@@ -219,7 +219,7 @@ mod test {
     fn same_storage_fast_stack_ok() {
         let a = mat1();
         let b = mat2();
-        let res = super::same_storage_fast_stack(&[a.borrowed(), b.borrowed()]);
+        let res = super::same_storage_fast_stack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2();
         assert_eq!(res, Ok(expected));
     }
@@ -228,7 +228,7 @@ mod test {
     fn vstack_trivial() {
         let a = mat1();
         let b = mat2();
-        let res = super::vstack(&[a.borrowed(), b.borrowed()]);
+        let res = super::vstack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2();
         assert_eq!(res, Ok(expected));
     }
@@ -237,7 +237,7 @@ mod test {
     fn hstack_trivial() {
         let a = mat1().transpose_into();
         let b = mat2().transpose_into();
-        let res = super::hstack(&[a.borrowed(), b.borrowed()]);
+        let res = super::hstack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2().transpose_into();
         assert_eq!(res, Ok(expected));
     }
@@ -246,7 +246,7 @@ mod test {
     fn vstack_with_conversion() {
         let a = mat1().to_csc();
         let b = mat2();
-        let res = super::vstack(&[a.borrowed(), b.borrowed()]);
+        let res = super::vstack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2();
         assert_eq!(res, Ok(expected));
     }
@@ -263,11 +263,11 @@ mod test {
         assert_eq!(res, Err(IncompatibleDimensions));
         let res: Result<CsMatOwned<f64>, _> =
             super::bmat(&[[None, None],
-                          [Some(a.borrowed()), Some(c.borrowed())]]);
+                          [Some(a.view()), Some(c.view())]]);
         assert_eq!(res, Err(EmptyBmatRow));
         let res: Result<CsMatOwned<f64>, _> =
-            super::bmat(&[[Some(c.borrowed()), None],
-                          [Some(a.borrowed()), None]]);
+            super::bmat(&[[Some(c.view()), None],
+                          [Some(a.view()), None]]);
         assert_eq!(res, Err(EmptyBmatCol));
     }
 
@@ -275,8 +275,8 @@ mod test {
     fn bmat_simple() {
         let a = CsMatOwned::<f64>::eye(CSR, 5);
         let b = CsMatOwned::<f64>::eye(CSR, 4);
-        let c = super::bmat(&[[Some(a.borrowed()), None],
-                              [None, Some(b.borrowed())]]).unwrap();
+        let c = super::bmat(&[[Some(a.view()), None],
+                              [None, Some(b.view())]]).unwrap();
         let expected = CsMatOwned::new_owned(
             CSR, 9, 9,
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -289,8 +289,8 @@ mod test {
     fn bmat_complex() {
         let a = mat1();
         let b = mat2();
-        let c = super::bmat(&[[Some(a.borrowed()), Some(b.borrowed())],
-                              [Some(b.borrowed()), None]]).unwrap();
+        let c = super::bmat(&[[Some(a.view()), Some(b.view())],
+                              [Some(b.view()), None]]).unwrap();
         let expected = CsMatOwned::new_owned(
             CSR, 10, 10,
             vec![0,  6, 10, 11, 14, 17, 21, 23, 23, 25, 27],
@@ -302,8 +302,8 @@ mod test {
 
         let d = mat3();
         let e = mat4();
-        let f = super::bmat(&[[Some(d.borrowed()), Some(a.borrowed())],
-                              [None, Some(e.borrowed())]]
+        let f = super::bmat(&[[Some(d.view()), Some(a.view())],
+                              [None, Some(e.view())]]
                            ).unwrap();
         let expected = CsMatOwned::new_owned(
             CSR, 10, 9,

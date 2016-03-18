@@ -15,7 +15,7 @@ pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
                               in_vec: &[N],
                               res_vec: &mut[N]) -> SpRes<()>
 where N: Num + Copy {
-    let mat = mat.borrowed();
+    let mat = mat.view();
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
         return Err(SprsError::IncompatibleDimensions);
     }
@@ -76,7 +76,7 @@ where
 N: Num + Copy,
 Mat1: SpMatView<N>,
 Mat2: SpMatView<N> {
-    csr_mul_csr_impl(lhs.borrowed(), rhs.borrowed(), workspace)
+    csr_mul_csr_impl(lhs.view(), rhs.view(), workspace)
 }
 
 /// Perform a matrix multiplication for matrices sharing the same storage order.
@@ -106,7 +106,7 @@ pub fn workspace_csr<N, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
 where N: Copy + Num,
       Mat1: SpMatView<N>,
       Mat2: SpMatView<N> {
-    let len = rhs.borrowed().cols();
+    let len = rhs.view().cols();
     vec![N::zero(); len]
 }
 
@@ -115,7 +115,7 @@ pub fn workspace_csc<N, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<N>
 where N: Copy + Num,
       Mat1: SpMatView<N>,
       Mat2: SpMatView<N> {
-    let len = lhs.borrowed().rows();
+    let len = lhs.view().rows();
     vec![N::zero(); len]
 }
 
@@ -508,7 +508,7 @@ mod test {
         let a = OwnedArray::eye(3);
         let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
         let mut res = OwnedArray::zeros((3, 3));
-        super::csr_mulacc_dense_rowmaj(e.borrowed(),
+        super::csr_mulacc_dense_rowmaj(e.view(),
                                        a.view(),
                                        res.view_mut()
                                       ).unwrap();
@@ -517,7 +517,7 @@ mod test {
         let a = mat1();
         let b = mat_dense1();
         let mut res = OwnedArray::zeros((5, 5));
-        super::csr_mulacc_dense_rowmaj(a.borrowed(),
+        super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
                                       ).unwrap();
@@ -534,7 +534,7 @@ mod test {
         let a = mat5();
         let b = mat_dense2();
         let mut res = OwnedArray::zeros((5, 7));
-        super::csr_mulacc_dense_rowmaj(a.borrowed(),
+        super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
                                       ).unwrap();
@@ -554,7 +554,7 @@ mod test {
         let a = mat1_csc();
         let b = mat_dense1();
         let mut res = OwnedArray::zeros((5, 5));
-        super::csc_mulacc_dense_rowmaj(a.borrowed(),
+        super::csc_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()).unwrap();
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
@@ -573,7 +573,7 @@ mod test {
         let a = mat1_csc();
         let b = mat_dense1_colmaj();
         let mut res = OwnedArray::zeros_f((5, 5));
-        super::csc_mulacc_dense_colmaj(a.borrowed(),
+        super::csc_mulacc_dense_colmaj(a.view(),
                                        b.view(),
                                        res.view_mut()).unwrap();
         let v = vec![24., 11., 20., 40., 21.,
@@ -596,7 +596,7 @@ mod test {
         let a = mat1();
         let b = mat_dense1_colmaj();
         let mut res = OwnedArray::zeros_f((5, 5));
-        super::csr_mulacc_dense_colmaj(a.borrowed(),
+        super::csr_mulacc_dense_colmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
                                       ).unwrap();

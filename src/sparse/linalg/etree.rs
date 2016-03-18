@@ -42,7 +42,7 @@ impl<S: Deref<Target=[Parent]>> Parents<S> {
     }
 
     /// Get a view of this object
-    pub fn borrowed(&self) -> ParentsView {
+    pub fn view(&self) -> ParentsView {
         ParentsView {
             parents: &self.parents[..]
         }
@@ -83,7 +83,7 @@ impl<S: DerefMut<Target=[Parent]>> Parents<S> {
         }
     }
 
-    pub fn borrowed_mut(&mut self) -> ParentsViewMut {
+    pub fn view_mut(&mut self) -> ParentsViewMut {
         ParentsViewMut {
             parents: &mut self.parents[..]
         }

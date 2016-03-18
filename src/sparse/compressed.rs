@@ -9,7 +9,7 @@ use std::ops::{Deref};
 /// into a CsMat
 pub trait SpMatView<N> {
     /// Return a view into the current matrix
-    fn borrowed(&self) -> CsMatView<N>;
+    fn view(&self) -> CsMatView<N>;
 
     /// Return a view into the current matrix
     fn transpose_view(&self) -> CsMatView<N>;
@@ -22,8 +22,8 @@ where IpStorage: Deref<Target=[usize]>,
       IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
-    fn borrowed(&self) -> CsMatView<N> {
-        self.borrowed()
+    fn view(&self) -> CsMatView<N> {
+        self.view()
     }
 
     fn transpose_view(&self) -> CsMatView<N> {
@@ -35,7 +35,7 @@ where IpStorage: Deref<Target=[usize]>,
 /// a CsVec
 pub trait SpVecView<N> {
     /// Return a view into the current vector
-    fn borrowed(&self) ->  CsVecView<N>;
+    fn view(&self) ->  CsVecView<N>;
 }
 
 impl<N, IndStorage, DataStorage> SpVecView<N>
@@ -43,7 +43,7 @@ for CsVec<N, IndStorage, DataStorage>
 where IndStorage: Deref<Target=[usize]>,
       DataStorage: Deref<Target=[N]> {
 
-    fn borrowed(&self) -> CsVecView<N> {
-        self.borrowed()
+    fn view(&self) -> CsVecView<N> {
+        self.view()
     }
 }

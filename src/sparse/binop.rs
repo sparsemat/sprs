@@ -15,28 +15,28 @@ use ::SpRes;
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x + y)
+    csmat_binop(lhs.view(), rhs.view(), |&x, &y| x + y)
 }
 
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x - y)
+    csmat_binop(lhs.view(), rhs.view(), |&x, &y| x - y)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, Mat1, Mat2>(
     lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
-    csmat_binop(lhs.borrowed(), rhs.borrowed(), |&x, &y| x * y)
+    csmat_binop(lhs.view(), rhs.view(), |&x, &y| x * y)
 }
 
 /// Sparse matrix multiplication by a scalar
 pub fn scalar_mul_mat<N, Mat>(
     mat: &Mat, val: N) -> CsMatOwned<N>
 where N: Num + Copy, Mat: SpMatView<N> {
-    let mat = mat.borrowed();
+    let mat = mat.view();
     mat.map(|&x| x * val)
 }
 
@@ -148,7 +148,7 @@ where N: Num + Copy,
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_raw(lhs.borrowed(),
+    try!(csmat_binop_dense_raw(lhs.view(),
                                rhs.view(),
                                |&x, &y| alpha * x + beta * y,
                                res.view_mut()));
@@ -170,7 +170,7 @@ where N: Num + Copy,
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_raw(lhs.borrowed(),
+    try!(csmat_binop_dense_raw(lhs.view(),
                                rhs.view(),
                                |&x, &y| alpha * x * y,
                                res.view_mut()));
