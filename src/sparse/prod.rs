@@ -414,7 +414,7 @@ mod test {
 
     #[test]
     fn mul_csr_csr_identity() {
-        let eye: CsMatOwned<i32> = CsMat::eye(CSR, 10);
+        let eye: CsMatOwned<i32> = CsMat::eye(10);
         let mut workspace = [0; 10];
         let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
         assert_eq!(eye, res);
@@ -506,7 +506,7 @@ mod test {
     #[test]
     fn mul_csr_dense_rowmaj() {
         let a = OwnedArray::eye(3);
-        let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
+        let e: CsMatOwned<f64> = CsMat::eye(3);
         let mut res = OwnedArray::zeros((3, 3));
         super::csr_mulacc_dense_rowmaj(e.view(),
                                        a.view(),

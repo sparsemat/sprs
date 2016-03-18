@@ -75,8 +75,8 @@ where N: 'a + Clone + Default,
 /// ```
 /// use sprs::sparse::CompressedStorage::CSR;
 /// use sprs::CsMatOwned;
-/// let a = CsMatOwned::<f64>::eye(CSR, 3);
-/// let b = CsMatOwned::<f64>::eye(CSR, 4);
+/// let a = CsMatOwned::<f64>::eye(3);
+/// let b = CsMatOwned::<f64>::eye(4);
 /// let c = sprs::bmat(&[[Some(a.view()), None],
 ///                      [None, Some(b.view())]]).unwrap();
 /// assert_eq!(c.rows(), 7);
@@ -273,8 +273,8 @@ mod test {
 
     #[test]
     fn bmat_simple() {
-        let a = CsMatOwned::<f64>::eye(CSR, 5);
-        let b = CsMatOwned::<f64>::eye(CSR, 4);
+        let a = CsMatOwned::<f64>::eye(5);
+        let b = CsMatOwned::<f64>::eye(4);
         let c = super::bmat(&[[Some(a.view()), None],
                               [None, Some(b.view())]]).unwrap();
         let expected = CsMatOwned::new_owned(
@@ -320,7 +320,7 @@ mod test {
         let m = OwnedArray::eye(3);
         let m_sparse = super::csr_from_dense(m.view(), 0.);
 
-        assert_eq!(m_sparse, CsMatOwned::eye(CSR, 3));
+        assert_eq!(m_sparse, CsMatOwned::eye(3));
 
         let m = arr2(&[[1., 0., 2., 1e-7, 1.],
                        [0., 0., 0., 1.,   0.],
@@ -343,7 +343,7 @@ mod test {
         let m = OwnedArray::eye(3);
         let m_sparse = super::csc_from_dense(m.view(), 0.);
 
-        assert_eq!(m_sparse, CsMatOwned::eye(CSC, 3));
+        assert_eq!(m_sparse, CsMatOwned::eye_csc(3));
 
         let m = arr2(&[[1., 0., 2., 1e-7, 1.],
                        [0., 0., 0., 1.,   0.],

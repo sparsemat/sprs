@@ -369,7 +369,7 @@ mod test {
     #[test]
     fn csr_add_dense_rowmaj() {
         let a = OwnedArray::zeros((3,3));
-        let b = CsMatOwned::eye(CSR, 3);
+        let b = CsMatOwned::eye(3);
 
         let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.).unwrap();
 
@@ -397,7 +397,7 @@ mod test {
     #[test]
     fn csr_mul_dense_rowmaj() {
         let a = OwnedArray::from_elem((3,3), 1.);
-        let b = CsMatOwned::eye(CSR, 3);
+        let b = CsMatOwned::eye(3);
 
         let c = super::mul_dense_mat_same_ordering(&b, &a, 1.).unwrap();
 

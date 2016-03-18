@@ -430,17 +430,17 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 }
 
 impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
-    /// Identity matrix
+    /// Identity matrix, stored as a CSR matrix.
     ///
     /// ```rust
     /// use sprs::{CsMat, CsVec};
-    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// let eye = CsMat::eye(5);
+    /// assert!(eye.is_csr());
     /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye(storage: CompressedStorage, dim: usize
-              ) -> CsMatOwned<N>
+    pub fn eye(dim: usize) -> CsMatOwned<N>
     where N: Clone
     {
         let n = dim;
@@ -448,7 +448,35 @@ impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
         let indices = (0..n).collect();
         let data = vec![N::one(); n];
         CsMat {
-            storage: storage,
+            storage: CSR,
+            nrows: n,
+            ncols: n,
+            nnz: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
+        }
+    }
+
+    /// Identity matrix, stored as a CSC matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye_csc(5);
+    /// assert!(eye.is_csc());
+    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
+    pub fn eye_csc(dim: usize) -> CsMatOwned<N>
+    where N: Clone
+    {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
+        CsMat {
+            storage: CSC,
             nrows: n,
             ncols: n,
             nnz: n,
@@ -473,7 +501,7 @@ where IptrStorage: Deref<Target=[usize]>,
     ///
     /// ```rust
     /// use sprs::{CsMat};
-    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// let eye = CsMat::eye(5);
     /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
     ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
     ///     assert_eq!(row_ind, col_ind);
@@ -609,7 +637,7 @@ where IptrStorage: Deref<Target=[usize]>,
     ///
     /// ```rust
     /// use sprs::{CsMat, CsMatOwned};
-    /// let eye : CsMatOwned<f64> = CsMat::eye(sprs::CSR, 5);
+    /// let eye : CsMatOwned<f64> = CsMat::eye(5);
     /// // get the element of row 3
     /// // there is only one element in this row, with a column index of 3
     /// // and a value of 1.
@@ -1464,7 +1492,7 @@ mod test {
 
     #[test]
     fn outer_block_iter() {
-        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+        let mat : CsMatOwned<f64> = CsMat::eye(11);
         let mut block_iter = mat.outer_block_iter(3);
         assert_eq!(block_iter.next().unwrap().rows(), 3);
         assert_eq!(block_iter.next().unwrap().rows(), 3);
@@ -1481,7 +1509,7 @@ mod test {
 
     #[test]
     fn nnz_index() {
-        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+        let mat : CsMatOwned<f64> = CsMat::eye(11);
 
         assert_eq!(mat.nnz_index(2, 3), None);
         assert_eq!(mat.nnz_index(5, 7), None);

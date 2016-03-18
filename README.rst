@@ -45,7 +45,7 @@ Matrix construction
 .. code-block:: rust
 
   use sprs::{CsMat, CsMatOwned, CsVec};
-  let eye : CsMatOwned<f64> = CsMat::eye(sprs::CSR, 3);
+  let eye : CsMatOwned<f64> = CsMat::eye(3);
   let a = CsMat::new_owned(sprs::CSC, 3, 3,
                            vec![0, 2, 4, 5],
                            vec![0, 1, 0, 2, 2],
@@ -57,7 +57,7 @@ Matrix vector multiplication
 .. code-block:: rust
 
   use sprs::{CsMat, CsVec};
-  let eye = CsMat::eye(sprs::CSR, 5);
+  let eye = CsMat::eye(5);
   let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
   let y = &eye * &x;
   assert_eq!(x, y);
@@ -67,7 +67,7 @@ Matrix matrix multiplication, addition
 .. code-block:: rust
 
   use sprs::{CsMat, CsVec};
-  let eye = CsMat::eye(sprs::CSR, 3);
+  let eye = CsMat::eye(3);
   let a = CsMat::new_owned(sprs::CSC, 3, 3,
                            vec![0, 2, 4, 5],
                            vec![0, 1, 0, 2, 2],
