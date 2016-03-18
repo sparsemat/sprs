@@ -23,7 +23,7 @@ where N: Clone
     let outer_axis = if spmat.is_csr() { Axis(0) } else { Axis(1) };
 
     let iterator = spmat.outer_iterator().zip(array.axis_iter_mut(outer_axis));
-    for ((_, sprow), mut drow) in iterator {
+    for (sprow, mut drow) in iterator {
         for (ind, val) in sprow.iter() {
             drow[[ind]] = val.clone();
         }

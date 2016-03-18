@@ -8,7 +8,6 @@
 /// In the CSC format, the relation is
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
-use std::iter::{Enumerate};
 use std::default::Default;
 use std::slice::{self, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
@@ -86,7 +85,7 @@ pub struct NnzIndex(pub usize);
 /// Implemented over an iterator on the indptr array
 pub struct OuterIterator<'iter, N: 'iter> {
     inner_len: usize,
-    indptr_iter: Enumerate<Windows<'iter, usize>>,
+    indptr_iter: Windows<'iter, usize>,
     indices: &'iter [usize],
     data: &'iter [N],
 }
@@ -109,12 +108,12 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
 impl <'iter, N: 'iter>
 Iterator
 for OuterIterator<'iter, N> {
-    type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
+    type Item = CsVec<N, &'iter[usize], &'iter[N]>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
             None => None,
-            Some((outer_ind, window)) => {
+            Some(window) => {
                 let inner_start = window[0];
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
@@ -123,7 +122,7 @@ for OuterIterator<'iter, N> {
                 unsafe {
                     let vec = CsVec::new_raw(self.inner_len, indices.len(),
                                              indices.as_ptr(), data.as_ptr());
-                    Some((outer_ind, vec))
+                    Some(vec)
                 }
             }
         }
@@ -180,7 +179,7 @@ for OuterIterator<'iter, N> {
     fn next_back(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next_back() {
             None => None,
-            Some((outer_ind, window)) => {
+            Some(window) => {
                 let inner_start = window[0];
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
@@ -189,7 +188,7 @@ for OuterIterator<'iter, N> {
                 unsafe {
                     let vec = CsVec::new_raw(self.inner_len, indices.len(),
                                              indices.as_ptr(), data.as_ptr());
-                    Some((outer_ind, vec))
+                    Some(vec)
                 }
             }
         }
@@ -475,7 +474,7 @@ where IptrStorage: Deref<Target=[usize]>,
     /// ```rust
     /// use sprs::{CsMat};
     /// let eye = CsMat::eye(sprs::CSR, 5);
-    /// for (row_ind, row_vec) in eye.outer_iterator() {
+    /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
     ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
     ///     assert_eq!(row_ind, col_ind);
     ///     assert_eq!(val, 1.);
@@ -488,7 +487,7 @@ where IptrStorage: Deref<Target=[usize]>,
         };
         OuterIterator {
             inner_len: inner_len,
-            indptr_iter: self.indptr.windows(2).enumerate(),
+            indptr_iter: self.indptr.windows(2),
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -783,7 +782,7 @@ where IptrStorage: Deref<Target=[usize]>,
         }
 
         // check that the indices are sorted for each row
-        for (_, vec) in self.outer_iterator() {
+        for vec in self.outer_iterator() {
             try!(vec.check_structure());
         }
 
@@ -1012,7 +1011,7 @@ pub mod raw {
 
         assert!(indptr.iter().all(|x| *x == 0));
 
-        for (_, vec) in mat.outer_iterator() {
+        for vec in mat.outer_iterator() {
             for (inner_dim, _) in vec.iter() {
                 indptr[inner_dim] += 1;
             }
@@ -1028,7 +1027,7 @@ pub mod raw {
             assert_eq!(*last_iptr, mat.nb_nonzero());
         }
 
-        for (outer_dim, vec) in mat.outer_iterator() {
+        for (outer_dim, vec) in mat.outer_iterator().enumerate() {
             for (inner_dim, val) in vec.iter() {
                 let dest = indptr[inner_dim];
                 data[dest] = val.clone();

@@ -48,7 +48,7 @@ where N: Copy + Num,
     // At each step of the algorithm, the x_0 part is known,
     // and x_1 can be computed as x_1 = (b_1 - l_1_0^T.x_0) / l_1_1
 
-    for (row_ind, row) in lower_tri_mat.outer_iterator() {
+    for (row_ind, row) in lower_tri_mat.outer_iterator().enumerate() {
         let mut diag_val = N::zero();
         let mut x = rhs[row_ind];
         for (col_ind, &val) in row.iter() {
@@ -99,7 +99,7 @@ where N: Copy + Num,
     // and the step can be propagated by solving the reduced system
     // L_1_1 x1 = b_1 - x0*l_1_0
 
-    for (col_ind, col) in lower_tri_mat.outer_iterator() {
+    for (col_ind, col) in lower_tri_mat.outer_iterator().enumerate() {
         try!(lspsolve_csc_process_col(col, col_ind, rhs));
     }
     Ok(())
@@ -161,7 +161,7 @@ where N: Copy + Num,
     // and the step can be propagated by solving the reduced system
     // U_0_0 x0 = b_0 - x1*u_0_1
 
-    for (col_ind, col) in upper_tri_mat.outer_iterator().rev() {
+    for (col_ind, col) in upper_tri_mat.outer_iterator().enumerate().rev() {
         if let Some(&diag_val) = col.get(col_ind) {
             if diag_val == N::zero() {
                 return Err(SprsError::SingularMatrix);
@@ -208,7 +208,7 @@ where N: Copy + Num,
     // At each step of the algorithm, the x_1 part is known from previous
     // iterations and x_0 can be computed as
     // x0 = (b_0 - u_0_1^T.x_1) / u_0_0
-    for (row_ind, row) in upper_tri_mat.outer_iterator().rev() {
+    for (row_ind, row) in upper_tri_mat.outer_iterator().enumerate().rev() {
         let mut diag_val = N::zero();
         let mut x = rhs[row_ind];
         for (col_ind, &val) in row.iter() {

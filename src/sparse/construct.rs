@@ -33,7 +33,7 @@ where N: 'a + Clone,
     res.reserve_outer_dim_exact(outer_dim);
     res.reserve_nnz_exact(nnz);
     for mat in mats {
-        for (_, vec) in mat.outer_iterator() {
+        for vec in mat.outer_iterator() {
             res = res.append_outer_csvec(vec.view());
         }
     }
