@@ -1,7 +1,7 @@
 ///! Traits to generalize over compressed sparse matrices storages
 
 
-use sparse::csmat::{CsMat, CsMatView};
+use sparse::prelude::*;
 use sparse::vec::{CsVec, CsVecView};
 use std::ops::{Deref};
 

@@ -2,7 +2,7 @@
 
 use std::ops::{Deref};
 
-use sparse::csmat::CsMat;
+use sparse::prelude::*;
 
 pub fn is_symmetric<N, IpStorage, IStorage, DStorage>(
     mat: &CsMat<N, IpStorage, IStorage, DStorage>) -> bool
@@ -29,7 +29,7 @@ DStorage: Deref<Target=[N]> {
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::CsMat;
+    use sparse::CsMat;
     use sparse::csmat::CompressedStorage::{CSR};
     use super::is_symmetric;
 

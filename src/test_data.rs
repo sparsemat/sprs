@@ -1,42 +1,41 @@
 //! Some matrices used in tests
 
 use sparse::{CsMat, CsMatOwned};
-use sparse::CompressedStorage::{CSR, CSC};
 use ndarray::{arr2, OwnedArray, Ix};
 
 pub fn mat1() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];
     let indices = vec![2, 3, 3, 4, 2, 1, 3];
     let data = vec![3., 4., 2., 5., 5., 8., 7.];
-    CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new(5, 5, indptr, indices, data)
 }
 
 pub fn mat1_csc() -> CsMatOwned<f64> {
     let indptr = vec![0, 0, 1, 3, 6, 7];
     let indices = vec![3, 0, 2, 0, 1, 4, 1];
     let data = vec![8.,  3.,  5.,  4.,  2.,  7.,  5.];
-    CsMat::new_owned(CSC, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new_csc(5, 5, indptr, indices, data)
 }
 
 pub fn mat2() -> CsMatOwned<f64> {
     let indptr = vec![0,  4,  6,  6,  8, 10];
     let indices = vec![0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
     let data = vec![6.,  7.,  3.,  3.,  8., 9.,  2.,  4.,  4.,  4.];
-    CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new(5, 5, indptr, indices, data)
 }
 
 pub fn mat3() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];
     let indices = vec![2, 3, 2, 3, 2, 1, 3];
     let data = vec![3., 4., 2., 5., 5., 8., 7.];
-    CsMat::new_owned(CSR, 5, 4, indptr, indices, data).unwrap()
+    CsMat::new(5, 4, indptr, indices, data)
 }
 
 pub fn mat4() -> CsMatOwned<f64> {
     let indptr = vec![0,  4,  6,  6,  8, 10];
     let indices = vec![0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
     let data = vec![6.,  7.,  3.,  3.,  8., 9.,  2.,  4.,  4.,  4.];
-    CsMat::new_owned(CSC, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new_csc(5, 5, indptr, indices, data)
 }
 
 pub fn mat5() -> CsMatOwned<f64> {
@@ -45,7 +44,7 @@ pub fn mat5() -> CsMatOwned<f64> {
                        10, 11, 14, 4, 12];
     let data = vec![4.8, 2. , 3.7, 5.9, 6. , 1.6, 0.3, 9.2, 9.9, 4.8, 6.1,
                     4.4, 6. , 0.1, 7.2, 1. , 1.4, 6.4, 2.8, 3.4, 5.5, 3.5];
-    CsMat::new_owned(CSR, 5, 15, indptr, indices, data).unwrap()
+    CsMat::new(5, 15, indptr, indices, data)
 }
 
 /// Returns the scalar product of mat1 and mat2
@@ -53,7 +52,7 @@ pub fn mat1_times_2() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];
     let indices = vec![2, 3, 3, 4, 2, 1, 3];
     let data = vec![6., 8., 4., 10., 10., 16., 14.];
-    CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new(5, 5, indptr, indices, data)
 }
 
 // Matrix product of mat1 with itself
@@ -61,14 +60,14 @@ pub fn mat1_self_matprod() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 7, 8];
     let indices = vec![1, 2, 1, 3, 2, 3, 4, 1];
     let data = vec![32., 15., 16., 35., 25., 16., 40., 56.];
-    CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new(5, 5, indptr, indices, data)
 }
 
 pub fn mat1_matprod_mat2() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 5, 5, 7, 9];
     let indices = vec![2, 3, 1, 2, 3, 0, 3, 2, 3];
     let data = vec![8., 16., 20., 24.,  8., 64., 72., 14., 28.];
-    CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new(5, 5, indptr, indices, data)
 }
 
 pub fn mat1_csc_matprod_mat4() -> CsMatOwned<f64> {
@@ -76,7 +75,7 @@ pub fn mat1_csc_matprod_mat4() -> CsMatOwned<f64> {
     let indices = vec![0, 1, 2, 3, 0, 1, 4, 0, 1, 2, 4, 0, 2, 3];
     let data = vec![9., 15., 15., 56., 36., 18., 63., 22.,
                     8., 10., 28., 12., 20., 32.];
-    CsMat::new_owned(CSC, 5, 5, indptr, indices, data).unwrap()
+    CsMat::new_csc(5, 5, indptr, indices, data)
 }
 
 pub fn mat_dense1() -> OwnedArray<f64, (Ix, Ix)> {

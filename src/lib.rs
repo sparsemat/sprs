@@ -16,10 +16,10 @@ Matrix construction
 ```rust
 use sprs::{CsMat, CsMatOwned, CsVec};
 let eye : CsMatOwned<f64> = CsMat::eye(3);
-let a = CsMat::new_owned(sprs::CSC, 3, 3,
-                         vec![0, 2, 4, 5],
-                         vec![0, 1, 0, 2, 2],
-                         vec![1., 2., 3., 4., 5.]).unwrap();
+let a = CsMat::new_csc(3, 3,
+                       vec![0, 2, 4, 5],
+                       vec![0, 1, 0, 2, 2],
+                       vec![1., 2., 3., 4., 5.]);
 ```
 
 Matrix vector multiplication
@@ -37,10 +37,10 @@ Matrix matrix multiplication, addition
 ```rust
 use sprs::{CsMat, CsVec};
 let eye = CsMat::eye(3);
-let a = CsMat::new_owned(sprs::CSC, 3, 3,
-                         vec![0, 2, 4, 5],
-                         vec![0, 1, 0, 2, 2],
-                         vec![1., 2., 3., 4., 5.]).unwrap();
+let a = CsMat::new_csc(3, 3,
+                       vec![0, 2, 4, 5],
+                       vec![0, 1, 0, 2, 2],
+                       vec![1., 2., 3., 4., 5.]);
 let b = &eye * &a;
 assert_eq!(a, b.to_csc());
 ```
@@ -67,7 +67,8 @@ pub type SpRes<T> = Result<T, errors::SprsError>;
 
 
 mod utils {
-    use sparse::csmat::{self, CsMatView};
+
+    use sparse::{csmat, CsMatView};
 
     /// Create a borrowed CsMat matrix from sliced data without
     /// checking validity. Intended for internal use only.

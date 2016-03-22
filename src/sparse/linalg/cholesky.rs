@@ -454,7 +454,7 @@ mod test {
         let data = vec![1.7, 0.13, 1., 0.02, 0.01, 1.5, 1.1, 0.02, 2.6, 0.16,
                         0.09, 0.52, 0.53, 1.2, 0.16, 1.3, 0.56, 0.09, 1.6,
                         0.11, 0.13, 0.52, 0.11, 1.4, 0.01, 0.53, 0.56, 3.1];
-        CsMat::new_owned(CSC, 10, 10, indptr, indices, data).unwrap()
+        CsMat::new_csc(10, 10, indptr, indices, data)
     }
 
     fn test_vec1() -> Vec<f64> {
@@ -618,13 +618,11 @@ mod test {
         // |   6 2  | |3| = |18|
         // |2      8| |4|   |34|
 
-        let mat = CsMatOwned::new_owned(CSC,
-                                        4,
-                                        4,
-                                        vec![0, 2, 4, 6, 8],
-                                        vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                        vec![1, 2, 21, 6, 6, 2, 2, 8])
-                      .unwrap();
+        let mat = CsMatOwned::new_csc(4,
+                                      4,
+                                      vec![0, 2, 4, 6, 8],
+                                      vec![0, 3, 1, 2, 1, 2, 0, 3],
+                                      vec![1, 2, 21, 6, 6, 2, 2, 8]);
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 

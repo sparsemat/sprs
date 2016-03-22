@@ -30,7 +30,7 @@ use num::traits::Num;
 
 use sparse::permutation::PermView;
 use sparse::{prod, binop};
-use sparse::csmat::{CsMat, CsMatVecView};
+use sparse::prelude::*;
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 use errors::SprsError;
 

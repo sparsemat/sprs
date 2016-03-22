@@ -9,7 +9,7 @@
 ///! entries. By convention, duplicate locations are summed up when converting
 ///! into CsMatOwned.
 
-use sparse::csmat;
+use sparse::{csmat, CsMatOwned};
 use num::traits::Num;
 
 /// Indexing type into a Triplet
@@ -182,14 +182,14 @@ impl<N> TripletMat<N> {
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> csmat::CsMatOwned<N>
+    pub fn to_csc(&self) -> CsMatOwned<N>
     where N: Clone + Num
     {
         self.borrowed().to_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> csmat::CsMatOwned<N>
+    pub fn to_csr(&self) -> CsMatOwned<N>
     where N: Clone + Num
     {
         self.borrowed().to_csr()
@@ -264,7 +264,7 @@ impl<'a, N> TripletView<'a, N> {
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> csmat::CsMatOwned<N>
+    pub fn to_csc(&self) -> CsMatOwned<N>
     where N: Clone + Num
     {
         let mut row_counts = vec![0; self.rows() + 1];
@@ -344,17 +344,18 @@ impl<'a, N> TripletView<'a, N> {
                                     &mut out_indptr,
                                     &mut out_indices,
                                     &mut out_data);
-        csmat::CsMatOwned::new_owned(csmat::CompressedStorage::CSC,
-                                     self.rows,
-                                     self.cols,
-                                     out_indptr,
-                                     out_indices,
-                                     out_data)
-            .expect("struct ensured by previous code")
+        CsMatOwned {
+            storage: csmat::CompressedStorage::CSC,
+            nrows: self.rows,
+            ncols: self.cols,
+            indptr: out_indptr,
+            indices: out_indices,
+            data: out_data
+        }
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> csmat::CsMatOwned<N>
+    pub fn to_csr(&self) -> CsMatOwned<N>
     where N: Clone + Num
     {
         let res = self.transpose_view().to_csc();
@@ -437,14 +438,14 @@ impl<'a, N> TripletViewMut<'a, N> {
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> csmat::CsMatOwned<N>
+    pub fn to_csc(&self) -> CsMatOwned<N>
     where N: Clone + Num
     {
         self.borrowed().to_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> csmat::CsMatOwned<N>
+    pub fn to_csr(&self) -> CsMatOwned<N>
     where N: Clone + Num
     {
         self.borrowed().to_csr()
@@ -455,8 +456,7 @@ impl<'a, N> TripletViewMut<'a, N> {
 mod test {
 
     use super::TripletMat;
-    use sparse::csmat;
-    use sparse::csmat::CompressedStorage::CSC;
+    use sparse::CsMatOwned;
 
     #[test]
     fn triplet_incremental() {
@@ -473,14 +473,11 @@ mod test {
         triplet_mat.add_triplet(3, 3, 6.);
 
         let csc = triplet_mat.to_csc();
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    4,
-                                                    4,
-                                                    vec![0, 2, 3, 4, 6],
-                                                    vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4.,
-                                                         6.])
-                           .unwrap();
+        let expected = CsMatOwned::new_csc(4,
+                                           4,
+                                           vec![0, 2, 3, 4, 6],
+                                           vec![0, 1, 0, 3, 2, 3],
+                                           vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -503,14 +500,11 @@ mod test {
         triplet_mat.add_triplet(3, 2, 5.);
 
         let csc = triplet_mat.to_csc();
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    4,
-                                                    4,
-                                                    vec![0, 2, 3, 4, 6],
-                                                    vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4.,
-                                                         6.])
-                           .unwrap();
+        let expected = CsMatOwned::new_csc(4,
+                                           4,
+                                           vec![0, 2, 3, 4, 6],
+                                           vec![0, 1, 0, 3, 2, 3],
+                                           vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -533,14 +527,11 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csc = triplet_mat.to_csc();
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    4,
-                                                    4,
-                                                    vec![0, 2, 3, 4, 6],
-                                                    vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4.,
-                                                         6.])
-                           .unwrap();
+        let expected = CsMatOwned::new_csc(4,
+                                           4,
+                                           vec![0, 2, 3, 4, 6],
+                                           vec![0, 1, 0, 3, 2, 3],
+                                           vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -561,15 +552,11 @@ mod test {
                                                            data);
 
         let csc = triplet_mat.to_csc();
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    5,
-                                                    4,
-                                                    vec![0, 2, 4, 5, 8],
-                                                    vec![0, 1, 0, 4, 3, 2, 3,
-                                                         4],
-                                                    vec![1, 3, 2, 7, 5, 4, 6,
-                                                         8])
-                           .unwrap();
+        let expected = CsMatOwned::new_csc(5,
+                                           4,
+                                           vec![0, 2, 4, 5, 8],
+                                           vec![0, 1, 0, 4, 3, 2, 3, 4],
+                                           vec![1, 3, 2, 7, 5, 4, 6, 8]);
 
         assert_eq!(csc, expected);
     }
@@ -590,14 +577,11 @@ mod test {
 
 
         let csc = triplet_mat.to_csc();
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    4,
-                                                    4,
-                                                    vec![0, 2, 3, 4, 6],
-                                                    vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 0.,
-                                                         6.])
-                           .unwrap();
+        let expected = CsMatOwned::new_csc(4,
+                                           4,
+                                           vec![0, 2, 3, 4, 6],
+                                           vec![0, 1, 0, 3, 2, 3],
+                                           vec![1., 3., 2., 5., 0., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -620,14 +604,11 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csr = triplet_mat.to_csr();
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    4,
-                                                    4,
-                                                    vec![0, 2, 3, 4, 6],
-                                                    vec![0, 1, 0, 3, 2, 3],
-                                                    vec![1., 3., 2., 5., 4.,
-                                                         6.])
-                           .unwrap()
+        let expected = CsMatOwned::new_csc(4,
+                                           4,
+                                           vec![0, 2, 3, 4, 6],
+                                           vec![0, 1, 0, 3, 2, 3],
+                                           vec![1., 3., 2., 5., 4., 6.])
                            .to_csr();
         assert_eq!(csr, expected);
     }
@@ -671,20 +652,18 @@ mod test {
 
         let csc = triplet_mat.to_csc();
 
-        let expected = csmat::CsMatOwned::new_owned(CSC,
-                                                    6,
-                                                    9,
-                                                    vec![0, 6, 7, 8, 10, 11,
-                                                         14, 15, 16, 22],
-                                                    vec![0, 1, 2, 3, 4, 5, 2,
-                                                         3, 2, 4, 0, 1, 3, 5,
-                                                         2, 5, 0, 1, 2, 3, 4,
-                                                         5],
-                                                    vec![1, 1, 1, 1, 1, 1, 2,
-                                                         9, 3, 5, 6, 1, 4, 7,
-                                                         3, 8, 2, 2, 2, 2, 2,
-                                                         2])
-                           .unwrap();
+        let expected = CsMatOwned::new_csc(6,
+                                           9,
+                                           vec![0, 6, 7, 8, 10, 11,
+                                                14, 15, 16, 22],
+                                           vec![0, 1, 2, 3, 4, 5, 2,
+                                                3, 2, 4, 0, 1, 3, 5,
+                                                2, 5, 0, 1, 2, 3, 4,
+                                                5],
+                                           vec![1, 1, 1, 1, 1, 1, 2,
+                                                9, 3, 5, 6, 1, 4, 7,
+                                                3, 8, 2, 2, 2, 2, 2,
+                                                2]);
 
         assert_eq!(csc, expected);
 

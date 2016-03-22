@@ -1,6 +1,6 @@
 ///! Sparse matrix product
 
-use sparse::csmat::{CsMatOwned, CsMatView};
+use sparse::prelude::*;
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
@@ -142,7 +142,7 @@ where N: Num + Copy {
     }
 
     let mut res = CsMatOwned::empty(lhs.storage(), res_cols);
-    res.reserve_nnz_exact(lhs.nb_nonzero() + rhs.nb_nonzero());
+    res.reserve_nnz_exact(lhs.nnz() + rhs.nnz());
     for lvec in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
@@ -359,7 +359,7 @@ where N: 'a + Num + Copy
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{CsMat, CsMatOwned};
+    use sparse::{CsMat, CsMatOwned};
     use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};

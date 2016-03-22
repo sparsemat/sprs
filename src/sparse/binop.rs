@@ -1,6 +1,7 @@
 ///! Sparse matrix addition, subtraction
 
-use sparse::csmat::{CsMat, CsMatOwned, CsMatView, CompressedStorage};
+use sparse::csmat::CompressedStorage;
+use sparse::prelude::*;
 use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
@@ -68,7 +69,7 @@ where N: Num,
         return Err(SprsError::IncompatibleStorages);
     }
 
-    let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
+    let max_nnz = lhs.nnz() + rhs.nnz();
     let mut out_indptr = vec![0; lhs.outer_dims() + 1];
     let mut out_indices = vec![0; max_nnz];
 
@@ -86,8 +87,14 @@ where N: Num,
                                            &mut out_data[..]);
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
-    Ok(CsMat::new_owned(storage_type, nrows, ncols,
-                        out_indptr, out_indices, out_data).unwrap())
+    Ok(CsMat {
+        storage: storage_type,
+        nrows: nrows,
+        ncols: ncols,
+        indptr: out_indptr,
+        indices: out_indices,
+        data: out_data
+    })
 }
 
 
@@ -109,7 +116,7 @@ where N: Num,
     assert_eq!(lhs.rows(), rhs.rows());
     assert_eq!(lhs.storage(), rhs.storage());
     assert_eq!(out_indptr.len(), rhs.outer_dims() + 1);
-    let max_nnz = lhs.nb_nonzero() + rhs.nb_nonzero();
+    let max_nnz = lhs.nnz() + rhs.nnz();
     assert!(out_data.len() >= max_nnz);
     assert!(out_indices.len() >= max_nnz);
     let mut nnz = 0;
@@ -250,9 +257,8 @@ where N: Num,
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{CsMat, CsMatOwned};
+    use sparse::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
-    use sparse::CompressedStorage::{CSR};
     use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
     use ndarray::{arr2, OwnedArray};
 
@@ -262,7 +268,7 @@ mod test {
         let data = vec![6.,  7.,  6.,  4.,  3.,
                         8.,  11.,  5.,  5.,  8.,
                         2.,  4.,  4.,  4.,  7.];
-        CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+        CsMat::new(5, 5, indptr, indices, data)
     }
 
     fn mat1_minus_mat2() -> CsMatOwned<f64> {
@@ -271,14 +277,14 @@ mod test {
         let data = vec![-6., -7.,  4., -3., -8.,
                         -7.,  5.,  5.,  8., -2.,
                         -4., -4., -4.,  7.];
-        CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+        CsMat::new(5, 5, indptr, indices, data)
     }
 
     fn mat1_times_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  1,  2,  2, 2, 2];
         let indices = vec![2, 3];
         let data = vec![9., 18.];
-        CsMat::new_owned(CSR, 5, 5, indptr, indices, data).unwrap()
+        CsMat::new(5, 5, indptr, indices, data)
     }
 
 
@@ -295,18 +301,18 @@ mod test {
         assert_eq!(c, c_true);
 
         // test with CSR matrices having differ row patterns
-        let a = CsMatOwned::new_owned(CSR, 3, 3,
-                                      vec![0, 1, 1, 2],
-                                      vec![0, 2],
-                                      vec![1., 1.]).unwrap();
-        let b = CsMatOwned::new_owned(CSR, 3, 3,
-                                      vec![0, 1, 2, 2],
-                                      vec![0, 1],
-                                      vec![1., 1.]).unwrap();
-        let c = CsMatOwned::new_owned(CSR, 3, 3,
-                                      vec![0, 1, 2, 3],
-                                      vec![0, 1, 2],
-                                      vec![2., 1., 1.]).unwrap();
+        let a = CsMatOwned::new(3, 3,
+                                vec![0, 1, 1, 2],
+                                vec![0, 2],
+                                vec![1., 1.]);
+        let b = CsMatOwned::new(3, 3,
+                                vec![0, 1, 2, 2],
+                                vec![0, 1],
+                                vec![1., 1.]);
+        let c = CsMatOwned::new(3, 3,
+                                vec![0, 1, 2, 3],
+                                vec![0, 1, 2],
+                                vec![2., 1., 1.]);
 
         assert_eq!(c, &a + &b);
     }
