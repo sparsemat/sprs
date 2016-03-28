@@ -268,7 +268,7 @@ mod test {
         let data = vec![6.,  7.,  6.,  4.,  3.,
                         8.,  11.,  5.,  5.,  8.,
                         2.,  4.,  4.,  4.,  7.];
-        CsMat::new(5, 5, indptr, indices, data)
+        CsMat::new((5, 5), indptr, indices, data)
     }
 
     fn mat1_minus_mat2() -> CsMatOwned<f64> {
@@ -277,14 +277,14 @@ mod test {
         let data = vec![-6., -7.,  4., -3., -8.,
                         -7.,  5.,  5.,  8., -2.,
                         -4., -4., -4.,  7.];
-        CsMat::new(5, 5, indptr, indices, data)
+        CsMat::new((5, 5), indptr, indices, data)
     }
 
     fn mat1_times_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  1,  2,  2, 2, 2];
         let indices = vec![2, 3];
         let data = vec![9., 18.];
-        CsMat::new(5, 5, indptr, indices, data)
+        CsMat::new((5, 5), indptr, indices, data)
     }
 
 
@@ -301,15 +301,15 @@ mod test {
         assert_eq!(c, c_true);
 
         // test with CSR matrices having differ row patterns
-        let a = CsMatOwned::new(3, 3,
+        let a = CsMatOwned::new((3, 3),
                                 vec![0, 1, 1, 2],
                                 vec![0, 2],
                                 vec![1., 1.]);
-        let b = CsMatOwned::new(3, 3,
+        let b = CsMatOwned::new((3, 3),
                                 vec![0, 1, 2, 2],
                                 vec![0, 1],
                                 vec![1., 1.]);
-        let c = CsMatOwned::new(3, 3,
+        let c = CsMatOwned::new((3, 3),
                                 vec![0, 1, 2, 3],
                                 vec![0, 1, 2],
                                 vec![2., 1., 1.]);

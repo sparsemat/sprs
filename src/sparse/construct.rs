@@ -125,8 +125,8 @@ where N: 'a + Clone + Default,
     to_vstack.reserve(super_rows);
     for (i, row) in mats.iter().enumerate() {
         let with_zeros: Vec<_> = row.as_ref().iter().enumerate().map(|(j, m)| {
-            m.as_ref().map_or(CsMatOwned::zero(rows_per_row[i], cols_per_col[j]),
-                              |x| x.to_owned())
+            let shape = (rows_per_row[i], cols_per_col[j]);
+            m.as_ref().map_or(CsMatOwned::zero(shape), |x| x.to_owned())
         }).collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
         let stacked = try!(hstack(&borrows));
@@ -198,7 +198,7 @@ mod test {
         let indices = vec![2, 3, 3, 4, 2, 1, 3, 0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
         let data = vec![3., 4., 2., 5., 5., 8., 7., 6., 7., 3., 3.,
                         8., 9., 2., 4., 4., 4.];
-        CsMatOwned::new(10, 5, indptr, indices, data)
+        CsMatOwned::new((10, 5), indptr, indices, data)
     }
 
     #[test]
@@ -279,7 +279,7 @@ mod test {
         let c = super::bmat(&[[Some(a.view()), None],
                               [None, Some(b.view())]]).unwrap();
         let expected = CsMatOwned::new(
-            9, 9,
+            (9, 9),
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
             vec![1.; 9]);
@@ -293,7 +293,7 @@ mod test {
         let c = super::bmat(&[[Some(a.view()), Some(b.view())],
                               [Some(b.view()), None]]).unwrap();
         let expected = CsMatOwned::new(
-            10, 10,
+            (10, 10),
             vec![0,  6, 10, 11, 14, 17, 21, 23, 23, 25, 27],
             vec![2, 3, 5, 6, 7, 9, 3, 4, 5, 8, 2, 1, 7, 8, 3,
                  6, 7, 0, 1, 2, 4, 0, 3, 2, 3, 1, 2],
@@ -307,7 +307,7 @@ mod test {
                               [None, Some(e.view())]]
                            ).unwrap();
         let expected = CsMatOwned::new(
-            10, 9,
+            (10, 9),
             vec![0, 4, 8, 10, 12, 14, 16, 18, 21, 23, 24],
             vec![2, 3, 6, 7, 2, 3, 7, 8, 2, 6, 1, 5, 3, 7, 4,
                  5, 4, 8, 4, 7, 8, 5, 7, 4],
@@ -328,8 +328,7 @@ mod test {
                        [3., 0., 1., 0.,   0.]]);
         let m_sparse = super::csr_from_dense(m.view(), 1e-5);
 
-        let expected_output = CsMatOwned::new(3,
-                                              5,
+        let expected_output = CsMatOwned::new((3, 5),
                                               vec![0, 3, 4, 6],
                                               vec![0, 2, 4, 3, 0, 2],
                                               vec![1., 2., 1., 1., 3., 1.]);
@@ -349,8 +348,7 @@ mod test {
                        [3., 0., 1., 0.,   0.]]);
         let m_sparse = super::csc_from_dense(m.view(), 1e-5);
 
-        let expected_output = CsMatOwned::new_csc(3,
-                                                  5,
+        let expected_output = CsMatOwned::new_csc((3, 5),
                                                   vec![0, 2, 2, 4, 5, 6],
                                                   vec![0, 2, 0, 2, 1, 0],
                                                   vec![1., 3., 2., 1., 1., 1.]);

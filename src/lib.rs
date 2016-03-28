@@ -16,7 +16,7 @@ Matrix construction
 ```rust
 use sprs::{CsMat, CsMatOwned, CsVec};
 let eye : CsMatOwned<f64> = CsMat::eye(3);
-let a = CsMat::new_csc(3, 3,
+let a = CsMat::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);
@@ -37,7 +37,7 @@ Matrix matrix multiplication, addition
 ```rust
 use sprs::{CsMat, CsVec};
 let eye = CsMat::eye(3);
-let a = CsMat::new_csc(3, 3,
+let a = CsMat::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);
@@ -62,6 +62,14 @@ pub use sparse::CompressedStorage::{CSR, CSC};
 pub use sparse::construct::{vstack, hstack, bmat};
 
 pub type Ix2 = (Ix_, Ix_);
+
+
+/// The shape of a matrix. This a 2-tuple with the first element indicating
+/// the number of rows, and the second element indicating the number of
+/// columns.
+pub type Shape = (usize, usize); // FIXME: maybe we could use Ix2 here?
+
+
 pub type SpRes<T> = Result<T, errors::SprsError>;
 
 
@@ -69,18 +77,19 @@ pub type SpRes<T> = Result<T, errors::SprsError>;
 mod utils {
 
     use sparse::{csmat, CsMatView};
+    use ::Shape;
 
     /// Create a borrowed CsMat matrix from sliced data without
     /// checking validity. Intended for internal use only.
     pub fn csmat_borrowed_uchk<'a, N>(storage: csmat::CompressedStorage,
-                                      nrows : usize, ncols: usize,
+                                      shape: Shape,
                                       indptr : &'a [usize],
                                       indices : &'a [usize],
                                       data : &'a [N]
                                      ) -> CsMatView<'a, N> {
         // not actually memory unsafe here since data comes from slices
         unsafe {
-            CsMatView::new_view_raw(storage, nrows, ncols,
+            CsMatView::new_view_raw(storage, shape,
                                     indptr.as_ptr(),
                                     indices.as_ptr(),
                                     data.as_ptr())

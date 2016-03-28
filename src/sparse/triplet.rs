@@ -336,8 +336,7 @@ impl<'a, N> TripletView<'a, N> {
         let mut out_indices = vec![0; nnz];
         let mut out_data = vec![N::zero(); nnz];
         csmat::raw::convert_storage(csmat::CompressedStorage::CSR,
-                                    self.rows(),
-                                    self.cols(),
+                                    self.shape(),
                                     &indptr,
                                     &indices,
                                     &data,
@@ -473,8 +472,7 @@ mod test {
         triplet_mat.add_triplet(3, 3, 6.);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc(4,
-                                           4,
+        let expected = CsMatOwned::new_csc((4, 4),
                                            vec![0, 2, 3, 4, 6],
                                            vec![0, 1, 0, 3, 2, 3],
                                            vec![1., 3., 2., 5., 4., 6.]);
@@ -500,8 +498,7 @@ mod test {
         triplet_mat.add_triplet(3, 2, 5.);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc(4,
-                                           4,
+        let expected = CsMatOwned::new_csc((4, 4),
                                            vec![0, 2, 3, 4, 6],
                                            vec![0, 1, 0, 3, 2, 3],
                                            vec![1., 3., 2., 5., 4., 6.]);
@@ -527,8 +524,7 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc(4,
-                                           4,
+        let expected = CsMatOwned::new_csc((4, 4),
                                            vec![0, 2, 3, 4, 6],
                                            vec![0, 1, 0, 3, 2, 3],
                                            vec![1., 3., 2., 5., 4., 6.]);
@@ -552,8 +548,7 @@ mod test {
                                                            data);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc(5,
-                                           4,
+        let expected = CsMatOwned::new_csc((5, 4),
                                            vec![0, 2, 4, 5, 8],
                                            vec![0, 1, 0, 4, 3, 2, 3, 4],
                                            vec![1, 3, 2, 7, 5, 4, 6, 8]);
@@ -577,8 +572,7 @@ mod test {
 
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc(4,
-                                           4,
+        let expected = CsMatOwned::new_csc((4, 4),
                                            vec![0, 2, 3, 4, 6],
                                            vec![0, 1, 0, 3, 2, 3],
                                            vec![1., 3., 2., 5., 0., 6.]);
@@ -604,8 +598,7 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csr = triplet_mat.to_csr();
-        let expected = CsMatOwned::new_csc(4,
-                                           4,
+        let expected = CsMatOwned::new_csc((4, 4),
                                            vec![0, 2, 3, 4, 6],
                                            vec![0, 1, 0, 3, 2, 3],
                                            vec![1., 3., 2., 5., 4., 6.])
@@ -652,8 +645,7 @@ mod test {
 
         let csc = triplet_mat.to_csc();
 
-        let expected = CsMatOwned::new_csc(6,
-                                           9,
+        let expected = CsMatOwned::new_csc((6, 9),
                                            vec![0, 6, 7, 8, 10, 11,
                                                 14, 15, 16, 22],
                                            vec![0, 1, 2, 3, 4, 5, 2,
