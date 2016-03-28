@@ -59,7 +59,7 @@ use std::ops::IndexMut;
 
 use num::traits::Num;
 
-use sparse::csmat::{self, CsMat, CsMatView};
+use sparse::{csmat, CsMat, CsMatView};
 use sparse::symmetric::is_symmetric;
 use sparse::permutation::{Permutation, PermOwned};
 use utils::csmat_borrowed_uchk;
@@ -439,7 +439,7 @@ where N: Clone + Copy + Num,
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{self, CsMat, CsMatOwned};
+    use sparse::{csmat, CsMat, CsMatOwned};
     use sparse::csmat::CompressedStorage::CSC;
     use sparse::permutation::Permutation;
     use sparse::linalg;
