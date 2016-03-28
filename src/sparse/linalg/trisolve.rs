@@ -401,8 +401,7 @@ mod test {
                                     vec![0, 2, 5, 6, 8, 9],
                                     vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
                                     vec![1, 1, 2, 3, 2, 3, 7, 3, 5]);
-        let b = vec::CsVecOwned::new_owned(5, vec![1, 2, 4], vec![4, 9, 9])
-                    .unwrap();
+        let b = vec::CsVecOwned::new(5, vec![1, 2, 4], vec![4, 9, 9]);
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
         let mut dstack = DStack::with_capacity(2 * 5);
@@ -418,10 +417,9 @@ mod test {
                                   .map(|&i| (i, xw[i]))
                                   .collect();
 
-        let expected_output = vec::CsVecOwned::new_owned(5,
-                                                         vec![1, 2, 4],
-                                                         vec![2, 1, 1])
-                                  .unwrap();
+        let expected_output = vec::CsVecOwned::new(5,
+                                                   vec![1, 2, 4],
+                                                   vec![2, 1, 1]);
         let expected_output = expected_output.to_set();
 
         assert_eq!(x, expected_output);
@@ -439,10 +437,9 @@ mod test {
                                          5, 6],
                                     vec![1, 1, 2, 3, 3, 1, 7, 5, 2,
                                          1, 2]);
-        let b = vec::CsVecOwned::new_owned(7,
-                                           vec![0, 2, 3, 5],
-                                           vec![1, 7, 7, 3])
-                    .unwrap();
+        let b = vec::CsVecOwned::new(7,
+                                     vec![0, 2, 3, 5],
+                                     vec![1, 7, 7, 3]);
         let mut dstack = DStack::with_capacity(2 * 7);
         let mut xw = vec![1; 7]; // inital values should not matter
         let mut visited = vec![false; 7]; // inital values matter here
@@ -458,11 +455,10 @@ mod test {
                                   .map(|&i| (i, xw[i]))
                                   .collect();
 
-        let expected_output = vec::CsVecOwned::new_owned(7,
-                                                         vec![0, 2, 3, 5],
-                                                         vec![1, 2, 1, 1])
-                                  .unwrap()
-                                  .to_set();
+        let expected_output = vec::CsVecOwned::new(7,
+                                                   vec![0, 2, 3, 5],
+                                                   vec![1, 2, 1, 1]
+                                                  ).to_set();
 
         assert_eq!(x, expected_output);
     }

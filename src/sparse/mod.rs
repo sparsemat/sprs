@@ -37,6 +37,29 @@ mod prelude {
     };
 }
 
+mod utils {
+    pub fn sort_indices_data_slices<N: Copy>(indices: &mut [usize],
+                                             data: &mut [N],
+                                             buf: &mut Vec<(usize, N)>) {
+        let len = indices.len();
+        assert_eq!(len, data.len());
+        let indices = &mut indices[..len];
+        let data = &mut data[..len];
+        buf.clear();
+        buf.reserve_exact(len);
+        for i in 0..len {
+            buf.push((indices[i], data[i]));
+        }
+
+        buf.sort_by_key(|x| x.0);
+
+        for (i, &(ind, x)) in buf.iter().enumerate() {
+            indices[i] = ind;
+            data[i] = x;
+        }
+    }
+}
+
 pub mod csmat;
 pub mod triplet;
 pub mod vec;

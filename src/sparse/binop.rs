@@ -354,21 +354,20 @@ mod test {
 
     #[test]
     fn csvec_binops() {
-        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
-        let vec2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
-        let vec3 = CsVec::new_owned(8, vec![1, 2, 5, 6], vec![3.; 4]).unwrap();
+        let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let vec2 = CsVec::new(8, vec![1, 3, 5, 7], vec![2.; 4]);
+        let vec3 = CsVec::new(8, vec![1, 2, 5, 6], vec![3.; 4]);
 
         let res = &vec1 + &vec2;
-        let expected_output = CsVec::new_owned(
-            8, vec![0, 1, 2, 3, 4, 5, 6, 7],
-            vec![1., 2., 1., 2., 1., 2., 1., 2.]).unwrap();
+        let expected_output = CsVec::new(8,
+                                         vec![0, 1, 2, 3, 4, 5, 6, 7],
+                                         vec![1., 2., 1., 2., 1., 2., 1., 2.]);
         assert_eq!(expected_output, res);
 
         let res = &vec1 + &vec3;
-        let expected_output = CsVec::new_owned(8,
-                                               vec![0, 1, 2, 4, 5, 6],
-                                               vec![1., 3., 4., 1., 3., 4.]
-                                              ).unwrap();
+        let expected_output = CsVec::new(8,
+                                         vec![0, 1, 2, 4, 5, 6],
+                                         vec![1., 3., 4., 1., 3., 4.]);
         assert_eq!(expected_output, res);
     }
 

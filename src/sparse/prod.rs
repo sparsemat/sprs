@@ -462,44 +462,36 @@ mod test {
     #[test]
     fn mul_csr_csvec() {
         let a = mat1();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &a * &v;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![0, 1, 2],
-                                               vec![3., 5., 5.]).unwrap();
+        let expected_output = CsVec::new(5, vec![0, 1, 2], vec![3., 5., 5.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csvec_csr() {
         let a = mat1();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &v * &a;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![2, 3],
-                                               vec![8., 11.]).unwrap();
+        let expected_output = CsVec::new(5, vec![2, 3], vec![8., 11.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csc_csvec() {
         let a = mat1_csc();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &a * &v;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![0, 1, 2],
-                                               vec![3., 5., 5.]).unwrap();
+        let expected_output = CsVec::new(5, vec![0, 1, 2], vec![3., 5., 5.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csvec_csc() {
         let a = mat1_csc();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &v * &a;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![2, 3],
-                                               vec![8., 11.]).unwrap();
+        let expected_output = CsVec::new(5, vec![2, 3], vec![8., 11.]);
         assert_eq!(expected_output, res);
     }
 

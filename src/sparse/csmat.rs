@@ -23,6 +23,7 @@ use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
+use sparse::utils;
 use errors::SprsError;
 use sparse::to_dense::assign_to_dense;
 
@@ -446,18 +447,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             let len = stop - start;
             let indices = &mut indices[..len];
             let data = &mut data[..len];
-            buf.clear();
-            buf.reserve_exact(len);
-            for i in 0..len {
-                buf.push((indices[i], data[i]));
-            }
-
-            buf.sort_by_key(|x| x.0);
-
-            for (i, &(ind, x)) in buf.iter().enumerate() {
-                indices[i] = ind;
-                data[i] = x;
-            }
+            utils::sort_indices_data_slices(indices, data, &mut buf);
         }
     }
 
@@ -506,7 +496,7 @@ impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// use sprs::{CsMat, CsVec};
     /// let eye = CsMat::eye(5);
     /// assert!(eye.is_csr());
-    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
@@ -533,7 +523,7 @@ impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// use sprs::{CsMat, CsVec};
     /// let eye = CsMat::eye_csc(5);
     /// assert!(eye.is_csc());
-    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```

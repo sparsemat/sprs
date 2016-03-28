@@ -58,7 +58,7 @@ Matrix vector multiplication
 
   use sprs::{CsMat, CsVec};
   let eye = CsMat::eye(5);
-  let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+  let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
   let y = &eye * &x;
   assert_eq!(x, y);
 
