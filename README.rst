@@ -99,6 +99,7 @@ Changelog
     - rename ``new_raw()`` into ``new_view_raw()``.
     - rename ``new_owned()`` into ``new()`` or ``new_csc()`` depending on the
       desired ordering, and have the ownning constructors panic on bad input.
+    - constructors now take a tuple for shape information
 - 0.4.0-alpha.3:
     - rename ``at`` family of functions into ``get``, consistent with the naming
       scheme in standard library. **breaking change**
