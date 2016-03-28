@@ -1,6 +1,6 @@
 ///! Sparse matrix product
 
-use sparse::csmat::{CsMatOwned, CsMatView};
+use sparse::prelude::*;
 use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
@@ -142,7 +142,7 @@ where N: Num + Copy {
     }
 
     let mut res = CsMatOwned::empty(lhs.storage(), res_cols);
-    res.reserve_nnz_exact(lhs.nb_nonzero() + rhs.nb_nonzero());
+    res.reserve_nnz_exact(lhs.nnz() + rhs.nnz());
     for lvec in lhs.outer_iterator() {
         // reset the accumulators
         for wval in workspace.iter_mut() {
@@ -359,7 +359,7 @@ where N: 'a + Num + Copy
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{CsMat, CsMatOwned};
+    use sparse::{CsMat, CsMatOwned};
     use sparse::vec::{CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
@@ -376,7 +376,7 @@ mod test {
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
 
-        let mat = CsMat::new_borrowed(CSC, 5, 5, indptr, indices, data).unwrap();
+        let mat = CsMat::new_view(CSC, (5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csc(mat, &vector, &mut res_vec).unwrap();
@@ -398,7 +398,7 @@ mod test {
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
 
-        let mat = CsMat::new_borrowed(CSR, 5, 5, indptr, indices, data).unwrap();
+        let mat = CsMat::new_view(CSR, (5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csr(mat, &vector, &mut res_vec).unwrap();
@@ -414,7 +414,7 @@ mod test {
 
     #[test]
     fn mul_csr_csr_identity() {
-        let eye: CsMatOwned<i32> = CsMat::eye(CSR, 10);
+        let eye: CsMatOwned<i32> = CsMat::eye(10);
         let mut workspace = [0; 10];
         let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
         assert_eq!(eye, res);
@@ -462,51 +462,43 @@ mod test {
     #[test]
     fn mul_csr_csvec() {
         let a = mat1();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &a * &v;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![0, 1, 2],
-                                               vec![3., 5., 5.]).unwrap();
+        let expected_output = CsVec::new(5, vec![0, 1, 2], vec![3., 5., 5.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csvec_csr() {
         let a = mat1();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &v * &a;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![2, 3],
-                                               vec![8., 11.]).unwrap();
+        let expected_output = CsVec::new(5, vec![2, 3], vec![8., 11.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csc_csvec() {
         let a = mat1_csc();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &a * &v;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![0, 1, 2],
-                                               vec![3., 5., 5.]).unwrap();
+        let expected_output = CsVec::new(5, vec![0, 1, 2], vec![3., 5., 5.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csvec_csc() {
         let a = mat1_csc();
-        let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1.; 3]).unwrap();
+        let v = CsVec::new(5, vec![0, 2, 4], vec![1.; 3]);
         let res = &v * &a;
-        let expected_output = CsVec::new_owned(5,
-                                               vec![2, 3],
-                                               vec![8., 11.]).unwrap();
+        let expected_output = CsVec::new(5, vec![2, 3], vec![8., 11.]);
         assert_eq!(expected_output, res);
     }
 
     #[test]
     fn mul_csr_dense_rowmaj() {
         let a = OwnedArray::eye(3);
-        let e: CsMatOwned<f64> = CsMat::eye(CSR, 3);
+        let e: CsMatOwned<f64> = CsMat::eye(3);
         let mut res = OwnedArray::zeros((3, 3));
         super::csr_mulacc_dense_rowmaj(e.view(),
                                        a.view(),

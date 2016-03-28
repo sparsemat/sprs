@@ -36,12 +36,11 @@ where N: Clone
 mod test {
     use ndarray::{OwnedArray, arr2};
     use ::CsMatOwned;
-    use ::{CSR, CSC};
     use test_data::{mat1};
 
     #[test]
     fn to_dense() {
-        let speye: CsMatOwned<f64> = CsMatOwned::eye(CSR, 3);
+        let speye: CsMatOwned<f64> = CsMatOwned::eye(3);
         let mut deye = OwnedArray::zeros((3, 3));
 
         super::assign_to_dense(deye.view_mut(), speye.view()).unwrap();
@@ -49,7 +48,7 @@ mod test {
         let res = OwnedArray::eye(3);
         assert_eq!(deye, res);
 
-        let speye: CsMatOwned<f64> = CsMatOwned::eye(CSC, 3);
+        let speye: CsMatOwned<f64> = CsMatOwned::eye_csc(3);
         let mut deye = OwnedArray::zeros((3, 3));
 
         super::assign_to_dense(deye.view_mut(), speye.view()).unwrap();

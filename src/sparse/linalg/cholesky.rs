@@ -59,7 +59,7 @@ use std::ops::IndexMut;
 
 use num::traits::Num;
 
-use sparse::csmat::{self, CsMat, CsMatView};
+use sparse::{csmat, CsMat, CsMatView};
 use sparse::symmetric::is_symmetric;
 use sparse::permutation::{Permutation, PermOwned};
 use utils::csmat_borrowed_uchk;
@@ -257,8 +257,7 @@ impl<N> LdlNumeric<N> {
         let mut x = &self.symbolic.perm * &rhs[..];
         let n = self.symbolic.problem_size();
         let l = csmat_borrowed_uchk(csmat::CSC,
-                                    n,
-                                    n,
+                                    (n, n),
                                     &self.symbolic.colptr,
                                     &self.l_indices,
                                     &self.l_data);
@@ -439,8 +438,7 @@ where N: Clone + Copy + Num,
 
 #[cfg(test)]
 mod test {
-    use sparse::csmat::{self, CsMat, CsMatOwned};
-    use sparse::csmat::CompressedStorage::CSC;
+    use sparse::{csmat, CsMat, CsMatOwned};
     use sparse::permutation::Permutation;
     use sparse::linalg;
     use super::SymmetryCheck;
@@ -454,7 +452,7 @@ mod test {
         let data = vec![1.7, 0.13, 1., 0.02, 0.01, 1.5, 1.1, 0.02, 2.6, 0.16,
                         0.09, 0.52, 0.53, 1.2, 0.16, 1.3, 0.56, 0.09, 1.6,
                         0.11, 0.13, 0.52, 0.11, 1.4, 0.01, 0.53, 0.56, 3.1];
-        CsMat::new_owned(CSC, 10, 10, indptr, indices, data).unwrap()
+        CsMat::new_csc((10, 10), indptr, indices, data)
     }
 
     fn test_vec1() -> Vec<f64> {
@@ -580,8 +578,7 @@ mod test {
         let mut x = b.clone();
         let n = b.len();
         let l = csmat_borrowed_uchk(csmat::CSC,
-                                    n,
-                                    n,
+                                    (n, n),
                                     &expected_lp,
                                     &expected_li,
                                     &expected_lx);
@@ -618,13 +615,10 @@ mod test {
         // |   6 2  | |3| = |18|
         // |2      8| |4|   |34|
 
-        let mat = CsMatOwned::new_owned(CSC,
-                                        4,
-                                        4,
-                                        vec![0, 2, 4, 6, 8],
-                                        vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                        vec![1, 2, 21, 6, 6, 2, 2, 8])
-                      .unwrap();
+        let mat = CsMatOwned::new_csc((4, 4),
+                                      vec![0, 2, 4, 6, 8],
+                                      vec![0, 3, 1, 2, 1, 2, 0, 3],
+                                      vec![1, 2, 21, 6, 6, 2, 2, 8]);
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 

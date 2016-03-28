@@ -3,8 +3,8 @@
 /// # Example
 /// ```rust
 /// use sprs::CsVec;
-/// let vec1 = CsVec::new_owned(8, vec![0, 2, 5, 6], vec![1.; 4]).unwrap();
-/// let vec2 = CsVec::new_owned(8, vec![1, 3, 5], vec![2.; 3]).unwrap();
+/// let vec1 = CsVec::new(8, vec![0, 2, 5, 6], vec![1.; 4]);
+/// let vec2 = CsVec::new(8, vec![1, 3, 5], vec![2.; 3]);
 /// let res = &vec1 + &vec2;
 /// let mut iter = res.iter();
 /// assert_eq!(iter.next(), Some((0, &1.)));
@@ -30,7 +30,8 @@ use num::traits::Num;
 
 use sparse::permutation::PermView;
 use sparse::{prod, binop};
-use sparse::csmat::{CsMat, CsMatVecView};
+use sparse::utils;
+use sparse::prelude::*;
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 use errors::SprsError;
 
@@ -131,9 +132,8 @@ pub trait SparseIterTools: Iterator {
     /// use sprs::CsVec;
     /// use sprs::sparse::vec::NnzEither;
     /// use sprs::sparse::vec::SparseIterTools;
-    /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
-    /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
-    ///                          ).unwrap();
+    /// let v0 = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let v1 = CsVec::new(5, vec![1, 2, 3], vec![-1., -2., -3.]);
     /// let mut nnz_or_iter = v0.iter().nnz_or_zip(v1.iter());
     /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((0, &1.))));
     /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Right((1, &-1.))));
@@ -161,9 +161,8 @@ pub trait SparseIterTools: Iterator {
     /// ```rust
     /// use sprs::CsVec;
     /// use sprs::sparse::vec::SparseIterTools;
-    /// let v0 = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
-    /// let v1 = CsVec::new_owned(5, vec![1, 2, 3], vec![-1., -2., -3.]
-    ///                          ).unwrap();
+    /// let v0 = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let v1 = CsVec::new(5, vec![1, 2, 3], vec![-1., -2., -3.]);
     /// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());
     /// assert_eq!(nnz_zip.next(), Some((2, &2., &-2.)));
     /// assert_eq!(nnz_zip.next(), None);
@@ -346,7 +345,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
 impl<'a, N: 'a> CsVecView<'a, N> {
 
     /// Create a borrowed CsVec over slice data.
-    pub fn new_borrowed(
+    pub fn new_view(
         n: usize,
         indices: &'a [usize],
         data: &'a [N])
@@ -380,11 +379,11 @@ impl<'a, N: 'a> CsVecView<'a, N> {
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_raw(n: usize,
-                          nnz: usize,
-                          indices: *const usize,
-                          data: *const N,
-                          ) -> CsVec<N, &'a[usize], &'a[N]> {
+    pub unsafe fn new_view_raw(n: usize,
+                               nnz: usize,
+                               indices: *const usize,
+                               data: *const N,
+                              ) -> CsVec<N, &'a[usize], &'a[N]> {
         CsVec {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
@@ -395,16 +394,27 @@ impl<'a, N: 'a> CsVecView<'a, N> {
 
 impl<N> CsVec<N, Vec<usize>, Vec<N>> {
     /// Create an owning CsVec from vector data.
-    pub fn new_owned(n: usize,
-                     indices: Vec<usize>,
-                     data: Vec<N>
-                    ) -> Result<CsVec<N, Vec<usize>, Vec<N>>, SprsError> {
+    ///
+    /// # Panics
+    ///
+    /// - if `indices` and `data` lengths differ
+    /// - if the vector contains out of bounds indices
+    pub fn new(n: usize,
+               mut indices: Vec<usize>,
+               mut data: Vec<N>
+              ) -> CsVec<N, Vec<usize>, Vec<N>>
+    where N: Copy
+    {
+        let mut buf = Vec::with_capacity(indices.len());
+        utils::sort_indices_data_slices(&mut indices[..],
+                                        &mut data[..],
+                                        &mut buf);
         let v = CsVec {
             dim: n,
             indices: indices,
             data: data
         };
-        v.check_structure().and(Ok(v))
+        v.check_structure().and(Ok(v)).unwrap()
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
@@ -479,7 +489,7 @@ where IStorage: Deref<Target=[usize]>,
     ///
     /// ```rust
     /// use sprs::CsVec;
-    /// let v = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let v = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
     /// let mut iter = v.iter();
     /// assert_eq!(iter.next(), Some((0, &1.)));
     /// assert_eq!(iter.next(), Some((2, &2.)));
@@ -604,8 +614,8 @@ where IStorage: Deref<Target=[usize]>,
     ///
     /// ```rust
     /// use sprs::CsVec;
-    /// let v1 = CsVec::new_owned(8, vec![1, 2, 4, 6], vec![1.; 4]).unwrap();
-    /// let v2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
+    /// let v1 = CsVec::new(8, vec![1, 2, 4, 6], vec![1.; 4]);
+    /// let v2 = CsVec::new(8, vec![1, 3, 5, 7], vec![2.; 4]);
     /// assert_eq!(2., v1.dot(&v2));
     /// assert_eq!(4., v1.dot(&v1));
     /// assert_eq!(16., v2.dot(&v2));
@@ -693,11 +703,11 @@ where N: 'a {
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_raw_mut(n: usize,
-                              nnz: usize,
-                              indices: *const usize,
-                              data: *mut N,
-                             ) -> CsVecViewMut<'a, N> {
+    pub unsafe fn new_view_mut_raw(n: usize,
+                                   nnz: usize,
+                                   indices: *const usize,
+                                   data: *mut N,
+                                  ) -> CsVecViewMut<'a, N> {
         CsVec {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
@@ -832,7 +842,7 @@ mod test {
         let indices = vec![0, 1, 4, 5, 7];
         let data = vec![0., 1., 4., 5., 7.];
 
-        return CsVec::new_owned(n, indices, data).unwrap();
+        return CsVec::new(n, indices, data);
     }
 
     fn test_vec2() -> CsVec<f64, Vec<usize>, Vec<f64>> {
@@ -840,7 +850,7 @@ mod test {
         let indices = vec![0, 2, 4, 6, 7];
         let data = vec![0.5, 2.5, 4.5, 6.5, 7.5];
 
-        return CsVec::new_owned(n, indices, data).unwrap();
+        return CsVec::new(n, indices, data);
     }
 
     #[test]
@@ -871,9 +881,9 @@ mod test {
 
     #[test]
     fn dot_product() {
-        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
-        let vec2 = CsVec::new_owned(8, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
-        let vec3 = CsVec::new_owned(8, vec![1, 2, 5, 6], vec![3.; 4]).unwrap();
+        let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let vec2 = CsVec::new(8, vec![1, 3, 5, 7], vec![2.; 4]);
+        let vec3 = CsVec::new(8, vec![1, 2, 5, 6], vec![3.; 4]);
 
         assert_eq!(0., vec1.dot(&vec2));
         assert_eq!(4., vec1.dot(&vec1));
@@ -893,22 +903,22 @@ mod test {
     #[test]
     #[should_panic]
     fn dot_product_panics() {
-        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
-        let vec2 = CsVec::new_owned(9, vec![1, 3, 5, 7], vec![2.; 4]).unwrap();
+        let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let vec2 = CsVec::new(9, vec![1, 3, 5, 7], vec![2.; 4]);
         vec1.dot(&vec2);
     }
 
     #[test]
     #[should_panic]
     fn dot_product_panics2() {
-        let vec1 = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
         let dense_vec = vec![0., 1., 2., 3., 4., 5., 6., 7., 8.];
         vec1.dot(&dense_vec);
     }
 
     #[test]
     fn nnz_index() {
-        let vec = CsVec::new_owned(8, vec![0, 2, 4, 6], vec![1.; 4]).unwrap();
+        let vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
         assert_eq!(vec.nnz_index(1), None);
         assert_eq!(vec.nnz_index(9), None);
         assert_eq!(vec.nnz_index(0), Some(super::NnzIndex(0)));
@@ -924,36 +934,24 @@ mod test {
 
     #[test]
     fn get_mut() {
-        let mut vec = CsVec::new_owned(8,
-                                       vec![0, 2, 4, 6],
-                                       vec![1.; 4]
-                                      ).unwrap();
+        let mut vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
 
         *vec.get_mut(4).unwrap() = 2.;
 
-        let expected = CsVec::new_owned(8,
-                                        vec![0, 2, 4, 6],
-                                        vec![1., 1., 2., 1.],
-                                       ).unwrap();
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 1., 2., 1.],);
 
         assert_eq!(vec, expected);
 
         vec[6] = 3.;
 
-        let expected = CsVec::new_owned(8,
-                                        vec![0, 2, 4, 6],
-                                        vec![1., 1., 2., 3.],
-                                       ).unwrap();
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 1., 2., 3.],);
 
         assert_eq!(vec, expected);
     }
 
     #[test]
     fn indexing() {
-        let vec = CsVec::new_owned(8,
-                                   vec![0, 2, 4, 6],
-                                   vec![1., 2., 3., 4.]
-                                  ).unwrap();
+        let vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
         assert_eq!(vec[0], 1.);
         assert_eq!(vec[2], 2.);
         assert_eq!(vec[4], 3.);
@@ -962,29 +960,17 @@ mod test {
 
     #[test]
     fn map_inplace() {
-        let mut vec = CsVec::new_owned(8,
-                                       vec![0, 2, 4, 6],
-                                       vec![1., 2., 3., 4.]
-                                      ).unwrap();
+        let mut vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
         vec.map_inplace(|&x| x + 1.);
-        let expected = CsVec::new_owned(8,
-                                        vec![0, 2, 4, 6],
-                                        vec![2., 3., 4., 5.]
-                                       ).unwrap();
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 3., 4., 5.]);
         assert_eq!(vec, expected);
     }
 
     #[test]
     fn map() {
-        let vec = CsVec::new_owned(8,
-                                   vec![0, 2, 4, 6],
-                                   vec![1., 2., 3., 4.]
-                                  ).unwrap();
+        let vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
         let res = vec.map(|&x| x * 2.);
-        let expected = CsVec::new_owned(8,
-                                        vec![0, 2, 4, 6],
-                                        vec![2., 4., 6., 8.]
-                                       ).unwrap();
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 4., 6., 8.]);
         assert_eq!(res, expected);
     }
 }

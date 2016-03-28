@@ -15,23 +15,19 @@ use std::mem;
 use num::traits::{Num, Zero};
 
 use ndarray::{self, ArrayBase, OwnedArray, Ix};
-use ::Ix2;
+use ::{Ix2, Shape};
 
+use sparse::prelude::*;
 use sparse::permutation::PermView;
 use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
+use sparse::utils;
 use errors::SprsError;
 use sparse::to_dense::assign_to_dense;
 
 
-pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
-pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
-pub type CsMatViewMut<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a mut [N]>;
-
-// FIXME: a fixed size array would be better, but no Deref impl
-pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
 
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -120,8 +116,10 @@ for OuterIterator<'iter, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
-                                             indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_view_raw(self.inner_len,
+                                                  indices.len(),
+                                                  indices.as_ptr(),
+                                                  data.as_ptr());
                     Some(vec)
                 }
             }
@@ -152,8 +150,10 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
-                                             indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_view_raw(self.inner_len,
+                                                  indices.len(),
+                                                  indices.as_ptr(),
+                                                  data.as_ptr());
                     Some((outer_ind_perm, vec))
                 }
             }
@@ -186,8 +186,10 @@ for OuterIterator<'iter, N> {
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
                 unsafe {
-                    let vec = CsVec::new_raw(self.inner_len, indices.len(),
-                                             indices.as_ptr(), data.as_ptr());
+                    let vec = CsVec::new_view_raw(self.inner_len,
+                                                  indices.len(),
+                                                  indices.as_ptr(),
+                                                  data.as_ptr());
                     Some(vec)
                 }
             }
@@ -201,20 +203,6 @@ impl <'iter, N: 'iter> ExactSizeIterator for OuterIterator<'iter, N> {
     }
 }
 
-/// Compressed matrix in the CSR or CSC format.
-#[derive(PartialEq, Debug)]
-pub struct CsMat<N, IptrStorage, IndStorage, DataStorage>
-where IptrStorage: Deref<Target=[usize]>,
-      IndStorage: Deref<Target=[usize]>,
-      DataStorage: Deref<Target=[N]> {
-    storage: CompressedStorage,
-    nrows : usize,
-    ncols : usize,
-    nnz : usize,
-    indptr : IptrStorage,
-    indices : IndStorage,
-    data : DataStorage
-}
 
 impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     /// Create a borrowed row or column CsMat matrix from raw data,
@@ -234,7 +222,6 @@ impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
             storage: storage,
             nrows : nrows,
             ncols: ncols,
-            nnz : nnz,
             indptr : indptr,
             indices : slice::from_raw_parts(indices, nnz),
             data : slice::from_raw_parts(data, nnz),
@@ -245,16 +232,15 @@ impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
 impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
-    pub fn new_borrowed(
-        storage: CompressedStorage, nrows : usize, ncols: usize,
+    pub fn new_view(
+        storage: CompressedStorage, shape: Shape,
         indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
         )
     -> Result<CsMatView<'a, N>, SprsError> {
         let m = CsMat {
             storage: storage,
-            nrows : nrows,
-            ncols: ncols,
-            nnz : data.len(),
+            nrows : shape.0,
+            ncols: shape.1,
             indptr : indptr,
             indices : indices,
             data : data,
@@ -269,11 +255,12 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_raw(
-        storage: CompressedStorage, nrows : usize, ncols: usize,
+    pub unsafe fn new_view_raw(
+        storage: CompressedStorage, shape: Shape,
         indptr : *const usize, indices : *const usize, data : *const N
         )
     -> CsMatView<'a, N> {
+        let (nrows, ncols) = shape;
         let outer = match storage {
             CSR => nrows,
             CSC => ncols,
@@ -284,7 +271,6 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
             storage: storage,
             nrows : nrows,
             ncols: ncols,
-            nnz : nnz,
             indptr : indptr,
             indices : slice::from_raw_parts(indices, nnz),
             data : slice::from_raw_parts(data, nnz),
@@ -309,7 +295,6 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
             storage: self.storage,
             nrows: count,
             ncols: self.cols(),
-            nnz: self.indptr[iend] - self.indptr[i],
             indptr: &self.indptr[i..(iend+1)],
             indices: &self.indices[..],
             data: &self.data[..],
@@ -330,7 +315,6 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             storage: storage,
             nrows: nrows,
             ncols: ncols,
-            nnz: 0,
             indptr: vec![0; 1],
             indices: Vec::new(),
             data: Vec::new(),
@@ -339,12 +323,12 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(rows: usize, cols: usize) -> CsMatOwned<N> {
+    pub fn zero(shape: Shape) -> CsMatOwned<N> {
+        let (rows, cols) = shape;
         CsMat {
             storage: CSR,
             nrows: rows,
             ncols: cols,
-            nnz: 0,
             indptr: vec![0; rows + 1],
             indices: Vec::new(),
             data: Vec::new(),
@@ -373,40 +357,116 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
         self.data.reserve_exact(nnz_lim);
     }
 
-    /// Create an owned CsMat matrix from moved data,
-    /// checking their validity
-    pub fn new_owned(
-        storage: CompressedStorage, nrows : usize, ncols: usize,
-        indptr : Vec<usize>, indices : Vec<usize>, data : Vec<N>
-        )
-    -> Result<CsMatOwned<N>, SprsError> {
-        let m = CsMat {
+    /// Create an owned CSR matrix from moved data.
+    ///
+    /// An owned CSC matrix can be created with `new_csc()`.
+    ///
+    /// If necessary, the indices will be sorted in place.
+    ///
+    /// Contrary to the other `CsMat` constructors, this method will not return
+    /// an `Err` when receiving malformed data. This is because the caller can
+    /// take any measure to provide correct data since he owns it. Therefore,
+    /// passing in malformed data is a programming error. However, passing in
+    /// unsorted indices is not seen as a programming error, so this method can
+    /// take advantage of ownership to sort them.
+    ///
+    /// # Panics
+    ///
+    /// - if `indptr` does not correspond to the number of rows.
+    /// - if `indices` and `data` don't have exactly `indptr[rows]` elements.
+    /// - if `indices` contains values greater or equal to the number of
+    ///   columns.
+    pub fn new(shape: Shape,
+               indptr : Vec<usize>,
+               indices : Vec<usize>,
+               data : Vec<N>
+              ) -> CsMatOwned<N>
+    where N: Copy
+    {
+        CsMat::new_(CSR, shape, indptr, indices, data).unwrap()
+    }
+
+    /// Create an owned CSC matrix from moved data.
+    ///
+    /// An owned CSC matrix can be created with `new_csc()`.
+    ///
+    /// If necessary, the indices will be sorted in place.
+    ///
+    /// Contrary to the other `CsMat` constructors, this method will not return
+    /// an `Err` when receiving malformed data. This is because the caller can
+    /// take any measure to provide correct data since he owns it. Therefore,
+    /// passing in malformed data is a programming error. However, passing in
+    /// unsorted indices is not seen as a programming error, so this method can
+    /// take advantage of ownership to sort them.
+    ///
+    /// # Panics
+    ///
+    /// - if `indptr` does not correspond to the number of rows.
+    /// - if `indices` and `data` don't have exactly `indptr[rows]` elements.
+    /// - if `indices` contains values greater or equal to the number of
+    ///   columns.
+    pub fn new_csc(shape: Shape,
+                   indptr : Vec<usize>,
+                   indices : Vec<usize>,
+                   data : Vec<N>
+                  ) -> CsMatOwned<N>
+    where N: Copy
+    {
+        CsMat::new_(CSC, shape, indptr, indices, data).unwrap()
+    }
+
+    fn new_(storage: CompressedStorage,
+            shape: Shape,
+            indptr : Vec<usize>,
+            indices : Vec<usize>,
+            data : Vec<N>
+           ) -> Result<CsMatOwned<N>, SprsError>
+    where N: Copy
+    {
+        let mut m = CsMat {
             storage: storage,
-            nrows : nrows,
-            ncols: ncols,
-            nnz : data.len(),
+            nrows : shape.0,
+            ncols: shape.1,
             indptr : indptr,
             indices : indices,
             data : data,
         };
+        m.sort_indices();
         m.check_compressed_structure().and(Ok(m))
+    }
+
+    fn sort_indices(&mut self)
+    where N: Copy
+    {
+        let mut buf = Vec::new();
+        for start_stop in self.indptr.windows(2) {
+            let start = start_stop[0];
+            let stop = start_stop[1];
+            let indices = &mut self.indices[start..stop];
+            let data = &mut self.data[start..stop];
+            let len = stop - start;
+            let indices = &mut indices[..len];
+            let data = &mut data[..len];
+            utils::sort_indices_data_slices(indices, data, &mut buf);
+        }
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
     pub fn append_outer(mut self, data: &[N]) -> Self
     where N: Clone + Num {
+        let mut nnz = self.nnz();
         for (inner_ind, val) in data.iter().enumerate() {
             if *val != N::zero() {
                 self.indices.push(inner_ind);
                 self.data.push(val.clone());
-                self.nnz += 1;
+                nnz += 1;
             }
         }
         match self.storage {
             CSR => self.nrows += 1,
             CSC => self.ncols += 1
         }
-        self.indptr.push(self.nnz);
+        self.indptr.push(nnz);
         self
     }
 
@@ -423,24 +483,24 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             CSR => self.nrows += 1,
             CSC => self.ncols += 1
         }
-        self.nnz += vec.nnz();
-        self.indptr.push(self.nnz);
+        let nnz = self.indptr.last().unwrap() + vec.nnz();
+        self.indptr.push(nnz);
         self
     }
 }
 
 impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
-    /// Identity matrix
+    /// Identity matrix, stored as a CSR matrix.
     ///
     /// ```rust
     /// use sprs::{CsMat, CsVec};
-    /// let eye = CsMat::eye(sprs::CSR, 5);
-    /// let x = CsVec::new_owned(5, vec![0, 2, 4], vec![1., 2., 3.]).unwrap();
+    /// let eye = CsMat::eye(5);
+    /// assert!(eye.is_csr());
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye(storage: CompressedStorage, dim: usize
-              ) -> CsMatOwned<N>
+    pub fn eye(dim: usize) -> CsMatOwned<N>
     where N: Clone
     {
         let n = dim;
@@ -448,10 +508,36 @@ impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
         let indices = (0..n).collect();
         let data = vec![N::one(); n];
         CsMat {
-            storage: storage,
+            storage: CSR,
             nrows: n,
             ncols: n,
-            nnz: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
+        }
+    }
+
+    /// Identity matrix, stored as a CSC matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye_csc(5);
+    /// assert!(eye.is_csc());
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
+    pub fn eye_csc(dim: usize) -> CsMatOwned<N>
+    where N: Clone
+    {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
+        CsMat {
+            storage: CSC,
+            nrows: n,
+            ncols: n,
             indptr: indptr,
             indices: indices,
             data: data,
@@ -473,7 +559,7 @@ where IptrStorage: Deref<Target=[usize]>,
     ///
     /// ```rust
     /// use sprs::{CsMat};
-    /// let eye = CsMat::eye(sprs::CSR, 5);
+    /// let eye = CsMat::eye(5);
     /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
     ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
     ///     assert_eq!(row_ind, col_ind);
@@ -529,11 +615,17 @@ where IptrStorage: Deref<Target=[usize]>,
         self.ncols
     }
 
+    /// The shape of the matrix.
+    /// Equivalent to `let shape = (a.rows(), a.cols())`.
+    pub fn shape(&self) -> Shape {
+        (self.nrows, self.ncols)
+    }
+
     /// The number of non-zero elements this matrix stores.
     /// This is often relevant for the complexity of most sparse matrix
     /// algorithms, which are often linear in the number of non-zeros.
-    pub fn nb_nonzero(&self) -> usize {
-        self.nnz
+    pub fn nnz(&self) -> usize {
+        *self.indptr.last().unwrap()
     }
 
     /// Number of outer dimensions, that ie equal to self.rows() for a CSR
@@ -574,10 +666,10 @@ where IptrStorage: Deref<Target=[usize]>,
         let stop = self.indptr[i+1];
         // safety derives from the structure checks in the constructors
         unsafe {
-            Some(CsVec::new_raw(self.inner_dims(),
-                                self.indices[start..stop].len(),
-                                self.indices[start..stop].as_ptr(),
-                                self.data[start..stop].as_ptr()))
+            Some(CsVec::new_view_raw(self.inner_dims(),
+                                     self.indices[start..stop].len(),
+                                     self.indices[start..stop].as_ptr(),
+                                     self.data[start..stop].as_ptr()))
         }
     }
 
@@ -588,7 +680,6 @@ where IptrStorage: Deref<Target=[usize]>,
             storage: self.storage,
             nrows: self.rows(),
             ncols: self.cols(),
-            nnz: self.nnz,
             indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
@@ -609,7 +700,7 @@ where IptrStorage: Deref<Target=[usize]>,
     ///
     /// ```rust
     /// use sprs::{CsMat, CsMatOwned};
-    /// let eye : CsMatOwned<f64> = CsMat::eye(sprs::CSR, 5);
+    /// let eye : CsMatOwned<f64> = CsMat::eye(5);
     /// // get the element of row 3
     /// // there is only one element in this row, with a column index of 3
     /// // and a value of 1.
@@ -666,7 +757,6 @@ where IptrStorage: Deref<Target=[usize]>,
             storage: self.storage.other_storage(),
             nrows: self.ncols,
             ncols: self.nrows,
-            nnz: self.nnz,
             indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
@@ -682,7 +772,6 @@ where IptrStorage: Deref<Target=[usize]>,
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
-            nnz: self.nnz,
             indptr: self.indptr.to_vec(),
             indices: self.indices.to_vec(),
             data: self.data.to_vec(),
@@ -762,7 +851,7 @@ where IptrStorage: Deref<Target=[usize]>,
             return Err(SprsError::DataIndicesMismatch);
         }
         let nnz = self.indices.len();
-        if nnz != self.nnz {
+        if nnz != self.nnz() {
             return Err(SprsError::BadNnzCount);
         }
         if let Some(&max_indptr) = self.indptr.iter().max() {
@@ -795,7 +884,6 @@ where IptrStorage: Deref<Target=[usize]>,
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
-            nnz: self.nnz,
             indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
@@ -824,13 +912,18 @@ where N: Default,
     where N: Clone
     {
         let mut indptr = vec![0; self.inner_dims() + 1];
-        let mut indices = vec![0; self.nb_nonzero()];
-        let mut data = vec![N::default(); self.nb_nonzero()];
+        let mut indices = vec![0; self.nnz()];
+        let mut data = vec![N::default(); self.nnz()];
         raw::convert_mat_storage(self.view(),
                                  &mut indptr, &mut indices, &mut data);
-        CsMat::new_owned(self.storage().other_storage(),
-                         self.rows(), self.cols(),
-                         indptr, indices, data).unwrap()
+        CsMat {
+            storage: self.storage().other_storage(),
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: indptr,
+            indices: indices,
+            data: data
+        }
     }
 
     /// Create a new CSC matrix equivalent to this one.
@@ -886,10 +979,10 @@ DataStorage: DerefMut<Target=[N]> {
         let stop = self.indptr[i+1];
         // safety derives from the structure checks in the constructors
         unsafe {
-            Some(CsVec::new_raw_mut(self.inner_dims(),
-                                    self.indices[start..stop].len(),
-                                    self.indices[start..stop].as_ptr(),
-                                    self.data[start..stop].as_mut_ptr()))
+            Some(CsVec::new_view_mut_raw(self.inner_dims(),
+                                         self.indices[start..stop].len(),
+                                         self.indices[start..stop].as_ptr(),
+                                         self.data[start..stop].as_mut_ptr()))
         }
     }
 
@@ -955,8 +1048,9 @@ DataStorage: DerefMut<Target=[N]> {
 }
 
 pub mod raw {
-    use super::{CsMatView};
+    use sparse::prelude::*;
     use utils;
+    use ::Shape;
     use std::mem::swap;
 
     /// Copy-convert a compressed matrix into the oppposite storage.
@@ -974,8 +1068,7 @@ pub mod raw {
     /// Panics if the output slices don't match the input matrices'
     /// corresponding slices.
     pub fn convert_storage<N: Clone>(in_storage: super::CompressedStorage,
-                                     in_rows: usize,
-                                     in_cols: usize,
+                                     shape: Shape,
                                      in_indtpr: &[usize],
                                      in_indices: &[usize],
                                      in_data: &[N],
@@ -986,7 +1079,7 @@ pub mod raw {
         // but it's not a problem since we don't rely on this property.
         // FIXME: this would be better with an explicit unsorted matrix type
         let mat = utils::csmat_borrowed_uchk(
-            in_storage, in_rows, in_cols, in_indtpr, in_indices, in_data);
+            in_storage, shape, in_indtpr, in_indices, in_data);
         convert_mat_storage(mat, indptr, indices, data);
     }
 
@@ -1024,7 +1117,7 @@ pub mod raw {
             cumsum += tmp;
         }
         if let Some(last_iptr) = indptr.last() {
-            assert_eq!(*last_iptr, mat.nb_nonzero());
+            assert_eq!(*last_iptr, mat.nnz());
         }
 
         for (outer_dim, vec) in mat.outer_iterator().enumerate() {
@@ -1325,7 +1418,7 @@ impl<'a, N: 'a> Iterator for ChunkOuterBlocks<'a, N> {
 
 #[cfg(test)]
 mod test {
-    use super::{CsMat, CsMatOwned};
+    use sparse::{CsMat, CsMatOwned};
     use super::CompressedStorage::{CSC, CSR};
     use errors::SprsError;
     use test_data::{mat1, mat1_csc, mat1_times_2};
@@ -1335,7 +1428,7 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let m = CsMat::new_borrowed(CSR, 3, 3, indptr_ok, indices_ok, data_ok);
+        let m = CsMat::new_view(CSR, (3, 3), indptr_ok, indices_ok, data_ok);
         assert!(m.is_ok());
     }
 
@@ -1351,26 +1444,26 @@ mod test {
         let indices_fail2 : &[usize] = &[0, 1, 4];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
         let data_fail2 : &[f64] = &[1., 1.,];
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3, indptr_fail1,
+        assert_eq!(CsMat::new_view(CSR, (3, 3), indptr_fail1,
                                       indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_fail2, indices_ok, data_ok),
-                   Err(SprsError::OutOfBoundsIndptr));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_fail3, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSR, (3, 3),
+                                   indptr_fail2, indices_ok, data_ok),
+                   Err(SprsError::BadNnzCount));
+        assert_eq!(CsMat::new_view(CSR, (3, 3),
+                                   indptr_fail3, indices_ok, data_ok),
                    Err(SprsError::UnsortedIndptr));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_fail1, data_ok),
+        assert_eq!(CsMat::new_view(CSR, (3, 3),
+                                   indptr_ok, indices_fail1, data_ok),
                    Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_fail2, data_ok),
+        assert_eq!(CsMat::new_view(CSR, (3, 3),
+                                   indptr_ok, indices_fail2, data_ok),
                    Err(SprsError::OutOfBoundsIndex));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_ok, data_fail1),
+        assert_eq!(CsMat::new_view(CSR, (3, 3),
+                                   indptr_ok, indices_ok, data_fail1),
                    Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::new_borrowed(CSR, 3, 3,
-                                      indptr_ok, indices_ok, data_fail2),
+        assert_eq!(CsMat::new_view(CSR, (3, 3),
+                                   indptr_ok, indices_ok, data_fail2),
                    Err(SprsError::DataIndicesMismatch));
     }
 
@@ -1382,8 +1475,8 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        assert_eq!(CsMat::new_borrowed(CSR, 5, 5,
-                                      indptr, indices, data),
+        assert_eq!(CsMat::new_view(CSR, (5, 5),
+                                   indptr, indices, data),
                    Err(SprsError::NonSortedIndices));
     }
 
@@ -1394,10 +1487,10 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert!(CsMat::new_borrowed(CSR, 3, 4,
-                                   indptr_ok, indices_ok, data_ok).is_ok());
-        assert!(CsMat::new_borrowed(CSC, 4, 3,
-                                   indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::new_view(CSR, (3, 4),
+                                indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::new_view(CSC, (4, 3),
+                                indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -1407,11 +1500,11 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert_eq!(CsMat::new_borrowed(CSR, 4, 3,
-                                      indptr_ok, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSR, (4, 3),
+                                   indptr_ok, indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::new_borrowed(CSC, 3, 4,
-                                      indptr_ok, indices_ok, data_ok),
+        assert_eq!(CsMat::new_view(CSC, (3, 4),
+                                   indptr_ok, indices_ok, data_ok),
                    Err(SprsError::BadIndptrLength));
     }
 
@@ -1421,8 +1514,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::new_borrowed(CSR, 3, 3,
-                                   &indptr_ok, &indices_ok, &data_ok).is_ok());
+        assert!(CsMat::new_view(CSR, (3, 3),
+                                &indptr_ok, &indices_ok, &data_ok).is_ok());
     }
 
     #[test]
@@ -1430,8 +1523,20 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::new_owned(CSR, 3, 3,
-                                 indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMat::new_(CSR, (3, 3),
+                            indptr_ok, indices_ok, data_ok).is_ok());
+    }
+
+    #[test]
+    fn owned_csr_unsorted_indices() {
+        let indptr = vec![0, 3, 3, 5, 6, 7];
+        let indices_sorted = &[1, 2, 3, 2, 3, 4, 4];
+        let indices_shuffled = vec![1, 3, 2, 2, 3, 4, 4];
+        let mut data: Vec<i32> = (0..7).collect();
+        let m = CsMat::new((5, 5), indptr, indices_shuffled, data.clone());
+        assert_eq!(m.indices(), indices_sorted);
+        data.swap(1, 2);
+        assert_eq!(m.data(), &data[..]);
     }
 
     #[test]
@@ -1441,7 +1546,7 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        assert!(CsMat::new_borrowed(CSR, 5, 5, indptr, indices, data).is_ok());
+        assert!(CsMat::new_view(CSR, (5, 5), indptr, indices, data).is_ok());
     }
 
     #[test]
@@ -1464,7 +1569,7 @@ mod test {
 
     #[test]
     fn outer_block_iter() {
-        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+        let mat : CsMatOwned<f64> = CsMat::eye(11);
         let mut block_iter = mat.outer_block_iter(3);
         assert_eq!(block_iter.next().unwrap().rows(), 3);
         assert_eq!(block_iter.next().unwrap().rows(), 3);
@@ -1481,7 +1586,7 @@ mod test {
 
     #[test]
     fn nnz_index() {
-        let mat : CsMatOwned<f64> = CsMat::eye(CSR, 11);
+        let mat : CsMatOwned<f64> = CsMat::eye(11);
 
         assert_eq!(mat.nnz_index(2, 3), None);
         assert_eq!(mat.nnz_index(5, 7), None);
@@ -1502,13 +1607,10 @@ mod test {
         // | 0 2 0 |
         // | 1 0 0 |
         // | 0 3 4 |
-        let mat = CsMatOwned::new_owned(CSC,
-                                        3,
-                                        3,
-                                        vec![0, 1, 3, 4],
-                                        vec![1, 0, 2, 2],
-                                        vec![1., 2., 3., 4.]
-                                       ).unwrap();
+        let mat = CsMatOwned::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![1., 2., 3., 4.]);
         assert_eq!(mat[[1, 0]], 1.);
         assert_eq!(mat[[0, 1]], 2.);
         assert_eq!(mat[[2, 1]], 3.);
@@ -1522,34 +1624,25 @@ mod test {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
-        let mut mat = CsMatOwned::new_owned(CSC,
-                                            3,
-                                            3,
-                                            vec![0, 1, 3, 4],
-                                            vec![1, 0, 2, 2],
-                                            vec![1.; 4]
-                                           ).unwrap();
+        let mut mat = CsMatOwned::new_csc((3, 3),
+                                          vec![0, 1, 3, 4],
+                                          vec![1, 0, 2, 2],
+                                          vec![1.; 4]);
 
         *mat.get_mut(2, 1).unwrap() = 3.;
 
-        let exp = CsMatOwned::new_owned(CSC,
-                                        3,
-                                        3,
-                                        vec![0, 1, 3, 4],
-                                        vec![1, 0, 2, 2],
-                                        vec![1., 1., 3., 1.]
-                                       ).unwrap();
+        let exp = CsMatOwned::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![1., 1., 3., 1.]);
 
         assert_eq!(mat, exp);
 
         mat[[2, 2]] = 5.;
-        let exp = CsMatOwned::new_owned(CSC,
-                                        3,
-                                        3,
-                                        vec![0, 1, 3, 4],
-                                        vec![1, 0, 2, 2],
-                                        vec![1., 1., 3., 5.]
-                                       ).unwrap();
+        let exp = CsMatOwned::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![1., 1., 3., 5.]);
 
         assert_eq!(mat, exp);
     }
@@ -1559,22 +1652,16 @@ mod test {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
-        let mat = CsMatOwned::new_owned(CSC,
-                                        3,
-                                        3,
-                                        vec![0, 1, 3, 4],
-                                        vec![1, 0, 2, 2],
-                                        vec![1.; 4]
-                                       ).unwrap();
+        let mat = CsMatOwned::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![1.; 4]);
 
         let mut res = mat.map(|&x| x + 2.);
-        let expected = CsMatOwned::new_owned(CSC,
-                                             3,
-                                             3,
-                                             vec![0, 1, 3, 4],
-                                             vec![1, 0, 2, 2],
-                                             vec![3.; 4]
-                                            ).unwrap();
+        let expected = CsMatOwned::new_csc((3, 3),
+                                           vec![0, 1, 3, 4],
+                                           vec![1, 0, 2, 2],
+                                           vec![3.; 4]);
         assert_eq!(res, expected);
 
         res.map_inplace(|&x| x / 3.);
