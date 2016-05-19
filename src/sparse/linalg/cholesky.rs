@@ -62,7 +62,6 @@ use num::traits::Num;
 use sparse::{csmat, CsMat, CsMatView};
 use sparse::symmetric::is_symmetric;
 use sparse::permutation::{Permutation, PermOwned};
-use utils::csmat_borrowed_uchk;
 use sparse::linalg::{self, etree};
 use stack::DStack;
 
@@ -255,17 +254,25 @@ impl<N> LdlNumeric<N> {
           V: Deref<Target = [N]>
     {
         let mut x = &self.symbolic.perm * &rhs[..];
-        let n = self.symbolic.problem_size();
-        let l = csmat_borrowed_uchk(csmat::CSC,
-                                    (n, n),
-                                    &self.symbolic.colptr,
-                                    &self.l_indices,
-                                    &self.l_data);
+        let l = self.l_view();
         ldl_lsolve(&l, &mut x);
         linalg::diag_solve(&self.diag, &mut x);
         ldl_ltsolve(&l, &mut x);
         let pinv = self.symbolic.perm.inv();
         &pinv * &x
+    }
+
+    fn l_view(&self) -> CsMatView<N>
+    {
+        let n = self.symbolic.problem_size();
+        // CsMat invariants are guaranteed by the LDL algorithm
+        unsafe {
+            CsMatView::new_view_raw(csmat::CSC,
+                                    (n, n),
+                                    self.symbolic.colptr.as_ptr(),
+                                    self.l_indices.as_ptr(),
+                                    self.l_data.as_ptr())
+        }
     }
 
     /// The size of the linear system associated with this decomposition
@@ -438,11 +445,10 @@ where N: Clone + Copy + Num,
 
 #[cfg(test)]
 mod test {
-    use sparse::{csmat, CsMat, CsMatOwned};
+    use sparse::{csmat, CsMat, CsMatView, CsMatOwned};
     use sparse::permutation::Permutation;
     use sparse::linalg;
     use super::SymmetryCheck;
-    use utils::csmat_borrowed_uchk;
     use stack::DStack;
 
     fn test_mat1() -> CsMatOwned<f64> {
@@ -577,11 +583,11 @@ mod test {
         let b = test_vec1();
         let mut x = b.clone();
         let n = b.len();
-        let l = csmat_borrowed_uchk(csmat::CSC,
+        let l = CsMatView::new_view(csmat::CSC,
                                     (n, n),
                                     &expected_lp,
                                     &expected_li,
-                                    &expected_lx);
+                                    &expected_lx).unwrap();
         super::ldl_lsolve(&l, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
         linalg::diag_solve(&expected_d, &mut x);
