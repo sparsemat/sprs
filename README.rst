@@ -87,7 +87,8 @@ Documentation
 Changelog
 ---------
 
-- next version:
+- O.4.0-alpha.4 version:
+    - move cholesky factorization into its own crate
     - add ``to_dense()`` method for sparse matrices
     - rename ``borrowed()`` into ``view()`` **breaking change**
     - ``outer_iterator()`` no longer returns the index of the dimension we're
