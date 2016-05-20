@@ -7,12 +7,6 @@
 use num::traits::Num;
 use std::iter::IntoIterator;
 
-#[cfg(feature = "lgpl")]
-pub use self::cholesky::ldl_symbolic;
-
-#[cfg(feature = "lgpl")]
-pub mod cholesky;
-
 pub mod trisolve;
 pub mod etree;
 

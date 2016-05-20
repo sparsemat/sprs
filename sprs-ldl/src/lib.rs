@@ -53,17 +53,19 @@
 //     Copyright, this License, and the Availability note are retained,
 //     and a notice that the code was modified is included.
 
+extern crate sprs;
+extern crate num;
 
 use std::ops::Deref;
 use std::ops::IndexMut;
 
 use num::traits::Num;
 
-use sparse::{csmat, CsMat, CsMatView};
-use sparse::symmetric::is_symmetric;
-use sparse::permutation::{Permutation, PermOwned};
-use sparse::linalg::{self, etree};
-use stack::DStack;
+use sprs::sparse::{csmat, CsMat, CsMatView};
+use sprs::sparse::symmetric::is_symmetric;
+use sprs::sparse::permutation::{Permutation, PermOwned};
+use sprs::sparse::linalg::{self, etree};
+use sprs::stack::DStack;
 
 pub enum SymmetryCheck {
     CheckSymmetry,
@@ -445,11 +447,11 @@ where N: Clone + Copy + Num,
 
 #[cfg(test)]
 mod test {
-    use sparse::{csmat, CsMat, CsMatView, CsMatOwned};
-    use sparse::permutation::Permutation;
-    use sparse::linalg;
+    use sprs::sparse::{csmat, CsMat, CsMatView, CsMatOwned};
+    use sprs::sparse::permutation::Permutation;
+    use sprs::sparse::linalg;
     use super::SymmetryCheck;
-    use stack::DStack;
+    use sprs::stack::DStack;
 
     fn test_mat1() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];

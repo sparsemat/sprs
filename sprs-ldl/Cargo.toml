@@ -1,0 +1,25 @@
+[package]
+
+name = "sprs-ldl"
+description = "Sparse cholesky factorization"
+version = "0.1.0"
+authors = ["Vincent Barrielle"]
+
+readme = "README.rst"
+license = "LGPL"
+repository = "https://github.com/vbarrielle/sprs"
+documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
+keywords = ["sparse", "matrix", "cholesky", "linalg"]
+
+[dependencies]
+
+num = "0.1.30"
+
+
+[dependencies.ndarray]
+version = "0.4"
+
+[dependencies.sprs]
+version = "0.4.0-alpha.3"
+path = ".."
+
