@@ -6,7 +6,7 @@ version = "0.1.0"
 authors = ["Vincent Barrielle"]
 
 readme = "README.rst"
-license = "LGPL"
+license = "LGPL-2.1"
 repository = "https://github.com/vbarrielle/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
 keywords = ["sparse", "matrix", "cholesky", "linalg"]
