@@ -3,3 +3,5 @@
 *.pyc
 /doc
 *.bk
+/sprs-ldl/Cargo.lock
+/sprs-ldl/target

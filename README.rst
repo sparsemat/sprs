@@ -158,10 +158,6 @@ Licensed under either of
 
 at your option.
 
-Some parts of the library require opting into the LGPL license. Opting into the
-LGPL-licensed features can be done by specifying ``features = ["lgpl"]`` in
-Cargo.toml.
-
 Contribution
 ............
 

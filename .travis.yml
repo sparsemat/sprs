@@ -3,8 +3,10 @@ language: rust
 script:
     - rustc --version
     - cargo --version
-    - cargo build --verbose --features "lgpl"
-    - cargo test --verbose --features "lgpl"
+    - cargo build --verbose
+    - cargo test --verbose
+    - cd sprs-ldl; cargo build --verbose; cd ..
+    - cd sprs-ldl; cargo test --verbose; cd ..
 
 notifications:
   email:
