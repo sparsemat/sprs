@@ -146,7 +146,7 @@ pub fn add_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
                                               rhs: &ArrayBase<D, Ix2>,
                                               alpha: N,
                                               beta: N
-                                             ) -> SpRes<OwnedArray<N, Ix2>>
+                                             ) -> OwnedArray<N, Ix2>
 where N: Num + Copy,
       Mat: SpMatView<N>,
       D: ndarray::Data<Elem=N>
@@ -156,11 +156,11 @@ where N: Num + Copy,
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_raw(lhs.view(),
-                               rhs.view(),
-                               |&x, &y| alpha * x + beta * y,
-                               res.view_mut()));
-    Ok(res)
+    csmat_binop_dense_raw(lhs.view(),
+                          rhs.view(),
+                          |&x, &y| alpha * x + beta * y,
+                          res.view_mut());
+    res
 }
 
 /// Compute coeff wise `alpha * lhs * rhs` with `lhs` a sparse matrix,
@@ -168,7 +168,7 @@ where N: Num + Copy,
 pub fn mul_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
                                               rhs: &ArrayBase<D, Ix2>,
                                               alpha: N
-                                             ) -> SpRes<OwnedArray<N, Ix2>>
+                                             ) -> OwnedArray<N, Ix2>
 where N: Num + Copy,
       Mat: SpMatView<N>,
       D: ndarray::Data<Elem=N>
@@ -178,11 +178,11 @@ where N: Num + Copy,
         true => OwnedArray::zeros(shape),
         false => OwnedArray::zeros_f(shape),
     };
-    try!(csmat_binop_dense_raw(lhs.view(),
-                               rhs.view(),
-                               |&x, &y| alpha * x * y,
-                               res.view_mut()));
-    Ok(res)
+    csmat_binop_dense_raw(lhs.view(),
+                          rhs.view(),
+                          |&x, &y| alpha * x * y,
+                          res.view_mut());
+    res
 }
 
 
@@ -191,19 +191,18 @@ where N: Num + Copy,
 pub fn csmat_binop_dense_raw<'a, N, F>(lhs: CsMatView<'a, N>,
                                        rhs: ArrayView<'a, N, Ix2>,
                                        binop: F,
-                                       mut out: ArrayViewMut<'a, N, Ix2>
-                                      ) -> SpRes<()>
+                                       mut out: ArrayViewMut<'a, N, Ix2>)
 where N: 'a + Num,
       F: Fn(&N, &N) -> N
 {
     if         lhs.cols() != rhs.shape()[1] || lhs.cols() != out.shape()[1]
             || lhs.rows() != rhs.shape()[0] || lhs.rows() != out.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     match (lhs.storage(), rhs.is_standard_layout(), out.is_standard_layout()) {
         (CompressedStorage::CSR, true, true) => (),
         (CompressedStorage::CSC, false, false) => (),
-        (_, _, _) => return Err(SprsError::IncompatibleStorages),
+        (_, _, _) => panic!("Storage mismatch")
     }
     let outer_axis = if rhs.is_standard_layout() { Axis(0) } else { Axis(1) };
     for ((mut orow, lrow), rrow) in out.axis_iter_mut(outer_axis)
@@ -221,7 +220,6 @@ where N: 'a + Num,
             *oval = binop_val;
         }
     }
-    Ok(())
 }
 
 /// Binary operations for CsVec
@@ -376,7 +374,7 @@ mod test {
         let a = OwnedArray::zeros((3,3));
         let b = CsMatOwned::eye(3);
 
-        let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.).unwrap();
+        let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.);
 
         let mut expected_output = OwnedArray::zeros((3,3));
         expected_output[[0,0]] = 1.;
@@ -393,7 +391,7 @@ mod test {
                                      [4., 5., 9., 3., 2.],
                                      [3., 12., 3., 2., 1.],
                                      [1., 2., 1., 8., 0.]]);
-        let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.).unwrap();
+        let c = super::add_dense_mat_same_ordering(&a, &b, 1., 1.);
         assert_eq!(c, expected_output);
         let c = &a + &b;
         assert_eq!(c, expected_output);
@@ -404,7 +402,7 @@ mod test {
         let a = OwnedArray::from_elem((3,3), 1.);
         let b = CsMatOwned::eye(3);
 
-        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.).unwrap();
+        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.);
 
         let expected_output = OwnedArray::eye(3);
 

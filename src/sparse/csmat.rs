@@ -1254,7 +1254,7 @@ where N: 'a + Copy + Num + Default,
                                                        rhs,
                                                        N::one(),
                                                        N::one()
-                                                      ).unwrap()
+                                                      )
                 }
                 (CSR, false) => {
                     let lhs = self.to_other_storage();
@@ -1262,7 +1262,7 @@ where N: 'a + Copy + Num + Default,
                                                        rhs,
                                                        N::one(),
                                                        N::one()
-                                                      ).unwrap()
+                                                      )
                 }
                 (CSC, true) => {
                     let lhs = self.to_other_storage();
@@ -1270,14 +1270,14 @@ where N: 'a + Copy + Num + Default,
                                                        rhs,
                                                        N::one(),
                                                        N::one()
-                                                      ).unwrap()
+                                                      )
                 }
                 (CSC, false) => {
                     binop::add_dense_mat_same_ordering(self,
                                                        rhs,
                                                        N::one(),
                                                        N::one()
-                                                      ).unwrap()
+                                                      )
                 }
         }
     }
