@@ -202,18 +202,29 @@ mod test {
     }
 
     #[test]
-    fn same_storage_fast_stack_failures() {
+    #[should_panic]
+    fn same_storage_fast_stack_fail_shape() {
         let res: Result<CsMatOwned<f64>, _> =
             super::same_storage_fast_stack(&[]);
         assert_eq!(res, Err(EmptyStackingList));
         let a = mat1();
         let c = mat3();
-        let d = mat4();
         let _: Result<CsMatOwned<f64>, _> = super::same_storage_fast_stack(&[]);
         let res = super::same_storage_fast_stack(&[a.view(), c.view()]);
-        assert_eq!(res, Err(IncompatibleDimensions));
+        res.unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn same_storage_fast_stack_fail_storage() {
+        let res: Result<CsMatOwned<f64>, _> =
+            super::same_storage_fast_stack(&[]);
+        assert_eq!(res, Err(EmptyStackingList));
+        let a = mat1();
+        let d = mat4();
+        let _: Result<CsMatOwned<f64>, _> = super::same_storage_fast_stack(&[]);
         let res = super::same_storage_fast_stack(&[a.view(), d.view()]);
-        assert_eq!(res, Err(IncompatibleStorages));
+        res.unwrap();
     }
 
     #[test]
@@ -253,15 +264,20 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
+    fn bmat_fail_shapes() {
+        let res: Result<CsMatOwned<f64>,_> = super::bmat(
+            &vec![vec![None, None], vec![None]]);
+        res.unwrap();
+    }
+
+    #[test]
     fn bmat_failures() {
         let res: Result<CsMatOwned<f64>, _> =
             super::bmat(&[[]]);
         assert_eq!(res, Err(EmptyStackingList));
         let a = mat1();
         let c = mat3();
-        let res: Result<CsMatOwned<f64>,_> = super::bmat(
-            &vec![vec![None, None], vec![None]]);
-        assert_eq!(res, Err(IncompatibleDimensions));
         let res: Result<CsMatOwned<f64>, _> =
             super::bmat(&[[None, None],
                           [Some(a.view()), Some(c.view())]]);

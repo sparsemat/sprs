@@ -368,7 +368,7 @@ mod test {
         let mat = CsMat::new_view(CSC, (5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csc(mat, &vector, &mut res_vec).unwrap();
+        mul_acc_mat_vec_csc(mat, &vector, &mut res_vec);
 
         let expected_output =
             vec![ 0., 0.26439869, -0.01803924, 0.75120319, 0.11616419];
@@ -390,7 +390,7 @@ mod test {
         let mat = CsMat::new_view(CSR, (5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec).unwrap();
+        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec);
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
@@ -405,7 +405,7 @@ mod test {
     fn mul_csr_csr_identity() {
         let eye: CsMatOwned<i32> = CsMat::eye(10);
         let mut workspace = [0; 10];
-        let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
+        let res = csr_mul_csr(&eye, &eye, &mut workspace);
         assert_eq!(eye, res);
 
         let res = &eye * &eye;
@@ -492,7 +492,7 @@ mod test {
         super::csr_mulacc_dense_rowmaj(e.view(),
                                        a.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         assert_eq!(res, a);
 
         let a = mat1();
@@ -501,7 +501,7 @@ mod test {
         super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
                                      [11., 18., 11.,  9.,  2.],
                                      [20., 25., 20., 15., 10.],
@@ -518,7 +518,7 @@ mod test {
         super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         let expected_output = arr2(
             &[[130.04,  150.1,  87.19, 90.89,  99.48,  80.43,   99.3],
               [217.72, 161.61,  79.47, 121.5, 124.23, 146.91, 157.79],
@@ -537,7 +537,7 @@ mod test {
         let mut res = OwnedArray::zeros((5, 5));
         super::csc_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
-                                       res.view_mut()).unwrap();
+                                       res.view_mut());
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
                                      [11., 18., 11.,  9.,  2.],
                                      [20., 25., 20., 15., 10.],
@@ -556,7 +556,7 @@ mod test {
         let mut res = OwnedArray::zeros_f((5, 5));
         super::csc_mulacc_dense_colmaj(a.view(),
                                        b.view(),
-                                       res.view_mut()).unwrap();
+                                       res.view_mut());
         let v = vec![24., 11., 20., 40., 21.,
                      31., 18., 25., 48., 28.,
                      24., 11., 20., 40., 21.,
@@ -580,7 +580,7 @@ mod test {
         super::csr_mulacc_dense_colmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         let v = vec![24., 11., 20., 40., 21.,
                     31., 18., 25., 48., 28.,
                     24., 11., 20., 40., 21.,

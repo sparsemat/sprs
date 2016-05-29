@@ -38,7 +38,7 @@ mod test {
         let speye: CsMatOwned<f64> = CsMatOwned::eye(3);
         let mut deye = OwnedArray::zeros((3, 3));
 
-        super::assign_to_dense(deye.view_mut(), speye.view()).unwrap();
+        super::assign_to_dense(deye.view_mut(), speye.view());
 
         let res = OwnedArray::eye(3);
         assert_eq!(deye, res);
@@ -46,7 +46,7 @@ mod test {
         let speye: CsMatOwned<f64> = CsMatOwned::eye_csc(3);
         let mut deye = OwnedArray::zeros((3, 3));
 
-        super::assign_to_dense(deye.view_mut(), speye.view()).unwrap();
+        super::assign_to_dense(deye.view_mut(), speye.view());
 
         assert_eq!(deye, res);
 
