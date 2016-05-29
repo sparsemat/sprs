@@ -6,7 +6,6 @@ use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
-use errors::SprsError;
 use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Axis};
 
 use ::Ix2;
@@ -14,21 +13,21 @@ use ::SpRes;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
+    lhs: &Mat1, rhs: &Mat2) -> CsMatOwned<N>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     csmat_binop(lhs.view(), rhs.view(), |&x, &y| x + y)
 }
 
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
+    lhs: &Mat1, rhs: &Mat2) -> CsMatOwned<N>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     csmat_binop(lhs.view(), rhs.view(), |&x, &y| x - y)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> SpRes<CsMatOwned<N>>
+    lhs: &Mat1, rhs: &Mat2) -> CsMatOwned<N>
 where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
     csmat_binop(lhs.view(), rhs.view(), |&x, &y| x * y)
 }
@@ -55,7 +54,7 @@ where N: Num + Copy, Mat: SpMatView<N> {
 pub fn csmat_binop<N, F>(lhs: CsMatView<N>,
                          rhs: CsMatView<N>,
                          binop: F
-                        ) -> SpRes<CsMatOwned<N>>
+                        ) -> CsMatOwned<N>
 where N: Num,
       F: Fn(&N, &N) -> N
 {
@@ -63,10 +62,10 @@ where N: Num,
     let ncols = lhs.cols();
     let storage_type = lhs.storage();
     if nrows != rhs.rows() || ncols != rhs.cols() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if storage_type != rhs.storage() {
-        return Err(SprsError::IncompatibleStorages);
+        panic!("Storage mismatch");
     }
 
     let max_nnz = lhs.nnz() + rhs.nnz();
@@ -87,14 +86,14 @@ where N: Num,
                                            &mut out_data[..]);
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
-    Ok(CsMat {
+    CsMat {
         storage: storage_type,
         nrows: nrows,
         ncols: ncols,
         indptr: out_indptr,
         indices: out_indices,
         data: out_data
-    })
+    }
 }
 
 
@@ -237,7 +236,7 @@ where N: Num,
       F: Fn(&N, &N) -> N
 {
     if lhs.dim() != rhs.dim() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     let mut res = CsVec::empty(lhs.dim());
     let max_nnz = lhs.nnz() + rhs.nnz();

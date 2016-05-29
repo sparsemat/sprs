@@ -23,3 +23,4 @@ Contract violation
   all indices should be in bounds for the prescriber shape.
 - *Length mismatch in constructors*, such as an ``indptr`` length not
   corresponding to the matrix' dimension.
+- *Wrong workspace length*

@@ -20,11 +20,11 @@ where N: 'a + Clone,
     }
     let inner_dim = mats[0].inner_dims();
     if ! mats.iter().all(|x| x.inner_dims() == inner_dim) {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     let storage_type = mats[0].storage();
     if ! mats.iter().all(|x| x.storage() == storage_type) {
-        return Err(SprsError::IncompatibleStorages);
+        panic!("Storage mismatch");
     }
 
     let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
@@ -99,7 +99,7 @@ where N: 'a + Clone + Default,
 
     // check input has matrix shape
     if ! mats.iter().all(|x| x.as_ref().len() == super_cols) {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
 
     if mats.iter().any(|x| x.as_ref().iter().all(|y| y.is_none())) {

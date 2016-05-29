@@ -5,9 +5,7 @@ use std::fmt;
 
 #[derive(PartialEq, Debug)]
 pub enum SprsError {
-    IncompatibleDimensions,
     BadWorkspaceDimensions,
-    IncompatibleStorages,
     BadStorageType,
     EmptyStackingList,
     NotImplemented,
@@ -31,10 +29,8 @@ use self::SprsError::*;
 impl SprsError {
     fn descr(&self) -> &str {
         match *self {
-            IncompatibleDimensions => "matrices dimensions do not agree",
             BadWorkspaceDimensions =>
                 "workspace dimension does not match requirements",
-            IncompatibleStorages => "incompatible storages",
             BadStorageType => "wrong storage type",
             EmptyStackingList => "stacking list is empty",
             NotImplemented => "this method is not yet implemented",

@@ -894,7 +894,7 @@ where IptrStorage: Deref<Target=[usize]>,
     where N: Clone + Zero
     {
         let mut res = OwnedArray::zeros((self.rows(), self.cols()));
-        assign_to_dense(res.view_mut(), self.view()).unwrap();
+        assign_to_dense(res.view_mut(), self.view());
         res
     }
 }
@@ -1151,9 +1151,9 @@ where N: 'a + Copy + Num + Default,
     fn add(self, rhs: &'b CsMat<N, IpS2, IS2, DS2>) -> CsMatOwned<N> {
         if self.storage() != rhs.view().storage() {
             return binop::add_mat_same_storage(
-                self, &rhs.view().to_other_storage()).unwrap()
+                self, &rhs.view().to_other_storage())
         }
-        binop::add_mat_same_storage(self, rhs).unwrap()
+        binop::add_mat_same_storage(self, rhs)
     }
 }
 
@@ -1169,9 +1169,9 @@ where N: 'a + Copy + Num + Default,
     fn sub(self, rhs: &'b Mat) -> CsMatOwned<N> {
         if self.storage() != rhs.view().storage() {
             return binop::sub_mat_same_storage(
-                self, &rhs.view().to_other_storage()).unwrap()
+                self, &rhs.view().to_other_storage())
         }
-        binop::sub_mat_same_storage(self, rhs).unwrap()
+        binop::sub_mat_same_storage(self, rhs)
     }
 }
 
@@ -1216,22 +1216,22 @@ where N: 'a + Copy + Num + Default,
         match (self.storage(), rhs.storage()) {
             (CSR, CSR) => {
                 let mut workspace = prod::workspace_csr(self, rhs);
-                prod::csr_mul_csr(self, rhs, &mut workspace).unwrap()
+                prod::csr_mul_csr(self, rhs, &mut workspace)
             }
             (CSR, CSC) => {
                 let mut workspace = prod::workspace_csr(self, rhs);
                 prod::csr_mul_csr(self,
                                   &rhs.to_other_storage(),
-                                  &mut workspace).unwrap()
+                                  &mut workspace)
             }
             (CSC, CSR) => {
                 let mut workspace = prod::workspace_csc(self, rhs);
                 prod::csc_mul_csc(self, &rhs.to_other_storage(),
-                                  &mut workspace).unwrap()
+                                  &mut workspace)
             }
             (CSC, CSC) => {
                 let mut workspace = prod::workspace_csc(self, rhs);
-                prod::csc_mul_csc(self, rhs, &mut workspace).unwrap()
+                prod::csc_mul_csc(self, rhs, &mut workspace)
             }
         }
     }
@@ -1302,7 +1302,7 @@ where N: 'a + Copy + Num + Default,
                 prod::csr_mulacc_dense_rowmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
-                                             ).unwrap();
+                                             );
                 res
             }
             (CSR, false) => {
@@ -1310,7 +1310,7 @@ where N: 'a + Copy + Num + Default,
                 prod::csr_mulacc_dense_colmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
-                                             ).unwrap();
+                                             );
                 res
             }
             (CSC, true) => {
@@ -1318,7 +1318,7 @@ where N: 'a + Copy + Num + Default,
                 prod::csc_mulacc_dense_rowmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
-                                             ).unwrap();
+                                             );
                 res
             }
             (CSC, false) => {
@@ -1326,7 +1326,7 @@ where N: 'a + Copy + Num + Default,
                 prod::csc_mulacc_dense_colmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
-                                             ).unwrap();
+                                             );
                 res
             }
         }
