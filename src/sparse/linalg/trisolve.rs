@@ -7,20 +7,17 @@ use sparse::vec::{self, VecDim};
 use errors::SprsError;
 use stack::{self, StackVal, DStack};
 
-fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &CsMatView<N>,
-                                         rhs: &V)
-                                         -> Result<(), SprsError>
+fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &CsMatView<N>, rhs: &V)
 where N: Copy + Num,
       V: vec::VecDim<N>
 {
     let (cols, rows) = (lower_tri_mat.cols(), lower_tri_mat.rows());
     if cols != rows {
-        return Err(SprsError::NonSquareMatrix);
+        panic!("Non square matrix passed to solver");
     }
     if cols != rhs.dim() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
-    Ok(())
 }
 
 /// Solve a sparse lower triangular matrix system, with a csr matrix
@@ -36,9 +33,9 @@ pub fn lsolve_csr_dense_rhs<N, V: ?Sized>(lower_tri_mat: CsMatView<N>,
 where N: Copy + Num,
       V: IndexMut<usize, Output = N> + vec::VecDim<N>
 {
-    try!(check_solver_dimensions(&lower_tri_mat, rhs));
+    check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csr() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
 
     // we base our algorithm on the following decomposition:
@@ -86,9 +83,9 @@ pub fn lsolve_csc_dense_rhs<N, V: ?Sized>(lower_tri_mat: CsMatView<N>,
 where N: Copy + Num,
       V: IndexMut<usize, Output = N> + vec::VecDim<N>
 {
-    try!(check_solver_dimensions(&lower_tri_mat, rhs));
+    check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csc() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
 
     // we base our algorithm on the following decomposition:
@@ -148,9 +145,9 @@ pub fn usolve_csc_dense_rhs<N, V: ?Sized>(upper_tri_mat: CsMatView<N>,
 where N: Copy + Num,
       V: IndexMut<usize, Output = N> + vec::VecDim<N>
 {
-    try!(check_solver_dimensions(&upper_tri_mat, rhs));
+    check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csc() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
 
     // we base our algorithm on the following decomposition:
@@ -197,9 +194,9 @@ pub fn usolve_csr_dense_rhs<N, V: ?Sized>(upper_tri_mat: CsMatView<N>,
 where N: Copy + Num,
       V: IndexMut<usize, Output = N> + vec::VecDim<N>
 {
-    try!(check_solver_dimensions(&upper_tri_mat, rhs));
+    check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csr() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     // we base our algorithm on the following decomposition:
     // | u_0_0    u_0_1^T | | x_0 |    | b_0 |
@@ -255,12 +252,12 @@ pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
                                 dstack: &mut DStack<StackVal<usize>>,
                                 x_workspace: &mut [N],
-                                visited: &mut [bool])
-                                -> Result<(), SprsError>
+                                visited: &mut [bool]
+                               ) -> Result<(), SprsError>
 where N: Copy + Num
 {
     if !lower_tri_mat.is_csc() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     let n = lower_tri_mat.rows();
     assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
@@ -315,7 +312,6 @@ where N: Copy + Num
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
         try!(lspsolve_csc_process_col(col, ind, x_workspace));
     }
-
     Ok(())
 }
 

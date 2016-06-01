@@ -5,22 +5,20 @@ use sparse::vec::{CsVecView, CsVecOwned};
 use num::traits::Num;
 use sparse::compressed::SpMatView;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
-use errors::SprsError;
-use ::SpRes;
 use ::Ix2;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
 pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
                               in_vec: &[N],
-                              res_vec: &mut[N]) -> SpRes<()>
+                              res_vec: &mut[N])
 where N: Num + Copy {
     let mat = mat.view();
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if !mat.is_csc() {
-        return Err(SprsError::IncompatibleStorages);
+        panic!("Storage mismatch");
     }
 
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
@@ -31,20 +29,19 @@ where N: Num + Copy {
                 res_vec[row_ind] + *multiplier * value;
         }
     }
-    Ok(())
 }
 
 /// Multiply a sparse CSR matrix with a dense vector and accumulate the result
 /// into another dense vector
 pub fn mul_acc_mat_vec_csr<N>(mat: CsMatView<N>,
                               in_vec: &[N],
-                              res_vec: &mut[N]) -> SpRes<()>
+                              res_vec: &mut[N])
 where N: Num + Copy {
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if !mat.is_csr() {
-        return Err(SprsError::IncompatibleStorages);
+        panic!("Storage mismatch");
     }
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
@@ -54,7 +51,6 @@ where N: Num + Copy {
                 res_vec[row_ind] + in_vec[col_ind] * value;
         }
     }
-    Ok(())
 }
 
 
@@ -71,7 +67,7 @@ where N: Num + Copy {
 pub fn csr_mul_csr<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
                                   workspace: &mut[N]
-                                 ) -> SpRes<CsMatOwned<N>>
+                                 ) -> CsMatOwned<N>
 where
 N: Num + Copy,
 Mat1: SpMatView<N>,
@@ -91,14 +87,14 @@ Mat2: SpMatView<N> {
 pub fn csc_mul_csc<N, Mat1, Mat2>(lhs: &Mat1,
                                   rhs: &Mat2,
                                   workspace: &mut[N]
-                                 ) -> SpRes<CsMatOwned<N>>
+                                 ) -> CsMatOwned<N>
 where
 N: Num + Copy,
 Mat1: SpMatView<N>,
 Mat2: SpMatView<N> {
     csr_mul_csr_impl(rhs.transpose_view(),
                      lhs.transpose_view(),
-                     workspace).map(|x| x.transpose_into())
+                     workspace).transpose_into()
 }
 
 /// Allocate the appropriate workspace for a CSR-CSR product
@@ -124,21 +120,18 @@ where N: Copy + Num,
 pub fn csr_mul_csr_impl<N>(lhs: CsMatView<N>,
                            rhs: CsMatView<N>,
                            workspace: &mut[N]
-                          ) -> SpRes<CsMatOwned<N>>
+                          ) -> CsMatOwned<N>
 where N: Num + Copy {
     let res_rows = lhs.rows();
     let res_cols = rhs.cols();
     if lhs.cols() != rhs.rows() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if res_cols !=  workspace.len() {
-        return Err(SprsError::BadWorkspaceDimensions);
+        panic!("Bad storage dimension");
     }
-    if lhs.storage() != rhs.storage() {
-        return Err(SprsError::IncompatibleStorages);
-    }
-    if !rhs.is_csr() {
-        return Err(SprsError::BadStorageType);
+    if lhs.storage() != rhs.storage() || !rhs.is_csr() {
+        panic!("Storage mismatch");
     }
 
     let mut res = CsMatOwned::empty(lhs.storage(), res_cols);
@@ -165,15 +158,15 @@ where N: Num + Copy {
     }
     // TODO: shrink res storage? would need methods on CsMatOwned
     assert_eq!(res_rows, res.rows());
-    Ok(res)
+    res
 }
 
 /// CSR-vector multiplication
 pub fn csr_mul_csvec<N>(lhs: CsMatView<N>,
-                        rhs: CsVecView<N>) -> SpRes<CsVecOwned<N>>
+                        rhs: CsVecView<N>) -> CsVecOwned<N>
 where N: Copy + Num {
     if lhs.cols() != rhs.dim() {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     let mut res = CsVecOwned::empty(lhs.rows());
     for (row_ind, lvec) in lhs.outer_iterator().enumerate() {
@@ -182,7 +175,7 @@ where N: Copy + Num {
             res.append(row_ind, val);
         }
     }
-    Ok(res)
+    res
 }
 
 /// CSR-dense rowmaj multiplication
@@ -191,23 +184,23 @@ where N: Copy + Num {
 pub fn csr_mulacc_dense_rowmaj<'a, N>(lhs: CsMatView<N>,
                                       rhs: ArrayView<N, Ix2>,
                                       mut out: ArrayViewMut<'a, N, Ix2>
-                                     ) -> SpRes<()>
+                                     )
 where N: 'a + Num + Copy
 {
     if lhs.cols() != rhs.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if lhs.rows() != out.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if rhs.shape()[1] != out.shape()[1] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if !lhs.is_csr() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     if !rhs.is_standard_layout() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     // for now we implement a naive strategy, but later on it would
     // be nice to pick a data dependent block-size to optimize caching effects
@@ -240,7 +233,6 @@ where N: 'a + Num + Copy
             }
         }
     }
-    Ok(())
 }
 
 /// CSC-dense rowmaj multiplication
@@ -249,23 +241,23 @@ where N: 'a + Num + Copy
 pub fn csc_mulacc_dense_rowmaj<'a, N>(lhs: CsMatView<N>,
                                       rhs: ArrayView<N, Ix2>,
                                       mut out: ArrayViewMut<'a, N, Ix2>
-                                     ) -> SpRes<()>
+                                     )
 where N: 'a + Num + Copy
 {
     if lhs.cols() != rhs.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if lhs.rows() != out.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if rhs.shape()[1] != out.shape()[1] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if !lhs.is_csc() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     if !rhs.is_standard_layout() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
 
     for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
@@ -277,7 +269,6 @@ where N: 'a + Num + Copy
             }
         }
     }
-    Ok(())
 }
 
 /// CSC-dense colmaj multiplication
@@ -286,23 +277,23 @@ where N: 'a + Num + Copy
 pub fn csc_mulacc_dense_colmaj<'a, N>(lhs: CsMatView<N>,
                                       rhs: ArrayView<N, Ix2>,
                                       mut out: ArrayViewMut<'a, N, Ix2>
-                                     ) -> SpRes<()>
+                                     )
 where N: 'a + Num + Copy
 {
     if lhs.cols() != rhs.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if lhs.rows() != out.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if rhs.shape()[1] != out.shape()[1] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if !lhs.is_csc() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     if rhs.is_standard_layout() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
 
     let axis1 = Axis(1);
@@ -315,7 +306,6 @@ where N: 'a + Num + Copy
             }
         }
     }
-    Ok(())
 }
 
 
@@ -325,23 +315,23 @@ where N: 'a + Num + Copy
 pub fn csr_mulacc_dense_colmaj<'a, N>(lhs: CsMatView<N>,
                                       rhs: ArrayView<N, Ix2>,
                                       mut out: ArrayViewMut<'a, N, Ix2>
-                                     ) -> SpRes<()>
+                                     )
 where N: 'a + Num + Copy
 {
     if lhs.cols() != rhs.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if lhs.rows() != out.shape()[0] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if rhs.shape()[1] != out.shape()[1] {
-        return Err(SprsError::IncompatibleDimensions);
+        panic!("Dimension mismatch");
     }
     if !lhs.is_csr() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     if rhs.is_standard_layout() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
@@ -354,7 +344,6 @@ where N: 'a + Num + Copy
             ocol[[orow]] = prev;
         }
     }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -379,7 +368,7 @@ mod test {
         let mat = CsMat::new_view(CSC, (5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csc(mat, &vector, &mut res_vec).unwrap();
+        mul_acc_mat_vec_csc(mat, &vector, &mut res_vec);
 
         let expected_output =
             vec![ 0., 0.26439869, -0.01803924, 0.75120319, 0.11616419];
@@ -401,7 +390,7 @@ mod test {
         let mat = CsMat::new_view(CSR, (5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec).unwrap();
+        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec);
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
@@ -416,7 +405,7 @@ mod test {
     fn mul_csr_csr_identity() {
         let eye: CsMatOwned<i32> = CsMat::eye(10);
         let mut workspace = [0; 10];
-        let res = csr_mul_csr(&eye, &eye, &mut workspace).unwrap();
+        let res = csr_mul_csr(&eye, &eye, &mut workspace);
         assert_eq!(eye, res);
 
         let res = &eye * &eye;
@@ -503,7 +492,7 @@ mod test {
         super::csr_mulacc_dense_rowmaj(e.view(),
                                        a.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         assert_eq!(res, a);
 
         let a = mat1();
@@ -512,7 +501,7 @@ mod test {
         super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
                                      [11., 18., 11.,  9.,  2.],
                                      [20., 25., 20., 15., 10.],
@@ -529,7 +518,7 @@ mod test {
         super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         let expected_output = arr2(
             &[[130.04,  150.1,  87.19, 90.89,  99.48,  80.43,   99.3],
               [217.72, 161.61,  79.47, 121.5, 124.23, 146.91, 157.79],
@@ -548,7 +537,7 @@ mod test {
         let mut res = OwnedArray::zeros((5, 5));
         super::csc_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
-                                       res.view_mut()).unwrap();
+                                       res.view_mut());
         let expected_output = arr2(&[[24., 31., 24., 17., 10.],
                                      [11., 18., 11.,  9.,  2.],
                                      [20., 25., 20., 15., 10.],
@@ -567,7 +556,7 @@ mod test {
         let mut res = OwnedArray::zeros_f((5, 5));
         super::csc_mulacc_dense_colmaj(a.view(),
                                        b.view(),
-                                       res.view_mut()).unwrap();
+                                       res.view_mut());
         let v = vec![24., 11., 20., 40., 21.,
                      31., 18., 25., 48., 28.,
                      24., 11., 20., 40., 21.,
@@ -591,7 +580,7 @@ mod test {
         super::csr_mulacc_dense_colmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
-                                      ).unwrap();
+                                      );
         let v = vec![24., 11., 20., 40., 21.,
                     31., 18., 25., 48., 28.,
                     24., 11., 20., 40., 21.,
