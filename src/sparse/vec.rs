@@ -544,7 +544,7 @@ where IStorage: Deref<Target=[usize]>,
         }
 
         if self.indices.iter().max().unwrap_or(&0) >= &self.dim {
-            return Err(SprsError::OutOfBoundsIndex);
+            panic!("Out of bounds index");
         }
 
         Ok(())

@@ -282,23 +282,22 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// eg this gets the rows from i to i + count in a CSR matrix
     pub fn middle_outer_views(&self,
                               i: usize, count: usize
-                             ) -> Result<CsMatView<'a, N>, SprsError> {
-        // TODO: check for potential overflow?
+                             ) -> CsMatView<'a, N> {
         if count == 0 {
-            return Err(SprsError::EmptyBlock);
+            panic!("Empty view");
         }
-        let iend = i + count;
+        let iend = i.checked_add(count).unwrap();
         if i >= self.outer_dims() || iend > self.outer_dims() {
-            return Err(SprsError::OutOfBoundsIndex);
+            panic!("Out of bounds index");
         }
-        Ok(CsMat {
+        CsMat {
             storage: self.storage,
             nrows: count,
             ncols: self.cols(),
             indptr: &self.indptr[i..(iend+1)],
             indices: &self.indices[..],
             data: &self.data[..],
-        })
+        }
     }
 
 }
@@ -845,21 +844,26 @@ where IptrStorage: Deref<Target=[usize]>,
         let outer = self.outer_dims();
 
         if self.indptr.len() != outer + 1 {
-            return Err(SprsError::BadIndptrLength);
+            panic!("Indptr length does not match dimension");
         }
         if self.indices.len() != self.data.len() {
-            return Err(SprsError::DataIndicesMismatch);
+            panic!("Indices and data lengths do not match");
         }
         let nnz = self.indices.len();
         if nnz != self.nnz() {
-            return Err(SprsError::BadNnzCount);
+            panic!("Indices length and inpdtr's nnz do not match");
         }
         if let Some(&max_indptr) = self.indptr.iter().max() {
             if max_indptr > nnz {
-                return Err(SprsError::OutOfBoundsIndptr);
+                panic!("An indptr value is out of bounds");
             }
             if max_indptr > usize::max_value() / 2 {
-                return Err(SprsError::OutOfBoundsIndptr);
+                // We do not allow indptr values to be larger than half
+                // the maximum value of an usize, as that would clearly exhaust
+                // all available memory
+                // This means we could have an isize, but in practice it's
+                // easier to work with usize for indexing.
+                panic!("An indptr value is larger than allowed");
             }
         }
         else {
@@ -1408,8 +1412,7 @@ impl<'a, N: 'a> Iterator for ChunkOuterBlocks<'a, N> {
         else {
             self.dims_in_bloc
         };
-        let view = self.mat.middle_outer_views(cur_dim,
-                                               count).unwrap();
+        let view = self.mat.middle_outer_views(cur_dim, count);
         self.bloc_count += 1;
         Some(view)
     }
@@ -1433,38 +1436,97 @@ mod test {
     }
 
     #[test]
-    fn test_new_csr_fails() {
-        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+    #[should_panic]
+    fn test_new_csr_bad_indptr_length() {
+        let indptr_fail1 : &[usize] = &[0, 1, 2];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let indptr_fail1 : &[usize] = &[0, 1, 2];
-        let indptr_fail2 : &[usize] = &[0, 1, 2, 4];
-        let indptr_fail3 : &[usize] = &[0, 2, 1, 3];
-        let indices_fail1 : &[usize] = &[0, 1];
+        let res = CsMat::new_view(CSR,
+                                  (3, 3),
+                                  indptr_fail1,
+                                  indices_ok,
+                                  data_ok);
+        res.unwrap(); // unreachable
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_csr_out_of_bounds_index() {
+        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+        let data_ok : &[f64] = &[1., 1., 1.];
         let indices_fail2 : &[usize] = &[0, 1, 4];
+        let res = CsMat::new_view(CSR,
+                                  (3, 3),
+                                  indptr_ok,
+                                  indices_fail2,
+                                  data_ok);
+        res.unwrap(); //unreachable
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_csr_bad_nnz_count() {
+        let indices_ok : &[usize] = &[0, 1, 2];
+        let data_ok : &[f64] = &[1., 1., 1.];
+        let indptr_fail2 : &[usize] = &[0, 1, 2, 4];
+        let res = CsMat::new_view(CSR,
+                                  (3, 3),
+                                  indptr_fail2,
+                                  indices_ok,
+                                  data_ok);
+        res.unwrap(); //unreachable
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_csr_data_indices_mismatch1() {
+        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+        let data_ok : &[f64] = &[1., 1., 1.];
+        let indices_fail1 : &[usize] = &[0, 1];
+        let res = CsMat::new_view(CSR,
+                                  (3, 3),
+                                  indptr_ok,
+                                  indices_fail1,
+                                  data_ok);
+        res.unwrap(); //unreachable
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_csr_data_indices_mismatch2() {
+        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+        let indices_ok : &[usize] = &[0, 1, 2];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
+        let res = CsMat::new_view(CSR,
+                                  (3, 3),
+                                  indptr_ok,
+                                  indices_ok,
+                                  data_fail1);
+        res.unwrap(); //unreachable
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_new_csr_data_indices_mismatch3() {
+        let indptr_ok : &[usize] = &[0, 1, 2, 3];
+        let indices_ok : &[usize] = &[0, 1, 2];
         let data_fail2 : &[f64] = &[1., 1.,];
-        assert_eq!(CsMat::new_view(CSR, (3, 3), indptr_fail1,
-                                      indices_ok, data_ok),
-                   Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::new_view(CSR, (3, 3),
-                                   indptr_fail2, indices_ok, data_ok),
-                   Err(SprsError::BadNnzCount));
+        let res = CsMat::new_view(CSR,
+                                  (3, 3),
+                                  indptr_ok,
+                                  indices_ok,
+                                  data_fail2);
+        res.unwrap(); //unreachable
+    }
+
+    #[test]
+    fn test_new_csr_fails() {
+        let indices_ok : &[usize] = &[0, 1, 2];
+        let data_ok : &[f64] = &[1., 1., 1.];
+        let indptr_fail3 : &[usize] = &[0, 2, 1, 3];
         assert_eq!(CsMat::new_view(CSR, (3, 3),
                                    indptr_fail3, indices_ok, data_ok),
                    Err(SprsError::UnsortedIndptr));
-        assert_eq!(CsMat::new_view(CSR, (3, 3),
-                                   indptr_ok, indices_fail1, data_ok),
-                   Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::new_view(CSR, (3, 3),
-                                   indptr_ok, indices_fail2, data_ok),
-                   Err(SprsError::OutOfBoundsIndex));
-        assert_eq!(CsMat::new_view(CSR, (3, 3),
-                                   indptr_ok, indices_ok, data_fail1),
-                   Err(SprsError::DataIndicesMismatch));
-        assert_eq!(CsMat::new_view(CSR, (3, 3),
-                                   indptr_ok, indices_ok, data_fail2),
-                   Err(SprsError::DataIndicesMismatch));
     }
 
     #[test]
@@ -1494,18 +1556,15 @@ mod test {
     }
 
     #[test]
-    fn test_new_csr_csc_fails() {
+    #[should_panic]
+    fn test_new_csc_bad_indptr_length() {
         let indptr_ok : &[usize] = &[0, 2, 5, 6];
         let indices_ok : &[usize] = &[2, 3, 1, 2, 3, 3];
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert_eq!(CsMat::new_view(CSR, (4, 3),
-                                   indptr_ok, indices_ok, data_ok),
-                   Err(SprsError::BadIndptrLength));
-        assert_eq!(CsMat::new_view(CSC, (3, 4),
-                                   indptr_ok, indices_ok, data_ok),
-                   Err(SprsError::BadIndptrLength));
+        let res = CsMat::new_view(CSC, (3, 4), indptr_ok, indices_ok, data_ok);
+        res.unwrap(); //unreachable
     }
 
 

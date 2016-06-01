@@ -22,5 +22,6 @@ Contract violation
 - *Out of bounds indices* when constructing a sparse matrix. Generally speaking
   all indices should be in bounds for the prescriber shape.
 - *Length mismatch in constructors*, such as an ``indptr`` length not
-  corresponding to the matrix' dimension.
+  corresponding to the matrix' dimension, different lengths for ``indices`` and
+  ``data``, etc.
 - *Wrong workspace length*
