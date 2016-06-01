@@ -4,19 +4,18 @@ use std::default::Default;
 use std::cmp;
 use sparse::prelude::*;
 use sparse::csmat::CompressedStorage;
-use errors::SprsError;
 use ndarray::{ArrayView, Ix};
 use num::traits::{Num, Signed};
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
 pub fn same_storage_fast_stack<'a, N, MatArray>(
-    mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
+    mats: &MatArray) -> CsMatOwned<N>
 where N: 'a + Clone,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
     if mats.len() == 0 {
-        return Err(SprsError::EmptyStackingList);
+        panic!("Empty stacking list");
     }
     let inner_dim = mats[0].inner_dims();
     if ! mats.iter().all(|x| x.inner_dims() == inner_dim) {
@@ -39,11 +38,11 @@ where N: 'a + Clone,
         }
     }
 
-    Ok(res)
+    res
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
+pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> CsMatOwned<N>
 where N: 'a + Clone + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -57,7 +56,7 @@ where N: 'a + Clone + Default,
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> Result<CsMatOwned<N>, SprsError>
+pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> CsMatOwned<N>
 where N: 'a + Clone + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -79,22 +78,21 @@ where N: 'a + Clone + Default,
 /// let a = CsMatOwned::<f64>::eye(3);
 /// let b = CsMatOwned::<f64>::eye(4);
 /// let c = sprs::bmat(&[[Some(a.view()), None],
-///                      [None, Some(b.view())]]).unwrap();
+///                      [None, Some(b.view())]]);
 /// assert_eq!(c.rows(), 7);
 /// ```
-pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray)
--> Result<CsMatOwned<N>, SprsError>
+pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray) -> CsMatOwned<N>
 where N: 'a + Clone + Default,
       OuterArray: 'a + AsRef<[InnerArray]>,
       InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]> {
     let mats = mats.as_ref();
     let super_rows = mats.len();
     if super_rows == 0 {
-        return Err(SprsError::EmptyStackingList);
+        panic!("Empty stacking list");
     }
     let super_cols = mats[0].as_ref().len();
     if super_cols == 0 {
-        return Err(SprsError::EmptyStackingList);
+        panic!("Empty stacking list");
     }
 
     // check input has matrix shape
@@ -103,10 +101,10 @@ where N: 'a + Clone + Default,
     }
 
     if mats.iter().any(|x| x.as_ref().iter().all(|y| y.is_none())) {
-        return Err(SprsError::EmptyBmatRow);
+        panic!("Empty bmat row");
     }
     if (0..super_cols).any(|j| mats.iter().all(|x| x.as_ref()[j].is_none())) {
-        return Err(SprsError::EmptyBmatCol);
+        panic!("Empty bmat col");
     }
 
     // find out the shapes of the None elements
@@ -129,7 +127,7 @@ where N: 'a + Clone + Default,
             m.as_ref().map_or(CsMatOwned::zero(shape), |x| x.to_owned())
         }).collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
-        let stacked = try!(hstack(&borrows));
+        let stacked = hstack(&borrows);
         to_vstack.push(stacked);
     }
     let borrows: Vec<_> = to_vstack.iter().map(|x| x.view()).collect();
@@ -190,7 +188,6 @@ where N: Num + Clone + cmp::PartialOrd + Signed
 mod test {
     use sparse::CsMatOwned;
     use test_data::{mat1, mat2, mat3, mat4};
-    use errors::SprsError::*;
     use ndarray::{arr2, OwnedArray};
 
     fn mat1_vstack_mat2() -> CsMatOwned<f64> {
@@ -203,28 +200,24 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn same_storage_fast_stack_fail_shape() {
-        let res: Result<CsMatOwned<f64>, _> =
-            super::same_storage_fast_stack(&[]);
-        assert_eq!(res, Err(EmptyStackingList));
+    fn same_storage_fast_stack_fail_empty_stacking_list() {
+        let _: CsMatOwned<f64> = super::same_storage_fast_stack(&[]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn same_storage_fast_stack_fail_dim_mismatch() {
         let a = mat1();
         let c = mat3();
-        let _: Result<CsMatOwned<f64>, _> = super::same_storage_fast_stack(&[]);
-        let res = super::same_storage_fast_stack(&[a.view(), c.view()]);
-        res.unwrap();
+        let _ = super::same_storage_fast_stack(&[a.view(), c.view()]);
     }
 
     #[test]
     #[should_panic]
     fn same_storage_fast_stack_fail_storage() {
-        let res: Result<CsMatOwned<f64>, _> =
-            super::same_storage_fast_stack(&[]);
-        assert_eq!(res, Err(EmptyStackingList));
         let a = mat1();
         let d = mat4();
-        let _: Result<CsMatOwned<f64>, _> = super::same_storage_fast_stack(&[]);
-        let res = super::same_storage_fast_stack(&[a.view(), d.view()]);
-        res.unwrap();
+        let _ = super::same_storage_fast_stack(&[a.view(), d.view()]);
     }
 
     #[test]
@@ -233,7 +226,7 @@ mod test {
         let b = mat2();
         let res = super::same_storage_fast_stack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2();
-        assert_eq!(res, Ok(expected));
+        assert_eq!(res, expected);
     }
 
     #[test]
@@ -242,7 +235,7 @@ mod test {
         let b = mat2();
         let res = super::vstack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2();
-        assert_eq!(res, Ok(expected));
+        assert_eq!(res, expected);
     }
 
     #[test]
@@ -251,7 +244,7 @@ mod test {
         let b = mat2().transpose_into();
         let res = super::hstack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2().transpose_into();
-        assert_eq!(res, Ok(expected));
+        assert_eq!(res, expected);
     }
 
     #[test]
@@ -260,32 +253,38 @@ mod test {
         let b = mat2();
         let res = super::vstack(&[a.view(), b.view()]);
         let expected = mat1_vstack_mat2();
-        assert_eq!(res, Ok(expected));
+        assert_eq!(res, expected);
     }
 
     #[test]
     #[should_panic]
     fn bmat_fail_shapes() {
-        let res: Result<CsMatOwned<f64>,_> = super::bmat(
+        let _: CsMatOwned<f64> = super::bmat(
             &vec![vec![None, None], vec![None]]);
-        res.unwrap();
     }
 
     #[test]
-    fn bmat_failures() {
-        let res: Result<CsMatOwned<f64>, _> =
-            super::bmat(&[[]]);
-        assert_eq!(res, Err(EmptyStackingList));
+    #[should_panic]
+    fn bmat_fail_empty_stacking_list() {
+        let _: CsMatOwned<f64> = super::bmat(&[[]]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn bmat_fail_empty_bmat_row() {
         let a = mat1();
         let c = mat3();
-        let res: Result<CsMatOwned<f64>, _> =
-            super::bmat(&[[None, None],
-                          [Some(a.view()), Some(c.view())]]);
-        assert_eq!(res, Err(EmptyBmatRow));
-        let res: Result<CsMatOwned<f64>, _> =
-            super::bmat(&[[Some(c.view()), None],
-                          [Some(a.view()), None]]);
-        assert_eq!(res, Err(EmptyBmatCol));
+        let _: CsMatOwned<f64> = super::bmat(&[[None, None],
+                                               [Some(a.view()), Some(c.view())]]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn bmat_fail_empty_bmat_col() {
+        let a = mat1();
+        let c = mat3();
+        let _: CsMatOwned<f64> = super::bmat(&[[Some(c.view()), None],
+                                               [Some(a.view()), None]]);
     }
 
     #[test]
@@ -293,7 +292,7 @@ mod test {
         let a = CsMatOwned::<f64>::eye(5);
         let b = CsMatOwned::<f64>::eye(4);
         let c = super::bmat(&[[Some(a.view()), None],
-                              [None, Some(b.view())]]).unwrap();
+                              [None, Some(b.view())]]);
         let expected = CsMatOwned::new(
             (9, 9),
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -307,7 +306,7 @@ mod test {
         let a = mat1();
         let b = mat2();
         let c = super::bmat(&[[Some(a.view()), Some(b.view())],
-                              [Some(b.view()), None]]).unwrap();
+                              [Some(b.view()), None]]);
         let expected = CsMatOwned::new(
             (10, 10),
             vec![0,  6, 10, 11, 14, 17, 21, 23, 23, 25, 27],
@@ -321,7 +320,7 @@ mod test {
         let e = mat4();
         let f = super::bmat(&[[Some(d.view()), Some(a.view())],
                               [None, Some(e.view())]]
-                           ).unwrap();
+                           );
         let expected = CsMatOwned::new(
             (10, 9),
             vec![0, 4, 8, 10, 12, 14, 16, 18, 21, 23, 24],

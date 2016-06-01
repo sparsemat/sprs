@@ -5,12 +5,6 @@ use std::fmt;
 
 #[derive(PartialEq, Debug)]
 pub enum SprsError {
-    BadWorkspaceDimensions,
-    BadStorageType,
-    EmptyStackingList,
-    NotImplemented,
-    EmptyBmatRow,
-    EmptyBmatCol,
     NonSortedIndices,
     OutOfBoundsIndex,
     BadIndptrLength,
@@ -29,13 +23,6 @@ use self::SprsError::*;
 impl SprsError {
     fn descr(&self) -> &str {
         match *self {
-            BadWorkspaceDimensions =>
-                "workspace dimension does not match requirements",
-            BadStorageType => "wrong storage type",
-            EmptyStackingList => "stacking list is empty",
-            NotImplemented => "this method is not yet implemented",
-            EmptyBmatRow => "empty row in bmat argument",
-            EmptyBmatCol => "empty column in bmat argument",
             NonSortedIndices => "a vector's indices are not sorted",
             OutOfBoundsIndex => "an element in indices is out of bounds",
             BadIndptrLength => "inpdtr's length doesn't agree with dimensions",

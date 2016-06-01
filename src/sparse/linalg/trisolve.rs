@@ -252,12 +252,12 @@ pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: CsMatView<N>,
                                 rhs: vec::CsVecView<N>,
                                 dstack: &mut DStack<StackVal<usize>>,
                                 x_workspace: &mut [N],
-                                visited: &mut [bool])
-                                -> Result<(), SprsError>
+                                visited: &mut [bool]
+                               ) -> Result<(), SprsError>
 where N: Copy + Num
 {
     if !lower_tri_mat.is_csc() {
-        return Err(SprsError::BadStorageType);
+        panic!("Storage mismatch");
     }
     let n = lower_tri_mat.rows();
     assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
@@ -312,7 +312,6 @@ where N: Copy + Num
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
         try!(lspsolve_csc_process_col(col, ind, x_workspace));
     }
-
     Ok(())
 }
 
