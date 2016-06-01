@@ -87,10 +87,13 @@ Documentation
 Changelog
 ---------
 
-- O.4.0-alpha.4 version:
+- next version:
+    - panic for contract violations, use errors only for recoverable problems
+      **breaking change**
+- O.4.0-alpha.4 version, most changes are **breaking changes**:
     - move cholesky factorization into its own crate
     - add ``to_dense()`` method for sparse matrices
-    - rename ``borrowed()`` into ``view()`` **breaking change**
+    - rename ``borrowed()`` into ``view()``
     - ``outer_iterator()`` no longer returns the index of the dimension we're
       iterating. The old behavior can be obtained by chaining a call
       to ``enumerate()``.
