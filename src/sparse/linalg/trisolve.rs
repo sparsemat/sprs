@@ -1,7 +1,7 @@
 /// Sparse triangular solves
 
 use std::ops::IndexMut;
-use num::traits::Num;
+use num_traits::Num;
 use sparse::CsMatView;
 use sparse::vec::{self, VecDim};
 use errors::SprsError;

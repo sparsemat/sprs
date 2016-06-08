@@ -26,7 +26,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 use ndarray::{self, ArrayBase, Ix};
 
-use num::traits::Num;
+use num_traits::Num;
 
 use sparse::permutation::PermView;
 use sparse::{prod, binop};

@@ -12,7 +12,7 @@ use std::default::Default;
 use std::slice::{self, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
-use num::traits::{Num, Zero};
+use num_traits::{Num, Zero};
 
 use ndarray::{self, ArrayBase, Array, Ix, ShapeBuilder};
 use ::{Ix2, Shape};

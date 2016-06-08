@@ -5,7 +5,7 @@ use std::cmp;
 use sparse::prelude::*;
 use sparse::csmat::CompressedStorage;
 use ndarray::{ArrayView, Ix};
-use num::traits::{Num, Signed};
+use num_traits::{Num, Signed};
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)

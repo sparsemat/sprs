@@ -2,7 +2,7 @@
 
 use sparse::prelude::*;
 use sparse::vec::{CsVecView, CsVecOwned};
-use num::traits::Num;
+use num_traits::Num;
 use sparse::compressed::SpMatView;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
 use ::Ix2;

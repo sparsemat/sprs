@@ -10,7 +10,7 @@
 ///! into CsMatOwned.
 
 use sparse::{csmat, CsMatOwned};
-use num::traits::Num;
+use num_traits::Num;
 
 /// Indexing type into a Triplet
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

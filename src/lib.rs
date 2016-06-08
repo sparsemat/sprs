@@ -49,7 +49,7 @@ assert_eq!(a, b.to_csc());
 
 #![deny(warnings)]
 
-extern crate num;
+extern crate num_traits;
 extern crate ndarray;
 
 pub mod sparse;

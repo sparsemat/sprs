@@ -2,7 +2,7 @@
 
 use sparse::csmat::CompressedStorage;
 use sparse::prelude::*;
-use num::traits::Num;
+use num_traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
