@@ -2,7 +2,7 @@
 
 use sparse::prelude::*;
 use sparse::vec::{CsVecView, CsVecOwned};
-use num::traits::Num;
+use num_traits::Num;
 use sparse::compressed::SpMatView;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
 use ::Ix2;
@@ -355,7 +355,7 @@ mod test {
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,
                     mat1_csc, mat4, mat1_csc_matprod_mat4, mat_dense1,
                     mat5, mat_dense1_colmaj, mat_dense2};
-    use ndarray::{OwnedArray, arr2};
+    use ndarray::{Array, arr2, ShapeBuilder};
 
     #[test]
     fn mul_csc_vec() {
@@ -486,9 +486,9 @@ mod test {
 
     #[test]
     fn mul_csr_dense_rowmaj() {
-        let a = OwnedArray::eye(3);
+        let a = Array::eye(3);
         let e: CsMatOwned<f64> = CsMat::eye(3);
-        let mut res = OwnedArray::zeros((3, 3));
+        let mut res = Array::zeros((3, 3));
         super::csr_mulacc_dense_rowmaj(e.view(),
                                        a.view(),
                                        res.view_mut()
@@ -497,7 +497,7 @@ mod test {
 
         let a = mat1();
         let b = mat_dense1();
-        let mut res = OwnedArray::zeros((5, 5));
+        let mut res = Array::zeros((5, 5));
         super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
@@ -514,7 +514,7 @@ mod test {
 
         let a = mat5();
         let b = mat_dense2();
-        let mut res = OwnedArray::zeros((5, 7));
+        let mut res = Array::zeros((5, 7));
         super::csr_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
@@ -534,7 +534,7 @@ mod test {
     fn mul_csc_dense_rowmaj() {
         let a = mat1_csc();
         let b = mat_dense1();
-        let mut res = OwnedArray::zeros((5, 5));
+        let mut res = Array::zeros((5, 5));
         super::csc_mulacc_dense_rowmaj(a.view(),
                                        b.view(),
                                        res.view_mut());
@@ -553,7 +553,7 @@ mod test {
     fn mul_csc_dense_colmaj() {
         let a = mat1_csc();
         let b = mat_dense1_colmaj();
-        let mut res = OwnedArray::zeros_f((5, 5));
+        let mut res = Array::zeros((5, 5).f());
         super::csc_mulacc_dense_colmaj(a.view(),
                                        b.view(),
                                        res.view_mut());
@@ -562,9 +562,7 @@ mod test {
                      24., 11., 20., 40., 21.,
                      17., 9., 15., 32., 14.,
                      10., 2., 10., 24., 7.];
-        let expected_output = OwnedArray::from_vec_dim_stride((5, 5),
-                                                              (1, 5),
-                                                              v).unwrap();
+        let expected_output = Array::from_shape_vec((5, 5).f(), v).unwrap();
         assert_eq!(res, expected_output);
 
         let c = &a * &b;
@@ -576,7 +574,7 @@ mod test {
     fn mul_csr_dense_colmaj() {
         let a = mat1();
         let b = mat_dense1_colmaj();
-        let mut res = OwnedArray::zeros_f((5, 5));
+        let mut res = Array::zeros((5, 5).f());
         super::csr_mulacc_dense_colmaj(a.view(),
                                        b.view(),
                                        res.view_mut()
@@ -586,9 +584,7 @@ mod test {
                     24., 11., 20., 40., 21.,
                     17., 9., 15., 32., 14.,
                     10., 2., 10., 24., 7.];
-        let expected_output = OwnedArray::from_vec_dim_stride((5, 5),
-                                                              (1, 5),
-                                                              v).unwrap();
+        let expected_output = Array::from_shape_vec((5, 5).f(), v).unwrap();
         assert_eq!(res, expected_output);
 
         let c = &a * &b;

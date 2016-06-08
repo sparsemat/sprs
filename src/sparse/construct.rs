@@ -5,7 +5,7 @@ use std::cmp;
 use sparse::prelude::*;
 use sparse::csmat::CompressedStorage;
 use ndarray::{ArrayView, Ix};
-use num::traits::{Num, Signed};
+use num_traits::{Num, Signed};
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
@@ -188,7 +188,7 @@ where N: Num + Clone + cmp::PartialOrd + Signed
 mod test {
     use sparse::CsMatOwned;
     use test_data::{mat1, mat2, mat3, mat4};
-    use ndarray::{arr2, OwnedArray};
+    use ndarray::{arr2, Array};
 
     fn mat1_vstack_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0, 2, 4, 5, 6, 7, 11, 13, 13, 15, 17];
@@ -333,7 +333,7 @@ mod test {
 
     #[test]
     fn csr_from_dense() {
-        let m = OwnedArray::eye(3);
+        let m = Array::eye(3);
         let m_sparse = super::csr_from_dense(m.view(), 0.);
 
         assert_eq!(m_sparse, CsMatOwned::eye(3));
@@ -353,7 +353,7 @@ mod test {
 
     #[test]
     fn csc_from_dense() {
-        let m = OwnedArray::eye(3);
+        let m = Array::eye(3);
         let m_sparse = super::csc_from_dense(m.view(), 0.);
 
         assert_eq!(m_sparse, CsMatOwned::eye_csc(3));

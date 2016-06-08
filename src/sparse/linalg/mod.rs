@@ -4,7 +4,7 @@
 ///! there are solver for sparse triangular systems and symmetric systems.
 
 
-use num::traits::Num;
+use num_traits::Num;
 use std::iter::IntoIterator;
 
 pub mod trisolve;

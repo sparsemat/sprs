@@ -12,9 +12,9 @@ use std::default::Default;
 use std::slice::{self, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
-use num::traits::{Num, Zero};
+use num_traits::{Num, Zero};
 
-use ndarray::{self, ArrayBase, OwnedArray, Ix};
+use ndarray::{self, ArrayBase, Array, Ix, ShapeBuilder};
 use ::{Ix2, Shape};
 
 use sparse::prelude::*;
@@ -894,10 +894,10 @@ where IptrStorage: Deref<Target=[usize]>,
         }
     }
 
-    pub fn to_dense(&self) -> OwnedArray<N, Ix2>
+    pub fn to_dense(&self) -> Array<N, Ix2>
     where N: Clone + Zero
     {
-        let mut res = OwnedArray::zeros((self.rows(), self.cols()));
+        let mut res = Array::zeros((self.rows(), self.cols()));
         assign_to_dense(res.view_mut(), self.view());
         res
     }
@@ -1249,9 +1249,9 @@ where N: 'a + Copy + Num + Default,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
-    type Output = OwnedArray<N, (Ix, Ix)>;
+    type Output = Array<N, (Ix, Ix)>;
 
-    fn add(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> OwnedArray<N, (Ix, Ix)> {
+    fn add(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> Array<N, (Ix, Ix)> {
         match (self.storage(), rhs.is_standard_layout()) {
             (CSR, true) => {
                     binop::add_dense_mat_same_ordering(self,
@@ -1295,14 +1295,14 @@ where N: 'a + Copy + Num + Default,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
-    type Output = OwnedArray<N, (Ix, Ix)>;
+    type Output = Array<N, (Ix, Ix)>;
 
-    fn mul(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> OwnedArray<N, (Ix, Ix)> {
+    fn mul(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> Array<N, (Ix, Ix)> {
         let rows = self.rows();
         let cols = rhs.shape()[1];
         match (self.storage(), rhs.is_standard_layout()) {
             (CSR, true) => {
-                let mut res = OwnedArray::zeros((rows, cols));
+                let mut res = Array::zeros((rows, cols));
                 prod::csr_mulacc_dense_rowmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
@@ -1310,7 +1310,7 @@ where N: 'a + Copy + Num + Default,
                 res
             }
             (CSR, false) => {
-                let mut res = OwnedArray::zeros_f((rows, cols));
+                let mut res = Array::zeros((rows, cols).f());
                 prod::csr_mulacc_dense_colmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
@@ -1318,7 +1318,7 @@ where N: 'a + Copy + Num + Default,
                 res
             }
             (CSC, true) => {
-                let mut res = OwnedArray::zeros((rows, cols));
+                let mut res = Array::zeros((rows, cols));
                 prod::csc_mulacc_dense_rowmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()
@@ -1326,7 +1326,7 @@ where N: 'a + Copy + Num + Default,
                 res
             }
             (CSC, false) => {
-                let mut res = OwnedArray::zeros_f((rows, cols));
+                let mut res = Array::zeros((rows, cols).f());
                 prod::csc_mulacc_dense_colmaj(self.view(),
                                               rhs.view(),
                                               res.view_mut()

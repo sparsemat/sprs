@@ -26,7 +26,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 use ndarray::{self, ArrayBase, Ix};
 
-use num::traits::Num;
+use num_traits::Num;
 
 use sparse::permutation::PermView;
 use sparse::{prod, binop};
@@ -835,7 +835,7 @@ where IS: Deref<Target=[usize]>,
 mod test {
     use super::CsVec;
     use super::SparseIterTools;
-    use ndarray::OwnedArray;
+    use ndarray::Array;
 
     fn test_vec1() -> CsVec<f64, Vec<usize>, Vec<f64>> {
         let n = 8;
@@ -896,7 +896,7 @@ mod test {
         assert_eq!(16., vec1.dot(&dense_vec));
         assert_eq!(16., vec1.dot(slice));
 
-        let ndarray_vec = OwnedArray::linspace(1., 8., 8);
+        let ndarray_vec = Array::linspace(1., 8., 8);
         assert_eq!(16., vec1.dot(&ndarray_vec));
     }
 

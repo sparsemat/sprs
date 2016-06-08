@@ -90,6 +90,7 @@ Changelog
 - next version:
     - panic for contract violations, use errors only for recoverable problems
       **breaking change**
+    - depend on latest ndarray version: 0.6 **braking change**
 - O.4.0-alpha.4 version, most changes are **breaking changes**:
     - move cholesky factorization into its own crate
     - add ``to_dense()`` method for sparse matrices

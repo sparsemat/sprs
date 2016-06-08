@@ -29,22 +29,22 @@ where N: Clone
 
 #[cfg(test)]
 mod test {
-    use ndarray::{OwnedArray, arr2};
+    use ndarray::{Array, arr2};
     use ::CsMatOwned;
     use test_data::{mat1};
 
     #[test]
     fn to_dense() {
         let speye: CsMatOwned<f64> = CsMatOwned::eye(3);
-        let mut deye = OwnedArray::zeros((3, 3));
+        let mut deye = Array::zeros((3, 3));
 
         super::assign_to_dense(deye.view_mut(), speye.view());
 
-        let res = OwnedArray::eye(3);
+        let res = Array::eye(3);
         assert_eq!(deye, res);
 
         let speye: CsMatOwned<f64> = CsMatOwned::eye_csc(3);
-        let mut deye = OwnedArray::zeros((3, 3));
+        let mut deye = Array::zeros((3, 3));
 
         super::assign_to_dense(deye.view_mut(), speye.view());
 
