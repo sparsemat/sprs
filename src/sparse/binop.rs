@@ -6,7 +6,15 @@ use num::traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
 use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
 use sparse::compressed::SpMatView;
-use ndarray::{self, OwnedArray, ArrayBase, ArrayView, ArrayViewMut, Axis};
+use ndarray::{
+    self,
+    Array,
+    ArrayBase,
+    ArrayView,
+    ArrayViewMut,
+    Axis,
+    ShapeBuilder,
+};
 
 use ::Ix2;
 use ::SpRes;
@@ -145,15 +153,15 @@ pub fn add_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
                                               rhs: &ArrayBase<D, Ix2>,
                                               alpha: N,
                                               beta: N
-                                             ) -> OwnedArray<N, Ix2>
+                                             ) -> Array<N, Ix2>
 where N: Num + Copy,
       Mat: SpMatView<N>,
       D: ndarray::Data<Elem=N>
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
-        true => OwnedArray::zeros(shape),
-        false => OwnedArray::zeros_f(shape),
+        true => Array::zeros(shape),
+        false => Array::zeros(shape.f()),
     };
     csmat_binop_dense_raw(lhs.view(),
                           rhs.view(),
@@ -167,15 +175,15 @@ where N: Num + Copy,
 pub fn mul_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
                                               rhs: &ArrayBase<D, Ix2>,
                                               alpha: N
-                                             ) -> OwnedArray<N, Ix2>
+                                             ) -> Array<N, Ix2>
 where N: Num + Copy,
       Mat: SpMatView<N>,
       D: ndarray::Data<Elem=N>
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let mut res = match rhs.is_standard_layout() {
-        true => OwnedArray::zeros(shape),
-        false => OwnedArray::zeros_f(shape),
+        true => Array::zeros(shape),
+        false => Array::zeros(shape.f()),
     };
     csmat_binop_dense_raw(lhs.view(),
                           rhs.view(),
@@ -257,7 +265,7 @@ mod test {
     use sparse::{CsMat, CsMatOwned};
     use sparse::vec::CsVec;
     use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
-    use ndarray::{arr2, OwnedArray};
+    use ndarray::{arr2, Array};
 
     fn mat1_plus_mat2() -> CsMatOwned<f64> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
@@ -370,12 +378,12 @@ mod test {
 
     #[test]
     fn csr_add_dense_rowmaj() {
-        let a = OwnedArray::zeros((3,3));
+        let a = Array::zeros((3,3));
         let b = CsMatOwned::eye(3);
 
         let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.);
 
-        let mut expected_output = OwnedArray::zeros((3,3));
+        let mut expected_output = Array::zeros((3,3));
         expected_output[[0,0]] = 1.;
         expected_output[[1,1]] = 1.;
         expected_output[[2,2]] = 1.;
@@ -398,12 +406,12 @@ mod test {
 
     #[test]
     fn csr_mul_dense_rowmaj() {
-        let a = OwnedArray::from_elem((3,3), 1.);
+        let a = Array::from_elem((3,3), 1.);
         let b = CsMatOwned::eye(3);
 
         let c = super::mul_dense_mat_same_ordering(&b, &a, 1.);
 
-        let expected_output = OwnedArray::eye(3);
+        let expected_output = Array::eye(3);
 
         assert_eq!(c, expected_output);
     }
