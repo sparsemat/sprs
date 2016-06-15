@@ -61,10 +61,14 @@ use std::ops::IndexMut;
 
 use num::traits::Num;
 
-use sprs::sparse::{csmat, CsMat, CsMatView};
-use sprs::sparse::symmetric::is_symmetric;
-use sprs::sparse::permutation::{Permutation, PermOwned};
-use sprs::sparse::linalg::{self, etree};
+use sprs::{
+    CsMat,
+    CsMatView,
+    is_symmetric,
+    Permutation,
+    PermOwned,
+};
+use sprs::linalg;
 use sprs::stack::DStack;
 
 pub enum SymmetryCheck {
@@ -269,7 +273,7 @@ impl<N> LdlNumeric<N> {
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm
         unsafe {
-            CsMatView::new_view_raw(csmat::CSC,
+            CsMatView::new_view_raw(sprs::CSC,
                                     (n, n),
                                     self.symbolic.colptr.as_ptr(),
                                     self.l_indices.as_ptr(),
@@ -295,7 +299,7 @@ impl<N> LdlNumeric<N> {
 pub fn ldl_symbolic<N, PStorage>(mat: CsMatView<N>,
                                  perm: &Permutation<PStorage>,
                                  l_colptr: &mut [usize],
-                                 mut parents: etree::ParentsViewMut,
+                                 mut parents: linalg::etree::ParentsViewMut,
                                  l_nz: &mut [usize],
                                  flag_workspace: &mut [usize],
                                  check_symmetry: SymmetryCheck)
@@ -350,7 +354,7 @@ where N: Clone + Copy + PartialEq,
 /// pattern_workspace is a DStack of capacity n
 pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
                                 l_colptr: &[usize],
-                                parents: etree::ParentsView,
+                                parents: linalg::etree::ParentsView,
                                 perm: &Permutation<PStorage>,
                                 l_nz: &mut [usize],
                                 l_indices: &mut [usize],
@@ -447,9 +451,14 @@ where N: Clone + Copy + Num,
 
 #[cfg(test)]
 mod test {
-    use sprs::sparse::{csmat, CsMat, CsMatView, CsMatOwned};
-    use sprs::sparse::permutation::Permutation;
-    use sprs::sparse::linalg;
+    use sprs::{
+        self,
+        CsMat,
+        CsMatView,
+        CsMatOwned,
+        Permutation,
+        linalg,
+    };
     use super::SymmetryCheck;
     use sprs::stack::DStack;
 
@@ -585,7 +594,7 @@ mod test {
         let b = test_vec1();
         let mut x = b.clone();
         let n = b.len();
-        let l = CsMatView::new_view(csmat::CSC,
+        let l = CsMatView::new_view(sprs::CSC,
                                     (n, n),
                                     &expected_lp,
                                     &expected_li,
