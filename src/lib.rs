@@ -99,6 +99,10 @@ pub use sparse::construct::{
     csc_from_dense,
 };
 
+pub use sparse::to_dense::{
+    assign_to_dense,
+};
+
 
 pub type Ix2 = (Ix_, Ix_);
 
