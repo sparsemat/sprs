@@ -52,16 +52,61 @@ assert_eq!(a, b.to_csc());
 extern crate num_traits;
 extern crate ndarray;
 
-pub mod sparse;
+mod sparse;
 pub mod errors;
 pub mod stack;
 
 pub use ndarray::Ix as Ix_;
 
-pub use sparse::{CsMat, CsMatOwned, CsMatView,
-                 CsVec, CsVecView, CsVecOwned};
-pub use sparse::CompressedStorage::{CSR, CSC};
-pub use sparse::construct::{vstack, hstack, bmat};
+pub use sparse::{
+    CsMat,
+    CsMatOwned,
+    CsMatView,
+    CsVec,
+    CsVecView,
+    CsVecOwned,
+};
+
+
+pub use sparse::symmetric::{
+    is_symmetric,
+};
+
+pub use sparse::permutation::{
+    Permutation,
+    PermView,
+    PermOwned,
+};
+
+pub use sparse::CompressedStorage::{
+    self,
+    CSR,
+    CSC,
+};
+
+pub use sparse::linalg;
+pub use sparse::prod;
+pub use sparse::binop;
+pub use sparse::vec;
+
+pub use sparse::triplet::{
+    TripletMat,
+    TripletMatView,
+    TripletMatViewMut,
+};
+
+pub use sparse::construct::{
+    vstack,
+    hstack,
+    bmat,
+    csr_from_dense,
+    csc_from_dense,
+};
+
+pub use sparse::to_dense::{
+    assign_to_dense,
+};
+
 
 pub type Ix2 = (Ix_, Ix_);
 

@@ -130,8 +130,8 @@ pub trait SparseIterTools: Iterator {
     ///
     /// ```rust
     /// use sprs::CsVec;
-    /// use sprs::sparse::vec::NnzEither;
-    /// use sprs::sparse::vec::SparseIterTools;
+    /// use sprs::vec::NnzEither;
+    /// use sprs::vec::SparseIterTools;
     /// let v0 = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
     /// let v1 = CsVec::new(5, vec![1, 2, 3], vec![-1., -2., -3.]);
     /// let mut nnz_or_iter = v0.iter().nnz_or_zip(v1.iter());
@@ -160,7 +160,7 @@ pub trait SparseIterTools: Iterator {
     ///
     /// ```rust
     /// use sprs::CsVec;
-    /// use sprs::sparse::vec::SparseIterTools;
+    /// use sprs::vec::SparseIterTools;
     /// let v0 = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
     /// let v1 = CsVec::new(5, vec![1, 2, 3], vec![-1., -2., -3.]);
     /// let mut nnz_zip = v0.iter().nnz_zip(v1.iter());

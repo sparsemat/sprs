@@ -73,7 +73,6 @@ where N: 'a + Clone + Default,
 ///
 /// # Examples
 /// ```
-/// use sprs::sparse::CompressedStorage::CSR;
 /// use sprs::CsMatOwned;
 /// let a = CsMatOwned::<f64>::eye(3);
 /// let b = CsMatOwned::<f64>::eye(4);

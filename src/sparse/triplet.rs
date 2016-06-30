@@ -121,8 +121,8 @@ impl<N> TripletMat<N> {
     }
 
     /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletView<N> {
-        TripletView {
+    pub fn borrowed(&self) -> TripletMatView<N> {
+        TripletMatView {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -143,8 +143,8 @@ impl<N> TripletMat<N> {
     }
 
     /// Get a mutable view into this matrix.
-    pub fn borrowed_mut(&mut self) -> TripletViewMut<N> {
-        TripletViewMut {
+    pub fn borrowed_mut(&mut self) -> TripletMatViewMut<N> {
+        TripletMatViewMut {
             rows: self.rows,
             cols: self.cols,
             row_inds: &mut self.row_inds[..],
@@ -154,7 +154,7 @@ impl<N> TripletMat<N> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletView<N> {
+    pub fn transpose_view(&self) -> TripletMatView<N> {
         self.borrowed().transpose_view()
     }
 
@@ -197,7 +197,7 @@ impl<N> TripletMat<N> {
 }
 
 /// Triplet matrix view
-pub struct TripletView<'a, N: 'a> {
+pub struct TripletMatView<'a, N: 'a> {
     rows: usize,
     cols: usize,
     row_inds: &'a [usize],
@@ -205,7 +205,7 @@ pub struct TripletView<'a, N: 'a> {
     data: &'a [N],
 }
 
-impl<'a, N> TripletView<'a, N> {
+impl<'a, N> TripletMatView<'a, N> {
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.rows
@@ -253,8 +253,8 @@ impl<'a, N> TripletView<'a, N> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletView<'a, N> {
-        TripletView {
+    pub fn transpose_view(&self) -> TripletMatView<'a, N> {
+        TripletMatView {
             rows: self.cols,
             cols: self.rows,
             row_inds: self.col_inds,
@@ -364,7 +364,7 @@ impl<'a, N> TripletView<'a, N> {
 
 
 /// Triplet matrix mutable view
-pub struct TripletViewMut<'a, N: 'a> {
+pub struct TripletMatViewMut<'a, N: 'a> {
     rows: usize,
     cols: usize,
     row_inds: &'a mut [usize],
@@ -372,7 +372,7 @@ pub struct TripletViewMut<'a, N: 'a> {
     data: &'a mut [N],
 }
 
-impl<'a, N> TripletViewMut<'a, N> {
+impl<'a, N> TripletMatViewMut<'a, N> {
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.borrowed().rows()
@@ -409,8 +409,8 @@ impl<'a, N> TripletViewMut<'a, N> {
     }
 
     /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletView<N> {
-        TripletView {
+    pub fn borrowed(&self) -> TripletMatView<N> {
+        TripletMatView {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -420,7 +420,7 @@ impl<'a, N> TripletViewMut<'a, N> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletView<N> {
+    pub fn transpose_view(&self) -> TripletMatView<N> {
         self.borrowed().transpose_view()
     }
 
