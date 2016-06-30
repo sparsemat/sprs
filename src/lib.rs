@@ -89,7 +89,11 @@ pub use sparse::prod;
 pub use sparse::binop;
 pub use sparse::vec;
 
-pub use sparse::triplet::TripletMat;
+pub use sparse::triplet::{
+    TripletMat,
+    TripletMatView,
+    TripletMatViewMut,
+};
 
 pub use sparse::construct::{
     vstack,
