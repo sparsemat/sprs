@@ -3,7 +3,7 @@
 use std::ops::IndexMut;
 use num_traits::Num;
 use sparse::CsMatView;
-use sparse::vec::{self, VecDim};
+use sparse::vec;
 use errors::SprsError;
 use stack::{self, StackVal, DStack};
 
