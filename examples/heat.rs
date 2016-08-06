@@ -12,32 +12,53 @@ extern crate ndarray;
 /// building up its sparse structure.
 fn grid_laplacian(rows: usize, cols: usize) -> sprs::CsMatOwned<f64> {
     let nb_vert = rows * cols;
-    let indptr = Vec::with_capacity(nb_vert + 1);
+    let mut indptr = Vec::with_capacity(nb_vert + 1);
     let nnz = 5*nb_vert + 5;
-    let indices = Vec::with_capacity(nnz);
-    let data = Vec::with_capacity(nnz);
+    let mut indices = Vec::with_capacity(nnz);
+    let mut data = Vec::with_capacity(nnz);
     let mut cumsum = 0;
 
-    let add_elt = |i, j, x| {
-        indices.push(i * rows + j);
-        data.push(x);
-        cumsum += 1;
-    };
-
     for i in 0..rows {
-        for k in 0..cols {
+        let top_row = i == 0;
+        let bottom_row = i + 1 == rows;
+        let border_row = top_row || bottom_row;
+
+        for j in 0..cols {
             indptr.push(cumsum);
-            if i > 1 {
+
+            let mut add_elt = |i, j, x| {
+                indices.push(i * rows + j);
+                data.push(x);
+                cumsum += 1;
+            };
+
+            let left_col = j == 0;
+            let right_col = j + 1 == rows;
+            let border_col = left_col || right_col;
+            let border = border_row || border_col;
+            let corner = border_row && border_col;
+            if border && !corner {
+                // establish Neumann boundary conditions
+                // no constraint on corners
+                if bottom_row {
+                    add_elt(i - 1, j, -1.);
+                }
+                if right_col {
+                    add_elt(i, j - 1, -1.);
+                }
+                add_elt(i, j, 1.);
+                if left_col {
+                    add_elt(i, j + 1, -1.);
+                }
+                if top_row {
+                    add_elt(i + 1, j, -1.);
+                }
+            }
+            else if !corner {
                 add_elt(i - 1, j, 1.);
-            }
-            if j > 1 {
                 add_elt(i, j - 1, 1.);
-            }
-            add_elt(i, j, -4.);
-            if j + 1 < rows {
+                add_elt(i, j, -4.);
                 add_elt(i, j + 1, 1.);
-            }
-            if i + 1 < rows {
                 add_elt(i + 1, j, 1.);
             }
         }
@@ -45,5 +66,5 @@ fn grid_laplacian(rows: usize, cols: usize) -> sprs::CsMatOwned<f64> {
 
     indptr.push(cumsum);
 
-    CsMatOwned::new((nb_vert, nb_vert), indptr, indices, data);
+    sprs::CsMatOwned::new((nb_vert, nb_vert), indptr, indices, data)
 }
