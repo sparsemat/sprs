@@ -2,6 +2,9 @@
 extern crate sprs;
 extern crate ndarray;
 
+type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix>;
+type OwnedVec<T> = ndarray::OwnedArray<T, ndarray::Ix>;
+
 /// Compute the discrete laplacian operator on a grid, assuming the
 /// step size is 1.
 /// We assume this operator operates on the C-order flattened version of
@@ -67,4 +70,25 @@ fn grid_laplacian(rows: usize, cols: usize) -> sprs::CsMatOwned<f64> {
     indptr.push(cumsum);
 
     sprs::CsMatOwned::new((nb_vert, nb_vert), indptr, indices, data)
+}
+
+fn set_boundary_condition<F>(mut x: VecViewMut<f64>,
+                          grid_shape: (usize, usize),
+                          f: F
+                         )
+where F: Fn(usize, usize) -> f64
+{
+    let (rows, cols) = grid_shape;
+    for i in 0..rows {
+        for j in 0..cols {
+            let index = i*rows + j;
+            x[[index]] = f(i, j);
+        }
+    }
+}
+
+fn main() {
+    let lap = grid_laplacian(10, 10);
+    let mut x : OwnedVec<f64> = OwnedVec::zeros(100);
+    set_boundary_condition(x.view_mut(), (10, 10), |_, _| 1.);
 }
