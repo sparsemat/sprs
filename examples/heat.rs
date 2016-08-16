@@ -13,7 +13,8 @@ type OwnedVec<T> = ndarray::OwnedArray<T, ndarray::Ix>;
 /// This example shows how a relatively straightforward sparse matrix
 /// can be constructed with a minimal number of allocations by directly
 /// building up its sparse structure.
-fn grid_laplacian(rows: usize, cols: usize) -> sprs::CsMatOwned<f64> {
+fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
+    let (rows, cols) = shape;
     let nb_vert = rows * cols;
     let mut indptr = Vec::with_capacity(nb_vert + 1);
     let nnz = 5*nb_vert + 5;
@@ -88,7 +89,7 @@ where F: Fn(usize, usize) -> f64
 }
 
 fn main() {
-    let lap = grid_laplacian(10, 10);
+    let lap = grid_laplacian((10, 10));
     let mut x : OwnedVec<f64> = OwnedVec::zeros(100);
     set_boundary_condition(x.view_mut(), (10, 10), |_, _| 1.);
 }
