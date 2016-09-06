@@ -3,7 +3,7 @@ extern crate sprs;
 extern crate ndarray;
 
 type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix>;
-type OwnedVec<T> = ndarray::OwnedArray<T, ndarray::Ix>;
+type OwnedVec<T> = ndarray::Array<T, ndarray::Ix>;
 
 /// Compute the discrete laplacian operator on a grid, assuming the
 /// step size is 1.
