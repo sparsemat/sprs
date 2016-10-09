@@ -112,12 +112,15 @@ fn main() {
             // Gauss-Seidel requires a non-zero diagonal, which
             // is satisfied for a laplacian matrix
             x[[row_ind]] = (rhs[[row_ind]] - sigma) / diag.unwrap();
-            error += (prod - sigma) * (prod - sigma);
+            error += (prod - rhs[[row_ind]]) * (prod - rhs[[row_ind]]);
         }
 
+        error = error.sqrt();
+        println!("error: {}", error);
         // error corresponds to the state before iteration, but
         // that shouldn't be a problem
         if error < 1e-5 {
+            println!("system solved!");
             break;
         }
     }
