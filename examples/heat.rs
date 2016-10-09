@@ -5,6 +5,21 @@ extern crate ndarray;
 type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix>;
 type OwnedVec<T> = ndarray::Array<T, ndarray::Ix>;
 
+/// Determine whether the grid location at `(row, col)` is a border
+/// of the grid defined by `shape`.
+fn is_border(row: usize, col: usize, shape: (usize, usize)) -> bool {
+    let (rows, cols) = shape;
+    let top_row = row == 0;
+    let bottom_row = row + 1 == rows;
+    let border_row = top_row || bottom_row;
+
+    let left_col = col == 0;
+    let right_col = col + 1 == cols;
+    let border_col = left_col || right_col;
+
+    border_row || border_col
+}
+
 /// Compute the discrete laplacian operator on a grid, assuming the
 /// step size is 1.
 /// We assume this operator operates on the C-order flattened version of
@@ -23,10 +38,6 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
     let mut cumsum = 0;
 
     for i in 0..rows {
-        let top_row = i == 0;
-        let bottom_row = i + 1 == rows;
-        let border_row = top_row || bottom_row;
-
         for j in 0..cols {
             indptr.push(cumsum);
 
@@ -36,11 +47,7 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
                 cumsum += 1;
             };
 
-            let left_col = j == 0;
-            let right_col = j + 1 == rows;
-            let border_col = left_col || right_col;
-            let border = border_row || border_col;
-            if border {
+            if is_border(i, j, shape) {
                 // establish Dirichlet boundary conditions
                 add_elt(i, j, 1.);
             }
@@ -67,20 +74,12 @@ where F: Fn(usize, usize) -> f64
 {
     let (rows, cols) = grid_shape;
     for i in 0..rows {
-        let j = 0;
-        let index = i*rows + j;
-        x[[index]] = f(i, j);
-        let j = cols - 1;
-        let index = i*rows + j;
-        x[[index]] = f(i, j);
-    }
-    for j in 0..cols {
-        let i = 0;
-        let index = i*rows + j;
-        x[[index]] = f(i, j);
-        let i = rows - 1;
-        let index = i*rows + j;
-        x[[index]] = f(i, j);
+        for j in 0..cols {
+            if is_border(i, j, grid_shape) {
+                let index = i*rows + j;
+                x[[index]] = f(i, j);
+            }
+        }
     }
 }
 
