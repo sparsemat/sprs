@@ -1,3 +1,10 @@
+///! This file demonstrates basic usage of the sprs library,
+///! where a heat diffusion problem with Dirichlet boundary condition
+///! is solved.
+///!
+///! This shows how a laplacian matrix can be constructed by directly
+///! constructing the compressed structure, and how the resulting linear
+///! system can be solved using an iterative method.
 
 extern crate sprs;
 extern crate ndarray;
