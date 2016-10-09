@@ -40,25 +40,11 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
             let right_col = j + 1 == rows;
             let border_col = left_col || right_col;
             let border = border_row || border_col;
-            let corner = border_row && border_col;
-            if border && !corner {
-                // establish Neumann boundary conditions
-                // no constraint on corners
-                if bottom_row {
-                    add_elt(i - 1, j, -1.);
-                }
-                if right_col {
-                    add_elt(i, j - 1, -1.);
-                }
+            if border {
+                // establish Dirichlet boundary conditions
                 add_elt(i, j, 1.);
-                if left_col {
-                    add_elt(i, j + 1, -1.);
-                }
-                if top_row {
-                    add_elt(i + 1, j, -1.);
-                }
             }
-            else if !corner {
+            else {
                 add_elt(i - 1, j, 1.);
                 add_elt(i, j - 1, 1.);
                 add_elt(i, j, -4.);
@@ -74,17 +60,27 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
 }
 
 fn set_boundary_condition<F>(mut x: VecViewMut<f64>,
-                          grid_shape: (usize, usize),
-                          f: F
-                         )
+                             grid_shape: (usize, usize),
+                             f: F
+                            )
 where F: Fn(usize, usize) -> f64
 {
     let (rows, cols) = grid_shape;
     for i in 0..rows {
-        for j in 0..cols {
-            let index = i*rows + j;
-            x[[index]] = f(i, j);
-        }
+        let j = 0;
+        let index = i*rows + j;
+        x[[index]] = f(i, j);
+        let j = cols - 1;
+        let index = i*rows + j;
+        x[[index]] = f(i, j);
+    }
+    for j in 0..cols {
+        let i = 0;
+        let index = i*rows + j;
+        x[[index]] = f(i, j);
+        let i = rows - 1;
+        let index = i*rows + j;
+        x[[index]] = f(i, j);
     }
 }
 
