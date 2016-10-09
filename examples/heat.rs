@@ -97,22 +97,22 @@ fn main() {
         let mut error = 0.;
         for (row_ind, vec) in lap.outer_iterator().enumerate() {
             let mut sigma = 0.;
-            let mut prod = 0.;
             let mut diag = None;
             for (col_ind, &val) in vec.iter() {
                 if row_ind != col_ind {
                     sigma += val * x[[col_ind]];
-                    prod += val * x[[col_ind]];
                 }
                 else {
                     diag = Some(val);
-                    prod += val * x[[col_ind]];
                 }
             }
             // Gauss-Seidel requires a non-zero diagonal, which
             // is satisfied for a laplacian matrix
-            x[[row_ind]] = (rhs[[row_ind]] - sigma) / diag.unwrap();
-            error += (prod - rhs[[row_ind]]) * (prod - rhs[[row_ind]]);
+            let diag = diag.unwrap();
+            let prod = sigma + diag * x[[row_ind]];
+            let cur_rhs = rhs[[row_ind]];
+            x[[row_ind]] = ( cur_rhs - sigma) / diag;
+            error += (prod - cur_rhs) * (prod - cur_rhs);
         }
 
         error = error.sqrt();
