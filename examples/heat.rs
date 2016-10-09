@@ -66,7 +66,8 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
     sprs::CsMatOwned::new((nb_vert, nb_vert), indptr, indices, data)
 }
 
-fn set_boundary_condition<F>(mut x: VecViewMut<f64>,
+/// Set a dirichlet boundary condition
+fn set_boundary_condition<F>(mut rhs: VecViewMut<f64>,
                              grid_shape: (usize, usize),
                              f: F
                             )
@@ -77,7 +78,7 @@ where F: Fn(usize, usize) -> f64
         for j in 0..cols {
             if is_border(i, j, grid_shape) {
                 let index = i*rows + j;
-                x[[index]] = f(i, j);
+                rhs[[index]] = f(i, j);
             }
         }
     }
