@@ -101,11 +101,12 @@ where F: Fn(usize, usize) -> f64
 }
 
 fn main() {
-    let lap = grid_laplacian((10, 10));
-    let mut rhs : OwnedVec<f64> = OwnedVec::zeros(100);
-    set_boundary_condition(rhs.view_mut(), (10, 10), |_, _| 1.);
+    let (rows, cols) = (10, 10);
+    let lap = grid_laplacian((rows, cols));
+    let mut rhs : OwnedVec<f64> = OwnedVec::zeros(rows * cols);
+    set_boundary_condition(rhs.view_mut(), (rows, cols), |_, _| 1.);
 
-    let mut x : OwnedVec<f64> = OwnedVec::zeros(100);
+    let mut x : OwnedVec<f64> = OwnedVec::zeros(rows * cols);
 
     // Gauss-Seidel method to solve the system
     // see https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method#Algorithm
@@ -139,5 +140,13 @@ fn main() {
             println!("system solved!");
             break;
         }
+    }
+
+    for i in 0..rows {
+        for j in 0..cols {
+            let index = i*rows + j;
+            print!("{} ", x[[index]]);
+        }
+        println!("");
     }
 }
