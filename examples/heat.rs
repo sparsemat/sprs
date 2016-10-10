@@ -108,11 +108,11 @@ fn gauss_seidel(mat: sprs::CsMatView<f64>,
                 rhs: VecView<f64>,
                 max_iter: usize,
                 eps: f64
-                ) -> Result<(), ()> {
+                ) -> Result<(usize, f64), f64> {
     assert!(mat.rows() == mat.cols());
     assert!(mat.rows() == x.shape()[0]);
-    for _ in 0..max_iter {
-        let mut error = 0.;
+    let mut error = (&mat * &x - rhs).scalar_sum().sqrt();
+    for it in 0..max_iter {
         for (row_ind, vec) in mat.outer_iterator().enumerate() {
             let mut sigma = 0.;
             let mut diag = None;
@@ -127,22 +127,18 @@ fn gauss_seidel(mat: sprs::CsMatView<f64>,
             // Gauss-Seidel requires a non-zero diagonal, which
             // is satisfied for a laplacian matrix
             let diag = diag.unwrap();
-            let prod = sigma + diag * x[[row_ind]];
             let cur_rhs = rhs[[row_ind]];
             x[[row_ind]] = ( cur_rhs - sigma) / diag;
-            error += (prod - cur_rhs) * (prod - cur_rhs);
         }
 
-        error = error.sqrt();
-        println!("error: {}", error);
+        error = (&mat * &x - rhs).scalar_sum().sqrt();
         // error corresponds to the state before iteration, but
         // that shouldn't be a problem
         if error < eps {
-            println!("system solved!");
-            return Ok(());
+            return Ok((it, error));
         }
     }
-    Err(())
+    Err(error)
 }
 
 fn main() {
@@ -153,17 +149,22 @@ fn main() {
 
     let mut x = OwnedVec::zeros(rows * cols);
 
-    if gauss_seidel(lap.view(), x.view_mut(), rhs.view(), 200, 1e-5).is_ok() {
-        let grid = x.view().into_shape((rows, cols)).unwrap();
-        for i in 0..rows {
-            for j in 0..cols {
-                print!("{} ", grid[[i, j]]);
+    match gauss_seidel(lap.view(), x.view_mut(), rhs.view(), 300, 1e-8) {
+        Ok((iters, error)) => {
+            println!("Solved system in {} iterations with residual error {}",
+                     iters,
+                     error);
+            let grid = x.view().into_shape((rows, cols)).unwrap();
+            for i in 0..rows {
+                for j in 0..cols {
+                    print!("{} ", grid[[i, j]]);
+                }
+                println!("");
             }
-            println!("");
+        }
+        Err(error) => {
+            println!("Solving the system failed to converge fast enough");
+            println!("Residual error was {}", error);
         }
     }
-    else {
-        println!("Solving the system failed to converge fast enough");
-    }
-
 }
