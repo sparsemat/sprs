@@ -1337,6 +1337,42 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
+impl<'a, 'b, N, IpS, IS, DS, DS2>
+Mul<&'b ArrayBase<DS2, Ix>>
+for &'a CsMat<N, IpS, IS, DS>
+where N: 'a + Copy + Num + Default,
+      IpS: 'a + Deref<Target=[usize]>,
+      IS: 'a + Deref<Target=[usize]>,
+      DS: 'a + Deref<Target=[N]>,
+      DS2: 'b + ndarray::Data<Elem=N> {
+    type Output = Array<N, Ix>;
+
+    fn mul(self, rhs: &'b ArrayBase<DS2, Ix>) -> Array<N, Ix> {
+        let rows = self.rows();
+        let cols = rhs.shape()[0];
+        let rhs_reshape = rhs.view().into_shape((cols, 1)).unwrap();
+        let mut res = Array::zeros(rows);
+        {
+            let res_reshape = res.view_mut().into_shape((rows, 1)).unwrap();
+            match self.storage() {
+                CSR => {
+                    prod::csr_mulacc_dense_rowmaj(self.view(),
+                                                  rhs_reshape,
+                                                  res_reshape
+                                                 );
+                }
+                CSC => {
+                    prod::csc_mulacc_dense_rowmaj(self.view(),
+                                                  rhs_reshape,
+                                                  res_reshape
+                                                 );
+                }
+            }
+        }
+        res
+    }
+}
+
 impl<N, IpS, IS, DS> Index<[usize; 2]> for CsMat<N, IpS, IS, DS>
 where IpS: Deref<Target=[usize]>,
       IS: Deref<Target=[usize]>,
