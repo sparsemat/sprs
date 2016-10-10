@@ -5,9 +5,10 @@ sprs, sparse matrices for Rust
     :target: https://travis-ci.org/vbarrielle/sprs
 
 sprs implements some sparse matrix data structures and linear algebra
-algorithms.
+algorithms in pure Rust.
 
-WARNING: this library is still in development, its API is not stable yet.
+The API is a work in progress, and feedback on its rough edges is highly
+appreciated :)
 
 Features
 --------
@@ -16,6 +17,7 @@ Structures
 ..........
 
 - CSR/CSC matrix
+- triplet matrix
 - Sparse vector
 
 Operations
@@ -75,23 +77,25 @@ Matrix matrix multiplication, addition
   let b = &eye * &a;
   assert_eq!(a, b.to_csr());
 
+For a more comple example, be sure to check out the ``examples/`` folder.
+
 Documentation
 -------------
 
-- master_
-- 0.3_
+Documentation is available at docs.rs_.
 
-.. _master : https://vbarrielle.github.io/sprs/doc/sprs/
-.. _0.3 : https://vbarrielle.github.io/sprs/0.3/sprs/
+.. _docs.rs: https://docs.rs/sprs
 
 Changelog
 ---------
 
-- next version:
+- 0.4.0:
     - panic for contract violations, use errors only for recoverable problems
       **breaking change**
     - depend on latest ndarray version: 0.6 **braking change**
     - refactor API to present shorter import paths **breaking change**
+    - expose sparse matrix / dense vector product via ``Mul``.
+    - add an example of building and solving a sparse linear system
 - O.4.0-alpha.4 version, most changes are **breaking changes**:
     - move cholesky factorization into its own crate
     - add ``to_dense()`` method for sparse matrices
