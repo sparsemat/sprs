@@ -18,6 +18,7 @@
 extern crate sprs;
 extern crate ndarray;
 
+type VecView<'a, T> = ndarray::ArrayView<'a, T, ndarray::Ix>;
 type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix>;
 type OwnedVec<T> = ndarray::Array<T, ndarray::Ix>;
 
@@ -100,19 +101,19 @@ where F: Fn(usize, usize) -> f64
     }
 }
 
-fn main() {
-    let (rows, cols) = (10, 10);
-    let lap = grid_laplacian((rows, cols));
-    let mut rhs : OwnedVec<f64> = OwnedVec::zeros(rows * cols);
-    set_boundary_condition(rhs.view_mut(), (rows, cols), |_, _| 1.);
-
-    let mut x : OwnedVec<f64> = OwnedVec::zeros(rows * cols);
-
-    // Gauss-Seidel method to solve the system
-    // see https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method#Algorithm
-    loop {
+/// Gauss-Seidel method to solve the system
+/// see https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method#Algorithm
+fn gauss_seidel(mat: sprs::CsMatView<f64>,
+                mut x: VecViewMut<f64>,
+                rhs: VecView<f64>,
+                max_iter: usize,
+                eps: f64
+                ) -> Result<(), ()> {
+    assert!(mat.rows() == mat.cols());
+    assert!(mat.rows() == x.shape()[0]);
+    for _ in 0..max_iter {
         let mut error = 0.;
-        for (row_ind, vec) in lap.outer_iterator().enumerate() {
+        for (row_ind, vec) in mat.outer_iterator().enumerate() {
             let mut sigma = 0.;
             let mut diag = None;
             for (col_ind, &val) in vec.iter() {
@@ -136,17 +137,33 @@ fn main() {
         println!("error: {}", error);
         // error corresponds to the state before iteration, but
         // that shouldn't be a problem
-        if error < 1e-5 {
+        if error < eps {
             println!("system solved!");
-            break;
+            return Ok(());
         }
+    }
+    Err(())
+}
+
+fn main() {
+    let (rows, cols) = (10, 10);
+    let lap = grid_laplacian((rows, cols));
+    let mut rhs = OwnedVec::zeros(rows * cols);
+    set_boundary_condition(rhs.view_mut(), (rows, cols), |_, _| 1.);
+
+    let mut x = OwnedVec::zeros(rows * cols);
+
+    if gauss_seidel(lap.view(), x.view_mut(), rhs.view(), 200, 1e-5).is_ok() {
+        let grid = x.view().into_shape((rows, cols)).unwrap();
+        for i in 0..rows {
+            for j in 0..cols {
+                print!("{} ", grid[[i, j]]);
+            }
+            println!("");
+        }
+    }
+    else {
+        println!("Solving the system failed to converge fast enough");
     }
 
-    for i in 0..rows {
-        for j in 0..cols {
-            let index = i*rows + j;
-            print!("{} ", x[[index]]);
-        }
-        println!("");
-    }
 }
