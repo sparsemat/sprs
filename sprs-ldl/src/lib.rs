@@ -54,12 +54,12 @@
 //     and a notice that the code was modified is included.
 
 extern crate sprs;
-extern crate num;
+extern crate num_traits;
 
 use std::ops::Deref;
 use std::ops::IndexMut;
 
-use num::traits::Num;
+use num_traits::Num;
 
 use sprs::{
     CsMat,
