@@ -145,7 +145,9 @@ fn main() {
     let (rows, cols) = (10, 10);
     let lap = grid_laplacian((rows, cols));
     let mut rhs = OwnedVec::zeros(rows * cols);
-    set_boundary_condition(rhs.view_mut(), (rows, cols), |_, _| 1.);
+    set_boundary_condition(rhs.view_mut(), (rows, cols), |row, col| {
+        (row + col) as f64
+    });
 
     let mut x = OwnedVec::zeros(rows * cols);
 
