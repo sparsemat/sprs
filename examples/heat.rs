@@ -1,6 +1,15 @@
 ///! This file demonstrates basic usage of the sprs library,
 ///! where a heat diffusion problem with Dirichlet boundary condition
-///! is solved.
+///! is solved for equilibrium. For simplicity we omit any relevant
+///! physical constant.
+///!
+///! This problem can be modelled as solving a linear system
+///! L * x = rhs
+///! where L is a laplacian matrix on a 2 dimensional grid, and rhs is
+///! zero everywhere except for values corresponding to borders, where
+///! a constant heat value is imposed.
+///! Since the L matrix is diagonally dominant, we can use a Gauss-Seidel
+///! iterative scheme to solve the system.
 ///!
 ///! This shows how a laplacian matrix can be constructed by directly
 ///! constructing the compressed structure, and how the resulting linear
