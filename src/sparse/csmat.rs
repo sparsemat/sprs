@@ -486,6 +486,81 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
         self.indptr.push(nnz);
         self
     }
+
+    /// Insert an element in the matrix. If the element is already present,
+    /// its value is overwritten.
+    ///
+    /// Warning: this is not an efficient operation, as it requires
+    /// a non-constant lookup followed by two `Vec` insertions.
+    ///
+    /// The insertion will be efficient, however, if the elements are inserted
+    /// according to the matrix's order, eg following the row order for a CSR
+    /// matrix.
+    pub fn insert(&mut self, row: usize, col: usize, val: N) {
+        match self.storage() {
+            CSR => self.insert_outer_inner(row, col, val),
+            CSC => self.insert_outer_inner(col, row, val),
+        }
+    }
+
+    fn insert_outer_inner(&mut self,
+                          outer_ind: usize,
+                          inner_ind: usize,
+                          val: N,
+                         ) {
+        let outer_dims = self.outer_dims();
+        if outer_ind >= outer_dims {
+            // we need to add a new outer dimension
+            let last_nnz = *self.indptr.last().unwrap(); // indptr never empty
+            self.indptr.reserve(1 + outer_ind - outer_dims);
+            for _ in outer_dims..outer_ind {
+                self.indptr.push(last_nnz);
+            }
+            self.set_outer_dims(outer_ind + 1);
+            self.indptr.push(last_nnz + 1);
+            self.indices.push(inner_ind);
+            self.data.push(val);
+        }
+        else {
+            // we need to search for an insertion spot
+            let start = self.indptr[outer_ind];
+            let stop = self.indptr[outer_ind + 1];
+            let location = self.indices[start..stop].binary_search(&inner_ind);
+            match location {
+                Ok(ind) => {
+                    self.data[ind] = val;
+                    return;
+                }
+                Err(ind) => {
+                    let ind = start + ind;
+                    self.indices.insert(ind, inner_ind);
+                    self.data.insert(ind, val);
+                    for k in (outer_ind + 1)..(outer_dims + 1) {
+                        self.indptr[k] += 1;
+                    }
+                }
+            }
+        }
+
+        if inner_ind >= self.inner_dims() {
+            self.set_inner_dims(inner_ind + 1);
+        }
+    }
+
+    fn set_outer_dims(&mut self, outer_dims: usize) {
+        match self.storage() {
+            CSR => self.nrows = outer_dims,
+            CSC => self.ncols = outer_dims,
+        }
+    }
+
+    fn set_inner_dims(&mut self, inner_dims: usize) {
+        match self.storage() {
+            CSR => self.ncols = inner_dims,
+            CSC => self.nrows = inner_dims,
+        }
+    }
+
 }
 
 impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
