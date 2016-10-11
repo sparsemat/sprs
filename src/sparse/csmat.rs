@@ -528,6 +528,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             let location = self.indices[start..stop].binary_search(&inner_ind);
             match location {
                 Ok(ind) => {
+                    let ind = start + ind;
                     self.data[ind] = val;
                     return;
                 }
