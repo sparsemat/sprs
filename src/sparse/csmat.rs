@@ -1838,4 +1838,50 @@ mod test {
         res.map_inplace(|&x| x / 3.);
         assert_eq!(res, mat);
     }
+
+    #[test]
+    fn insert() {
+        // | 0 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        let mut mat = CsMatOwned::empty(CSR, 0);
+        mat.reserve_outer_dim(3);
+        mat.reserve_nnz(4);
+        // exercise the fast and easy path where the elements are added
+        // in row order for a CSR matrix
+        mat.insert(0, 1, 1.);
+        mat.insert(1, 0, 1.);
+        mat.insert(2, 1, 1.);
+        mat.insert(2, 2, 1.);
+
+        let expected = CsMatOwned::new((3, 3),
+                                       vec![0, 1, 2, 4],
+                                       vec![1, 0, 1, 2],
+                                       vec![1.; 4]);
+        assert_eq!(mat, expected);
+
+        // | 2 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        // exercise adding inside an already formed row (ie a search needs
+        // to be performed)
+        mat.insert(0, 0, 2.);
+        let expected = CsMatOwned::new((3, 3),
+                                       vec![0, 2, 3, 5],
+                                       vec![0, 1, 0, 1, 2],
+                                       vec![2., 1., 1., 1., 1.]);
+        assert_eq!(mat, expected);
+
+        // | 2 1 0 |
+        // | 3 0 0 |
+        // | 0 1 1 |
+        // exercise the fact that inserting in an existing element
+        // should change this element's value
+        mat.insert(1, 0, 3.);
+        let expected = CsMatOwned::new((3, 3),
+                                       vec![0, 2, 3, 5],
+                                       vec![0, 1, 0, 1, 2],
+                                       vec![2., 1., 3., 1., 1.]);
+        assert_eq!(mat, expected);
+    }
 }
