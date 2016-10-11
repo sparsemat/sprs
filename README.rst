@@ -89,6 +89,8 @@ Documentation is available at docs.rs_.
 Changelog
 ---------
 
+- next version:
+    - add ``insert()`` method to insert an element inside an owned csmat
 - 0.4.0:
     - panic for contract violations, use errors only for recoverable problems
       **breaking change**
