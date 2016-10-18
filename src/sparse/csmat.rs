@@ -1941,4 +1941,28 @@ mod test {
                                        vec![2., 1., 3., 1., 1.]);
         assert_eq!(mat, expected);
     }
+
+    #[test]
+    fn iter_mut() {
+        // | 0 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        let mut mat = CsMatOwned::new_csc((3, 3),
+                                          vec![0, 1, 3, 4],
+                                          vec![1, 0, 2, 2],
+                                          vec![1.; 4]);
+
+        for mut col_vec in mat.outer_iterator_mut() {
+            for (row_ind, val) in col_vec.iter_mut() {
+                *val = row_ind as f64 + 1.;
+            }
+        }
+
+        let expected = CsMatOwned::new_csc((3, 3),
+                                           vec![0, 1, 3, 4],
+                                           vec![1, 0, 2, 2],
+                                           vec![2., 1., 3., 3.]);
+        assert_eq!(mat, expected);
+    }
+
 }
