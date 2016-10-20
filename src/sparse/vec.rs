@@ -20,7 +20,7 @@ use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
 use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut};
 use std::convert::AsRef;
 use std::cmp;
-use std::slice::{self, Iter};
+use std::slice::{self, Iter, IterMut};
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -86,6 +86,11 @@ pub struct VectorIteratorPerm<'a, N: 'a> {
     perm: PermView<'a>,
 }
 
+/// An iterator over the mutable non-zero elements of a sparse vector
+pub struct VectorIteratorMut<'a, N: 'a> {
+    ind_data: Zip<Iter<'a,usize>, IterMut<'a,N>>,
+}
+
 
 impl <'a, N: 'a>
 Iterator
@@ -114,6 +119,23 @@ for VectorIteratorPerm<'a, N> {
             None => None,
             Some((inner_ind, data)) => Some(
                 (self.perm.at(*inner_ind), data))
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.ind_data.size_hint()
+    }
+}
+
+impl <'a, N: 'a>
+Iterator
+for VectorIteratorMut<'a, N> {
+    type Item = (usize, &'a mut N);
+
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        match self.ind_data.next() {
+            None => None,
+            Some((inner_ind, data)) => Some((*inner_ind, data))
         }
     }
 
@@ -693,6 +715,15 @@ where N: 'a,
         }
     }
 
+    /// Mutable iteration over the non-zero values of a sparse vector
+    ///
+    /// Only the values can be changed, the sparse structure is kept.
+    pub fn iter_mut(&mut self) -> VectorIteratorMut<N> {
+        VectorIteratorMut {
+            ind_data: self.indices.iter().zip(self.data.iter_mut()),
+        }
+    }
+
 }
 
 impl<'a, N> CsVecViewMut<'a, N>
@@ -972,5 +1003,20 @@ mod test {
         let res = vec.map(|&x| x * 2.);
         let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 4., 6., 8.]);
         assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
+        for (ind, val) in vec.iter_mut() {
+            if ind == 2 {
+                *val += 1.;
+            }
+            else {
+                *val *= 2.;
+            }
+        }
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 3., 6., 8.]);
+        assert_eq!(vec, expected);
     }
 }

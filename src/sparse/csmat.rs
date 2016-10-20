@@ -97,6 +97,15 @@ pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
     perm: PermView<'perm>,
 }
 
+/// Iterator on the matrix' outer dimension
+/// Implemented over an iterator on the indptr array
+pub struct OuterIteratorMut<'iter, N: 'iter> {
+    inner_len: usize,
+    indptr_iter: Windows<'iter, usize>,
+    indices: &'iter [usize],
+    data: &'iter mut [N],
+}
+
 
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
@@ -164,6 +173,40 @@ for OuterIteratorPerm<'iter, 'perm, N> {
         self.outer_ind_iter.size_hint()
     }
 }
+
+/// Mutable outer iteration on a compressed matrix yields
+/// a tuple consisting of the outer index and of a mutable sparse vector view
+/// containing the associated inner dimension
+impl <'iter, N: 'iter>
+Iterator
+for OuterIteratorMut<'iter, N> {
+    type Item = CsVecViewMut<'iter, N>;
+    #[inline]
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        match self.indptr_iter.next() {
+            None => None,
+            Some(window) => {
+                let inner_start = window[0];
+                let inner_end = window[1];
+                let indices = &self.indices[inner_start..inner_end];
+                let data = &mut self.data[inner_start..inner_end];
+                // safety derives from the structure checks in the constructors
+                unsafe {
+                    let vec = CsVec::new_view_mut_raw(self.inner_len,
+                                                      indices.len(),
+                                                      indices.as_ptr(),
+                                                      data.as_mut_ptr());
+                    Some(vec)
+                }
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.indptr_iter.size_hint()
+    }
+}
+
 
 /// Reverse outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
@@ -1125,6 +1168,24 @@ DataStorage: DerefMut<Target=[N]> {
             *val = f(val);
         }
     }
+
+    /// Return a mutable outer iterator for the matrix
+    ///
+    /// This iterator yields mutable sparse vector views for each outer
+    /// dimension. Only the non-zero values can be modified, the
+    /// structure is kept immutable.
+    pub fn outer_iterator_mut<'a>(&'a mut self) -> OuterIteratorMut<'a, N> {
+        let inner_len = match self.storage {
+            CSR => self.ncols,
+            CSC => self.nrows
+        };
+        OuterIteratorMut {
+            inner_len: inner_len,
+            indptr_iter: self.indptr.windows(2),
+            indices: &self.indices[..],
+            data: &mut self.data[..],
+        }
+    }
 }
 
 pub mod raw {
@@ -1884,4 +1945,28 @@ mod test {
                                        vec![2., 1., 3., 1., 1.]);
         assert_eq!(mat, expected);
     }
+
+    #[test]
+    fn iter_mut() {
+        // | 0 1 0 |
+        // | 1 0 0 |
+        // | 0 1 1 |
+        let mut mat = CsMatOwned::new_csc((3, 3),
+                                          vec![0, 1, 3, 4],
+                                          vec![1, 0, 2, 2],
+                                          vec![1.; 4]);
+
+        for mut col_vec in mat.outer_iterator_mut() {
+            for (row_ind, val) in col_vec.iter_mut() {
+                *val = row_ind as f64 + 1.;
+            }
+        }
+
+        let expected = CsMatOwned::new_csc((3, 3),
+                                           vec![0, 1, 3, 4],
+                                           vec![1, 0, 2, 2],
+                                           vec![2., 1., 3., 3.]);
+        assert_eq!(mat, expected);
+    }
+
 }
