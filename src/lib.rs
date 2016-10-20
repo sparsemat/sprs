@@ -87,7 +87,23 @@ pub use sparse::CompressedStorage::{
 pub use sparse::linalg;
 pub use sparse::prod;
 pub use sparse::binop;
-pub use sparse::vec;
+
+pub mod vec {
+    pub use sparse::vec::{
+        CsVec,
+        CsVecOwned,
+        CsVecView,
+        CsVecViewMut,
+        NnzIndex,
+        VecDim,
+        VectorIterator,
+        VectorIteratorMut,
+        SparseIterTools,
+        IntoSparseVecIter,
+        NnzOrZip,
+        NnzEither,
+    };
+}
 
 pub use sparse::triplet::{
     TripletMat,
