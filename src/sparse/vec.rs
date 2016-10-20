@@ -886,6 +886,25 @@ pub mod noexport {
             data: data,
         }
     }
+
+    /// Create a mutable sparse vector view over borrowed data,
+    /// without performing structure checks.
+    ///
+    /// This function can be used to break guarantees enforced by the library
+    /// and should be used with care. As such, it shouldn't be exported to
+    /// outside crates.
+    pub fn new_vecview_mut_unchecked<'a, N>(n: usize,
+                                            indices: &'a [usize],
+                                            data: &'a mut [N]
+                                           ) -> super::CsVecViewMut<'a, N> {
+        debug_assert!(indices.len() <= n);
+        debug_assert!(indices.len() == data.len());
+        super::CsVec {
+            dim: n,
+            indices: indices,
+            data: data,
+        }
+    }
 }
 
 #[cfg(test)]

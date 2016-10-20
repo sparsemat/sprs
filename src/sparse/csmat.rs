@@ -29,6 +29,7 @@ use sparse::to_dense::assign_to_dense;
 
 use sparse::vec::noexport::{
     new_vecview_unchecked,
+    new_vecview_mut_unchecked,
 };
 
 /// Describe the storage of a CsMat
@@ -180,15 +181,13 @@ for OuterIteratorMut<'iter, N> {
                 let inner_start = window[0];
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
-                let data = &mut self.data[inner_start..inner_end];
+
+                let tmp = mem::replace(&mut self.data, &mut []);
+                let (data, next) = tmp.split_at_mut(inner_end - inner_start);
+                self.data = next;
+
                 // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_mut_raw(self.inner_len,
-                                                      indices.len(),
-                                                      indices.as_ptr(),
-                                                      data.as_mut_ptr());
-                    Some(vec)
-                }
+                Some(new_vecview_mut_unchecked(self.inner_len, indices, data))
             }
         }
     }
