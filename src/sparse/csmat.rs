@@ -1170,6 +1170,10 @@ DataStorage: DerefMut<Target=[N]> {
     }
 
     /// Return a mutable outer iterator for the matrix
+    ///
+    /// This iterator yields mutable sparse vector views for each outer
+    /// dimension. Only the non-zero values can be modified, the
+    /// structure is kept immutable.
     pub fn outer_iterator_mut<'a>(&'a mut self) -> OuterIteratorMut<'a, N> {
         let inner_len = match self.storage {
             CSR => self.ncols,

@@ -91,6 +91,8 @@ Changelog
 
 - next version:
     - add ``insert()`` method to insert an element inside an owned csmat
+    - add ``outer_iterator_mut()`` method to enable changing the non-zero
+      values of a sparse matrix while keeping its structure constant.
 - 0.4.0:
     - panic for contract violations, use errors only for recoverable problems
       **breaking change**
