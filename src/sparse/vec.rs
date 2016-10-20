@@ -862,6 +862,32 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
+/// This module contains functions that should not be
+/// exported by the library, but are intended to be usable
+/// throughout the library. They are not unsafe by themselves,
+/// but failing to respect their contracts could lead
+/// to unsafety in other parts of the library.
+pub mod noexport {
+    /// Create a sparse vector view over borrowed data, without performing
+    /// structure checks.
+    ///
+    /// This function can be used to break guarantees enforced by the library
+    /// and should be used with care. As such, it shouldn't be exported to
+    /// outside crates.
+    pub fn new_vecview_unchecked<'a, N>(n: usize,
+                                        indices: &'a [usize],
+                                        data: &'a [N]
+                                       ) -> super::CsVecView<'a, N> {
+        debug_assert!(indices.len() <= n);
+        debug_assert!(indices.len() == data.len());
+        super::CsVec {
+            dim: n,
+            indices: indices,
+            data: data,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::CsVec;

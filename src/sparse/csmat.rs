@@ -27,7 +27,9 @@ use sparse::utils;
 use errors::SprsError;
 use sparse::to_dense::assign_to_dense;
 
-
+use sparse::vec::noexport::{
+    new_vecview_unchecked,
+};
 
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -124,13 +126,7 @@ for OuterIterator<'iter, N> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_raw(self.inner_len,
-                                                  indices.len(),
-                                                  indices.as_ptr(),
-                                                  data.as_ptr());
-                    Some(vec)
-                }
+                Some(new_vecview_unchecked(self.inner_len, indices, data))
             }
         }
     }
@@ -158,13 +154,8 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_raw(self.inner_len,
-                                                  indices.len(),
-                                                  indices.as_ptr(),
-                                                  data.as_ptr());
-                    Some((outer_ind_perm, vec))
-                }
+                let vec = new_vecview_unchecked(self.inner_len, indices, data);
+                Some((outer_ind_perm, vec))
             }
         }
     }
