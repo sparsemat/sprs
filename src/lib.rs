@@ -135,30 +135,5 @@ pub type Shape = (usize, usize); // FIXME: maybe we could use Ix2 here?
 
 pub type SpRes<T> = Result<T, errors::SprsError>;
 
-
-
-mod utils {
-
-    use sparse::{csmat, CsMatView};
-    use ::Shape;
-
-    /// Create a borrowed CsMat matrix from sliced data without
-    /// checking validity. Intended for internal use only.
-    pub fn csmat_borrowed_uchk<'a, N>(storage: csmat::CompressedStorage,
-                                      shape: Shape,
-                                      indptr : &'a [usize],
-                                      indices : &'a [usize],
-                                      data : &'a [N]
-                                     ) -> CsMatView<'a, N> {
-        // not actually memory unsafe here since data comes from slices
-        unsafe {
-            CsMatView::new_view_raw(storage, shape,
-                                    indptr.as_ptr(),
-                                    indices.as_ptr(),
-                                    data.as_ptr())
-        }
-    }
-}
-
 #[cfg(test)]
 mod test_data;

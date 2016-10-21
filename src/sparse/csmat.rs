@@ -1180,7 +1180,6 @@ DataStorage: DerefMut<Target=[N]> {
 
 pub mod raw {
     use sparse::prelude::*;
-    use utils;
     use ::Shape;
     use std::mem::swap;
 
@@ -1209,8 +1208,15 @@ pub mod raw {
         // we're building a csmat even though the indices are not sorted,
         // but it's not a problem since we don't rely on this property.
         // FIXME: this would be better with an explicit unsorted matrix type
-        let mat = utils::csmat_borrowed_uchk(
-            in_storage, shape, in_indtpr, in_indices, in_data);
+        let mat = CsMat {
+            storage: in_storage,
+            nrows: shape.0,
+            ncols: shape.1,
+            indptr: in_indtpr,
+            indices: in_indices,
+            data: in_data,
+        };
+
         convert_mat_storage(mat, indptr, indices, data);
     }
 

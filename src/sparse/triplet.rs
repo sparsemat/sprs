@@ -338,8 +338,8 @@ impl<'a, N> TripletMatView<'a, N> {
         csmat::raw::convert_storage(csmat::CompressedStorage::CSR,
                                     self.shape(),
                                     &indptr,
-                                    &indices,
-                                    &data,
+                                    &indices[..nnz],
+                                    &data[..nnz],
                                     &mut out_indptr,
                                     &mut out_indices,
                                     &mut out_data);
