@@ -35,26 +35,12 @@ use sparse::prelude::*;
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 use errors::SprsError;
 
-/// A sparse vector, storing the indices of its non-zero data.
-/// The indices should be sorted.
-#[derive(PartialEq, Debug)]
-pub struct CsVec<N, IStorage, DStorage>
-where DStorage: Deref<Target=[N]> {
-    dim: usize,
-    indices : IStorage,
-    data : DStorage
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
 /// An NnzIndex can be used to later access the non-zero element in constant
 /// time.
 pub struct NnzIndex(pub usize);
-
-pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
-pub type CsVecViewMut<'a, N> = CsVec<N, &'a [usize], &'a mut [N]>;
-pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 /// A trait to represent types which can be interpreted as vectors
 /// of a given dimension.
@@ -862,54 +848,9 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
-/// This module contains functions that should not be
-/// exported by the library, but are intended to be usable
-/// throughout the library. They are not unsafe by themselves,
-/// but failing to respect their contracts could lead
-/// to unsafety in other parts of the library.
-pub mod noexport {
-    /// Create a sparse vector view over borrowed data, without performing
-    /// structure checks.
-    ///
-    /// This function can be used to break guarantees enforced by the library
-    /// and should be used with care. As such, it shouldn't be exported to
-    /// outside crates.
-    pub fn new_vecview_unchecked<'a, N>(n: usize,
-                                        indices: &'a [usize],
-                                        data: &'a [N]
-                                       ) -> super::CsVecView<'a, N> {
-        debug_assert!(indices.len() <= n);
-        debug_assert!(indices.len() == data.len());
-        super::CsVec {
-            dim: n,
-            indices: indices,
-            data: data,
-        }
-    }
-
-    /// Create a mutable sparse vector view over borrowed data,
-    /// without performing structure checks.
-    ///
-    /// This function can be used to break guarantees enforced by the library
-    /// and should be used with care. As such, it shouldn't be exported to
-    /// outside crates.
-    pub fn new_vecview_mut_unchecked<'a, N>(n: usize,
-                                            indices: &'a [usize],
-                                            data: &'a mut [N]
-                                           ) -> super::CsVecViewMut<'a, N> {
-        debug_assert!(indices.len() <= n);
-        debug_assert!(indices.len() == data.len());
-        super::CsVec {
-            dim: n,
-            indices: indices,
-            data: data,
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use super::CsVec;
+    use sparse::CsVec;
     use super::SparseIterTools;
     use ndarray::Array;
 

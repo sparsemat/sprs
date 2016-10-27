@@ -89,11 +89,14 @@ pub use sparse::prod;
 pub use sparse::binop;
 
 pub mod vec {
-    pub use sparse::vec::{
+    pub use sparse::{
         CsVec,
         CsVecOwned,
         CsVecView,
         CsVecViewMut,
+    };
+
+    pub use sparse::vec::{
         NnzIndex,
         VecDim,
         VectorIterator,

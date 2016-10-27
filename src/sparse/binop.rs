@@ -4,7 +4,7 @@ use sparse::csmat::CompressedStorage;
 use sparse::prelude::*;
 use num_traits::Num;
 use sparse::vec::NnzEither::{Left, Right, Both};
-use sparse::vec::{CsVec, CsVecView, CsVecOwned, SparseIterTools};
+use sparse::vec::SparseIterTools;
 use sparse::compressed::SpMatView;
 use ndarray::{
     self,
@@ -263,7 +263,7 @@ where N: Num,
 #[cfg(test)]
 mod test {
     use sparse::{CsMat, CsMatOwned};
-    use sparse::vec::CsVec;
+    use sparse::CsVec;
     use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
     use ndarray::{arr2, Array};
 

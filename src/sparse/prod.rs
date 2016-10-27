@@ -1,7 +1,6 @@
 ///! Sparse matrix product
 
 use sparse::prelude::*;
-use sparse::vec::{CsVecView, CsVecOwned};
 use num_traits::Num;
 use sparse::compressed::SpMatView;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
@@ -348,8 +347,7 @@ where N: 'a + Num + Copy
 
 #[cfg(test)]
 mod test {
-    use sparse::{CsMat, CsMatOwned};
-    use sparse::vec::{CsVec};
+    use sparse::{CsMat, CsMatOwned, CsVec};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use super::{mul_acc_mat_vec_csc, mul_acc_mat_vec_csr, csr_mul_csr};
     use test_data::{mat1, mat2, mat1_self_matprod, mat1_matprod_mat2,

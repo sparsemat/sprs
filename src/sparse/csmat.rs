@@ -19,18 +19,13 @@ use ::{Ix2, Shape};
 
 use sparse::prelude::*;
 use sparse::permutation::PermView;
-use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
+use sparse::vec;
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
 use sparse::utils;
 use errors::SprsError;
 use sparse::to_dense::assign_to_dense;
-
-use sparse::vec::noexport::{
-    new_vecview_unchecked,
-    new_vecview_mut_unchecked,
-};
 
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -126,8 +121,12 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                Some(new_vecview_unchecked(self.inner_len, indices, data))
+                // CsMat invariants imply CsVec invariants
+                Some(CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                })
             }
         }
     }
@@ -154,8 +153,12 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let inner_end = self.indptr[outer_ind_perm + 1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                let vec = new_vecview_unchecked(self.inner_len, indices, data);
+                // CsMat invariants imply CsVec invariants
+                let vec = CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                };
                 Some((outer_ind_perm, vec))
             }
         }
@@ -186,8 +189,12 @@ for OuterIteratorMut<'iter, N> {
                 let (data, next) = tmp.split_at_mut(inner_end - inner_start);
                 self.data = next;
 
-                // safety derives from the structure checks in the constructors
-                Some(new_vecview_mut_unchecked(self.inner_len, indices, data))
+                // CsMat invariants imply CsVec invariants
+                Some(CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                })
             }
         }
     }
