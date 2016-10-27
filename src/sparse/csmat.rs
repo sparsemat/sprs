@@ -224,14 +224,12 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_raw(self.inner_len,
-                                                  indices.len(),
-                                                  indices.as_ptr(),
-                                                  data.as_ptr());
-                    Some(vec)
-                }
+                // CsMat invariants imply CsVec invariants
+                Some(CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                })
             }
         }
     }
@@ -779,13 +777,12 @@ where IptrStorage: Deref<Target=[usize]>,
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        // safety derives from the structure checks in the constructors
-        unsafe {
-            Some(CsVec::new_view_raw(self.inner_dims(),
-                                     self.indices[start..stop].len(),
-                                     self.indices[start..stop].as_ptr(),
-                                     self.data[start..stop].as_ptr()))
-        }
+        // CsMat invariants imply CsVec invariants
+        Some(CsVec {
+            dim: self.inner_dims(),
+            indices: &self.indices[start..stop],
+            data: &self.data[start..stop],
+        })
     }
 
     /// Iteration on outer blocks of size block_size
@@ -1097,13 +1094,12 @@ DataStorage: DerefMut<Target=[N]> {
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        // safety derives from the structure checks in the constructors
-        unsafe {
-            Some(CsVec::new_view_mut_raw(self.inner_dims(),
-                                         self.indices[start..stop].len(),
-                                         self.indices[start..stop].as_ptr(),
-                                         self.data[start..stop].as_mut_ptr()))
-        }
+        // CsMat invariants imply CsVec invariants
+        Some(CsVec {
+            dim: self.inner_dims(),
+            indices: &self.indices[start..stop],
+            data: &mut self.data[start..stop],
+        })
     }
 
     /// Get a mutable reference to the element located at row i and column j.

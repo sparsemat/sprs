@@ -574,11 +574,13 @@ where IStorage: Deref<Target=[usize]>,
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = vec![0, self.indices.len()];
-        unsafe {
-            CsMatVecView::new_vecview_raw(CSR, 1, self.dim,
-                                          indptr,
-                                          self.indices.as_ptr(),
-                                          self.data.as_ptr())
+        CsMat {
+            storage: CSR,
+            nrows: 1,
+            ncols: self.dim,
+            indptr: indptr,
+            indices: &self.indices[..],
+            data: &self.data[..],
         }
     }
 
@@ -587,11 +589,13 @@ where IStorage: Deref<Target=[usize]>,
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = vec![0, self.indices.len()];
-        unsafe {
-            CsMatVecView::new_vecview_raw(CSC, self.dim, 1,
-                                          indptr,
-                                          self.indices.as_ptr(),
-                                          self.data.as_ptr())
+        CsMat {
+            storage: CSC,
+            nrows: self.dim,
+            ncols: 1,
+            indptr: indptr,
+            indices: &self.indices[..],
+            data: &self.data[..],
         }
     }
 
