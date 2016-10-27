@@ -2,11 +2,6 @@ use std::ops::Deref;
 
 pub use self::csmat::{CompressedStorage};
 
-pub use self::vec::{CsVec,
-                    CsVecOwned,
-                    CsVecView,
-};
-
 /// Compressed matrix in the CSR or CSC format.
 #[derive(PartialEq, Debug)]
 pub struct CsMat<N, IptrStorage, IndStorage, DataStorage>
@@ -27,6 +22,20 @@ pub type CsMatViewMut<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a mut [N]>;
 // FIXME: a fixed size array would be better, but no Deref impl
 pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
 
+/// A sparse vector, storing the indices of its non-zero data.
+/// The indices should be sorted.
+#[derive(PartialEq, Debug)]
+pub struct CsVec<N, IStorage, DStorage>
+where DStorage: Deref<Target=[N]> {
+    dim: usize,
+    indices : IStorage,
+    data : DStorage
+}
+
+pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
+pub type CsVecViewMut<'a, N> = CsVec<N, &'a [usize], &'a mut [N]>;
+pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
+
 mod prelude {
     pub use super::{
         CsMat,
@@ -34,6 +43,10 @@ mod prelude {
         CsMatViewMut,
         CsMatOwned,
         CsMatVecView,
+        CsVec,
+        CsVecView,
+        CsVecViewMut,
+        CsVecOwned,
     };
 }
 

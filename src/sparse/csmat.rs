@@ -19,15 +19,13 @@ use ::{Ix2, Shape};
 
 use sparse::prelude::*;
 use sparse::permutation::PermView;
-use sparse::vec::{CsVec, CsVecView, CsVecViewMut, self};
+use sparse::vec;
 use sparse::compressed::SpMatView;
 use sparse::binop;
 use sparse::prod;
 use sparse::utils;
 use errors::SprsError;
 use sparse::to_dense::assign_to_dense;
-
-
 
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -123,14 +121,12 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_raw(self.inner_len,
-                                                  indices.len(),
-                                                  indices.as_ptr(),
-                                                  data.as_ptr());
-                    Some(vec)
-                }
+                // CsMat invariants imply CsVec invariants
+                Some(CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                })
             }
         }
     }
@@ -157,14 +153,13 @@ for OuterIteratorPerm<'iter, 'perm, N> {
                 let inner_end = self.indptr[outer_ind_perm + 1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_raw(self.inner_len,
-                                                  indices.len(),
-                                                  indices.as_ptr(),
-                                                  data.as_ptr());
-                    Some((outer_ind_perm, vec))
-                }
+                // CsMat invariants imply CsVec invariants
+                let vec = CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                };
+                Some((outer_ind_perm, vec))
             }
         }
     }
@@ -189,15 +184,17 @@ for OuterIteratorMut<'iter, N> {
                 let inner_start = window[0];
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
-                let data = &mut self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_mut_raw(self.inner_len,
-                                                      indices.len(),
-                                                      indices.as_ptr(),
-                                                      data.as_mut_ptr());
-                    Some(vec)
-                }
+
+                let tmp = mem::replace(&mut self.data, &mut []);
+                let (data, next) = tmp.split_at_mut(inner_end - inner_start);
+                self.data = next;
+
+                // CsMat invariants imply CsVec invariants
+                Some(CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                })
             }
         }
     }
@@ -227,14 +224,12 @@ for OuterIterator<'iter, N> {
                 let inner_end = window[1];
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
-                // safety derives from the structure checks in the constructors
-                unsafe {
-                    let vec = CsVec::new_view_raw(self.inner_len,
-                                                  indices.len(),
-                                                  indices.as_ptr(),
-                                                  data.as_ptr());
-                    Some(vec)
-                }
+                // CsMat invariants imply CsVec invariants
+                Some(CsVec {
+                    dim: self.inner_len,
+                    indices: indices,
+                    data: data,
+                })
             }
         }
     }
@@ -782,13 +777,12 @@ where IptrStorage: Deref<Target=[usize]>,
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        // safety derives from the structure checks in the constructors
-        unsafe {
-            Some(CsVec::new_view_raw(self.inner_dims(),
-                                     self.indices[start..stop].len(),
-                                     self.indices[start..stop].as_ptr(),
-                                     self.data[start..stop].as_ptr()))
-        }
+        // CsMat invariants imply CsVec invariants
+        Some(CsVec {
+            dim: self.inner_dims(),
+            indices: &self.indices[start..stop],
+            data: &self.data[start..stop],
+        })
     }
 
     /// Iteration on outer blocks of size block_size
@@ -1100,13 +1094,12 @@ DataStorage: DerefMut<Target=[N]> {
         }
         let start = self.indptr[i];
         let stop = self.indptr[i+1];
-        // safety derives from the structure checks in the constructors
-        unsafe {
-            Some(CsVec::new_view_mut_raw(self.inner_dims(),
-                                         self.indices[start..stop].len(),
-                                         self.indices[start..stop].as_ptr(),
-                                         self.data[start..stop].as_mut_ptr()))
-        }
+        // CsMat invariants imply CsVec invariants
+        Some(CsVec {
+            dim: self.inner_dims(),
+            indices: &self.indices[start..stop],
+            data: &mut self.data[start..stop],
+        })
     }
 
     /// Get a mutable reference to the element located at row i and column j.
@@ -1190,7 +1183,6 @@ DataStorage: DerefMut<Target=[N]> {
 
 pub mod raw {
     use sparse::prelude::*;
-    use utils;
     use ::Shape;
     use std::mem::swap;
 
@@ -1219,8 +1211,15 @@ pub mod raw {
         // we're building a csmat even though the indices are not sorted,
         // but it's not a problem since we don't rely on this property.
         // FIXME: this would be better with an explicit unsorted matrix type
-        let mat = utils::csmat_borrowed_uchk(
-            in_storage, shape, in_indtpr, in_indices, in_data);
+        let mat = CsMat {
+            storage: in_storage,
+            nrows: shape.0,
+            ncols: shape.1,
+            indptr: in_indtpr,
+            indices: in_indices,
+            data: in_data,
+        };
+
         convert_mat_storage(mat, indptr, indices, data);
     }
 

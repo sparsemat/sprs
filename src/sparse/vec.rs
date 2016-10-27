@@ -35,26 +35,12 @@ use sparse::prelude::*;
 use sparse::csmat::CompressedStorage::{CSR, CSC};
 use errors::SprsError;
 
-/// A sparse vector, storing the indices of its non-zero data.
-/// The indices should be sorted.
-#[derive(PartialEq, Debug)]
-pub struct CsVec<N, IStorage, DStorage>
-where DStorage: Deref<Target=[N]> {
-    dim: usize,
-    indices : IStorage,
-    data : DStorage
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
 /// An NnzIndex can be used to later access the non-zero element in constant
 /// time.
 pub struct NnzIndex(pub usize);
-
-pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
-pub type CsVecViewMut<'a, N> = CsVec<N, &'a [usize], &'a mut [N]>;
-pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
 
 /// A trait to represent types which can be interpreted as vectors
 /// of a given dimension.
@@ -588,11 +574,13 @@ where IStorage: Deref<Target=[usize]>,
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = vec![0, self.indices.len()];
-        unsafe {
-            CsMatVecView::new_vecview_raw(CSR, 1, self.dim,
-                                          indptr,
-                                          self.indices.as_ptr(),
-                                          self.data.as_ptr())
+        CsMat {
+            storage: CSR,
+            nrows: 1,
+            ncols: self.dim,
+            indptr: indptr,
+            indices: &self.indices[..],
+            data: &self.data[..],
         }
     }
 
@@ -601,11 +589,13 @@ where IStorage: Deref<Target=[usize]>,
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = vec![0, self.indices.len()];
-        unsafe {
-            CsMatVecView::new_vecview_raw(CSC, self.dim, 1,
-                                          indptr,
-                                          self.indices.as_ptr(),
-                                          self.data.as_ptr())
+        CsMat {
+            storage: CSC,
+            nrows: self.dim,
+            ncols: 1,
+            indptr: indptr,
+            indices: &self.indices[..],
+            data: &self.data[..],
         }
     }
 
@@ -864,7 +854,7 @@ where IS: Deref<Target=[usize]>,
 
 #[cfg(test)]
 mod test {
-    use super::CsVec;
+    use sparse::CsVec;
     use super::SparseIterTools;
     use ndarray::Array;
 

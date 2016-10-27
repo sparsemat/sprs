@@ -2,7 +2,6 @@
 
 
 use sparse::prelude::*;
-use sparse::vec::{CsVec, CsVecView};
 use std::ops::{Deref};
 
 /// The SpMatView trait describes data that can be seen as a view
