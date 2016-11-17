@@ -1075,6 +1075,10 @@ IndStorage: Deref<Target=[usize]>,
 DataStorage: DerefMut<Target=[N]> {
 
     /// Mutable access to the non zero values
+    ///
+    /// This enables changing the values without changing the matrix's
+    /// structure. To also change the matrix's structure,
+    /// see [modify](fn.modify.html)
     pub fn data_mut(&mut self) -> &mut [N] {
         &mut self.data[..]
     }
@@ -1178,6 +1182,53 @@ DataStorage: DerefMut<Target=[N]> {
             indices: &self.indices[..],
             data: &mut self.data[..],
         }
+    }
+
+}
+
+impl<N, IptrStorage, IndStorage, DataStorage>
+CsMat<N, IptrStorage, IndStorage, DataStorage>
+where
+IptrStorage: DerefMut<Target=[usize]>,
+IndStorage: DerefMut<Target=[usize]>,
+DataStorage: DerefMut<Target=[N]> {
+    /// Modify the matrix's structure without changing its nonzeros.
+    ///
+    /// The coherence of the structure will be checked afterwards.
+    ///
+    /// # Panics
+    ///
+    /// If the resulting matrix breaks the CsMat invariants (sorted indices,
+    /// no out of bounds indices).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::CsMatOwned;
+    /// // |   1   |
+    /// // | 1     |
+    /// // |   1 1 |
+    /// let mut mat = CsMatOwned::new_csc((3, 3),
+    ///                                   vec![0, 1, 3, 4],
+    ///                                   vec![1, 0, 2, 2],
+    ///                                   vec![1.; 4]);
+    ///
+    /// // | 1 2   |
+    /// // | 1     |
+    /// // |   1   |
+    /// mat.modify(|indptr, indices, data| {
+    ///     indptr[1] = 2;
+    ///     indptr[2] = 4;
+    ///     indices[0] = 0;
+    ///     indices[1] = 1;
+    ///     indices[2] = 0;
+    ///     data[2] = 2.;
+    /// });
+    /// ```
+    pub fn modify<F>(&mut self, mut f: F)
+    where F: FnMut(&mut [usize], &mut [usize], &mut [N]) {
+        f(&mut self.indptr[..], &mut self.indices[..], &mut self.data[..]);
+        self.check_compressed_structure().unwrap();
     }
 }
 
@@ -1968,4 +2019,22 @@ mod test {
         assert_eq!(mat, expected);
     }
 
+    #[test]
+    #[should_panic]
+    fn modify_fail() {
+        let mut mat = CsMatOwned::new_csc((3, 3),
+                                          vec![0, 1, 3, 4],
+                                          vec![1, 0, 2, 2],
+                                          vec![1.; 4]);
+
+        // we panic because we forget to modify the last index, which gets
+        // pushed in the same col as its predecessor, yet has the same value
+        mat.modify(|indptr, indices, data| {
+            indptr[1] = 2;
+            indptr[2] = 4;
+            indices[0] = 0;
+            indices[1] = 1;
+            data[2] = 2.;
+        });
+    }
 }
