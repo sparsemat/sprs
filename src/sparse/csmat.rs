@@ -14,8 +14,8 @@ use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
 use num_traits::{Num, Zero};
 
-use ndarray::{self, ArrayBase, Array, Ix, ShapeBuilder};
-use ::{Ix2, Shape};
+use ndarray::{self, ArrayBase, Array, ShapeBuilder};
+use ::{Ix1, Ix2, Shape};
 
 use sparse::prelude::*;
 use sparse::permutation::PermView;
@@ -1429,16 +1429,16 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, IpS, IS, DS, DS2>
-Add<&'b ArrayBase<DS2, (Ix, Ix)>>
+Add<&'b ArrayBase<DS2, Ix2>>
 for &'a CsMat<N, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       IpS: 'a + Deref<Target=[usize]>,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
-    type Output = Array<N, (Ix, Ix)>;
+    type Output = Array<N, Ix2>;
 
-    fn add(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> Array<N, (Ix, Ix)> {
+    fn add(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         match (self.storage(), rhs.is_standard_layout()) {
             (CSR, true) => {
                     binop::add_dense_mat_same_ordering(self,
@@ -1475,16 +1475,16 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, IpS, IS, DS, DS2>
-Mul<&'b ArrayBase<DS2, (Ix, Ix)>>
+Mul<&'b ArrayBase<DS2, Ix2>>
 for &'a CsMat<N, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       IpS: 'a + Deref<Target=[usize]>,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
-    type Output = Array<N, (Ix, Ix)>;
+    type Output = Array<N, Ix2>;
 
-    fn mul(self, rhs: &'b ArrayBase<DS2, (Ix, Ix)>) -> Array<N, (Ix, Ix)> {
+    fn mul(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         let rows = self.rows();
         let cols = rhs.shape()[1];
         match (self.storage(), rhs.is_standard_layout()) {
@@ -1525,16 +1525,16 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, IpS, IS, DS, DS2>
-Mul<&'b ArrayBase<DS2, Ix>>
+Mul<&'b ArrayBase<DS2, Ix1>>
 for &'a CsMat<N, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       IpS: 'a + Deref<Target=[usize]>,
       IS: 'a + Deref<Target=[usize]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
-    type Output = Array<N, Ix>;
+    type Output = Array<N, Ix1>;
 
-    fn mul(self, rhs: &'b ArrayBase<DS2, Ix>) -> Array<N, Ix> {
+    fn mul(self, rhs: &'b ArrayBase<DS2, Ix1>) -> Array<N, Ix1> {
         let rows = self.rows();
         let cols = rhs.shape()[0];
         let rhs_reshape = rhs.view().into_shape((cols, 1)).unwrap();

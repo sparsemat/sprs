@@ -4,8 +4,9 @@ use std::default::Default;
 use std::cmp;
 use sparse::prelude::*;
 use sparse::csmat::CompressedStorage;
-use ndarray::{ArrayView, Ix};
+use ndarray::ArrayView;
 use num_traits::{Num, Signed};
+use ::Ix2;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
@@ -137,7 +138,7 @@ where N: 'a + Clone + Default,
 /// lower than `epsilon`.
 ///
 /// If epsilon is negative, it will be clamped to zero.
-pub fn csr_from_dense<N>(m: ArrayView<N, (Ix, Ix)>, epsilon: N) -> CsMatOwned<N>
+pub fn csr_from_dense<N>(m: ArrayView<N, Ix2>, epsilon: N) -> CsMatOwned<N>
 where N: Num + Clone + cmp::PartialOrd + Signed
 {
     let epsilon = if epsilon > N::zero() { epsilon } else { N::zero() };
@@ -175,7 +176,7 @@ where N: Num + Clone + cmp::PartialOrd + Signed
 /// lower than `epsilon`.
 ///
 /// If epsilon is negative, it will be clamped to zero.
-pub fn csc_from_dense<N>(m: ArrayView<N, (Ix, Ix)>,
+pub fn csc_from_dense<N>(m: ArrayView<N, Ix2>,
                          epsilon: N
                         ) -> CsMatOwned<N>
 where N: Num + Clone + cmp::PartialOrd + Signed

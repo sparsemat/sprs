@@ -56,7 +56,10 @@ mod sparse;
 pub mod errors;
 pub mod stack;
 
-pub use ndarray::Ix as Ix_;
+/// Deprecated type alias, will be removed on next breaking change
+pub type Ix_ = ndarray::Ix1;
+pub type Ix1 = ndarray::Ix1;
+pub type Ix2 = ndarray::Ix2;
 
 pub use sparse::{
     CsMat,
@@ -126,8 +129,6 @@ pub use sparse::to_dense::{
     assign_to_dense,
 };
 
-
-pub type Ix2 = (Ix_, Ix_);
 
 
 /// The shape of a matrix. This a 2-tuple with the first element indicating

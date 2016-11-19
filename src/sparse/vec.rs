@@ -24,7 +24,8 @@ use std::slice::{self, Iter, IterMut};
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::marker::PhantomData;
-use ndarray::{self, ArrayBase, Ix};
+use ndarray::{self, ArrayBase};
+use ::{Ix1};
 
 use num_traits::Num;
 
@@ -261,16 +262,16 @@ impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a Vec<N> {
     }
 }
 
-impl<'a, N: 'a, S> IntoSparseVecIter<&'a N> for &'a ArrayBase<S, Ix>
+impl<'a, N: 'a, S> IntoSparseVecIter<&'a N> for &'a ArrayBase<S, Ix1>
 where S: ndarray::Data<Elem=N>
 {
-    type IterType = Enumerate<ndarray::Elements<'a, N, Ix>>;
+    type IterType = Enumerate<ndarray::Elements<'a, N, Ix1>>;
 
     fn dim(&self) -> usize {
         self.shape()[0]
     }
 
-    fn into_sparse_vec_iter(self) -> Enumerate<ndarray::Elements<'a, N, Ix>> {
+    fn into_sparse_vec_iter(self) -> Enumerate<ndarray::Elements<'a, N, Ix1>> {
         self.iter().enumerate()
     }
 }
