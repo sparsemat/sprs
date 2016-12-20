@@ -2,7 +2,7 @@
 
 name = "sprs-ldl"
 description = "Sparse cholesky factorization"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Vincent Barrielle"]
 
 readme = "README.rst"
@@ -16,10 +16,7 @@ keywords = ["sparse", "matrix", "cholesky", "linalg"]
 num-traits = "0.1.32"
 
 
-[dependencies.ndarray]
-version = "0.6.4"
-
 [dependencies.sprs]
-version = "0.4.0"
+version = "0.5.0"
 path = ".."
 
