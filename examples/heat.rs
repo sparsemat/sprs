@@ -18,9 +18,9 @@
 extern crate sprs;
 extern crate ndarray;
 
-type VecView<'a, T> = ndarray::ArrayView<'a, T, ndarray::Ix>;
-type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix>;
-type OwnedVec<T> = ndarray::Array<T, ndarray::Ix>;
+type VecView<'a, T> = ndarray::ArrayView<'a, T, ndarray::Ix1>;
+type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix1>;
+type OwnedVec<T> = ndarray::Array<T, ndarray::Ix1>;
 
 /// Determine whether the grid location at `(row, col)` is a border
 /// of the grid defined by `shape`.

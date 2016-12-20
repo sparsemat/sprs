@@ -1,7 +1,7 @@
 //! Some matrices used in tests
 
 use sparse::{CsMat, CsMatOwned};
-use ndarray::{arr2, Array, Ix, ShapeBuilder};
+use ndarray::{arr2, Array, Ix2, ShapeBuilder};
 
 pub fn mat1() -> CsMatOwned<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];
@@ -78,7 +78,7 @@ pub fn mat1_csc_matprod_mat4() -> CsMatOwned<f64> {
     CsMat::new_csc((5, 5), indptr, indices, data)
 }
 
-pub fn mat_dense1() -> Array<f64, (Ix, Ix)> {
+pub fn mat_dense1() -> Array<f64, Ix2> {
     let m = arr2(&[[0., 1., 2., 3., 4.],
                    [5., 6., 5., 4., 3.],
                    [4., 5., 4., 3., 2.],
@@ -87,7 +87,7 @@ pub fn mat_dense1() -> Array<f64, (Ix, Ix)> {
     m.to_owned()
 }
 
-pub fn mat_dense1_colmaj() -> Array<f64, (Ix, Ix)> {
+pub fn mat_dense1_colmaj() -> Array<f64, Ix2> {
     let v = vec![0., 5., 4., 3., 1.,
                  1., 6., 5., 4., 2.,
                  2., 5., 4., 3., 1.,
@@ -96,7 +96,7 @@ pub fn mat_dense1_colmaj() -> Array<f64, (Ix, Ix)> {
     Array::from_shape_vec((5, 5).f(), v).unwrap()
 }
 
-pub fn mat_dense2() -> Array<f64, (Ix, Ix)> {
+pub fn mat_dense2() -> Array<f64, Ix2> {
   let m = arr2(&[[8.2, 1.8, 0.9, 2.6, 6.7, 7.6, 8.3],
                  [8.7, 9.4, 2.6, 6.4, 3.5, 1.2, 4.7],
                  [5.3, 9. , 8.7, 9.8, 4.6, 2.5, 4.6],
