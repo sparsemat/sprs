@@ -2,30 +2,32 @@
 
 
 use sparse::prelude::*;
+use indexing::SpIndex;
 use std::ops::{Deref};
 
 /// The SpMatView trait describes data that can be seen as a view
 /// into a CsMat
-pub trait SpMatView<N> {
+pub trait SpMatView<N, I: SpIndex> {
     /// Return a view into the current matrix
-    fn view(&self) -> CsMatView<N>;
+    fn view(&self) -> CsMatView_<N, I>;
 
     /// Return a view into the current matrix
-    fn transpose_view(&self) -> CsMatView<N>;
+    fn transpose_view(&self) -> CsMatView_<N, I>;
 }
 
 
-impl<N, IpStorage, IndStorage, DataStorage> SpMatView<N>
-for CsMat<N, IpStorage, IndStorage, DataStorage>
-where IpStorage: Deref<Target=[usize]>,
-      IndStorage: Deref<Target=[usize]>,
+impl<N, I, IpStorage, IndStorage, DataStorage> SpMatView<N, I>
+for CsMat<N, I, IpStorage, IndStorage, DataStorage>
+where I: SpIndex,
+      IpStorage: Deref<Target=[I]>,
+      IndStorage: Deref<Target=[I]>,
       DataStorage: Deref<Target=[N]> {
 
-    fn view(&self) -> CsMatView<N> {
+    fn view(&self) -> CsMatView_<N, I> {
         self.view()
     }
 
-    fn transpose_view(&self) -> CsMatView<N> {
+    fn transpose_view(&self) -> CsMatView_<N, I> {
         self.transpose_view()
     }
 }

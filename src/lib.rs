@@ -55,6 +55,7 @@ extern crate ndarray;
 mod sparse;
 pub mod errors;
 pub mod stack;
+pub mod indexing;
 
 /// Deprecated type alias, will be removed on next breaking change
 pub type Ix_ = ndarray::Ix1;

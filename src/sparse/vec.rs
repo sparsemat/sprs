@@ -29,6 +29,7 @@ use ::{Ix1};
 
 use num_traits::Num;
 
+use indexing::SpIndex;
 use sparse::permutation::PermView;
 use sparse::{prod, binop};
 use sparse::utils;
@@ -64,30 +65,30 @@ impl<N, T: ?Sized> VecDim<N> for T where T: AsRef<[N]> {
 
 
 /// An iterator over the non-zero elements of a sparse vector
-pub struct VectorIterator<'a, N: 'a> {
-    ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
+pub struct VectorIterator<'a, N: 'a, I: 'a> {
+    ind_data: Zip<Iter<'a, I>, Iter<'a, N>>,
 }
 
-pub struct VectorIteratorPerm<'a, N: 'a> {
-    ind_data: Zip<Iter<'a,usize>, Iter<'a,N>>,
+pub struct VectorIteratorPerm<'a, N: 'a, I: 'a> {
+    ind_data: Zip<Iter<'a, I>, Iter<'a, N>>,
     perm: PermView<'a>,
 }
 
 /// An iterator over the mutable non-zero elements of a sparse vector
-pub struct VectorIteratorMut<'a, N: 'a> {
-    ind_data: Zip<Iter<'a,usize>, IterMut<'a,N>>,
+pub struct VectorIteratorMut<'a, N: 'a, I: 'a> {
+    ind_data: Zip<Iter<'a, I>, IterMut<'a, N>>,
 }
 
 
-impl <'a, N: 'a>
+impl <'a, N: 'a, I: 'a + SpIndex>
 Iterator
-for VectorIterator<'a, N> {
+for VectorIterator<'a, N, I> {
     type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((*inner_ind, data))
+            Some((inner_ind, data)) => Some((inner_ind.index(), data))
         }
     }
 
@@ -96,16 +97,16 @@ for VectorIterator<'a, N> {
     }
 }
 
-impl <'a, N: 'a>
+impl <'a, N: 'a, I: 'a + SpIndex>
 Iterator
-for VectorIteratorPerm<'a, N> {
+for VectorIteratorPerm<'a, N, I> {
     type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
             Some((inner_ind, data)) => Some(
-                (self.perm.at(*inner_ind), data))
+                (self.perm.at(inner_ind.index()), data))
         }
     }
 
@@ -114,15 +115,15 @@ for VectorIteratorPerm<'a, N> {
     }
 }
 
-impl <'a, N: 'a>
+impl <'a, N: 'a, I: 'a + SpIndex>
 Iterator
-for VectorIteratorMut<'a, N> {
+for VectorIteratorMut<'a, N, I> {
     type Item = (usize, &'a mut N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((*inner_ind, data))
+            Some((inner_ind, data)) => Some((inner_ind.index(), data))
         }
     }
 
@@ -193,7 +194,9 @@ pub trait SparseIterTools: Iterator {
 impl<T: Iterator> SparseIterTools for Enumerate<T> {
 }
 
-impl<'a, N: 'a> SparseIterTools for VectorIterator<'a, N> {
+impl<'a, N: 'a, I: 'a + SpIndex>
+SparseIterTools
+for VectorIterator<'a, N, I> {
 }
 
 /// Trait for types that can be iterated as sparse vectors
@@ -211,29 +214,34 @@ pub trait IntoSparseVecIter<N> {
     fn dim(&self) -> usize;
 }
 
-impl<'a, N: 'a> IntoSparseVecIter<&'a N> for CsVecView<'a, N> {
-    type IterType = VectorIterator<'a, N>;
+impl<'a, N: 'a, I: 'a> IntoSparseVecIter<&'a N> for CsVecView_<'a, N, I>
+where I: SpIndex,
+{
+    type IterType = VectorIterator<'a, N, I>;
 
     fn dim(&self) -> usize {
         self.dim()
     }
 
-    fn into_sparse_vec_iter(self) -> VectorIterator<'a, N> {
+    fn into_sparse_vec_iter(self) -> VectorIterator<'a, N, I> {
         self.iter_()
     }
 }
 
-impl<'a, N: 'a, IS, DS> IntoSparseVecIter<&'a N> for &'a CsVec<N, IS, DS>
-where IS: Deref<Target=[usize]>,
+impl<'a, N: 'a, I: 'a, IS, DS>
+IntoSparseVecIter<&'a N>
+for &'a CsVec<N, IS, DS>
+where I: SpIndex,
+      IS: Deref<Target=[I]>,
       DS: Deref<Target=[N]>
 {
-    type IterType = VectorIterator<'a, N>;
+    type IterType = VectorIterator<'a, N, I>;
 
     fn dim(&self) -> usize {
         (*self).dim()
     }
 
-    fn into_sparse_vec_iter(self) -> VectorIterator<'a, N> {
+    fn into_sparse_vec_iter(self) -> VectorIterator<'a, N, I> {
         self.iter()
     }
 }
@@ -351,7 +359,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
     }
 }
 
-impl<'a, N: 'a> CsVecView<'a, N> {
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecView_<'a, N, I> {
 
     /// Create a borrowed CsVec over slice data.
     pub fn new_view(
@@ -377,7 +385,7 @@ impl<'a, N: 'a> CsVecView<'a, N> {
     }
 
     /// Re-borrowing version of `iter()`
-    fn iter_(&self) -> VectorIterator<'a, N> {
+    fn iter_(&self) -> VectorIterator<'a, N, I> {
         VectorIterator {
             ind_data: self.indices.iter().zip(self.data.iter()),
         }
@@ -401,7 +409,7 @@ impl<'a, N: 'a> CsVecView<'a, N> {
     }
 }
 
-impl<N> CsVec<N, Vec<usize>, Vec<N>> {
+impl<N, I: SpIndex> CsVec<N, Vec<I>, Vec<N>> {
     /// Create an owning CsVec from vector data.
     ///
     /// # Panics
@@ -409,9 +417,9 @@ impl<N> CsVec<N, Vec<usize>, Vec<N>> {
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
     pub fn new(n: usize,
-               mut indices: Vec<usize>,
+               mut indices: Vec<I>,
                mut data: Vec<N>
-              ) -> CsVec<N, Vec<usize>, Vec<N>>
+              ) -> CsVecOwned_<N, I>
     where N: Copy
     {
         let mut buf = Vec::with_capacity(indices.len());
@@ -427,7 +435,7 @@ impl<N> CsVec<N, Vec<usize>, Vec<N>> {
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
-    pub fn empty(dim: usize) -> CsVec<N, Vec<usize>, Vec<N>> {
+    pub fn empty(dim: usize) -> CsVecOwned_<N, I> {
         CsVec {
             dim: dim,
             indices: Vec::new(),
@@ -442,16 +450,18 @@ impl<N> CsVec<N, Vec<usize>, Vec<N>> {
     ///
     /// # Panics
     ///
-    /// Panics if `ind` is lower or equal to the last
-    /// element of `self.indices()`
-    /// Panics if `ind` is greater than `self.dim()`
+    /// - Panics if `ind` is lower or equal to the last
+    ///   element of `self.indices()`
+    /// - Panics if `ind` is greater than `self.dim()`
     pub fn append(&mut self, ind: usize, val: N) {
         match self.indices.last() {
             None => (),
-            Some(&last_ind) => assert!(ind > last_ind, "unsorted append")
+            Some(&last_ind) => {
+                assert!(ind > last_ind.index(), "unsorted append")
+            }
         }
         assert!(ind <= self.dim, "out of bounds index");
-        self.indices.push(ind);
+        self.indices.push(I::from_usize(ind));
         self.data.push(val);
     }
 
@@ -474,12 +484,13 @@ impl<N> CsVec<N, Vec<usize>, Vec<N>> {
     }
 }
 
-impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where IStorage: Deref<Target=[usize]>,
+impl<N, I, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where I: SpIndex,
+      IStorage: Deref<Target=[I]>,
       DStorage: Deref<Target=[N]> {
 
     /// Get a view of this vector.
-    pub fn view(&self) -> CsVecView<N> {
+    pub fn view(&self) -> CsVecView_<N, I> {
         CsVec {
             dim: self.dim,
             indices: &self.indices[..],
@@ -488,8 +499,9 @@ where IStorage: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
-where IStorage: Deref<Target=[usize]>,
+impl<N, I, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+where I: SpIndex,
+      IStorage: Deref<Target=[I]>,
       DStorage: Deref<Target=[N]> {
 
     /// Iterate over the non zero values.
@@ -505,7 +517,7 @@ where IStorage: Deref<Target=[usize]>,
     /// assert_eq!(iter.next(), Some((4, &3.)));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> VectorIterator<N> {
+    pub fn iter(&self) -> VectorIterator<N, I> {
         VectorIterator {
             ind_data: self.indices.iter().zip(self.data.iter()),
         }
@@ -515,7 +527,7 @@ where IStorage: Deref<Target=[usize]>,
     #[doc(hidden)]
     pub fn iter_perm<'a, 'perm: 'a>(&'a self,
                                     perm: PermView<'perm>)
-    -> VectorIteratorPerm<'a, N>
+    -> VectorIteratorPerm<'a, N, I>
     where N: 'a
     {
         VectorIteratorPerm {
@@ -525,7 +537,7 @@ where IStorage: Deref<Target=[usize]>,
     }
 
     /// The underlying indices.
-    pub fn indices(&self) -> &[usize] {
+    pub fn indices(&self) -> &[I] {
         &self.indices
     }
 
@@ -552,7 +564,8 @@ where IStorage: Deref<Target=[usize]>,
             return Err(SprsError::NonSortedIndices);
         }
 
-        if self.indices.iter().max().unwrap_or(&0) >= &self.dim {
+        let max_ind = self.indices.iter().max().unwrap_or(&I::zero()).index();
+        if max_ind >= self.dim {
             panic!("Out of bounds index");
         }
 
@@ -560,7 +573,7 @@ where IStorage: Deref<Target=[usize]>,
     }
 
     /// Allocate a new vector equal to this one.
-    pub fn to_owned(&self) -> CsVecOwned<N>
+    pub fn to_owned(&self) -> CsVecOwned_<N, I>
     where N: Clone
     {
         CsVec {
@@ -571,10 +584,10 @@ where IStorage: Deref<Target=[usize]>,
     }
 
     /// View this vector as a matrix with only one row.
-    pub fn row_view(&self) -> CsMatVecView<N> {
+    pub fn row_view(&self) -> CsMatVecView_<N, I> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
-        let indptr = vec![0, self.indices.len()];
+        let indptr = vec![I::zero(), I::from_usize(self.indices.len())];
         CsMat {
             storage: CSR,
             nrows: 1,
@@ -586,10 +599,10 @@ where IStorage: Deref<Target=[usize]>,
     }
 
     /// View this vector as a matrix with only one column.
-    pub fn col_view(&self) -> CsMatVecView<N> {
+    pub fn col_view(&self) -> CsMatVecView_<N, I> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
-        let indptr = vec![0, self.indices.len()];
+        let indptr = vec![I::zero(), I::from_usize(self.indices.len())];
         CsMat {
             storage: CSC,
             nrows: self.dim,
@@ -601,7 +614,9 @@ where IStorage: Deref<Target=[usize]>,
     }
 
     /// Access element at given index, with logarithmic complexity
-    pub fn get(&self, index: usize) -> Option<&N> {
+    pub fn get<'a>(&'a self, index: usize) -> Option<&'a N>
+    where I: 'a
+    {
         self.view().get_(index)
     }
 
@@ -612,7 +627,9 @@ where IStorage: Deref<Target=[usize]>,
     /// once it is available, the NnzIndex enables retrieving the data with
     /// O(1) complexity.
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
-        self.indices.binary_search(&index).map(|i| NnzIndex(i)).ok()
+        self.indices.binary_search(&I::from_usize(index))
+                    .map(|i| NnzIndex(i.index()))
+                    .ok()
     }
 
     /// Sparse vector dot product. The right-hand-side can be any type
@@ -635,6 +652,7 @@ where IStorage: Deref<Target=[usize]>,
     /// ```
     pub fn dot<'b, T: IntoSparseVecIter<&'b N>>(&'b self, rhs: T) -> N
     where N: Num + Copy,
+          I: 'b,
           <T as IntoSparseVecIter<&'b N>>::IterType: Iterator<Item=(usize, &'b N)>
     {
         assert_eq!(self.dim(), rhs.dim());
@@ -654,12 +672,14 @@ where IStorage: Deref<Target=[usize]>,
     /// Transform this vector into a set of (index, value) tuples
     pub fn to_set(self) -> HashSet<(usize, N)>
     where N: Hash + Eq + Clone {
-        self.indices().iter().cloned().zip(self.data.iter().cloned()).collect()
+        self.indices().iter().map(|i| i.index())
+            .zip(self.data.iter().cloned())
+            .collect()
     }
 
     /// Apply a function to each non-zero element, yielding a new matrix
     /// with the same sparsity structure.
-    pub fn map<F>(&self, f: F) -> CsVecOwned<N>
+    pub fn map<F>(&self, f: F) -> CsVecOwned_<N, I>
     where F: FnMut(&N) -> N,
           N: Clone
     {
@@ -669,9 +689,10 @@ where IStorage: Deref<Target=[usize]>,
     }
 }
 
-impl<'a, N, IStorage, DStorage> CsVec<N, IStorage, DStorage>
+impl<'a, N, I, IStorage, DStorage> CsVec<N, IStorage, DStorage>
 where N: 'a,
-      IStorage: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IStorage: 'a + Deref<Target=[I]>,
       DStorage: DerefMut<Target=[N]> {
 
     /// The underlying non zero values as a mutable slice.
@@ -679,7 +700,7 @@ where N: 'a,
         &mut self.data[..]
     }
 
-    pub fn view_mut(&mut self) -> CsVecViewMut<N> {
+    pub fn view_mut(&mut self) -> CsVecViewMut_<N, I> {
         CsVec {
             dim: self.dim,
             indices: &self.indices[..],
@@ -709,7 +730,7 @@ where N: 'a,
     /// Mutable iteration over the non-zero values of a sparse vector
     ///
     /// Only the values can be changed, the sparse structure is kept.
-    pub fn iter_mut(&mut self) -> VectorIteratorMut<N> {
+    pub fn iter_mut(&mut self) -> VectorIteratorMut<N, I> {
         VectorIteratorMut {
             ind_data: self.indices.iter().zip(self.data.iter_mut()),
         }
@@ -738,34 +759,38 @@ where N: 'a {
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IpS2, IS2, DS2> Mul<&'b CsMat<N, IpS2, IS2, DS2>>
+impl<'a, 'b, N, I, IS1, DS1, IpS2, IS2, DS2>
+Mul<&'b CsMat<N, I, IpS2, IS2, DS2>>
 for &'a CsVec<N, IS1, DS1>
 where N: 'a + Copy + Num + Default,
-      IS1: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IS1: 'a + Deref<Target=[I]>,
       DS1: 'a + Deref<Target=[N]>,
-      IpS2: 'b + Deref<Target=[usize]>,
-      IS2: 'b + Deref<Target=[usize]>,
+      IpS2: 'b + Deref<Target=[I]>,
+      IS2: 'b + Deref<Target=[I]>,
       DS2: 'b + Deref<Target=[N]> {
 
-    type Output = CsVecOwned<N>;
+    type Output = CsVecOwned_<N, I>;
 
-    fn mul(self, rhs: &CsMat<N, IpS2, IS2, DS2>) -> CsVecOwned<N> {
+    fn mul(self, rhs: &CsMat<N, I, IpS2, IS2, DS2>) -> CsVecOwned_<N, I> {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
 
-impl<'a, 'b, N, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVec<N, IS2, DS2>>
-for &'a CsMat<N, IpS1, IS1, DS1>
+impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2>
+Mul<&'b CsVec<N, IS2, DS2>>
+for &'a CsMat<N, I, IpS1, IS1, DS1>
 where N: Copy + Num + Default,
-      IpS1: Deref<Target=[usize]>,
-      IS1: Deref<Target=[usize]>,
+      I: SpIndex,
+      IpS1: Deref<Target=[I]>,
+      IS1: Deref<Target=[I]>,
       DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[usize]>,
+      IS2: Deref<Target=[I]>,
       DS2: Deref<Target=[N]> {
 
-    type Output = CsVecOwned<N>;
+    type Output = CsVecOwned_<N, I>;
 
-    fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned<N> {
+    fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned_<N, I> {
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         }
