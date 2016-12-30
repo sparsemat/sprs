@@ -143,14 +143,16 @@ for OuterIterator<'iter, N, I> {
 /// containing the associated inner dimension
 impl <'iter, 'perm: 'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
-for OuterIteratorPerm<'iter, 'perm, N, I> {
+for OuterIteratorPerm<'iter, 'perm, N, I>
+where Range<I>: Iterator<Item=I>
+{
     type Item = (usize, CsVec<N, &'iter[I], &'iter[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.outer_ind_iter.next() {
             None => None,
             Some(outer_ind) => {
-                let outer_ind_perm = self.perm.at(outer_ind);
+                let outer_ind_perm = self.perm.at(outer_ind.index());
                 let inner_start = self.indptr[outer_ind_perm].index();
                 let inner_end = self.indptr[outer_ind_perm + 1].index();
                 let indices = &self.indices[inner_start..inner_end];

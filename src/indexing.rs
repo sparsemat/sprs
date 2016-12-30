@@ -1,6 +1,5 @@
 ///! Abstraction over types of indices
 
-use std::iter;
 use std::ops::AddAssign;
 use std::fmt::Debug;
 
@@ -12,7 +11,8 @@ use num_traits::int::PrimInt;
 ///
 /// This is a convenience trait to enable using various integer sizes for sparse
 /// matrix indices.
-pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + iter::Step {
+pub trait SpIndex: Debug + PrimInt + AddAssign<Self>
+{
 
     /// Convert to usize
     ///

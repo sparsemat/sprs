@@ -65,10 +65,14 @@ pub type Ix2 = ndarray::Ix2;
 pub use sparse::{
     CsMat,
     CsMatOwned,
+    CsMatOwned_,
     CsMatView,
+    CsMatView_,
     CsVec,
     CsVecView,
+    CsVecView_,
     CsVecOwned,
+    CsVecOwned_,
 };
 
 
