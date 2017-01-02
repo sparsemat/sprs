@@ -4,7 +4,7 @@
 
 use std::ops::{Deref, Mul};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Permutation<IndStorage>
 where IndStorage: Deref<Target=[usize]> {
     Identity,

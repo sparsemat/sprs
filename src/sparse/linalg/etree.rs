@@ -7,7 +7,7 @@ pub type Parent = Option<usize>;
 
 /// Store an etree as the parent information of each node.
 /// This reflects the fact that etrees can in fact have multiple roots.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parents<S> where S: Deref<Target=[Parent]> {
     parents: S
 }
