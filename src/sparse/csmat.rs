@@ -90,7 +90,7 @@ pub struct OuterIterator<'iter, N: 'iter, I: 'iter> {
 /// Implemented over an iterator on the indptr array
 pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter, I: 'iter> {
     inner_len: usize,
-    outer_ind_iter: Range<I>,
+    outer_ind_iter: Range<usize>,
     indptr: &'iter [I],
     indices: &'iter [I],
     data: &'iter [N],
@@ -144,7 +144,6 @@ for OuterIterator<'iter, N, I> {
 impl <'iter, 'perm: 'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIteratorPerm<'iter, 'perm, N, I>
-where Range<I>: Iterator<Item=I>
 {
     type Item = (usize, CsVec<N, &'iter[I], &'iter[N]>);
     #[inline]
@@ -152,7 +151,7 @@ where Range<I>: Iterator<Item=I>
         match self.outer_ind_iter.next() {
             None => None,
             Some(outer_ind) => {
-                let outer_ind_perm = self.perm.at(outer_ind.index());
+                let outer_ind_perm = self.perm.at(outer_ind);
                 let inner_start = self.indptr[outer_ind_perm].index();
                 let inner_end = self.indptr[outer_ind_perm + 1].index();
                 let indices = &self.indices[inner_start..inner_end];
@@ -712,10 +711,10 @@ where I: SpIndex,
             CSR => (self.ncols, perm.reborrow()),
             CSC => (self.nrows, perm.reborrow_inv())
         };
-        let n = I::from_usize(self.indptr.len() - 1);
+        let n = self.indptr.len() - 1;
         OuterIteratorPerm {
             inner_len: inner_len,
-            outer_ind_iter: (I::zero()..n),
+            outer_ind_iter: (0..n),
             indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
