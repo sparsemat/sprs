@@ -48,6 +48,8 @@ macro_rules! sp_index_signed_impl {
 
             #[inline(always)]
             fn from_usize(ind: usize) -> Self {
+                let max = $int::max_value() as usize;
+                debug_assert!(ind <= max);
                 ind as $int
             }
         }
@@ -69,6 +71,8 @@ macro_rules! sp_index_unsigned_impl {
 
             #[inline(always)]
             fn from_usize(ind: usize) -> Self {
+                let max = $int::max_value() as usize;
+                debug_assert!(ind <= max);
                 ind as $int
             }
         }
@@ -78,3 +82,15 @@ macro_rules! sp_index_unsigned_impl {
 sp_index_unsigned_impl!(u64);
 sp_index_unsigned_impl!(u32);
 sp_index_unsigned_impl!(u16);
+
+#[cfg(test)]
+mod test {
+    use super::SpIndex;
+
+    #[test]
+    #[cfg_attr(debug_assertions, should_panic)]
+    fn overflow_u16() {
+        let b: u16 = u16::from_usize(131072); // 2^17
+        println!("{}", b);
+    }
+}
