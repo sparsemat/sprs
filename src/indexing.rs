@@ -1,11 +1,16 @@
 ///! Abstraction over types of indices
+///!
+///! Our sparse matrices can use any integer type for its indices among
+///! `u16, u32, u64, usize, i16, i32, i64, isize`.
+///!
+///! By default, sprs matrices will use `usize`, but it can be useful to switch
+///! to another index type to reduce the memory usage of sparse matrices, of for
+///! compatibility purposes when calling into an existing library through FFI.
 
 use std::ops::AddAssign;
 use std::fmt::Debug;
 
 use num_traits::int::PrimInt;
-
-// TODO: maybe some combination of Into and num traits could be more ergonomic?
 
 /// A sparse matrix index
 ///
@@ -19,9 +24,15 @@ pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default
     /// # Panics
     ///
     /// If the integer cannot be represented as an `usize`, eg negative numbers.
+    /// The panic happens in debug builds only.
     fn index(self) -> usize;
 
     /// Convert from usize
+    ///
+    /// # Panics
+    ///
+    /// If the input overflows the index type. The panic happens in debug builds
+    /// only.
     fn from_usize(ind: usize) -> Self;
 }
 
