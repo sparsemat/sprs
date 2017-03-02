@@ -1,12 +1,14 @@
 use std::ops::Deref;
+use indexing::SpIndex;
 
 pub use self::csmat::{CompressedStorage};
 
 /// Compressed matrix in the CSR or CSC format.
 #[derive(PartialEq, Debug)]
-pub struct CsMat<N, IptrStorage, IndStorage, DataStorage>
-where IptrStorage: Deref<Target=[usize]>,
-      IndStorage: Deref<Target=[usize]>,
+pub struct CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+where I: SpIndex,
+      IptrStorage: Deref<Target=[I]>,
+      IndStorage: Deref<Target=[I]>,
       DataStorage: Deref<Target=[N]> {
     storage: CompressedStorage,
     nrows : usize,
@@ -16,11 +18,16 @@ where IptrStorage: Deref<Target=[usize]>,
     data : DataStorage
 }
 
-pub type CsMatOwned<N> = CsMat<N, Vec<usize>, Vec<usize>, Vec<N>>;
-pub type CsMatView<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a [N]>;
-pub type CsMatViewMut<'a, N> = CsMat<N, &'a [usize], &'a [usize], &'a mut [N]>;
+pub type CsMatOwnedI<N, I> = CsMat<N, I, Vec<I>, Vec<I>, Vec<N>>;
+pub type CsMatViewI<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a [N]>;
+pub type CsMatViewMutI<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a mut [N]>;
+pub type CsMatVecView_<'a, N, I> = CsMat<N, I, Vec<I>, &'a [I], &'a [N]>;
+
+pub type CsMatOwned<N> = CsMatOwnedI<N, usize>;
+pub type CsMatView<'a, N> = CsMatViewI<'a, N, usize>;
+pub type CsMatViewMut<'a, N> = CsMatViewMutI<'a, N, usize>;
 // FIXME: a fixed size array would be better, but no Deref impl
-pub type CsMatVecView<'a, N> = CsMat<N, Vec<usize>, &'a [usize], &'a [N]>;
+pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 
 /// A sparse vector, storing the indices of its non-zero data.
 /// The indices should be sorted.
@@ -32,28 +39,41 @@ where DStorage: Deref<Target=[N]> {
     data : DStorage
 }
 
-pub type CsVecView<'a, N> = CsVec<N, &'a [usize], &'a [N]>;
-pub type CsVecViewMut<'a, N> = CsVec<N, &'a [usize], &'a mut [N]>;
-pub type CsVecOwned<N> = CsVec<N, Vec<usize>, Vec<N>>;
+pub type CsVecViewI<'a, N, I> = CsVec<N, &'a [I], &'a [N]>;
+pub type CsVecViewMut_<'a, N, I> = CsVec<N, &'a [I], &'a mut [N]>;
+pub type CsVecOwnedI<N, I> = CsVec<N, Vec<I>, Vec<N>>;
+
+pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
+pub type CsVecViewMut<'a, N> = CsVecViewMut_<'a, N, usize>;
+pub type CsVecOwned<N> = CsVecOwnedI<N, usize>;
 
 mod prelude {
     pub use super::{
         CsMat,
+        CsMatViewI,
         CsMatView,
+        CsMatViewMutI,
         CsMatViewMut,
+        CsMatOwnedI,
         CsMatOwned,
+        CsMatVecView_,
         CsMatVecView,
         CsVec,
+        CsVecViewI,
         CsVecView,
+        CsVecViewMut_,
         CsVecViewMut,
+        CsVecOwnedI,
         CsVecOwned,
     };
 }
 
 mod utils {
-    pub fn sort_indices_data_slices<N: Copy>(indices: &mut [usize],
-                                             data: &mut [N],
-                                             buf: &mut Vec<(usize, N)>) {
+    use indexing::SpIndex;
+
+    pub fn sort_indices_data_slices<N: Copy, I:SpIndex>(indices: &mut [I],
+                                                        data: &mut [N],
+                                                        buf: &mut Vec<(I, N)>) {
         let len = indices.len();
         assert_eq!(len, data.len());
         let indices = &mut indices[..len];

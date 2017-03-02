@@ -62,12 +62,12 @@ use std::ops::IndexMut;
 use num_traits::Num;
 
 use sprs::{
-    CsMat,
-    CsMatView,
+    CsMatViewI,
     is_symmetric,
     Permutation,
-    PermOwned,
+    PermOwnedI,
 };
+use sprs::indexing::SpIndex;
 use sprs::linalg;
 use sprs::stack::DStack;
 
@@ -77,39 +77,36 @@ pub enum SymmetryCheck {
 }
 
 /// Structure to compute and hold a symbolic LDLT decomposition
-#[derive(Debug)]
-pub struct LdlSymbolic {
-    colptr: Vec<usize>,
+#[derive(Debug, Clone)]
+pub struct LdlSymbolic<I> {
+    colptr: Vec<I>,
     parents: linalg::etree::ParentsOwned,
-    nz: Vec<usize>,
-    flag_workspace: Vec<usize>,
-    perm: Permutation<Vec<usize>>,
+    nz: Vec<I>,
+    flag_workspace: Vec<I>,
+    perm: Permutation<I, Vec<I>>,
 }
 
 /// Structure to hold a numeric LDLT decomposition
-#[derive(Debug)]
-pub struct LdlNumeric<N> {
-    symbolic: LdlSymbolic,
-    l_indices: Vec<usize>,
+#[derive(Debug, Clone)]
+pub struct LdlNumeric<N, I> {
+    symbolic: LdlSymbolic<I>,
+    l_indices: Vec<I>,
     l_data: Vec<N>,
     diag: Vec<N>,
     y_workspace: Vec<N>,
-    pattern_workspace: DStack<usize>,
+    pattern_workspace: DStack<I>,
 }
 
-impl LdlSymbolic {
+impl<I: SpIndex> LdlSymbolic<I> {
     /// Compute the symbolic LDLT of the given matrix
     ///
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>) -> LdlSymbolic
+    pub fn new<N>(mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
-          IpS: Deref<Target = [usize]>,
-          IS: Deref<Target = [usize]>,
-          DS: Deref<Target = [N]>
     {
-        let perm: Permutation<Vec<usize>> = Permutation::identity();
+        let perm: Permutation<I, Vec<I>> = Permutation::identity();
         LdlSymbolic::new_perm(mat, perm)
     }
 
@@ -122,21 +119,19 @@ impl LdlSymbolic {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm<N, IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
-                                    perm: PermOwned)
-                                    -> LdlSymbolic
+    pub fn new_perm<N>(mat: CsMatViewI<N, I>,
+                       perm: PermOwnedI<I>
+                      ) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
-          IpS: Deref<Target = [usize]>,
-          IS: Deref<Target = [usize]>,
-          DS: Deref<Target = [N]>
+          I: SpIndex,
     {
         let n = mat.cols();
         assert!(mat.rows() == n, "matrix should be square");
-        let mut l_colptr = vec![0; n+1];
+        let mut l_colptr = vec![I::zero(); n+1];
         let mut parents = linalg::etree::ParentsOwned::new(n);
-        let mut l_nz = vec![0; n];
-        let mut flag_workspace = vec![0; n];
-        ldl_symbolic(mat.view(),
+        let mut l_nz = vec![I::zero(); n];
+        let mut flag_workspace = vec![I::zero(); n];
+        ldl_symbolic(mat,
                      &perm,
                      &mut l_colptr,
                      parents.view_mut(),
@@ -163,21 +158,16 @@ impl LdlSymbolic {
     #[inline]
     pub fn nnz(&self) -> usize {
         let n = self.problem_size();
-        self.colptr[n]
+        self.colptr[n].index()
     }
 
     /// Compute the numerical decomposition of the given matrix.
-    pub fn factor<N, IpS, IS, DS>(self,
-                                  mat: &CsMat<N, IpS, IS, DS>)
-                                  -> LdlNumeric<N>
+    pub fn factor<N>(self, mat: CsMatViewI<N, I>) -> LdlNumeric<N, I>
     where N: Copy + Num + PartialOrd,
-          IpS: Deref<Target = [usize]>,
-          IS: Deref<Target = [usize]>,
-          DS: Deref<Target = [N]>
     {
         let n = self.problem_size();
         let nnz = self.nnz();
-        let l_indices = vec![0; nnz];
+        let l_indices = vec![I::zero(); nnz];
         let l_data = vec![N::zero(); nnz];
         let diag = vec![N::zero(); n];
         let y_workspace = vec![N::zero(); n];
@@ -195,19 +185,16 @@ impl LdlSymbolic {
     }
 }
 
-impl<N> LdlNumeric<N> {
+impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// Compute the numeric LDLT decomposition of the given matrix.
     ///
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>) -> Self
+    pub fn new(mat: CsMatViewI<N, I>) -> Self
     where N: Copy + Num + PartialOrd,
-          IpS: Deref<Target = [usize]>,
-          IS: Deref<Target = [usize]>,
-          DS: Deref<Target = [N]>
     {
-        let symbolic = LdlSymbolic::new(mat);
+        let symbolic = LdlSymbolic::new(mat.view());
         symbolic.factor(mat)
     }
 
@@ -220,26 +207,18 @@ impl<N> LdlNumeric<N> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm<IpS, IS, DS>(mat: &CsMat<N, IpS, IS, DS>,
-                                 perm: PermOwned)
-                                 -> Self
+    pub fn new_perm(mat: CsMatViewI<N, I>, perm: PermOwnedI<I>) -> Self
     where N: Copy + Num + PartialOrd,
-          IpS: Deref<Target = [usize]>,
-          IS: Deref<Target = [usize]>,
-          DS: Deref<Target = [N]>
     {
-        let symbolic = LdlSymbolic::new_perm(mat, perm);
+        let symbolic = LdlSymbolic::new_perm(mat.view(), perm);
         symbolic.factor(mat)
     }
 
     /// Update the decomposition with the given matrix. The matrix must
     /// have the same non-zero pattern as the original matrix, otherwise
     /// the result is unspecified.
-    pub fn update<IpS, IS, DS>(&mut self, mat: &CsMat<N, IpS, IS, DS>)
+    pub fn update(&mut self, mat: CsMatViewI<N, I>)
     where N: Copy + Num + PartialOrd,
-          IpS: Deref<Target = [usize]>,
-          IS: Deref<Target = [usize]>,
-          DS: Deref<Target = [N]>
     {
         ldl_numeric(mat.view(),
                     &self.symbolic.colptr,
@@ -268,16 +247,16 @@ impl<N> LdlNumeric<N> {
         &pinv * &x
     }
 
-    fn l_view(&self) -> CsMatView<N>
+    fn l_view(&self) -> CsMatViewI<N, I>
     {
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm
         unsafe {
-            CsMatView::new_view_raw(sprs::CSC,
-                                    (n, n),
-                                    self.symbolic.colptr.as_ptr(),
-                                    self.l_indices.as_ptr(),
-                                    self.l_data.as_ptr())
+            CsMatViewI::new_view_raw(sprs::CSC,
+                                     (n, n),
+                                     self.symbolic.colptr.as_ptr(),
+                                     self.l_indices.as_ptr(),
+                                     self.l_data.as_ptr())
         }
     }
 
@@ -296,15 +275,16 @@ impl<N> LdlNumeric<N> {
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-pub fn ldl_symbolic<N, PStorage>(mat: CsMatView<N>,
-                                 perm: &Permutation<PStorage>,
-                                 l_colptr: &mut [usize],
-                                 mut parents: linalg::etree::ParentsViewMut,
-                                 l_nz: &mut [usize],
-                                 flag_workspace: &mut [usize],
-                                 check_symmetry: SymmetryCheck)
+pub fn ldl_symbolic<N, I, PStorage>(mat: CsMatViewI<N, I>,
+                                    perm: &Permutation<I, PStorage>,
+                                    l_colptr: &mut [I],
+                                    mut parents: linalg::etree::ParentsViewMut,
+                                    l_nz: &mut [I],
+                                    flag_workspace: &mut [I],
+                                    check_symmetry: SymmetryCheck)
 where N: Clone + Copy + PartialEq,
-      PStorage: Deref<Target = [usize]>
+      I: SpIndex,
+      PStorage: Deref<Target = [I]>
 {
 
     match check_symmetry {
@@ -322,25 +302,25 @@ where N: Clone + Copy + PartialEq,
     // compute the elimination tree of L
     for (k, (_, vec)) in outer_it.enumerate() {
 
-        flag_workspace[k] = k; // this node is visited
+        flag_workspace[k] = I::from_usize(k); // this node is visited
         parents.set_root(k);
-        l_nz[k] = 0;
+        l_nz[k] = I::zero();
 
         for (inner_ind, _) in vec.iter_perm(perm.inv()) {
             let mut i = inner_ind;
 
             if i < k {
-                while flag_workspace[i] != k {
+                while flag_workspace[i].index() != k {
                     parents.uproot(i, k);
-                    l_nz[i] += 1;
-                    flag_workspace[i] = k;
+                    l_nz[i] += I::one();
+                    flag_workspace[i] = I::from_usize(k);
                     i = parents.get_parent(i).expect("uprooted so not a root");
                 }
             }
         }
     }
 
-    let mut prev: usize = 0;
+    let mut prev = I::zero();
     for (k, colptr) in (0..n).zip(l_colptr.iter_mut()) {
         *colptr = prev;
         prev += l_nz[k];
@@ -352,19 +332,20 @@ where N: Clone + Copy + PartialEq,
 /// Perform numeric LDLT decomposition
 ///
 /// pattern_workspace is a DStack of capacity n
-pub fn ldl_numeric<N, PStorage>(mat: CsMatView<N>,
-                                l_colptr: &[usize],
-                                parents: linalg::etree::ParentsView,
-                                perm: &Permutation<PStorage>,
-                                l_nz: &mut [usize],
-                                l_indices: &mut [usize],
-                                l_data: &mut [N],
-                                diag: &mut [N],
-                                y_workspace: &mut [N],
-                                pattern_workspace: &mut DStack<usize>,
-                                flag_workspace: &mut [usize])
+pub fn ldl_numeric<N, I, PStorage>(mat: CsMatViewI<N, I>,
+                                   l_colptr: &[I],
+                                   parents: linalg::etree::ParentsView,
+                                   perm: &Permutation<I, PStorage>,
+                                   l_nz: &mut [I],
+                                   l_indices: &mut [I],
+                                   l_data: &mut [N],
+                                   diag: &mut [N],
+                                   y_workspace: &mut [N],
+                                   pattern_workspace: &mut DStack<I>,
+                                   flag_workspace: &mut [I])
 where N: Clone + Copy + PartialEq + Num + PartialOrd,
-      PStorage: Deref<Target = [usize]>
+      I: SpIndex,
+      PStorage: Deref<Target = [I]>
 {
     let outer_it = mat.outer_iterator_perm(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
@@ -372,9 +353,9 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         // compute the nonzero pattern of the kth row of L
         // in topological order
 
-        flag_workspace[k] = k; // this node is visited
+        flag_workspace[k] = I::from_usize(k); // this node is visited
         y_workspace[k] = N::zero();
-        l_nz[k] = 0;
+        l_nz[k] = I::zero();
         pattern_workspace.clear_right();
 
         for (inner_ind, &val) in vec.iter_perm(perm.inv())
@@ -382,9 +363,9 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             pattern_workspace.clear_left();
-            while flag_workspace[i] != k {
-                pattern_workspace.push_left(i);
-                flag_workspace[i] = k;
+            while flag_workspace[i].index() != k {
+                pattern_workspace.push_left(I::from_usize(i));
+                flag_workspace[i] = I::from_usize(k);
                 i = parents.get_parent(i).expect("enforced by ldl_symbolic");
             }
             pattern_workspace.push_left_on_right();
@@ -395,24 +376,25 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         diag[k] = y_workspace[k];
         y_workspace[k] = N::zero();
         'pattern: for &i in pattern_workspace.iter_right() {
+            let i = i.index();
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
             let p2 = l_colptr[i] + l_nz[i];
-            for p in l_colptr[i]..p2 {
+            for p in l_colptr[i].index()..p2.index() {
                 // we cannot go inside this loop before something has actually
                 // be written into l_indices[l_colptr[i]..p2] so this
                 // read is actually not into garbage
                 // actually each iteration of the 'pattern loop adds writes the
                 // value in l_indices that will be read on the next iteration
                 // TODO: can some design change make this fact more obvious?
-                let y_index = l_indices[p];
+                let y_index = l_indices[p].index();
                 y_workspace[y_index] = y_workspace[y_index] - l_data[p] * yi;
             }
             let l_ki = yi / diag[i];
             diag[k] = diag[k] - l_ki * yi;
-            l_indices[p2] = k;
-            l_data[p2] = l_ki;
-            l_nz[i] += 1;
+            l_indices[p2.index()] = I::from_usize(k);
+            l_data[p2.index()] = l_ki;
+            l_nz[i] += I::one();
         }
         if diag[k] == N::zero() {
             panic!("Matrix is singular");
@@ -422,8 +404,9 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
 
 /// Triangular solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_lsolve<N, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
+pub fn ldl_lsolve<N, I, V: ?Sized>(l: &CsMatViewI<N, I>, x: &mut V)
 where N: Clone + Copy + Num,
+      I: SpIndex,
       V: IndexMut<usize, Output = N>
 {
     for (col_ind, vec) in l.outer_iterator().enumerate() {
@@ -436,8 +419,9 @@ where N: Clone + Copy + Num,
 
 /// Triangular transposed solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_ltsolve<N, V: ?Sized>(l: &CsMatView<N>, x: &mut V)
+pub fn ldl_ltsolve<N, I, V: ?Sized>(l: &CsMatViewI<N, I>, x: &mut V)
 where N: Clone + Copy + Num,
+      I: SpIndex,
       V: IndexMut<usize, Output = N>
 {
     for (outer_ind, vec) in l.outer_iterator().enumerate().rev() {
@@ -550,7 +534,7 @@ mod test {
         let mut parents = linalg::etree::ParentsOwned::new(10);
         let mut l_nz = [0; 10];
         let mut flag_workspace = [0; 10];
-        let perm: Permutation<&[usize]> = Permutation::identity();
+        let perm: Permutation<usize, &[usize]> = Permutation::identity();
         let mat = test_mat1();
         super::ldl_symbolic(mat.view(),
                             &perm,
@@ -613,7 +597,7 @@ mod test {
     fn test_factor_solve1() {
         let mat = test_mat1();
         let b = test_vec1();
-        let ldlt = super::LdlNumeric::new(&mat);
+        let ldlt = super::LdlNumeric::new(mat.view());
         let x = ldlt.solve(&b);
         let x0 = expected_res1();
         assert_eq!(x, x0);
@@ -639,7 +623,7 @@ mod test {
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 
-        let ldlt = super::LdlNumeric::new_perm(&mat, perm);
+        let ldlt = super::LdlNumeric::new_perm(mat.view(), perm);
         let b = vec![9, 60, 18, 34];
         let x0 = vec![1, 2, 3, 4];
         let x = ldlt.solve(&b);

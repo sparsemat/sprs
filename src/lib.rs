@@ -55,6 +55,7 @@ extern crate ndarray;
 mod sparse;
 pub mod errors;
 pub mod stack;
+pub mod indexing;
 
 /// Deprecated type alias, will be removed on next breaking change
 pub type Ix_ = ndarray::Ix1;
@@ -64,10 +65,17 @@ pub type Ix2 = ndarray::Ix2;
 pub use sparse::{
     CsMat,
     CsMatOwned,
+    CsMatOwnedI,
     CsMatView,
+    CsMatViewI,
+    CsMatViewMut,
+    CsMatViewMutI,
+    CsMatVecView,
     CsVec,
     CsVecView,
+    CsVecViewI,
     CsVecOwned,
+    CsVecOwnedI,
 };
 
 
@@ -78,7 +86,9 @@ pub use sparse::symmetric::{
 pub use sparse::permutation::{
     Permutation,
     PermView,
+    PermViewI,
     PermOwned,
+    PermOwnedI,
 };
 
 pub use sparse::CompressedStorage::{

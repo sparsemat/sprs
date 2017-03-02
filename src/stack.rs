@@ -9,7 +9,7 @@ use std::slice;
 ///
 /// Used in sparse triangular / sparse vector solves, where it is guaranteed
 /// that the two parts of the stack cannot overlap.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DStack<I> {
     stacks: Vec<I>,
     left_head: Option<usize>,

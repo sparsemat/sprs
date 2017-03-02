@@ -3,13 +3,15 @@
 use std::ops::{Deref};
 
 use sparse::prelude::*;
+use indexing::SpIndex;
 
-pub fn is_symmetric<N, IpStorage, IStorage, DStorage>(
-    mat: &CsMat<N, IpStorage, IStorage, DStorage>) -> bool
+pub fn is_symmetric<N, I, IpStorage, IStorage, DStorage>(
+    mat: &CsMat<N, I, IpStorage, IStorage, DStorage>) -> bool
 where
 N: Copy + PartialEq,
-IpStorage: Deref<Target=[usize]>,
-IStorage: Deref<Target=[usize]>,
+I: SpIndex,
+IpStorage: Deref<Target=[I]>,
+IStorage: Deref<Target=[I]>,
 DStorage: Deref<Target=[N]> {
     if mat.rows() != mat.cols() {
         return false;

@@ -17,8 +17,10 @@ use num_traits::{Num, Zero};
 use ndarray::{self, ArrayBase, Array, ShapeBuilder};
 use ::{Ix1, Ix2, Shape};
 
+use indexing::SpIndex;
+
 use sparse::prelude::*;
-use sparse::permutation::PermView;
+use sparse::permutation::PermViewI;
 use sparse::vec;
 use sparse::compressed::SpMatView;
 use sparse::binop;
@@ -77,30 +79,30 @@ pub struct NnzIndex(pub usize);
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
-pub struct OuterIterator<'iter, N: 'iter> {
+pub struct OuterIterator<'iter, N: 'iter, I: 'iter> {
     inner_len: usize,
-    indptr_iter: Windows<'iter, usize>,
-    indices: &'iter [usize],
+    indptr_iter: Windows<'iter, I>,
+    indices: &'iter [I],
     data: &'iter [N],
 }
 
 /// Iterator on the matrix' outer dimension, permuted
 /// Implemented over an iterator on the indptr array
-pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter> {
+pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter, I: 'perm> {
     inner_len: usize,
     outer_ind_iter: Range<usize>,
-    indptr: &'iter [usize],
-    indices: &'iter [usize],
+    indptr: &'iter [I],
+    indices: &'iter [I],
     data: &'iter [N],
-    perm: PermView<'perm>,
+    perm: PermViewI<'perm, I>,
 }
 
 /// Iterator on the matrix' outer dimension
 /// Implemented over an iterator on the indptr array
-pub struct OuterIteratorMut<'iter, N: 'iter> {
+pub struct OuterIteratorMut<'iter, N: 'iter, I: 'iter> {
     inner_len: usize,
-    indptr_iter: Windows<'iter, usize>,
-    indices: &'iter [usize],
+    indptr_iter: Windows<'iter, I>,
+    indices: &'iter [I],
     data: &'iter mut [N],
 }
 
@@ -108,17 +110,17 @@ pub struct OuterIteratorMut<'iter, N: 'iter> {
 /// Outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, N: 'iter>
+impl <'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
-for OuterIterator<'iter, N> {
-    type Item = CsVec<N, &'iter[usize], &'iter[N]>;
+for OuterIterator<'iter, N, I> {
+    type Item = CsVec<N, &'iter[I], &'iter[N]>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
             None => None,
             Some(window) => {
-                let inner_start = window[0];
-                let inner_end = window[1];
+                let inner_start = window[0].index();
+                let inner_end = window[1].index();
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
@@ -139,18 +141,19 @@ for OuterIterator<'iter, N> {
 /// Permuted outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a sparse vector
 /// containing the associated inner dimension
-impl <'iter, 'perm: 'iter, N: 'iter>
+impl <'iter, 'perm: 'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
-for OuterIteratorPerm<'iter, 'perm, N> {
-    type Item = (usize, CsVec<N, &'iter[usize], &'iter[N]>);
+for OuterIteratorPerm<'iter, 'perm, N, I>
+{
+    type Item = (usize, CsVec<N, &'iter[I], &'iter[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.outer_ind_iter.next() {
             None => None,
             Some(outer_ind) => {
                 let outer_ind_perm = self.perm.at(outer_ind);
-                let inner_start = self.indptr[outer_ind_perm];
-                let inner_end = self.indptr[outer_ind_perm + 1];
+                let inner_start = self.indptr[outer_ind_perm].index();
+                let inner_end = self.indptr[outer_ind_perm + 1].index();
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
@@ -172,17 +175,17 @@ for OuterIteratorPerm<'iter, 'perm, N> {
 /// Mutable outer iteration on a compressed matrix yields
 /// a tuple consisting of the outer index and of a mutable sparse vector view
 /// containing the associated inner dimension
-impl <'iter, N: 'iter>
+impl <'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
-for OuterIteratorMut<'iter, N> {
-    type Item = CsVecViewMut<'iter, N>;
+for OuterIteratorMut<'iter, N, I> {
+    type Item = CsVecViewMut_<'iter, N, I>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
             None => None,
             Some(window) => {
-                let inner_start = window[0];
-                let inner_end = window[1];
+                let inner_start = window[0].index();
+                let inner_end = window[1].index();
                 let indices = &self.indices[inner_start..inner_end];
 
                 let tmp = mem::replace(&mut self.data, &mut []);
@@ -212,16 +215,16 @@ for OuterIteratorMut<'iter, N> {
 /// Only the outer dimension iteration is reverted. If you wish to also
 /// revert the inner dimension, you should call rev() again when iterating
 /// the vector.
-impl <'iter, N: 'iter>
+impl <'iter, N: 'iter, I: 'iter + SpIndex>
 DoubleEndedIterator
-for OuterIterator<'iter, N> {
+for OuterIterator<'iter, N, I> {
     #[inline]
     fn next_back(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next_back() {
             None => None,
             Some(window) => {
-                let inner_start = window[0];
-                let inner_end = window[1];
+                let inner_start = window[0].index();
+                let inner_end = window[1].index();
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
@@ -235,14 +238,16 @@ for OuterIterator<'iter, N> {
     }
 }
 
-impl <'iter, N: 'iter> ExactSizeIterator for OuterIterator<'iter, N> {
+impl <'iter, N: 'iter, I: 'iter + SpIndex>
+ExactSizeIterator
+for OuterIterator<'iter, N, I> {
     fn len(&self) -> usize {
         self.indptr_iter.len()
     }
 }
 
 
-impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
+impl<'a, N:'a, I: 'a + SpIndex> CsMat<N, I, Vec<I>, &'a [I], &'a [N]> {
     /// Create a borrowed row or column CsMat matrix from raw data,
     /// without checking their validity
     ///
@@ -252,10 +257,10 @@ impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     /// perform unchecked slice access.
     pub unsafe fn new_vecview_raw(
         storage: CompressedStorage, nrows : usize, ncols: usize,
-        indptr : Vec<usize>, indices : *const usize, data : *const N
+        indptr : Vec<I>, indices : *const I, data : *const N
         )
-    -> CsMatVecView<'a, N> {
-        let nnz = indptr[1];
+    -> CsMatVecView_<'a, N, I> {
+        let nnz = indptr[1].index();
         CsMat {
             storage: storage,
             nrows : nrows,
@@ -267,14 +272,14 @@ impl<'a, N:'a> CsMat<N, Vec<usize>, &'a [usize], &'a [N]> {
     }
 }
 
-impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
+impl<'a, N:'a, I: 'a + SpIndex> CsMat<N, I, &'a [I], &'a [I], &'a [N]> {
     /// Create a borrowed CsMat matrix from sliced data,
     /// checking their validity
     pub fn new_view(
         storage: CompressedStorage, shape: Shape,
-        indptr : &'a[usize], indices : &'a[usize], data : &'a[N]
+        indptr : &'a[I], indices : &'a[I], data : &'a[N]
         )
-    -> Result<CsMatView<'a, N>, SprsError> {
+    -> Result<CsMatViewI<'a, N, I>, SprsError> {
         let m = CsMat {
             storage: storage,
             nrows : shape.0,
@@ -295,16 +300,16 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// perform unchecked slice access.
     pub unsafe fn new_view_raw(
         storage: CompressedStorage, shape: Shape,
-        indptr : *const usize, indices : *const usize, data : *const N
+        indptr : *const I, indices : *const I, data : *const N
         )
-    -> CsMatView<'a, N> {
+    -> CsMatViewI<'a, N, I> {
         let (nrows, ncols) = shape;
         let outer = match storage {
             CSR => nrows,
             CSC => ncols,
         };
         let indptr = slice::from_raw_parts(indptr, outer + 1);
-        let nnz = *indptr.get_unchecked(outer);
+        let nnz = (*indptr.get_unchecked(outer)).index();
         CsMat {
             storage: storage,
             nrows : nrows,
@@ -320,7 +325,7 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
     /// eg this gets the rows from i to i + count in a CSR matrix
     pub fn middle_outer_views(&self,
                               i: usize, count: usize
-                             ) -> CsMatView<'a, N> {
+                             ) -> CsMatViewI<'a, N, I> {
         if count == 0 {
             panic!("Empty view");
         }
@@ -340,10 +345,11 @@ impl<'a, N:'a> CsMat<N, &'a [usize], &'a [usize], &'a [N]> {
 
 }
 
-impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
+impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// Create an empty CsMat for building purposes
-    pub fn empty(storage: CompressedStorage, inner_size: usize
-                ) -> CsMatOwned<N> {
+    pub fn empty(storage: CompressedStorage,
+                 inner_size: usize
+                ) -> CsMatOwnedI<N, I> {
         let (nrows, ncols) = match storage {
             CSR => (0, inner_size),
             CSC => (inner_size, 0)
@@ -352,7 +358,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             storage: storage,
             nrows: nrows,
             ncols: ncols,
-            indptr: vec![0; 1],
+            indptr: vec![I::zero(); 1],
             indices: Vec::new(),
             data: Vec::new(),
         }
@@ -414,10 +420,10 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// - if `indices` contains values greater or equal to the number of
     ///   columns.
     pub fn new(shape: Shape,
-               indptr : Vec<usize>,
-               indices : Vec<usize>,
+               indptr : Vec<I>,
+               indices : Vec<I>,
                data : Vec<N>
-              ) -> CsMatOwned<N>
+              ) -> CsMatOwnedI<N, I>
     where N: Copy
     {
         CsMat::new_(CSR, shape, indptr, indices, data).unwrap()
@@ -443,10 +449,10 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     /// - if `indices` contains values greater or equal to the number of
     ///   columns.
     pub fn new_csc(shape: Shape,
-                   indptr : Vec<usize>,
-                   indices : Vec<usize>,
+                   indptr : Vec<I>,
+                   indices : Vec<I>,
                    data : Vec<N>
-                  ) -> CsMatOwned<N>
+                  ) -> CsMatOwnedI<N, I>
     where N: Copy
     {
         CsMat::new_(CSC, shape, indptr, indices, data).unwrap()
@@ -454,10 +460,10 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 
     fn new_(storage: CompressedStorage,
             shape: Shape,
-            indptr : Vec<usize>,
-            indices : Vec<usize>,
+            indptr : Vec<I>,
+            indices : Vec<I>,
             data : Vec<N>
-           ) -> Result<CsMatOwned<N>, SprsError>
+           ) -> Result<CsMatOwnedI<N, I>, SprsError>
     where N: Copy
     {
         let mut m = CsMat {
@@ -477,8 +483,8 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
     {
         let mut buf = Vec::new();
         for start_stop in self.indptr.windows(2) {
-            let start = start_stop[0];
-            let stop = start_stop[1];
+            let start = start_stop[0].index();
+            let stop = start_stop[1].index();
             let indices = &mut self.indices[start..stop];
             let data = &mut self.data[start..stop];
             let len = stop - start;
@@ -494,7 +500,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
         let mut nnz = self.nnz();
         for (inner_ind, val) in data.iter().enumerate() {
             if *val != N::zero() {
-                self.indices.push(inner_ind);
+                self.indices.push(I::from_usize(inner_ind));
                 self.data.push(val.clone());
                 nnz += 1;
             }
@@ -503,12 +509,12 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             CSR => self.nrows += 1,
             CSC => self.ncols += 1
         }
-        self.indptr.push(nnz);
+        self.indptr.push(I::from_usize(nnz));
         self
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[usize],&[N]>) -> Self
+    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[I],&[N]>) -> Self
     where N: Clone
     {
         assert_eq!(self.inner_dims(), vec.dim());
@@ -520,7 +526,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
             CSR => self.nrows += 1,
             CSC => self.ncols += 1
         }
-        let nnz = self.indptr.last().unwrap() + vec.nnz();
+        let nnz = *self.indptr.last().unwrap() + I::from_usize(vec.nnz());
         self.indptr.push(nnz);
         self
     }
@@ -547,6 +553,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
                           val: N,
                          ) {
         let outer_dims = self.outer_dims();
+        let inner_ind_idx = I::from_usize(inner_ind);
         if outer_ind >= outer_dims {
             // we need to add a new outer dimension
             let last_nnz = *self.indptr.last().unwrap(); // indptr never empty
@@ -555,27 +562,28 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
                 self.indptr.push(last_nnz);
             }
             self.set_outer_dims(outer_ind + 1);
-            self.indptr.push(last_nnz + 1);
-            self.indices.push(inner_ind);
+            self.indptr.push(last_nnz + I::one());
+            self.indices.push(inner_ind_idx);
             self.data.push(val);
         }
         else {
             // we need to search for an insertion spot
-            let start = self.indptr[outer_ind];
-            let stop = self.indptr[outer_ind + 1];
-            let location = self.indices[start..stop].binary_search(&inner_ind);
+            let start = self.indptr[outer_ind].index();
+            let stop = self.indptr[outer_ind + 1].index();
+            let location = self.indices[start..stop]
+                         .binary_search(&inner_ind_idx);
             match location {
                 Ok(ind) => {
-                    let ind = start + ind;
+                    let ind = start + ind.index();
                     self.data[ind] = val;
                     return;
                 }
                 Err(ind) => {
-                    let ind = start + ind;
-                    self.indices.insert(ind, inner_ind);
+                    let ind = start + ind.index();
+                    self.indices.insert(ind, inner_ind_idx);
                     self.data.insert(ind, val);
                     for k in (outer_ind + 1)..(outer_dims + 1) {
-                        self.indptr[k] += 1;
+                        self.indptr[k] += I::one();
                     }
                 }
             }
@@ -602,7 +610,7 @@ impl<N> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 
 }
 
-impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
+impl<N: Num> CsMat<N, usize, Vec<usize>, Vec<usize>, Vec<N>> {
     /// Identity matrix, stored as a CSR matrix.
     ///
     /// ```rust
@@ -659,10 +667,11 @@ impl<N: Num> CsMat<N, Vec<usize>, Vec<usize>, Vec<N>> {
 
 }
 
-impl<N, IptrStorage, IndStorage, DataStorage>
-CsMat<N, IptrStorage, IndStorage, DataStorage>
-where IptrStorage: Deref<Target=[usize]>,
-      IndStorage: Deref<Target=[usize]>,
+impl<N, I, IptrStorage, IndStorage, DataStorage>
+CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+where I: SpIndex,
+      IptrStorage: Deref<Target=[I]>,
+      IndStorage: Deref<Target=[I]>,
       DataStorage: Deref<Target=[N]> {
 
     /// Return an outer iterator for the matrix
@@ -679,7 +688,7 @@ where IptrStorage: Deref<Target=[usize]>,
     ///     assert_eq!(val, 1.);
     /// }
     /// ```
-    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N> {
+    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N, I> {
         let inner_len = match self.storage {
             CSR => self.ncols,
             CSC => self.nrows
@@ -696,8 +705,8 @@ where IptrStorage: Deref<Target=[usize]>,
     /// for iterating over the inner dimension of P*A*P^T
     /// Unstable
     pub fn outer_iterator_perm<'a, 'perm: 'a>(
-        &'a self, perm: PermView<'perm>)
-    -> OuterIteratorPerm<'a, 'perm, N> {
+        &'a self, perm: PermViewI<'perm, I>)
+    -> OuterIteratorPerm<'a, 'perm, N, I> {
         let (inner_len, oriented_perm) = match self.storage {
             CSR => (self.ncols, perm.reborrow()),
             CSC => (self.nrows, perm.reborrow_inv())
@@ -738,7 +747,7 @@ where IptrStorage: Deref<Target=[usize]>,
     /// This is often relevant for the complexity of most sparse matrix
     /// algorithms, which are often linear in the number of non-zeros.
     pub fn nnz(&self) -> usize {
-        *self.indptr.last().unwrap()
+        self.indptr.last().unwrap().index()
     }
 
     /// Number of outer dimensions, that ie equal to self.rows() for a CSR
@@ -771,12 +780,12 @@ where IptrStorage: Deref<Target=[usize]>,
     }
 
     /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
-    pub fn outer_view(&self, i: usize) -> Option<CsVecView<N>> {
+    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
         if i >= self.outer_dims() {
             return None;
         }
-        let start = self.indptr[i];
-        let stop = self.indptr[i+1];
+        let start = self.indptr[i].index();
+        let stop = self.indptr[i+1].index();
         // CsMat invariants imply CsVec invariants
         Some(CsVec {
             dim: self.inner_dims(),
@@ -787,8 +796,8 @@ where IptrStorage: Deref<Target=[usize]>,
 
     /// Iteration on outer blocks of size block_size
     pub fn outer_block_iter(&self, block_size: usize
-                           ) -> ChunkOuterBlocks<N> {
-        let m = CsMatView {
+                           ) -> ChunkOuterBlocks<N, I> {
+        let m = CsMat {
             storage: self.storage,
             nrows: self.rows(),
             ncols: self.cols(),
@@ -822,13 +831,13 @@ where IptrStorage: Deref<Target=[usize]>,
     /// assert_eq!(eye.indices()[loc], 3);
     /// assert_eq!(eye.data()[loc], 1.);
     /// ```
-    pub fn indptr(&self) -> &[usize] {
+    pub fn indptr(&self) -> &[I] {
         &self.indptr[..]
     }
 
     /// The inner dimension location for each non-zero value. See
     /// the documentation of indptr() for more explanations.
-    pub fn indices(&self) -> &[usize] {
+    pub fn indices(&self) -> &[I] {
         &self.indices[..]
     }
 
@@ -864,8 +873,8 @@ where IptrStorage: Deref<Target=[usize]>,
 
     /// Transposed view of this matrix
     /// No allocation required (this is simply a storage order change)
-    pub fn transpose_view(&self) -> CsMatView<N> {
-        CsMatView {
+    pub fn transpose_view(&self) -> CsMatViewI<N, I> {
+        CsMat {
             storage: self.storage.other_storage(),
             nrows: self.ncols,
             ncols: self.nrows,
@@ -877,10 +886,10 @@ where IptrStorage: Deref<Target=[usize]>,
 
     /// Get an owned version of this matrix. If the matrix was already
     /// owned, this will make a deep copy.
-    pub fn to_owned(&self) -> CsMatOwned<N>
+    pub fn to_owned(&self) -> CsMatOwnedI<N, I>
     where N: Clone
     {
-        CsMatOwned {
+        CsMat {
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
@@ -890,7 +899,7 @@ where IptrStorage: Deref<Target=[usize]>,
         }
     }
 
-    pub fn map<F>(&self, f: F) -> CsMatOwned<N>
+    pub fn map<F>(&self, f: F) -> CsMatOwnedI<N, I>
     where F: FnMut(&N) -> N,
           N: Clone
     {
@@ -938,7 +947,7 @@ where IptrStorage: Deref<Target=[usize]>,
         if outer_ind >= self.outer_dims() {
             return None;
         }
-        let offset = self.indptr[outer_ind];
+        let offset = self.indptr[outer_ind].index();
         self.outer_view(outer_ind)
             .and_then(|vec| vec.nnz_index(inner_ind))
             .map(|vec::NnzIndex(ind)| NnzIndex(ind + offset))
@@ -967,10 +976,10 @@ where IptrStorage: Deref<Target=[usize]>,
             panic!("Indices length and inpdtr's nnz do not match");
         }
         if let Some(&max_indptr) = self.indptr.iter().max() {
-            if max_indptr > nnz {
+            if max_indptr.index() > nnz {
                 panic!("An indptr value is out of bounds");
             }
-            if max_indptr > usize::max_value() / 2 {
+            if max_indptr.index() > usize::max_value() / 2 {
                 // We do not allow indptr values to be larger than half
                 // the maximum value of an usize, as that would clearly exhaust
                 // all available memory
@@ -983,7 +992,9 @@ where IptrStorage: Deref<Target=[usize]>,
             unreachable!();
         }
 
-        if ! self.indptr.deref().windows(2).all(|x| x[0] <= x[1]) {
+        if ! self.indptr.deref()
+                        .windows(2)
+                        .all(|x| x[0].index() <= x[1].index()) {
             return Err(SprsError::UnsortedIndptr);
         }
 
@@ -996,7 +1007,7 @@ where IptrStorage: Deref<Target=[usize]>,
     }
 
     /// Return a view into the current matrix
-    pub fn view(&self) -> CsMatView<N> {
+    pub fn view(&self) -> CsMatViewI<N, I> {
         CsMat {
             storage: self.storage,
             nrows: self.nrows,
@@ -1016,20 +1027,21 @@ where IptrStorage: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IptrStorage, IndStorage, DataStorage>
-CsMat<N, IptrStorage, IndStorage, DataStorage>
+impl<N, I, IptrStorage, IndStorage, DataStorage>
+CsMat<N, I, IptrStorage, IndStorage, DataStorage>
 where N: Default,
-      IptrStorage: Deref<Target=[usize]>,
-      IndStorage: Deref<Target=[usize]>,
+      I: SpIndex,
+      IptrStorage: Deref<Target=[I]>,
+      IndStorage: Deref<Target=[I]>,
       DataStorage: Deref<Target=[N]> {
 
     /// Create a matrix mathematically equal to this one, but with the
     /// opposed storage (a CSC matrix will be converted to CSR, and vice versa)
-    pub fn to_other_storage(&self) -> CsMatOwned<N>
+    pub fn to_other_storage(&self) -> CsMatOwnedI<N, I>
     where N: Clone
     {
-        let mut indptr = vec![0; self.inner_dims() + 1];
-        let mut indices = vec![0; self.nnz()];
+        let mut indptr = vec![I::zero(); self.inner_dims() + 1];
+        let mut indices = vec![I::zero(); self.nnz()];
         let mut data = vec![N::default(); self.nnz()];
         raw::convert_mat_storage(self.view(),
                                  &mut indptr, &mut indices, &mut data);
@@ -1045,7 +1057,7 @@ where N: Default,
 
     /// Create a new CSC matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSC.
-    pub fn to_csc(&self) -> CsMatOwned<N>
+    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
     where N: Clone
     {
         match self.storage {
@@ -1056,7 +1068,7 @@ where N: Default,
 
     /// Create a new CSR matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSR.
-    pub fn to_csr(&self) -> CsMatOwned<N>
+    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
     where N: Clone
     {
         match self.storage {
@@ -1067,11 +1079,12 @@ where N: Default,
 
 }
 
-impl<N, IptrStorage, IndStorage, DataStorage>
-CsMat<N, IptrStorage, IndStorage, DataStorage>
+impl<N, I, IptrStorage, IndStorage, DataStorage>
+CsMat<N, I, IptrStorage, IndStorage, DataStorage>
 where
-IptrStorage: Deref<Target=[usize]>,
-IndStorage: Deref<Target=[usize]>,
+I: SpIndex,
+IptrStorage: Deref<Target=[I]>,
+IndStorage: Deref<Target=[I]>,
 DataStorage: DerefMut<Target=[N]> {
 
     /// Mutable access to the non zero values
@@ -1092,12 +1105,12 @@ DataStorage: DerefMut<Target=[N]> {
 
     /// Get a mutable view into the i-th outer dimension
     /// (eg i-th row for a CSR matrix)
-    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMut<N>> {
+    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMut_<N, I>> {
         if i >= self.outer_dims() {
             return None;
         }
-        let start = self.indptr[i];
-        let stop = self.indptr[i+1];
+        let start = self.indptr[i].index();
+        let stop = self.indptr[i+1].index();
         // CsMat invariants imply CsVec invariants
         Some(CsVec {
             dim: self.inner_dims(),
@@ -1128,7 +1141,6 @@ DataStorage: DerefMut<Target=[N]> {
     /// in the corresponding outer slice. It is therefore advisable not to rely
     /// on this for algorithms, and prefer outer_iterator_mut() which accesses
     /// elements in storage order.
-    /// TODO: outer_iterator_mut is not yet implemented
     pub fn get_outer_inner_mut(&mut self,
                               outer_ind: usize,
                               inner_ind: usize
@@ -1171,7 +1183,7 @@ DataStorage: DerefMut<Target=[N]> {
     /// This iterator yields mutable sparse vector views for each outer
     /// dimension. Only the non-zero values can be modified, the
     /// structure is kept immutable.
-    pub fn outer_iterator_mut<'a>(&'a mut self) -> OuterIteratorMut<'a, N> {
+    pub fn outer_iterator_mut<'a>(&'a mut self) -> OuterIteratorMut<'a, N, I> {
         let inner_len = match self.storage {
             CSR => self.ncols,
             CSC => self.nrows
@@ -1186,13 +1198,14 @@ DataStorage: DerefMut<Target=[N]> {
 
 }
 
-impl<N, IptrStorage, IndStorage, DataStorage>
-CsMat<N, IptrStorage, IndStorage, DataStorage>
+impl<N, I, IptrStorage, IndStorage, DataStorage>
+CsMat<N, I, IptrStorage, IndStorage, DataStorage>
 where
-IptrStorage: DerefMut<Target=[usize]>,
-IndStorage: DerefMut<Target=[usize]>,
+I: SpIndex,
+IptrStorage: DerefMut<Target=[I]>,
+IndStorage: DerefMut<Target=[I]>,
 DataStorage: DerefMut<Target=[N]> {
-    /// Modify the matrix's structure without changing its nonzeros.
+    /// Modify the matrix's structure without changing its nonzero count.
     ///
     /// The coherence of the structure will be checked afterwards.
     ///
@@ -1226,7 +1239,7 @@ DataStorage: DerefMut<Target=[N]> {
     /// });
     /// ```
     pub fn modify<F>(&mut self, mut f: F)
-    where F: FnMut(&mut [usize], &mut [usize], &mut [N]) {
+    where F: FnMut(&mut [I], &mut [I], &mut [N]) {
         f(&mut self.indptr[..], &mut self.indices[..], &mut self.data[..]);
         self.check_compressed_structure().unwrap();
     }
@@ -1234,6 +1247,7 @@ DataStorage: DerefMut<Target=[N]> {
 
 pub mod raw {
     use sparse::prelude::*;
+    use indexing::SpIndex;
     use ::Shape;
     use std::mem::swap;
 
@@ -1251,14 +1265,15 @@ pub mod raw {
     ///
     /// Panics if the output slices don't match the input matrices'
     /// corresponding slices.
-    pub fn convert_storage<N: Clone>(in_storage: super::CompressedStorage,
-                                     shape: Shape,
-                                     in_indtpr: &[usize],
-                                     in_indices: &[usize],
-                                     in_data: &[N],
-                                     indptr: &mut [usize],
-                                     indices: &mut[usize],
-                                     data: &mut [N]) {
+    pub fn convert_storage<N, I>(in_storage: super::CompressedStorage,
+                                 shape: Shape,
+                                 in_indtpr: &[I],
+                                 in_indices: &[I],
+                                 in_data: &[N],
+                                 indptr: &mut [I],
+                                 indices: &mut[I],
+                                 data: &mut [N])
+    where N: Clone, I: SpIndex {
         // we're building a csmat even though the indices are not sorted,
         // but it's not a problem since we don't rely on this property.
         // FIXME: this would be better with an explicit unsorted matrix type
@@ -1285,61 +1300,62 @@ pub mod raw {
     ///
     /// Panics if the output slices don't match the input matrices'
     /// corresponding slices.
-    pub fn convert_mat_storage<N: Clone>(mat: CsMatView<N>,
-                                        indptr: &mut [usize],
-                                        indices: &mut[usize],
-                                        data: &mut [N]) {
+    pub fn convert_mat_storage<N: Clone, I: SpIndex>(mat: CsMatViewI<N, I>,
+                                                     indptr: &mut [I],
+                                                     indices: &mut[I],
+                                                     data: &mut [N]) {
         assert_eq!(indptr.len(), mat.inner_dims() + 1);
         assert_eq!(indices.len(), mat.indices().len());
         assert_eq!(data.len(), mat.data().len());
 
-        assert!(indptr.iter().all(|x| *x == 0));
+        assert!(indptr.iter().all(|x| *x == I::zero()));
 
         for vec in mat.outer_iterator() {
             for (inner_dim, _) in vec.iter() {
-                indptr[inner_dim] += 1;
+                indptr[inner_dim] += I::one();
             }
         }
 
-        let mut cumsum = 0;
+        let mut cumsum = I::zero();
         for iptr in indptr.iter_mut() {
             let tmp = *iptr;
             *iptr = cumsum;
             cumsum += tmp;
         }
         if let Some(last_iptr) = indptr.last() {
-            assert_eq!(*last_iptr, mat.nnz());
+            assert_eq!(last_iptr.index(), mat.nnz());
         }
 
         for (outer_dim, vec) in mat.outer_iterator().enumerate() {
             for (inner_dim, val) in vec.iter() {
-                let dest = indptr[inner_dim];
+                let dest = indptr[inner_dim].index();
                 data[dest] = val.clone();
-                indices[dest] = outer_dim;
-                indptr[inner_dim] += 1;
+                indices[dest] = I::from_usize(outer_dim);
+                indptr[inner_dim] += I::one();
             }
         }
 
-        let mut last = 0;
+        let mut last = I::zero();
         for iptr in indptr.iter_mut() {
             swap(iptr, &mut last);
         }
     }
 }
 
-impl<'a, 'b, N, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
-Add<&'b CsMat<N, IpS2, IS2, DS2>>
-for &'a CsMat<N, IpStorage, IStorage, DStorage>
+impl<'a, 'b, N, I, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
+Add<&'b CsMat<N, I, IpS2, IS2, DS2>>
+for &'a CsMat<N, I, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
-      IpStorage: 'a + Deref<Target=[usize]>,
-      IStorage: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IpStorage: 'a + Deref<Target=[I]>,
+      IStorage: 'a + Deref<Target=[I]>,
       DStorage: 'a + Deref<Target=[N]>,
-      IpS2: 'a + Deref<Target=[usize]>,
-      IS2: 'a + Deref<Target=[usize]>,
+      IpS2: 'a + Deref<Target=[I]>,
+      IS2: 'a + Deref<Target=[I]>,
       DS2: 'a + Deref<Target=[N]> {
-    type Output = CsMatOwned<N>;
+    type Output = CsMatOwnedI<N, I>;
 
-    fn add(self, rhs: &'b CsMat<N, IpS2, IS2, DS2>) -> CsMatOwned<N> {
+    fn add(self, rhs: &'b CsMat<N, I, IpS2, IS2, DS2>) -> CsMatOwnedI<N, I> {
         if self.storage() != rhs.view().storage() {
             return binop::add_mat_same_storage(
                 self, &rhs.view().to_other_storage())
@@ -1348,16 +1364,17 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, IpStorage, IStorage, DStorage, Mat> Sub<&'b Mat>
-for &'a CsMat<N, IpStorage, IStorage, DStorage>
+impl<'a, 'b, N, I, IpStorage, IStorage, DStorage, Mat> Sub<&'b Mat>
+for &'a CsMat<N, I, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
-      IpStorage: 'a + Deref<Target=[usize]>,
-      IStorage: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IpStorage: 'a + Deref<Target=[I]>,
+      IStorage: 'a + Deref<Target=[I]>,
       DStorage: 'a + Deref<Target=[N]>,
-      Mat: SpMatView<N> {
-    type Output = CsMatOwned<N>;
+      Mat: SpMatView<N, I> {
+    type Output = CsMatOwnedI<N, I>;
 
-    fn sub(self, rhs: &'b Mat) -> CsMatOwned<N> {
+    fn sub(self, rhs: &'b Mat) -> CsMatOwnedI<N, I> {
         if self.storage() != rhs.view().storage() {
             return binop::sub_mat_same_storage(
                 self, &rhs.view().to_other_storage())
@@ -1368,14 +1385,15 @@ where N: 'a + Copy + Num + Default,
 
 macro_rules! sparse_scalar_mul {
     ($scalar: ident) => (
-        impl<'a, IpStorage, IStorage, DStorage> Mul<$scalar>
-        for &'a CsMat<$scalar, IpStorage, IStorage, DStorage>
-        where IpStorage: 'a + Deref<Target=[usize]>,
-              IStorage: 'a + Deref<Target=[usize]>,
+        impl<'a, I, IpStorage, IStorage, DStorage> Mul<$scalar>
+        for &'a CsMat<$scalar, I, IpStorage, IStorage, DStorage>
+        where I: 'a + SpIndex,
+              IpStorage: 'a + Deref<Target=[I]>,
+              IStorage: 'a + Deref<Target=[I]>,
               DStorage: 'a + Deref<Target=[$scalar]> {
-            type Output = CsMatOwned<$scalar>;
+            type Output = CsMatOwnedI<$scalar, I>;
 
-            fn mul(self, rhs: $scalar) -> CsMatOwned<$scalar> {
+            fn mul(self, rhs: $scalar) -> CsMatOwnedI<$scalar, I> {
                 binop::scalar_mul_mat(self, rhs)
             }
         }
@@ -1391,19 +1409,20 @@ sparse_scalar_mul!(usize);
 sparse_scalar_mul!(f32);
 sparse_scalar_mul!(f64);
 
-impl<'a, 'b, N, IpS1, IS1, DS1, IpS2, IS2, DS2>
-Mul<&'b CsMat<N, IpS2, IS2, DS2>>
-for &'a CsMat<N, IpS1, IS1, DS1>
+impl<'a, 'b, N, I, IpS1, IS1, DS1, IpS2, IS2, DS2>
+Mul<&'b CsMat<N, I, IpS2, IS2, DS2>>
+for &'a CsMat<N, I, IpS1, IS1, DS1>
 where N: 'a + Copy + Num + Default,
-      IpS1: 'a + Deref<Target=[usize]>,
-      IS1: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IpS1: 'a + Deref<Target=[I]>,
+      IS1: 'a + Deref<Target=[I]>,
       DS1: 'a + Deref<Target=[N]>,
-      IpS2: 'b + Deref<Target=[usize]>,
-      IS2: 'b + Deref<Target=[usize]>,
+      IpS2: 'b + Deref<Target=[I]>,
+      IS2: 'b + Deref<Target=[I]>,
       DS2: 'b + Deref<Target=[N]> {
-    type Output = CsMatOwned<N>;
+    type Output = CsMatOwnedI<N, I>;
 
-    fn mul(self, rhs: &'b CsMat<N, IpS2, IS2, DS2>) -> CsMatOwned<N> {
+    fn mul(self, rhs: &'b CsMat<N, I, IpS2, IS2, DS2>) -> CsMatOwnedI<N, I> {
         match (self.storage(), rhs.storage()) {
             (CSR, CSR) => {
                 let mut workspace = prod::workspace_csr(self, rhs);
@@ -1428,12 +1447,13 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, IpS, IS, DS, DS2>
+impl<'a, 'b, N, I, IpS, IS, DS, DS2>
 Add<&'b ArrayBase<DS2, Ix2>>
-for &'a CsMat<N, IpS, IS, DS>
+for &'a CsMat<N, I, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
-      IpS: 'a + Deref<Target=[usize]>,
-      IS: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IpS: 'a + Deref<Target=[I]>,
+      IS: 'a + Deref<Target=[I]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
     type Output = Array<N, Ix2>;
@@ -1474,12 +1494,13 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, IpS, IS, DS, DS2>
+impl<'a, 'b, N, I, IpS, IS, DS, DS2>
 Mul<&'b ArrayBase<DS2, Ix2>>
-for &'a CsMat<N, IpS, IS, DS>
+for &'a CsMat<N, I, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
-      IpS: 'a + Deref<Target=[usize]>,
-      IS: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IpS: 'a + Deref<Target=[I]>,
+      IS: 'a + Deref<Target=[I]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
     type Output = Array<N, Ix2>;
@@ -1524,12 +1545,13 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, IpS, IS, DS, DS2>
+impl<'a, 'b, N, I, IpS, IS, DS, DS2>
 Mul<&'b ArrayBase<DS2, Ix1>>
-for &'a CsMat<N, IpS, IS, DS>
+for &'a CsMat<N, I, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
-      IpS: 'a + Deref<Target=[usize]>,
-      IS: 'a + Deref<Target=[usize]>,
+      I: 'a + SpIndex,
+      IpS: 'a + Deref<Target=[I]>,
+      IS: 'a + Deref<Target=[I]>,
       DS: 'a + Deref<Target=[N]>,
       DS2: 'b + ndarray::Data<Elem=N> {
     type Output = Array<N, Ix1>;
@@ -1560,9 +1582,10 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<N, IpS, IS, DS> Index<[usize; 2]> for CsMat<N, IpS, IS, DS>
-where IpS: Deref<Target=[usize]>,
-      IS: Deref<Target=[usize]>,
+impl<N, I, IpS, IS, DS> Index<[usize; 2]> for CsMat<N, I, IpS, IS, DS>
+where I: SpIndex,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
       DS: Deref<Target=[N]>
 {
     type Output = N;
@@ -1574,9 +1597,10 @@ where IpS: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IpS, IS, DS> IndexMut<[usize; 2]> for CsMat<N, IpS, IS, DS>
-where IpS: Deref<Target=[usize]>,
-      IS: Deref<Target=[usize]>,
+impl<N, I, IpS, IS, DS> IndexMut<[usize; 2]> for CsMat<N, I, IpS, IS, DS>
+where I: SpIndex,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
       DS: DerefMut<Target=[N]>
 {
     fn index_mut(&mut self, index: [usize; 2]) -> &mut N {
@@ -1587,9 +1611,10 @@ where IpS: Deref<Target=[usize]>,
 }
 
 
-impl<N, IpS, IS, DS> Index<NnzIndex> for CsMat<N, IpS, IS, DS>
-where IpS: Deref<Target=[usize]>,
-      IS: Deref<Target=[usize]>,
+impl<N, I, IpS, IS, DS> Index<NnzIndex> for CsMat<N, I, IpS, IS, DS>
+where I: SpIndex,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
       DS: Deref<Target=[N]>
 {
     type Output = N;
@@ -1600,9 +1625,10 @@ where IpS: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IpS, IS, DS> IndexMut<NnzIndex> for CsMat<N, IpS, IS, DS>
-where IpS: Deref<Target=[usize]>,
-      IS: Deref<Target=[usize]>,
+impl<N, I, IpS, IS, DS> IndexMut<NnzIndex> for CsMat<N, I, IpS, IS, DS>
+where I: SpIndex,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
       DS: DerefMut<Target=[N]>
 {
     fn index_mut(&mut self, index: NnzIndex) -> &mut N {
@@ -1613,14 +1639,14 @@ where IpS: Deref<Target=[usize]>,
 
 /// An iterator over non-overlapping blocks of a matrix,
 /// along the least-varying dimension
-pub struct ChunkOuterBlocks<'a, N: 'a> {
-    mat: CsMatView<'a, N>,
+pub struct ChunkOuterBlocks<'a, N: 'a, I: 'a + SpIndex> {
+    mat: CsMatViewI<'a, N, I>,
     dims_in_bloc: usize,
     bloc_count: usize,
 }
 
-impl<'a, N: 'a> Iterator for ChunkOuterBlocks<'a, N> {
-    type Item = CsMatView<'a, N>;
+impl<'a, N: 'a, I: 'a + SpIndex> Iterator for ChunkOuterBlocks<'a, N, I> {
+    type Item = CsMatViewI<'a, N, I>;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let cur_dim = self.dims_in_bloc * self.bloc_count;
         let end_dim = self.dims_in_bloc + cur_dim;

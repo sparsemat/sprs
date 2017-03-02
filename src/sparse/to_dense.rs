@@ -1,15 +1,17 @@
 ///! Utilities for sparse-to-dense conversion
 
 use ndarray::{ArrayViewMut, Axis};
-use ::CsMatView;
+use indexing::SpIndex;
+use super::CsMatViewI;
 use ::Ix2;
 
 /// Assign a sparse matrix into a dense matrix
 ///
 /// The dense matrix will not be zeroed prior to assignment,
 /// so existing values not corresponding to non-zeroes will be preserved.
-pub fn assign_to_dense<N>(mut array: ArrayViewMut<N, Ix2>, spmat: CsMatView<N>)
-where N: Clone
+pub fn assign_to_dense<N, I>(mut array: ArrayViewMut<N, Ix2>,
+                             spmat: CsMatViewI<N, I>)
+where N: Clone, I: SpIndex
 {
     if spmat.cols() != array.shape()[0] {
         panic!("Dimension mismatch");

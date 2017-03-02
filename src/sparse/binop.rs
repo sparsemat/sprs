@@ -1,5 +1,6 @@
 ///! Sparse matrix addition, subtraction
 
+use indexing::SpIndex;
 use sparse::csmat::CompressedStorage;
 use sparse::prelude::*;
 use num_traits::Num;
@@ -20,30 +21,49 @@ use ::Ix2;
 use ::SpRes;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
-pub fn add_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> CsMatOwned<N>
-where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
+pub fn add_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
+                                              rhs: &Mat2
+                                             ) -> CsMatOwnedI<N, I>
+where N: Num + Copy,
+      I: SpIndex,
+      Mat1: SpMatView<N, I>,
+      Mat2: SpMatView<N, I>
+{
     csmat_binop(lhs.view(), rhs.view(), |&x, &y| x + y)
 }
 
 /// Sparse matrix subtraction, with same storage type
-pub fn sub_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> CsMatOwned<N>
-where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
+pub fn sub_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
+                                              rhs: &Mat2
+                                             ) -> CsMatOwnedI<N, I>
+where N: Num + Copy,
+      I: SpIndex,
+      Mat1: SpMatView<N, I>,
+      Mat2: SpMatView<N, I>
+{
     csmat_binop(lhs.view(), rhs.view(), |&x, &y| x - y)
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
-pub fn mul_mat_same_storage<N, Mat1, Mat2>(
-    lhs: &Mat1, rhs: &Mat2) -> CsMatOwned<N>
-where N: Num + Copy, Mat1: SpMatView<N>, Mat2: SpMatView<N> {
+pub fn mul_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
+                                              rhs: &Mat2
+                                             ) -> CsMatOwnedI<N, I>
+where N: Num + Copy,
+      I: SpIndex,
+      Mat1: SpMatView<N, I>,
+      Mat2: SpMatView<N, I>
+{
     csmat_binop(lhs.view(), rhs.view(), |&x, &y| x * y)
 }
 
 /// Sparse matrix multiplication by a scalar
-pub fn scalar_mul_mat<N, Mat>(
-    mat: &Mat, val: N) -> CsMatOwned<N>
-where N: Num + Copy, Mat: SpMatView<N> {
+pub fn scalar_mul_mat<N, I, Mat>(mat: &Mat,
+                                 val: N
+                                ) -> CsMatOwnedI<N, I>
+where N: Num + Copy,
+      I: SpIndex,
+      Mat: SpMatView<N, I>
+{
     let mat = mat.view();
     mat.map(|&x| x * val)
 }
@@ -59,11 +79,12 @@ where N: Num + Copy, Mat: SpMatView<N> {
 ///
 /// - on incompatible dimensions
 /// - on incomatible storage
-pub fn csmat_binop<N, F>(lhs: CsMatView<N>,
-                         rhs: CsMatView<N>,
-                         binop: F
-                        ) -> CsMatOwned<N>
+pub fn csmat_binop<N, I, F>(lhs: CsMatViewI<N, I>,
+                            rhs: CsMatViewI<N, I>,
+                            binop: F
+                           ) -> CsMatOwnedI<N, I>
 where N: Num,
+      I: SpIndex,
       F: Fn(&N, &N) -> N
 {
     let nrows = lhs.rows();
@@ -77,8 +98,8 @@ where N: Num,
     }
 
     let max_nnz = lhs.nnz() + rhs.nnz();
-    let mut out_indptr = vec![0; lhs.outer_dims() + 1];
-    let mut out_indices = vec![0; max_nnz];
+    let mut out_indptr = vec![I::zero(); lhs.outer_dims() + 1];
+    let mut out_indices = vec![I::zero(); max_nnz];
 
     // Sadly the vec! macro requires Clone, but we don't want to force
     // Clone on our consumers, so we have to use this workaround.
@@ -109,14 +130,15 @@ where N: Num,
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
 /// Returns the nnz count
-pub fn csmat_binop_same_storage_raw<N, F>(lhs: CsMatView<N>,
-                                          rhs: CsMatView<N>,
-                                          binop: F,
-                                          out_indptr: &mut [usize],
-                                          out_indices: &mut [usize],
-                                          out_data: &mut [N]
-                                         ) -> usize
+pub fn csmat_binop_same_storage_raw<N, I, F>(lhs: CsMatViewI<N, I>,
+                                             rhs: CsMatViewI<N, I>,
+                                             binop: F,
+                                             out_indptr: &mut [I],
+                                             out_indices: &mut [I],
+                                             out_data: &mut [N]
+                                            ) -> usize
 where N: Num,
+      I: SpIndex,
       F: Fn(&N, &N) -> N
 {
     assert_eq!(lhs.cols(), rhs.cols());
@@ -127,7 +149,7 @@ where N: Num,
     assert!(out_data.len() >= max_nnz);
     assert!(out_indices.len() >= max_nnz);
     let mut nnz = 0;
-    out_indptr[0] = 0;
+    out_indptr[0] = I::zero();
     let iter = lhs.outer_iterator().zip(rhs.outer_iterator()).enumerate();
     for (dim, (lv, rv)) in iter {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
@@ -137,25 +159,26 @@ where N: Num,
                 Both((ind, lval, rval)) => (ind, binop(lval, rval)),
             };
             if binop_val != N::zero() {
-                out_indices[nnz] = ind;
+                out_indices[nnz] = I::from_usize(ind);
                 out_data[nnz] = binop_val;
                 nnz += 1;
             }
         }
-        out_indptr[dim+1] = nnz;
+        out_indptr[dim+1] = I::from_usize(nnz);
     }
     nnz
 }
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
-pub fn add_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
-                                              rhs: &ArrayBase<D, Ix2>,
-                                              alpha: N,
-                                              beta: N
-                                             ) -> Array<N, Ix2>
+pub fn add_dense_mat_same_ordering<N, I, Mat, D>(lhs: &Mat,
+                                                 rhs: &ArrayBase<D, Ix2>,
+                                                 alpha: N,
+                                                 beta: N
+                                                ) -> Array<N, Ix2>
 where N: Num + Copy,
-      Mat: SpMatView<N>,
+      I: SpIndex,
+      Mat: SpMatView<N, I>,
       D: ndarray::Data<Elem=N>
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
@@ -172,12 +195,13 @@ where N: Num + Copy,
 
 /// Compute coeff wise `alpha * lhs * rhs` with `lhs` a sparse matrix,
 /// `rhs` a dense matrix, and `alpha` a scalar
-pub fn mul_dense_mat_same_ordering<N, Mat, D>(lhs: &Mat,
-                                              rhs: &ArrayBase<D, Ix2>,
-                                              alpha: N
-                                             ) -> Array<N, Ix2>
+pub fn mul_dense_mat_same_ordering<N, I, Mat, D>(lhs: &Mat,
+                                                 rhs: &ArrayBase<D, Ix2>,
+                                                 alpha: N
+                                                ) -> Array<N, Ix2>
 where N: Num + Copy,
-      Mat: SpMatView<N>,
+      I: SpIndex,
+      Mat: SpMatView<N, I>,
       D: ndarray::Data<Elem=N>
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
@@ -195,11 +219,12 @@ where N: Num + Copy,
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
-pub fn csmat_binop_dense_raw<'a, N, F>(lhs: CsMatView<'a, N>,
-                                       rhs: ArrayView<'a, N, Ix2>,
-                                       binop: F,
-                                       mut out: ArrayViewMut<'a, N, Ix2>)
+pub fn csmat_binop_dense_raw<'a, N, I, F>(lhs: CsMatViewI<'a, N, I>,
+                                          rhs: ArrayView<'a, N, Ix2>,
+                                          binop: F,
+                                          mut out: ArrayViewMut<'a, N, Ix2>)
 where N: 'a + Num,
+      I: 'a + SpIndex,
       F: Fn(&N, &N) -> N
 {
     if         lhs.cols() != rhs.shape()[1] || lhs.cols() != out.shape()[1]
