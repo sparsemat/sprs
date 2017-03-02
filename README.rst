@@ -89,6 +89,11 @@ Documentation is available at docs.rs_.
 Changelog
 ---------
 
+- 0.6.0-alpha
+    - enable the selection of the integer type for storing indices in matrix
+      types.
+- 0.5.0
+    - adapt to breaking changes in ndarray 0.7
 - 0.4.1:
     - add ``insert()`` method to insert an element inside an owned csmat
     - add ``outer_iterator_mut()`` method to enable changing the non-zero
