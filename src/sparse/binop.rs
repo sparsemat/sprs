@@ -23,7 +23,7 @@ use ::SpRes;
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
                                               rhs: &Mat2
-                                             ) -> CsMatOwned_<N, I>
+                                             ) -> CsMatOwnedI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat1: SpMatView<N, I>,
@@ -35,7 +35,7 @@ where N: Num + Copy,
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
                                               rhs: &Mat2
-                                             ) -> CsMatOwned_<N, I>
+                                             ) -> CsMatOwnedI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat1: SpMatView<N, I>,
@@ -47,7 +47,7 @@ where N: Num + Copy,
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
                                               rhs: &Mat2
-                                             ) -> CsMatOwned_<N, I>
+                                             ) -> CsMatOwnedI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat1: SpMatView<N, I>,
@@ -59,7 +59,7 @@ where N: Num + Copy,
 /// Sparse matrix multiplication by a scalar
 pub fn scalar_mul_mat<N, I, Mat>(mat: &Mat,
                                  val: N
-                                ) -> CsMatOwned_<N, I>
+                                ) -> CsMatOwnedI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat: SpMatView<N, I>
@@ -79,10 +79,10 @@ where N: Num + Copy,
 ///
 /// - on incompatible dimensions
 /// - on incomatible storage
-pub fn csmat_binop<N, I, F>(lhs: CsMatView_<N, I>,
-                            rhs: CsMatView_<N, I>,
+pub fn csmat_binop<N, I, F>(lhs: CsMatViewI<N, I>,
+                            rhs: CsMatViewI<N, I>,
                             binop: F
-                           ) -> CsMatOwned_<N, I>
+                           ) -> CsMatOwnedI<N, I>
 where N: Num,
       I: SpIndex,
       F: Fn(&N, &N) -> N
@@ -130,8 +130,8 @@ where N: Num,
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
 /// Returns the nnz count
-pub fn csmat_binop_same_storage_raw<N, I, F>(lhs: CsMatView_<N, I>,
-                                             rhs: CsMatView_<N, I>,
+pub fn csmat_binop_same_storage_raw<N, I, F>(lhs: CsMatViewI<N, I>,
+                                             rhs: CsMatViewI<N, I>,
                                              binop: F,
                                              out_indptr: &mut [I],
                                              out_indices: &mut [I],
@@ -219,7 +219,7 @@ where N: Num + Copy,
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
-pub fn csmat_binop_dense_raw<'a, N, I, F>(lhs: CsMatView_<'a, N, I>,
+pub fn csmat_binop_dense_raw<'a, N, I, F>(lhs: CsMatViewI<'a, N, I>,
                                           rhs: ArrayView<'a, N, Ix2>,
                                           binop: F,
                                           mut out: ArrayViewMut<'a, N, Ix2>)

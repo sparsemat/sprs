@@ -67,7 +67,7 @@ where N: Num + Copy {
 pub fn csr_mul_csr<N, I, Mat1, Mat2>(lhs: &Mat1,
                                      rhs: &Mat2,
                                      workspace: &mut[N]
-                                    ) -> CsMatOwned_<N, I>
+                                    ) -> CsMatOwnedI<N, I>
 where
 N: Num + Copy,
 I: SpIndex,
@@ -89,7 +89,7 @@ Mat2: SpMatView<N, I>
 pub fn csc_mul_csc<N, I, Mat1, Mat2>(lhs: &Mat1,
                                      rhs: &Mat2,
                                      workspace: &mut[N]
-                                    ) -> CsMatOwned_<N, I>
+                                    ) -> CsMatOwnedI<N, I>
 where
 N: Num + Copy,
 I: SpIndex,
@@ -123,10 +123,10 @@ where N: Copy + Num,
 
 /// Actual implementation of CSR-CSR multiplication
 /// All other matrix products are implemented in terms of this one.
-pub fn csr_mul_csr_impl<N, I>(lhs: CsMatView_<N, I>,
-                              rhs: CsMatView_<N, I>,
+pub fn csr_mul_csr_impl<N, I>(lhs: CsMatViewI<N, I>,
+                              rhs: CsMatViewI<N, I>,
                               workspace: &mut[N]
-                             ) -> CsMatOwned_<N, I>
+                             ) -> CsMatOwnedI<N, I>
 where N: Num + Copy,
       I: SpIndex
 {
@@ -142,7 +142,7 @@ where N: Num + Copy,
         panic!("Storage mismatch");
     }
 
-    let mut res = CsMatOwned_::empty(lhs.storage(), res_cols);
+    let mut res = CsMatOwnedI::empty(lhs.storage(), res_cols);
     res.reserve_nnz_exact(lhs.nnz() + rhs.nnz());
     for lvec in lhs.outer_iterator() {
         // reset the accumulators
@@ -170,15 +170,15 @@ where N: Num + Copy,
 }
 
 /// CSR-vector multiplication
-pub fn csr_mul_csvec<N, I>(lhs: CsMatView_<N, I>,
-                           rhs: CsVecView_<N, I>) -> CsVecOwned_<N, I>
+pub fn csr_mul_csvec<N, I>(lhs: CsMatViewI<N, I>,
+                           rhs: CsVecViewI<N, I>) -> CsVecOwnedI<N, I>
 where N: Copy + Num,
       I: SpIndex,
 {
     if lhs.cols() != rhs.dim() {
         panic!("Dimension mismatch");
     }
-    let mut res = CsVecOwned_::empty(lhs.rows());
+    let mut res = CsVecOwnedI::empty(lhs.rows());
     for (row_ind, lvec) in lhs.outer_iterator().enumerate() {
         let val = lvec.dot(&rhs);
         if val != N::zero() {
@@ -191,7 +191,7 @@ where N: Copy + Num,
 /// CSR-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj.
-pub fn csr_mulacc_dense_rowmaj<'a, N, I>(lhs: CsMatView_<N, I>,
+pub fn csr_mulacc_dense_rowmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
                                         )
@@ -249,7 +249,7 @@ where N: 'a + Num + Copy,
 /// CSC-dense rowmaj multiplication
 ///
 /// Performs better if out is rowmaj
-pub fn csc_mulacc_dense_rowmaj<'a, N, I>(lhs: CsMatView_<N, I>,
+pub fn csc_mulacc_dense_rowmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
                                         )
@@ -286,7 +286,7 @@ where N: 'a + Num + Copy,
 /// CSC-dense colmaj multiplication
 ///
 /// Performs better if out is colmaj
-pub fn csc_mulacc_dense_colmaj<'a, N, I>(lhs: CsMatView_<N, I>,
+pub fn csc_mulacc_dense_colmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
                                         )
@@ -325,7 +325,7 @@ where N: 'a + Num + Copy,
 /// CSR-dense colmaj multiplication
 ///
 /// Performs better if out is colmaj
-pub fn csr_mulacc_dense_colmaj<'a, N, I>(lhs: CsMatView_<N, I>,
+pub fn csr_mulacc_dense_colmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
                                         )

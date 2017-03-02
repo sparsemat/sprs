@@ -2,7 +2,7 @@
 
 use ndarray::{ArrayViewMut, Axis};
 use indexing::SpIndex;
-use super::CsMatView_;
+use super::CsMatViewI;
 use ::Ix2;
 
 /// Assign a sparse matrix into a dense matrix
@@ -10,7 +10,7 @@ use ::Ix2;
 /// The dense matrix will not be zeroed prior to assignment,
 /// so existing values not corresponding to non-zeroes will be preserved.
 pub fn assign_to_dense<N, I>(mut array: ArrayViewMut<N, Ix2>,
-                             spmat: CsMatView_<N, I>)
+                             spmat: CsMatViewI<N, I>)
 where N: Clone, I: SpIndex
 {
     if spmat.cols() != array.shape()[0] {

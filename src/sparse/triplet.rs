@@ -9,7 +9,7 @@
 ///! entries. By convention, duplicate locations are summed up when converting
 ///! into CsMatOwned.
 
-use sparse::{csmat, CsMatOwned_};
+use sparse::{csmat, CsMatOwnedI};
 use num_traits::Num;
 use indexing::SpIndex;
 
@@ -183,14 +183,14 @@ impl<N, I: SpIndex> TripletMat<N, I> {
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatOwned_<N, I>
+    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
     where N: Clone + Num
     {
         self.borrowed().to_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatOwned_<N, I>
+    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
     where N: Clone + Num
     {
         self.borrowed().to_csr()
@@ -265,7 +265,7 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatOwned_<N, I>
+    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
     where N: Clone + Num
     {
         let mut row_counts = vec![I::zero(); self.rows() + 1];
@@ -346,7 +346,7 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
                                     &mut out_indptr,
                                     &mut out_indices,
                                     &mut out_data);
-        CsMatOwned_ {
+        CsMatOwnedI {
             storage: csmat::CompressedStorage::CSC,
             nrows: self.rows,
             ncols: self.cols,
@@ -357,7 +357,7 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatOwned_<N, I>
+    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
     where N: Clone + Num
     {
         let res = self.transpose_view().to_csc();
@@ -440,14 +440,14 @@ impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatOwned_<N, I>
+    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
     where N: Clone + Num
     {
         self.borrowed().to_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatOwned_<N, I>
+    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
     where N: Clone + Num
     {
         self.borrowed().to_csr()

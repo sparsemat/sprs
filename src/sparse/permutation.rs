@@ -16,10 +16,10 @@ where IndStorage: Deref<Target=[I]> {
 }
 
 pub type PermOwned = Permutation<usize, Vec<usize>>;
-pub type PermOwned_<I> = Permutation<I, Vec<I>>;
+pub type PermOwnedI<I> = Permutation<I, Vec<I>>;
 
 pub type PermView<'a> = Permutation<usize, &'a [usize]>;
-pub type PermView_<'a, I> = Permutation<I, &'a [I]>;
+pub type PermViewI<'a, I> = Permutation<I, &'a [I]>;
 
 use self::Permutation::*;
 
@@ -38,7 +38,7 @@ impl<I: SpIndex> Permutation<I, Vec<I>> {
 }
 
 impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
-    pub fn reborrow(&self) -> PermView_<'a, I> {
+    pub fn reborrow(&self) -> PermViewI<'a, I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -47,7 +47,7 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
         }
     }
 
-    pub fn reborrow_inv(&self) -> PermView_<'a, I> {
+    pub fn reborrow_inv(&self) -> PermViewI<'a, I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -64,7 +64,7 @@ where IndStorage: Deref<Target=[I]> {
         Identity
     }
 
-    pub fn inv(&self) -> PermView_<I> {
+    pub fn inv(&self) -> PermViewI<I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -74,7 +74,7 @@ where IndStorage: Deref<Target=[I]> {
     }
 
     // TODO: either the trait Deref or Borrow should be implemnted for this
-    pub fn view(&self) -> PermView_<I> {
+    pub fn view(&self) -> PermViewI<I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -83,7 +83,7 @@ where IndStorage: Deref<Target=[I]> {
         }
     }
 
-    pub fn owned_clone(&self) -> PermOwned_<I> {
+    pub fn owned_clone(&self) -> PermOwnedI<I> {
         match self {
             &Identity => Identity,
             &FinitePerm {

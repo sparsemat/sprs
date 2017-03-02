@@ -65,17 +65,17 @@ pub type Ix2 = ndarray::Ix2;
 pub use sparse::{
     CsMat,
     CsMatOwned,
-    CsMatOwned_,
+    CsMatOwnedI,
     CsMatView,
-    CsMatView_,
+    CsMatViewI,
     CsMatViewMut,
-    CsMatViewMut_,
+    CsMatViewMutI,
     CsMatVecView,
     CsVec,
     CsVecView,
-    CsVecView_,
+    CsVecViewI,
     CsVecOwned,
-    CsVecOwned_,
+    CsVecOwnedI,
 };
 
 
@@ -86,9 +86,9 @@ pub use sparse::symmetric::{
 pub use sparse::permutation::{
     Permutation,
     PermView,
-    PermView_,
+    PermViewI,
     PermOwned,
-    PermOwned_,
+    PermOwnedI,
 };
 
 pub use sparse::CompressedStorage::{

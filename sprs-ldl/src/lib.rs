@@ -62,10 +62,10 @@ use std::ops::IndexMut;
 use num_traits::Num;
 
 use sprs::{
-    CsMatView_,
+    CsMatViewI,
     is_symmetric,
     Permutation,
-    PermOwned_,
+    PermOwnedI,
 };
 use sprs::indexing::SpIndex;
 use sprs::linalg;
@@ -103,7 +103,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new<N>(mat: CsMatView_<N, I>) -> LdlSymbolic<I>
+    pub fn new<N>(mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
     {
         let perm: Permutation<I, Vec<I>> = Permutation::identity();
@@ -119,8 +119,8 @@ impl<I: SpIndex> LdlSymbolic<I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm<N>(mat: CsMatView_<N, I>,
-                       perm: PermOwned_<I>
+    pub fn new_perm<N>(mat: CsMatViewI<N, I>,
+                       perm: PermOwnedI<I>
                       ) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
           I: SpIndex,
@@ -162,7 +162,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
     }
 
     /// Compute the numerical decomposition of the given matrix.
-    pub fn factor<N>(self, mat: CsMatView_<N, I>) -> LdlNumeric<N, I>
+    pub fn factor<N>(self, mat: CsMatViewI<N, I>) -> LdlNumeric<N, I>
     where N: Copy + Num + PartialOrd,
     {
         let n = self.problem_size();
@@ -191,7 +191,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new(mat: CsMatView_<N, I>) -> Self
+    pub fn new(mat: CsMatViewI<N, I>) -> Self
     where N: Copy + Num + PartialOrd,
     {
         let symbolic = LdlSymbolic::new(mat.view());
@@ -207,7 +207,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm(mat: CsMatView_<N, I>, perm: PermOwned_<I>) -> Self
+    pub fn new_perm(mat: CsMatViewI<N, I>, perm: PermOwnedI<I>) -> Self
     where N: Copy + Num + PartialOrd,
     {
         let symbolic = LdlSymbolic::new_perm(mat.view(), perm);
@@ -217,7 +217,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// Update the decomposition with the given matrix. The matrix must
     /// have the same non-zero pattern as the original matrix, otherwise
     /// the result is unspecified.
-    pub fn update(&mut self, mat: CsMatView_<N, I>)
+    pub fn update(&mut self, mat: CsMatViewI<N, I>)
     where N: Copy + Num + PartialOrd,
     {
         ldl_numeric(mat.view(),
@@ -247,12 +247,12 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
         &pinv * &x
     }
 
-    fn l_view(&self) -> CsMatView_<N, I>
+    fn l_view(&self) -> CsMatViewI<N, I>
     {
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm
         unsafe {
-            CsMatView_::new_view_raw(sprs::CSC,
+            CsMatViewI::new_view_raw(sprs::CSC,
                                      (n, n),
                                      self.symbolic.colptr.as_ptr(),
                                      self.l_indices.as_ptr(),
@@ -275,7 +275,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-pub fn ldl_symbolic<N, I, PStorage>(mat: CsMatView_<N, I>,
+pub fn ldl_symbolic<N, I, PStorage>(mat: CsMatViewI<N, I>,
                                     perm: &Permutation<I, PStorage>,
                                     l_colptr: &mut [I],
                                     mut parents: linalg::etree::ParentsViewMut,
@@ -332,7 +332,7 @@ where N: Clone + Copy + PartialEq,
 /// Perform numeric LDLT decomposition
 ///
 /// pattern_workspace is a DStack of capacity n
-pub fn ldl_numeric<N, I, PStorage>(mat: CsMatView_<N, I>,
+pub fn ldl_numeric<N, I, PStorage>(mat: CsMatViewI<N, I>,
                                    l_colptr: &[I],
                                    parents: linalg::etree::ParentsView,
                                    perm: &Permutation<I, PStorage>,
@@ -404,7 +404,7 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
 
 /// Triangular solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_lsolve<N, I, V: ?Sized>(l: &CsMatView_<N, I>, x: &mut V)
+pub fn ldl_lsolve<N, I, V: ?Sized>(l: &CsMatViewI<N, I>, x: &mut V)
 where N: Clone + Copy + Num,
       I: SpIndex,
       V: IndexMut<usize, Output = N>
@@ -419,7 +419,7 @@ where N: Clone + Copy + Num,
 
 /// Triangular transposed solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
-pub fn ldl_ltsolve<N, I, V: ?Sized>(l: &CsMatView_<N, I>, x: &mut V)
+pub fn ldl_ltsolve<N, I, V: ?Sized>(l: &CsMatViewI<N, I>, x: &mut V)
 where N: Clone + Copy + Num,
       I: SpIndex,
       V: IndexMut<usize, Output = N>

@@ -18,14 +18,14 @@ where I: SpIndex,
     data : DataStorage
 }
 
-pub type CsMatOwned_<N, I> = CsMat<N, I, Vec<I>, Vec<I>, Vec<N>>;
-pub type CsMatView_<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a [N]>;
-pub type CsMatViewMut_<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a mut [N]>;
+pub type CsMatOwnedI<N, I> = CsMat<N, I, Vec<I>, Vec<I>, Vec<N>>;
+pub type CsMatViewI<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a [N]>;
+pub type CsMatViewMutI<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a mut [N]>;
 pub type CsMatVecView_<'a, N, I> = CsMat<N, I, Vec<I>, &'a [I], &'a [N]>;
 
-pub type CsMatOwned<N> = CsMatOwned_<N, usize>;
-pub type CsMatView<'a, N> = CsMatView_<'a, N, usize>;
-pub type CsMatViewMut<'a, N> = CsMatViewMut_<'a, N, usize>;
+pub type CsMatOwned<N> = CsMatOwnedI<N, usize>;
+pub type CsMatView<'a, N> = CsMatViewI<'a, N, usize>;
+pub type CsMatViewMut<'a, N> = CsMatViewMutI<'a, N, usize>;
 // FIXME: a fixed size array would be better, but no Deref impl
 pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 
@@ -39,31 +39,31 @@ where DStorage: Deref<Target=[N]> {
     data : DStorage
 }
 
-pub type CsVecView_<'a, N, I> = CsVec<N, &'a [I], &'a [N]>;
+pub type CsVecViewI<'a, N, I> = CsVec<N, &'a [I], &'a [N]>;
 pub type CsVecViewMut_<'a, N, I> = CsVec<N, &'a [I], &'a mut [N]>;
-pub type CsVecOwned_<N, I> = CsVec<N, Vec<I>, Vec<N>>;
+pub type CsVecOwnedI<N, I> = CsVec<N, Vec<I>, Vec<N>>;
 
-pub type CsVecView<'a, N> = CsVecView_<'a, N, usize>;
+pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
 pub type CsVecViewMut<'a, N> = CsVecViewMut_<'a, N, usize>;
-pub type CsVecOwned<N> = CsVecOwned_<N, usize>;
+pub type CsVecOwned<N> = CsVecOwnedI<N, usize>;
 
 mod prelude {
     pub use super::{
         CsMat,
-        CsMatView_,
+        CsMatViewI,
         CsMatView,
-        CsMatViewMut_,
+        CsMatViewMutI,
         CsMatViewMut,
-        CsMatOwned_,
+        CsMatOwnedI,
         CsMatOwned,
         CsMatVecView_,
         CsMatVecView,
         CsVec,
-        CsVecView_,
+        CsVecViewI,
         CsVecView,
         CsVecViewMut_,
         CsVecViewMut,
-        CsVecOwned_,
+        CsVecOwnedI,
         CsVecOwned,
     };
 }

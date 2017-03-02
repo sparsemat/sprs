@@ -30,7 +30,7 @@ use ::{Ix1};
 use num_traits::Num;
 
 use indexing::SpIndex;
-use sparse::permutation::PermView_;
+use sparse::permutation::PermViewI;
 use sparse::{prod, binop};
 use sparse::utils;
 use sparse::prelude::*;
@@ -71,7 +71,7 @@ pub struct VectorIterator<'a, N: 'a, I: 'a> {
 
 pub struct VectorIteratorPerm<'a, N: 'a, I: 'a> {
     ind_data: Zip<Iter<'a, I>, Iter<'a, N>>,
-    perm: PermView_<'a, I>,
+    perm: PermViewI<'a, I>,
 }
 
 /// An iterator over the mutable non-zero elements of a sparse vector
@@ -214,7 +214,7 @@ pub trait IntoSparseVecIter<N> {
     fn dim(&self) -> usize;
 }
 
-impl<'a, N: 'a, I: 'a> IntoSparseVecIter<&'a N> for CsVecView_<'a, N, I>
+impl<'a, N: 'a, I: 'a> IntoSparseVecIter<&'a N> for CsVecViewI<'a, N, I>
 where I: SpIndex,
 {
     type IterType = VectorIterator<'a, N, I>;
@@ -359,7 +359,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
     }
 }
 
-impl<'a, N: 'a, I: 'a + SpIndex> CsVecView_<'a, N, I> {
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
 
     /// Create a borrowed CsVec over slice data.
     pub fn new_view(
@@ -419,7 +419,7 @@ impl<N, I: SpIndex> CsVec<N, Vec<I>, Vec<N>> {
     pub fn new(n: usize,
                mut indices: Vec<I>,
                mut data: Vec<N>
-              ) -> CsVecOwned_<N, I>
+              ) -> CsVecOwnedI<N, I>
     where N: Copy
     {
         let mut buf = Vec::with_capacity(indices.len());
@@ -435,7 +435,7 @@ impl<N, I: SpIndex> CsVec<N, Vec<I>, Vec<N>> {
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
-    pub fn empty(dim: usize) -> CsVecOwned_<N, I> {
+    pub fn empty(dim: usize) -> CsVecOwnedI<N, I> {
         CsVec {
             dim: dim,
             indices: Vec::new(),
@@ -490,7 +490,7 @@ where I: SpIndex,
       DStorage: Deref<Target=[N]> {
 
     /// Get a view of this vector.
-    pub fn view(&self) -> CsVecView_<N, I> {
+    pub fn view(&self) -> CsVecViewI<N, I> {
         CsVec {
             dim: self.dim,
             indices: &self.indices[..],
@@ -526,7 +526,7 @@ where I: SpIndex,
     /// Permuted iteration. Not finished
     #[doc(hidden)]
     pub fn iter_perm<'a, 'perm: 'a>(&'a self,
-                                    perm: PermView_<'perm, I>)
+                                    perm: PermViewI<'perm, I>)
     -> VectorIteratorPerm<'a, N, I>
     where N: 'a
     {
@@ -573,7 +573,7 @@ where I: SpIndex,
     }
 
     /// Allocate a new vector equal to this one.
-    pub fn to_owned(&self) -> CsVecOwned_<N, I>
+    pub fn to_owned(&self) -> CsVecOwnedI<N, I>
     where N: Clone
     {
         CsVec {
@@ -679,7 +679,7 @@ where I: SpIndex,
 
     /// Apply a function to each non-zero element, yielding a new matrix
     /// with the same sparsity structure.
-    pub fn map<F>(&self, f: F) -> CsVecOwned_<N, I>
+    pub fn map<F>(&self, f: F) -> CsVecOwnedI<N, I>
     where F: FnMut(&N) -> N,
           N: Clone
     {
@@ -770,9 +770,9 @@ where N: 'a + Copy + Num + Default,
       IS2: 'b + Deref<Target=[I]>,
       DS2: 'b + Deref<Target=[N]> {
 
-    type Output = CsVecOwned_<N, I>;
+    type Output = CsVecOwnedI<N, I>;
 
-    fn mul(self, rhs: &CsMat<N, I, IpS2, IS2, DS2>) -> CsVecOwned_<N, I> {
+    fn mul(self, rhs: &CsMat<N, I, IpS2, IS2, DS2>) -> CsVecOwnedI<N, I> {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
@@ -788,9 +788,9 @@ where N: Copy + Num + Default,
       IS2: Deref<Target=[I]>,
       DS2: Deref<Target=[N]> {
 
-    type Output = CsVecOwned_<N, I>;
+    type Output = CsVecOwnedI<N, I>;
 
-    fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwned_<N, I> {
+    fn mul(self, rhs: &CsVec<N, IS2, DS2>) -> CsVecOwnedI<N, I> {
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         }
