@@ -65,7 +65,7 @@ use sprs::{
     CsMatView_,
     is_symmetric,
     Permutation,
-    PermOwned,
+    PermOwned_,
 };
 use sprs::indexing::SpIndex;
 use sprs::linalg;
@@ -83,7 +83,7 @@ pub struct LdlSymbolic<I> {
     parents: linalg::etree::ParentsOwned,
     nz: Vec<I>,
     flag_workspace: Vec<I>,
-    perm: Permutation<Vec<usize>>,
+    perm: Permutation<I, Vec<I>>,
 }
 
 /// Structure to hold a numeric LDLT decomposition
@@ -106,7 +106,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
     pub fn new<N>(mat: CsMatView_<N, I>) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
     {
-        let perm: Permutation<Vec<usize>> = Permutation::identity();
+        let perm: Permutation<I, Vec<I>> = Permutation::identity();
         LdlSymbolic::new_perm(mat, perm)
     }
 
@@ -119,7 +119,9 @@ impl<I: SpIndex> LdlSymbolic<I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm<N>(mat: CsMatView_<N, I>, perm: PermOwned) -> LdlSymbolic<I>
+    pub fn new_perm<N>(mat: CsMatView_<N, I>,
+                       perm: PermOwned_<I>
+                      ) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
           I: SpIndex,
     {
@@ -205,7 +207,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm(mat: CsMatView_<N, I>, perm: PermOwned) -> Self
+    pub fn new_perm(mat: CsMatView_<N, I>, perm: PermOwned_<I>) -> Self
     where N: Copy + Num + PartialOrd,
     {
         let symbolic = LdlSymbolic::new_perm(mat.view(), perm);
@@ -274,7 +276,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
 pub fn ldl_symbolic<N, I, PStorage>(mat: CsMatView_<N, I>,
-                                    perm: &Permutation<PStorage>,
+                                    perm: &Permutation<I, PStorage>,
                                     l_colptr: &mut [I],
                                     mut parents: linalg::etree::ParentsViewMut,
                                     l_nz: &mut [I],
@@ -282,7 +284,7 @@ pub fn ldl_symbolic<N, I, PStorage>(mat: CsMatView_<N, I>,
                                     check_symmetry: SymmetryCheck)
 where N: Clone + Copy + PartialEq,
       I: SpIndex,
-      PStorage: Deref<Target = [usize]>
+      PStorage: Deref<Target = [I]>
 {
 
     match check_symmetry {
@@ -333,7 +335,7 @@ where N: Clone + Copy + PartialEq,
 pub fn ldl_numeric<N, I, PStorage>(mat: CsMatView_<N, I>,
                                    l_colptr: &[I],
                                    parents: linalg::etree::ParentsView,
-                                   perm: &Permutation<PStorage>,
+                                   perm: &Permutation<I, PStorage>,
                                    l_nz: &mut [I],
                                    l_indices: &mut [I],
                                    l_data: &mut [N],
@@ -343,7 +345,7 @@ pub fn ldl_numeric<N, I, PStorage>(mat: CsMatView_<N, I>,
                                    flag_workspace: &mut [I])
 where N: Clone + Copy + PartialEq + Num + PartialOrd,
       I: SpIndex,
-      PStorage: Deref<Target = [usize]>
+      PStorage: Deref<Target = [I]>
 {
     let outer_it = mat.outer_iterator_perm(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
@@ -532,7 +534,7 @@ mod test {
         let mut parents = linalg::etree::ParentsOwned::new(10);
         let mut l_nz = [0; 10];
         let mut flag_workspace = [0; 10];
-        let perm: Permutation<&[usize]> = Permutation::identity();
+        let perm: Permutation<usize, &[usize]> = Permutation::identity();
         let mat = test_mat1();
         super::ldl_symbolic(mat.view(),
                             &perm,

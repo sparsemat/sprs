@@ -86,7 +86,9 @@ pub use sparse::symmetric::{
 pub use sparse::permutation::{
     Permutation,
     PermView,
+    PermView_,
     PermOwned,
+    PermOwned_,
 };
 
 pub use sparse::CompressedStorage::{

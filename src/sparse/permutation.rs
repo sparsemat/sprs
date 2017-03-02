@@ -3,10 +3,11 @@
 /// Both the permutation matrices and its inverse are stored
 
 use std::ops::{Deref, Mul};
+use indexing::SpIndex;
 
 #[derive(Debug, Clone)]
-pub enum Permutation<IndStorage>
-where IndStorage: Deref<Target=[usize]> {
+pub enum Permutation<I, IndStorage>
+where IndStorage: Deref<Target=[I]> {
     Identity,
     FinitePerm {
         perm: IndStorage,
@@ -14,17 +15,20 @@ where IndStorage: Deref<Target=[usize]> {
     }
 }
 
-pub type PermOwned = Permutation<Vec<usize>>;
-pub type PermView<'a> = Permutation<&'a [usize]>;
+pub type PermOwned = Permutation<usize, Vec<usize>>;
+pub type PermOwned_<I> = Permutation<I, Vec<I>>;
+
+pub type PermView<'a> = Permutation<usize, &'a [usize]>;
+pub type PermView_<'a, I> = Permutation<I, &'a [I]>;
 
 use self::Permutation::*;
 
-impl Permutation<Vec<usize>> {
+impl<I: SpIndex> Permutation<I, Vec<I>> {
 
-    pub fn new(perm: Vec<usize>) -> Permutation<Vec<usize>> {
+    pub fn new(perm: Vec<I>) -> Permutation<I, Vec<I>> {
         let mut perm_inv = perm.clone();
         for (ind, val) in perm.iter().enumerate() {
-            perm_inv[*val] = ind;
+            perm_inv[val.index()] = I::from_usize(ind);
         }
         FinitePerm {
             perm: perm,
@@ -33,8 +37,8 @@ impl Permutation<Vec<usize>> {
     }
 }
 
-impl<'a> Permutation<&'a [usize]> {
-    pub fn reborrow(&self) -> PermView<'a> {
+impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
+    pub fn reborrow(&self) -> PermView_<'a, I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -43,7 +47,7 @@ impl<'a> Permutation<&'a [usize]> {
         }
     }
 
-    pub fn reborrow_inv(&self) -> PermView<'a> {
+    pub fn reborrow_inv(&self) -> PermView_<'a, I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -53,14 +57,14 @@ impl<'a> Permutation<&'a [usize]> {
     }
 }
 
-impl<IndStorage> Permutation<IndStorage>
-where IndStorage: Deref<Target=[usize]> {
+impl<I: SpIndex, IndStorage> Permutation<I, IndStorage>
+where IndStorage: Deref<Target=[I]> {
 
-    pub fn identity() -> Permutation<IndStorage> {
+    pub fn identity() -> Permutation<I, IndStorage> {
         Identity
     }
 
-    pub fn inv(&self) -> PermView {
+    pub fn inv(&self) -> PermView_<I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -70,7 +74,7 @@ where IndStorage: Deref<Target=[usize]> {
     }
 
     // TODO: either the trait Deref or Borrow should be implemnted for this
-    pub fn view(&self) -> PermView {
+    pub fn view(&self) -> PermView_<I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -79,7 +83,7 @@ where IndStorage: Deref<Target=[usize]> {
         }
     }
 
-    pub fn owned_clone(&self) -> PermOwned {
+    pub fn owned_clone(&self) -> PermOwned_<I> {
         match self {
             &Identity => Identity,
             &FinitePerm {
@@ -95,7 +99,7 @@ where IndStorage: Deref<Target=[usize]> {
         match self {
             &Identity => index,
             &FinitePerm {
-                perm: ref p, perm_inv: _ } => p[index]
+                perm: ref p, perm_inv: _ } => p[index].index()
         }
     }
 
@@ -103,14 +107,15 @@ where IndStorage: Deref<Target=[usize]> {
         match self {
             &Identity => index,
             &FinitePerm {
-                perm: _, perm_inv: ref p_ } => p_[index]
+                perm: _, perm_inv: ref p_ } => p_[index].index()
         }
     }
 }
 
-impl<'a, 'b, N, IndStorage> Mul<&'a [N]> for &'b Permutation<IndStorage>
-where IndStorage: 'b + Deref<Target=[usize]>,
-      N: 'a + Copy
+impl<'a, 'b, N, I, IndStorage> Mul<&'a [N]> for &'b Permutation<I, IndStorage>
+where IndStorage: 'b + Deref<Target=[I]>,
+      N: 'a + Copy,
+      I: SpIndex
 {
     type Output = Vec<N>;
     fn mul(self, rhs: &'a [N]) -> Vec<N> {
@@ -121,8 +126,8 @@ where IndStorage: 'b + Deref<Target=[usize]>,
                 perm: ref p,
                 perm_inv: _,
             } => {
-                for (&pi, r) in p.iter().zip(res.iter_mut()) {
-                    *r = rhs[pi];
+                for (pi, r) in p.iter().zip(res.iter_mut()) {
+                    *r = rhs[pi.index()];
                 }
                 res
             }

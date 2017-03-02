@@ -20,7 +20,7 @@ use ::{Ix1, Ix2, Shape};
 use indexing::SpIndex;
 
 use sparse::prelude::*;
-use sparse::permutation::PermView;
+use sparse::permutation::PermView_;
 use sparse::vec;
 use sparse::compressed::SpMatView;
 use sparse::binop;
@@ -88,13 +88,13 @@ pub struct OuterIterator<'iter, N: 'iter, I: 'iter> {
 
 /// Iterator on the matrix' outer dimension, permuted
 /// Implemented over an iterator on the indptr array
-pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter, I: 'iter> {
+pub struct OuterIteratorPerm<'iter, 'perm: 'iter, N: 'iter, I: 'perm> {
     inner_len: usize,
     outer_ind_iter: Range<usize>,
     indptr: &'iter [I],
     indices: &'iter [I],
     data: &'iter [N],
-    perm: PermView<'perm>,
+    perm: PermView_<'perm, I>,
 }
 
 /// Iterator on the matrix' outer dimension
@@ -705,7 +705,7 @@ where I: SpIndex,
     /// for iterating over the inner dimension of P*A*P^T
     /// Unstable
     pub fn outer_iterator_perm<'a, 'perm: 'a>(
-        &'a self, perm: PermView<'perm>)
+        &'a self, perm: PermView_<'perm, I>)
     -> OuterIteratorPerm<'a, 'perm, N, I> {
         let (inner_len, oriented_perm) = match self.storage {
             CSR => (self.ncols, perm.reborrow()),

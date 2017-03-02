@@ -30,7 +30,7 @@ use ::{Ix1};
 use num_traits::Num;
 
 use indexing::SpIndex;
-use sparse::permutation::PermView;
+use sparse::permutation::PermView_;
 use sparse::{prod, binop};
 use sparse::utils;
 use sparse::prelude::*;
@@ -71,7 +71,7 @@ pub struct VectorIterator<'a, N: 'a, I: 'a> {
 
 pub struct VectorIteratorPerm<'a, N: 'a, I: 'a> {
     ind_data: Zip<Iter<'a, I>, Iter<'a, N>>,
-    perm: PermView<'a>,
+    perm: PermView_<'a, I>,
 }
 
 /// An iterator over the mutable non-zero elements of a sparse vector
@@ -526,7 +526,7 @@ where I: SpIndex,
     /// Permuted iteration. Not finished
     #[doc(hidden)]
     pub fn iter_perm<'a, 'perm: 'a>(&'a self,
-                                    perm: PermView<'perm>)
+                                    perm: PermView_<'perm, I>)
     -> VectorIteratorPerm<'a, N, I>
     where N: 'a
     {
