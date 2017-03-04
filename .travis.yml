@@ -7,6 +7,7 @@ script:
     - cargo test --verbose
     - cd sprs-ldl; cargo build --verbose; cd ..
     - cd sprs-ldl; cargo test --verbose; cd ..
+    - cargo run --example heat
 
 notifications:
   email:
