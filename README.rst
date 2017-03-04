@@ -79,7 +79,7 @@ Matrix matrix multiplication, addition
 
 For a more comple example, be sure to check out the `heat diffusion`_ example.
 
-_`heat diffusion`: examples/heat.rs
+_`heat diffusion`: https://github.com/vbarrielle/sprs/blob/master/examples/heat.rs
 
 Documentation
 -------------
