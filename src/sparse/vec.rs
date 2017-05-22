@@ -273,13 +273,13 @@ impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a Vec<N> {
 impl<'a, N: 'a, S> IntoSparseVecIter<&'a N> for &'a ArrayBase<S, Ix1>
 where S: ndarray::Data<Elem=N>
 {
-    type IterType = Enumerate<ndarray::Iter<'a, N, Ix1>>;
+    type IterType = Enumerate<ndarray::iter::Iter<'a, N, Ix1>>;
 
     fn dim(&self) -> usize {
         self.shape()[0]
     }
 
-    fn into_sparse_vec_iter(self) -> Enumerate<ndarray::Iter<'a, N, Ix1>> {
+    fn into_sparse_vec_iter(self) -> Enumerate<ndarray::iter::Iter<'a, N, Ix1>> {
         self.iter().enumerate()
     }
 }
