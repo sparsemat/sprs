@@ -18,7 +18,7 @@ use indexing::SpIndex;
 pub struct TripletIndex(pub usize);
 
 /// Triplet matrix owning its data
-pub struct TripletMat<N, I> {
+pub struct TripletMatBase<N, I> {
     rows: usize,
     cols: usize,
     row_inds: Vec<I>,
@@ -26,10 +26,36 @@ pub struct TripletMat<N, I> {
     data: Vec<N>,
 }
 
-impl<N, I: SpIndex> TripletMat<N, I> {
+/// Triplet matrix view
+pub struct TripletMatViewBase<'a, N: 'a, I: 'a> {
+    rows: usize,
+    cols: usize,
+    row_inds: &'a [I],
+    col_inds: &'a [I],
+    data: &'a [N],
+}
+
+/// Triplet matrix mutable view
+pub struct TripletMatViewMutBase<'a, N: 'a, I: 'a> {
+    rows: usize,
+    cols: usize,
+    row_inds: &'a mut [I],
+    col_inds: &'a mut [I],
+    data: &'a mut [N],
+}
+
+pub type TripletMat<N> = TripletMatBase<N, usize>;
+pub type TripletMatView<'a, N> = TripletMatViewBase<'a, N, usize>;
+pub type TripletMatViewMut<'a, N> = TripletMatViewMutBase<'a, N, usize>;
+pub type TripletMatI<N, I> = TripletMatBase<N, I>;
+pub type TripletMatViewI<'a, N, I> = TripletMatViewBase<'a, N, I>;
+pub type TripletMatViewMutI<'a, N, I> = TripletMatViewMutBase<'a, N, I>;
+
+
+impl<N, I: SpIndex> TripletMatBase<N, I> {
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
-    pub fn new(shape: (usize, usize)) -> TripletMat<N, I> {
-        TripletMat {
+    pub fn new(shape: (usize, usize)) -> TripletMatBase<N, I> {
+        TripletMatBase {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::new(),
@@ -40,8 +66,8 @@ impl<N, I: SpIndex> TripletMat<N, I> {
 
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
     /// pre-allocate `cap` elements on the backing storage
-    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TripletMat<N, I> {
-        TripletMat {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TripletMatBase<N, I> {
+        TripletMatBase {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::with_capacity(cap),
@@ -61,7 +87,7 @@ impl<N, I: SpIndex> TripletMat<N, I> {
                          row_inds: Vec<I>,
                          col_inds: Vec<I>,
                          data: Vec<N>)
-                         -> TripletMat<N, I> {
+                         -> TripletMatBase<N, I> {
         assert!(row_inds.len() == col_inds.len(),
                 "all inputs should have the same length");
         assert!(data.len() == col_inds.len(),
@@ -72,7 +98,7 @@ impl<N, I: SpIndex> TripletMat<N, I> {
                 "row indices should be within shape");
         assert!(col_inds.iter().all(|&j| j.index() < shape.1),
                 "col indices should be within shape");
-        TripletMat {
+        TripletMatBase {
             rows: shape.0,
             cols: shape.1,
             row_inds: row_inds,
@@ -122,8 +148,8 @@ impl<N, I: SpIndex> TripletMat<N, I> {
     }
 
     /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletMatView<N, I> {
-        TripletMatView {
+    pub fn borrowed(&self) -> TripletMatViewBase<N, I> {
+        TripletMatViewBase {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -144,8 +170,8 @@ impl<N, I: SpIndex> TripletMat<N, I> {
     }
 
     /// Get a mutable view into this matrix.
-    pub fn borrowed_mut(&mut self) -> TripletMatViewMut<N, I> {
-        TripletMatViewMut {
+    pub fn borrowed_mut(&mut self) -> TripletMatViewMutBase<N, I> {
+        TripletMatViewMutBase {
             rows: self.rows,
             cols: self.cols,
             row_inds: &mut self.row_inds[..],
@@ -155,7 +181,7 @@ impl<N, I: SpIndex> TripletMat<N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatView<N, I> {
+    pub fn transpose_view(&self) -> TripletMatViewBase<N, I> {
         self.borrowed().transpose_view()
     }
 
@@ -197,16 +223,8 @@ impl<N, I: SpIndex> TripletMat<N, I> {
     }
 }
 
-/// Triplet matrix view
-pub struct TripletMatView<'a, N: 'a, I: 'a> {
-    rows: usize,
-    cols: usize,
-    row_inds: &'a [I],
-    col_inds: &'a [I],
-    data: &'a [N],
-}
 
-impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
+impl<'a, N, I: SpIndex> TripletMatViewBase<'a, N, I> {
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.rows
@@ -254,8 +272,8 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatView<'a, N, I> {
-        TripletMatView {
+    pub fn transpose_view(&self) -> TripletMatViewBase<'a, N, I> {
+        TripletMatViewBase {
             rows: self.cols,
             cols: self.rows,
             row_inds: self.col_inds,
@@ -366,16 +384,7 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
 }
 
 
-/// Triplet matrix mutable view
-pub struct TripletMatViewMut<'a, N: 'a, I: 'a> {
-    rows: usize,
-    cols: usize,
-    row_inds: &'a mut [I],
-    col_inds: &'a mut [I],
-    data: &'a mut [N],
-}
-
-impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
+impl<'a, N, I: SpIndex> TripletMatViewMutBase<'a, N, I> {
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.borrowed().rows()
@@ -412,8 +421,8 @@ impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
     }
 
     /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletMatView<N, I> {
-        TripletMatView {
+    pub fn borrowed(&self) -> TripletMatViewBase<N, I> {
+        TripletMatViewBase {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -423,7 +432,7 @@ impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatView<N, I> {
+    pub fn transpose_view(&self) -> TripletMatViewBase<N, I> {
         self.borrowed().transpose_view()
     }
 

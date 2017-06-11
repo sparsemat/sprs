@@ -125,6 +125,9 @@ pub use sparse::triplet::{
     TripletMat,
     TripletMatView,
     TripletMatViewMut,
+    TripletMatI,
+    TripletMatViewI,
+    TripletMatViewMutI,
 };
 
 pub use sparse::construct::{
