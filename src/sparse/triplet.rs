@@ -466,12 +466,12 @@ impl<'a, N, I: SpIndex> TripletMatViewMutBase<'a, N, I> {
 #[cfg(test)]
 mod test {
 
-    use super::TripletMat;
-    use sparse::CsMatOwned;
+    use super::{TripletMat, TripletMatI};
+    use sparse::{CsMatOwned, CsMatOwnedI};
 
     #[test]
     fn triplet_incremental() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TripletMatI::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -483,11 +483,11 @@ mod test {
         triplet_mat.add_triplet(3, 2, 5.);
         triplet_mat.add_triplet(3, 3, 6.);
 
-        let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.]);
+        let csc: CsMatOwnedI<_, i32> = triplet_mat.to_csc();
+        let expected = CsMatOwnedI::new_csc((4, 4),
+                                            vec![0, 2, 3, 4, 6],
+                                            vec![0, 1, 0, 3, 2, 3],
+                                            vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
