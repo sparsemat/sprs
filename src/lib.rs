@@ -122,12 +122,12 @@ pub mod vec {
 }
 
 pub use sparse::triplet::{
-    TripletMat,
-    TripletMatView,
-    TripletMatViewMut,
-    TripletMatI,
-    TripletMatViewI,
-    TripletMatViewMutI,
+    TriMat,
+    TriMatView,
+    TriMatViewMut,
+    TriMatI,
+    TriMatViewI,
+    TriMatViewMutI,
 };
 
 pub use sparse::construct::{

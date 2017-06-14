@@ -18,7 +18,7 @@ use indexing::SpIndex;
 pub struct TripletIndex(pub usize);
 
 /// Triplet matrix owning its data
-pub struct TripletMatBase<N, I> {
+pub struct TriMatBase<N, I> {
     rows: usize,
     cols: usize,
     row_inds: Vec<I>,
@@ -27,7 +27,7 @@ pub struct TripletMatBase<N, I> {
 }
 
 /// Triplet matrix view
-pub struct TripletMatViewBase<'a, N: 'a, I: 'a> {
+pub struct TriMatViewBase<'a, N: 'a, I: 'a> {
     rows: usize,
     cols: usize,
     row_inds: &'a [I],
@@ -36,7 +36,7 @@ pub struct TripletMatViewBase<'a, N: 'a, I: 'a> {
 }
 
 /// Triplet matrix mutable view
-pub struct TripletMatViewMutBase<'a, N: 'a, I: 'a> {
+pub struct TriMatViewMutBase<'a, N: 'a, I: 'a> {
     rows: usize,
     cols: usize,
     row_inds: &'a mut [I],
@@ -44,18 +44,18 @@ pub struct TripletMatViewMutBase<'a, N: 'a, I: 'a> {
     data: &'a mut [N],
 }
 
-pub type TripletMat<N> = TripletMatBase<N, usize>;
-pub type TripletMatView<'a, N> = TripletMatViewBase<'a, N, usize>;
-pub type TripletMatViewMut<'a, N> = TripletMatViewMutBase<'a, N, usize>;
-pub type TripletMatI<N, I> = TripletMatBase<N, I>;
-pub type TripletMatViewI<'a, N, I> = TripletMatViewBase<'a, N, I>;
-pub type TripletMatViewMutI<'a, N, I> = TripletMatViewMutBase<'a, N, I>;
+pub type TriMat<N> = TriMatBase<N, usize>;
+pub type TriMatView<'a, N> = TriMatViewBase<'a, N, usize>;
+pub type TriMatViewMut<'a, N> = TriMatViewMutBase<'a, N, usize>;
+pub type TriMatI<N, I> = TriMatBase<N, I>;
+pub type TriMatViewI<'a, N, I> = TriMatViewBase<'a, N, I>;
+pub type TriMatViewMutI<'a, N, I> = TriMatViewMutBase<'a, N, I>;
 
 
-impl<N, I: SpIndex> TripletMatBase<N, I> {
+impl<N, I: SpIndex> TriMatBase<N, I> {
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
-    pub fn new(shape: (usize, usize)) -> TripletMatBase<N, I> {
-        TripletMatBase {
+    pub fn new(shape: (usize, usize)) -> TriMatBase<N, I> {
+        TriMatBase {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::new(),
@@ -66,8 +66,8 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
 
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
     /// pre-allocate `cap` elements on the backing storage
-    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TripletMatBase<N, I> {
-        TripletMatBase {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TriMatBase<N, I> {
+        TriMatBase {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::with_capacity(cap),
@@ -87,7 +87,7 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
                          row_inds: Vec<I>,
                          col_inds: Vec<I>,
                          data: Vec<N>)
-                         -> TripletMatBase<N, I> {
+                         -> TriMatBase<N, I> {
         assert!(row_inds.len() == col_inds.len(),
                 "all inputs should have the same length");
         assert!(data.len() == col_inds.len(),
@@ -98,7 +98,7 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
                 "row indices should be within shape");
         assert!(col_inds.iter().all(|&j| j.index() < shape.1),
                 "col indices should be within shape");
-        TripletMatBase {
+        TriMatBase {
             rows: shape.0,
             cols: shape.1,
             row_inds: row_inds,
@@ -148,8 +148,8 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
     }
 
     /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletMatViewBase<N, I> {
-        TripletMatViewBase {
+    pub fn borrowed(&self) -> TriMatViewBase<N, I> {
+        TriMatViewBase {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -170,8 +170,8 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
     }
 
     /// Get a mutable view into this matrix.
-    pub fn borrowed_mut(&mut self) -> TripletMatViewMutBase<N, I> {
-        TripletMatViewMutBase {
+    pub fn borrowed_mut(&mut self) -> TriMatViewMutBase<N, I> {
+        TriMatViewMutBase {
             rows: self.rows,
             cols: self.cols,
             row_inds: &mut self.row_inds[..],
@@ -181,7 +181,7 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatViewBase<N, I> {
+    pub fn transpose_view(&self) -> TriMatViewBase<N, I> {
         self.borrowed().transpose_view()
     }
 
@@ -224,7 +224,7 @@ impl<N, I: SpIndex> TripletMatBase<N, I> {
 }
 
 
-impl<'a, N, I: SpIndex> TripletMatViewBase<'a, N, I> {
+impl<'a, N, I: SpIndex> TriMatViewBase<'a, N, I> {
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.rows
@@ -272,8 +272,8 @@ impl<'a, N, I: SpIndex> TripletMatViewBase<'a, N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatViewBase<'a, N, I> {
-        TripletMatViewBase {
+    pub fn transpose_view(&self) -> TriMatViewBase<'a, N, I> {
+        TriMatViewBase {
             rows: self.cols,
             cols: self.rows,
             row_inds: self.col_inds,
@@ -384,7 +384,7 @@ impl<'a, N, I: SpIndex> TripletMatViewBase<'a, N, I> {
 }
 
 
-impl<'a, N, I: SpIndex> TripletMatViewMutBase<'a, N, I> {
+impl<'a, N, I: SpIndex> TriMatViewMutBase<'a, N, I> {
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.borrowed().rows()
@@ -421,8 +421,8 @@ impl<'a, N, I: SpIndex> TripletMatViewMutBase<'a, N, I> {
     }
 
     /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletMatViewBase<N, I> {
-        TripletMatViewBase {
+    pub fn borrowed(&self) -> TriMatViewBase<N, I> {
+        TriMatViewBase {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -432,7 +432,7 @@ impl<'a, N, I: SpIndex> TripletMatViewMutBase<'a, N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatViewBase<N, I> {
+    pub fn transpose_view(&self) -> TriMatViewBase<N, I> {
         self.borrowed().transpose_view()
     }
 
@@ -466,12 +466,12 @@ impl<'a, N, I: SpIndex> TripletMatViewMutBase<'a, N, I> {
 #[cfg(test)]
 mod test {
 
-    use super::{TripletMat, TripletMatI};
+    use super::{TriMat, TriMatI};
     use sparse::{CsMatOwned, CsMatOwnedI};
 
     #[test]
     fn triplet_incremental() {
-        let mut triplet_mat = TripletMatI::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMatI::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -493,7 +493,7 @@ mod test {
 
     #[test]
     fn triplet_unordered() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -519,7 +519,7 @@ mod test {
 
     #[test]
     fn triplet_additions() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -554,7 +554,7 @@ mod test {
         let col_inds = vec![0, 1, 0, 3, 2, 3, 1, 3];
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
 
-        let triplet_mat = super::TripletMat::from_triplets((5, 4),
+        let triplet_mat = super::TriMat::from_triplets((5, 4),
                                                            row_inds,
                                                            col_inds,
                                                            data);
@@ -570,7 +570,7 @@ mod test {
 
     #[test]
     fn triplet_mutate_entry() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         triplet_mat.add_triplet(0, 0, 1.);
         triplet_mat.add_triplet(0, 1, 2.);
         triplet_mat.add_triplet(1, 0, 3.);
@@ -593,7 +593,7 @@ mod test {
 
     #[test]
     fn triplet_to_csr() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -626,7 +626,7 @@ mod test {
         // |1   9     4     2|
         // |1     5         2|
         // |1         7   8 2|
-        let mut triplet_mat = TripletMat::with_capacity((6, 9), 22);
+        let mut triplet_mat = TriMat::with_capacity((6, 9), 22);
 
         triplet_mat.add_triplet(5, 8, 1); // (a) push 1 later
         triplet_mat.add_triplet(0, 0, 1);
