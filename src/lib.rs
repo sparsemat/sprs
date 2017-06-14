@@ -1,43 +1,54 @@
 /*!
-# sprs
 
 sprs is a sparse linear algebra library for Rust.
 
-It features a sparse matrix type, CsMat, and a sparse vector type, CsVec,
-both based on the compressed storage scheme.
+It features a sparse matrix type, [**`CsMat`**](struct.CsMatBase.html), and a sparse vector type,
+[**`CsVec`**](struct.CsVecBase.html), both based on the
+[compressed storage scheme](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_.28CSR.2C_CRS_or_Yale_format.29).
 
-All matrix algebra operations are supported, and support for direct sparse
-solvers is planned.
+## Features
 
-## Examples
+- sparse matrix/sparse matrix addition, multiplication.
+- sparse vector/sparse vector addition, dot product.
+- sparse matrix/dense matrix addition, multiplication.
+- sparse triangular solves.
+- powerful iteration over the sparse structure, enabling easy extension of the library.
+- matrix construction using the [triplet format](struct.TriMatBase.html),
+  vertical and horizontal stacking, block construction.
+- sparse cholesky solver in the separate crate `sprs-ldl`.
+- fully generic integer type for the storage of indices, enabling compact
+  representations.
+- planned interoperability with existing sparse solvers such as SuiteSparse.
 
-Matrix construction
+## Quick Examples
+
+Matrix construction:
 
 ```rust
-use sprs::{CsMatBase, CsMat, CsVec};
-let eye : CsMat<f64> = CsMatBase::eye(3);
-let a = CsMatBase::new_csc((3, 3),
+use sprs::{CsMat, CsVec};
+let eye : CsMat<f64> = CsMat::eye(3);
+let a = CsMat::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);
 ```
 
-Matrix vector multiplication
+Matrix vector multiplication:
 
 ```rust
-use sprs::{CsMatBase, CsVec};
-let eye = CsMatBase::eye(5);
+use sprs::{CsMat, CsVec};
+let eye = CsMat::eye(5);
 let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
 let y = &eye * &x;
 assert_eq!(x, y);
 ```
 
-Matrix matrix multiplication, addition
+Matrix matrix multiplication, addition:
 
 ```rust
-use sprs::{CsMatBase, CsVec};
-let eye = CsMatBase::eye(3);
-let a = CsMatBase::new_csc((3, 3),
+use sprs::{CsMat, CsVec};
+let eye = CsMat::eye(3);
+let a = CsMat::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);

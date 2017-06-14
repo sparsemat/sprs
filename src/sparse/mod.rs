@@ -3,7 +3,65 @@ use indexing::SpIndex;
 
 pub use self::csmat::{CompressedStorage};
 
-/// Compressed matrix in the CSR or CSC format.
+/// Compressed matrix in the CSR or CSC format, with sorted indices.
+///
+/// This sparse matrix format is the preferred format for performing arithmetic
+/// operations. Constructing a sparse matrix directly in this format requires
+/// a deep knowledge of its internals. For easier matrix construction, the
+/// [triplet format](struct.TripletMatBase) is preferred.
+///
+/// The `CsMatBase` type is parameterized by the scalar type `N`, the indexing
+/// type `I`, the indexing storage backend types `IptrStorage` and `IndStorage`,
+/// and the value storage backend type `DataStorage`. Convenient aliases are
+/// available to specify frequent variants: [`CsMat`] refers to a sparse matrix
+/// that owns its data, similar to `Vec<T>`; [`CsMatView`] refers to a sparse matrix
+/// that borrows its data, similar to `& [T]`; and [`CsMatViewMut`] refers to a sparse
+/// matrix borrowing its data, with a mutable borrow for its values. No mutable
+/// borrow is allowed for the structure of the matrix, allowing the invariants
+/// to be preserved.
+///
+/// Additionaly, the type aliases [`CsMatI`], [`CsMatViewI`] and
+/// [`CsMatViewMutI`] can be used to choose an index type different from the
+/// default `usize`.
+///
+/// [`CsMat`]: type.CsMat.html
+/// [`CsMatView`]: type.CsMatView.html
+/// [`CsMatViewMut`]: type.CsMatViewMut.html
+/// [`CsMatI`]: type.CsMatI.html
+/// [`CsMatViewI`]: type.CsMatViewI.html
+/// [`CsMatViewMutI`]: type.CsMatViewMutI.html
+///
+/// ## Storage format
+///
+/// In the compressed storage format, the non-zero values of a sparse matrix
+/// are stored as the row and column location of the non-zero values, with
+/// a compression along the rows (CSR) or columns (CSC) indices. The dimension
+/// along which the storage is compressed is referred to as the *outer dimension*,
+/// the other dimension is called the *inner dimension*. For clarity, the
+/// remaining explanation will assume a CSR matrix, but the information stands
+/// for CSC matrices as well.
+///
+/// ### Indptr
+///
+/// An index pointer array `indptr` of size corresponding to the number of rows
+/// stores the cumulative sum of non-zero elements for each row. For instance,
+/// the number of non-zero elements of the i-th row can be obtained by computing
+/// `indptr[i + 1] - indptr[i]`. The total number of non-zero elements is thus
+/// `nnz = indptr[nb_rows + 1]`. This index pointer array can then be used to
+/// efficiently index the `indices` and `data` array, which respectively contain
+/// the column indices and the values of the non-zero elements.
+///
+/// ### Indices and data
+///
+/// The non-zero locations and values are stored in arrays of size `nnz`, `indices`
+/// and `data`. For row `i`, the non-zeros are located in the slices
+/// `indices[indptr[i]..indptr[i+1]]` and `data[indptr[i]..indptr[i+1]]`. We
+/// require and enforce sorted indices for each row.
+///
+/// ## Construction
+///
+/// A sparse matrix can be directly constructed by providing its index pointer,
+/// indices and data arrays.
 #[derive(PartialEq, Debug)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where I: SpIndex,
