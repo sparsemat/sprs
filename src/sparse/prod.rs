@@ -9,10 +9,12 @@ use ::Ix2;
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csc<N>(mat: CsMatView<N>,
-                              in_vec: &[N],
-                              res_vec: &mut[N])
-where N: Num + Copy {
+pub fn mul_acc_mat_vec_csc<N, I>(mat: CsMatViewI<N, I>,
+                                 in_vec: &[N],
+                                 res_vec: &mut[N])
+where N: Num + Copy,
+      I: SpIndex,
+{
     let mat = mat.view();
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
         panic!("Dimension mismatch");
@@ -33,10 +35,12 @@ where N: Num + Copy {
 
 /// Multiply a sparse CSR matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csr<N>(mat: CsMatView<N>,
-                              in_vec: &[N],
-                              res_vec: &mut[N])
-where N: Num + Copy {
+pub fn mul_acc_mat_vec_csr<N, I>(mat: CsMatViewI<N, I>,
+                                 in_vec: &[N],
+                                 res_vec: &mut[N])
+where N: Num + Copy,
+      I: SpIndex,
+{
     if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
         panic!("Dimension mismatch");
     }

@@ -2,15 +2,18 @@
 
 use std::ops::IndexMut;
 use num_traits::Num;
-use sparse::CsMatView;
+use sparse::CsMatViewI;
 use sparse::vec;
-use sparse::CsVecView;
+use sparse::CsVecViewI;
 use errors::SprsError;
 use stack::{self, StackVal, DStack};
+use indexing::SpIndex;
 
-fn check_solver_dimensions<N, V: ?Sized>(lower_tri_mat: &CsMatView<N>, rhs: &V)
+fn check_solver_dimensions<N, I, V: ?Sized>(lower_tri_mat: &CsMatViewI<N, I>,
+                                            rhs: &V)
 where N: Copy + Num,
-      V: vec::VecDim<N>
+      V: vec::VecDim<N>,
+      I: SpIndex,
 {
     let (cols, rows) = (lower_tri_mat.cols(), lower_tri_mat.rows());
     if cols != rows {
@@ -28,11 +31,12 @@ where N: Copy + Num,
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn lsolve_csr_dense_rhs<N, V: ?Sized>(lower_tri_mat: CsMatView<N>,
-                                          rhs: &mut V)
-                                          -> Result<(), SprsError>
+pub fn lsolve_csr_dense_rhs<N, I, V: ?Sized>(lower_tri_mat: CsMatViewI<N, I>,
+                                             rhs: &mut V)
+                                            -> Result<(), SprsError>
 where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+      I: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csr() {
@@ -78,11 +82,12 @@ where N: Copy + Num,
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn lsolve_csc_dense_rhs<N, V: ?Sized>(lower_tri_mat: CsMatView<N>,
-                                          rhs: &mut V)
-                                          -> Result<(), SprsError>
+pub fn lsolve_csc_dense_rhs<N, I, V: ?Sized>(lower_tri_mat: CsMatViewI<N, I>,
+                                             rhs: &mut V)
+                                            -> Result<(), SprsError>
 where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+      I: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csc() {
@@ -103,12 +108,12 @@ where N: Copy + Num,
     Ok(())
 }
 
-fn lspsolve_csc_process_col<N: Copy + Num, V: ?Sized>
-                                                      (col: CsVecView<N>,
-                                                       col_ind: usize,
-                                                       rhs: &mut V)
-                                                       -> Result<(), SprsError>
-where V: vec::VecDim<N> + IndexMut<usize, Output = N>
+fn lspsolve_csc_process_col<N: Copy + Num, I, V: ?Sized>(col: CsVecViewI<N, I>,
+                                                         col_ind: usize,
+                                                         rhs: &mut V)
+                                                         -> Result<(), SprsError>
+where V: vec::VecDim<N> + IndexMut<usize, Output = N>,
+      I: SpIndex,
 {
     if let Some(&diag_val) = col.get(col_ind) {
         if diag_val == N::zero() {
@@ -140,11 +145,12 @@ where V: vec::VecDim<N> + IndexMut<usize, Output = N>
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn usolve_csc_dense_rhs<N, V: ?Sized>(upper_tri_mat: CsMatView<N>,
-                                          rhs: &mut V)
-                                          -> Result<(), SprsError>
+pub fn usolve_csc_dense_rhs<N, I, V: ?Sized>(upper_tri_mat: CsMatViewI<N, I>,
+                                             rhs: &mut V)
+                                            -> Result<(), SprsError>
 where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+      I: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csc() {
@@ -189,11 +195,12 @@ where N: Copy + Num,
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn usolve_csr_dense_rhs<N, V: ?Sized>(upper_tri_mat: CsMatView<N>,
-                                          rhs: &mut V)
-                                          -> Result<(), SprsError>
+pub fn usolve_csr_dense_rhs<N, I, V: ?Sized>(upper_tri_mat: CsMatViewI<N, I>,
+                                             rhs: &mut V)
+                                            -> Result<(), SprsError>
 where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>
+      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+      I: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csr() {
@@ -249,13 +256,14 @@ where N: Copy + Num,
 /// * if dstack is not empty
 /// * if w_workspace is not of length n
 ///
-pub fn lsolve_csc_sparse_rhs<N>(lower_tri_mat: CsMatView<N>,
-                                rhs: CsVecView<N>,
-                                dstack: &mut DStack<StackVal<usize>>,
-                                x_workspace: &mut [N],
-                                visited: &mut [bool]
-                               ) -> Result<(), SprsError>
-where N: Copy + Num
+pub fn lsolve_csc_sparse_rhs<N, I>(lower_tri_mat: CsMatViewI<N, I>,
+                                   rhs: CsVecViewI<N, I>,
+                                   dstack: &mut DStack<StackVal<usize>>,
+                                   x_workspace: &mut [N],
+                                   visited: &mut [bool]
+                                  ) -> Result<(), SprsError>
+where N: Copy + Num,
+      I: SpIndex,
 {
     if !lower_tri_mat.is_csc() {
         panic!("Storage mismatch");

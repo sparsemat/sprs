@@ -34,17 +34,19 @@ where I: SpIndex,
 
 /// The SpVecView trait describes types that can be seen as a view into
 /// a CsVec
-pub trait SpVecView<N> {
+pub trait SpVecView<N, I: SpIndex> {
     /// Return a view into the current vector
-    fn view(&self) ->  CsVecView<N>;
+    fn view(&self) ->  CsVecViewI<N, I>;
 }
 
-impl<N, IndStorage, DataStorage> SpVecView<N>
+impl<N, I, IndStorage, DataStorage> SpVecView<N, I>
 for CsVecBase<N, IndStorage, DataStorage>
-where IndStorage: Deref<Target=[usize]>,
-      DataStorage: Deref<Target=[N]> {
+where IndStorage: Deref<Target=[I]>,
+      DataStorage: Deref<Target=[N]>,
+      I: SpIndex,
+{
 
-    fn view(&self) -> CsVecView<N> {
+    fn view(&self) -> CsVecViewI<N, I> {
         self.view()
     }
 }
