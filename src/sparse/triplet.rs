@@ -485,9 +485,9 @@ mod test {
 
         let csc: CsMatI<_, i32> = triplet_mat.to_csc();
         let expected = CsMatI::new_csc((4, 4),
-                                            vec![0, 2, 3, 4, 6],
-                                            vec![0, 1, 0, 3, 2, 3],
-                                            vec![1., 3., 2., 5., 4., 6.]);
+                                       vec![0, 2, 3, 4, 6],
+                                       vec![0, 1, 0, 3, 2, 3],
+                                       vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -511,9 +511,9 @@ mod test {
 
         let csc = triplet_mat.to_csc();
         let expected = CsMat::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.]);
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -537,9 +537,9 @@ mod test {
 
         let csc = triplet_mat.to_csc();
         let expected = CsMat::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.]);
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -561,9 +561,9 @@ mod test {
 
         let csc = triplet_mat.to_csc();
         let expected = CsMat::new_csc((5, 4),
-                                           vec![0, 2, 4, 5, 8],
-                                           vec![0, 1, 0, 4, 3, 2, 3, 4],
-                                           vec![1, 3, 2, 7, 5, 4, 6, 8]);
+                                      vec![0, 2, 4, 5, 8],
+                                      vec![0, 1, 0, 4, 3, 2, 3, 4],
+                                      vec![1, 3, 2, 7, 5, 4, 6, 8]);
 
         assert_eq!(csc, expected);
     }
@@ -585,9 +585,9 @@ mod test {
 
         let csc = triplet_mat.to_csc();
         let expected = CsMat::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 0., 6.]);
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 0., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -611,9 +611,9 @@ mod test {
 
         let csr = triplet_mat.to_csr();
         let expected = CsMat::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.])
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 4., 6.])
                            .to_csr();
         assert_eq!(csr, expected);
     }
@@ -658,16 +658,11 @@ mod test {
         let csc = triplet_mat.to_csc();
 
         let expected = CsMat::new_csc((6, 9),
-                                           vec![0, 6, 7, 8, 10, 11,
-                                                14, 15, 16, 22],
-                                           vec![0, 1, 2, 3, 4, 5, 2,
-                                                3, 2, 4, 0, 1, 3, 5,
-                                                2, 5, 0, 1, 2, 3, 4,
-                                                5],
-                                           vec![1, 1, 1, 1, 1, 1, 2,
-                                                9, 3, 5, 6, 1, 4, 7,
-                                                3, 8, 2, 2, 2, 2, 2,
-                                                2]);
+                                      vec![0, 6, 7, 8, 10, 11, 14, 15, 16, 22],
+                                      vec![0, 1, 2, 3, 4, 5, 2, 3, 2, 4, 0, 1,
+                                           3, 5, 2, 5, 0, 1, 2, 3, 4, 5],
+                                      vec![1, 1, 1, 1, 1, 1, 2, 9, 3, 5, 6, 1,
+                                           4, 7, 3, 8, 2, 2, 2, 2, 2, 2]);
 
         assert_eq!(csc, expected);
 

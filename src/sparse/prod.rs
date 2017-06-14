@@ -171,14 +171,14 @@ where N: Num + Copy,
 
 /// CSR-vector multiplication
 pub fn csr_mul_csvec<N, I>(lhs: CsMatViewI<N, I>,
-                           rhs: CsVecViewI<N, I>) -> CsVecOwnedI<N, I>
+                           rhs: CsVecViewI<N, I>) -> CsVecI<N, I>
 where N: Copy + Num,
       I: SpIndex,
 {
     if lhs.cols() != rhs.dim() {
         panic!("Dimension mismatch");
     }
-    let mut res = CsVecOwnedI::empty(lhs.rows());
+    let mut res = CsVecI::empty(lhs.rows());
     for (row_ind, lvec) in lhs.outer_iterator().enumerate() {
         let val = lvec.dot(&rhs);
         if val != N::zero() {

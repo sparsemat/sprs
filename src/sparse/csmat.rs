@@ -113,7 +113,7 @@ pub struct OuterIteratorMut<'iter, N: 'iter, I: 'iter> {
 impl <'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIterator<'iter, N, I> {
-    type Item = CsVec<N, &'iter[I], &'iter[N]>;
+    type Item = CsVecBase<N, &'iter[I], &'iter[N]>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
@@ -124,7 +124,7 @@ for OuterIterator<'iter, N, I> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
-                Some(CsVec {
+                Some(CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -145,7 +145,7 @@ impl <'iter, 'perm: 'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIteratorPerm<'iter, 'perm, N, I>
 {
-    type Item = (usize, CsVec<N, &'iter[I], &'iter[N]>);
+    type Item = (usize, CsVecBase<N, &'iter[I], &'iter[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.outer_ind_iter.next() {
@@ -157,7 +157,7 @@ for OuterIteratorPerm<'iter, 'perm, N, I>
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
-                let vec = CsVec {
+                let vec = CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -193,7 +193,7 @@ for OuterIteratorMut<'iter, N, I> {
                 self.data = next;
 
                 // CsMat invariants imply CsVec invariants
-                Some(CsVec {
+                Some(CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -228,7 +228,7 @@ for OuterIterator<'iter, N, I> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
-                Some(CsVec {
+                Some(CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -514,7 +514,7 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[I],&[N]>) -> Self
+    pub fn append_outer_csvec(mut self, vec: CsVecBase<N,&[I],&[N]>) -> Self
     where N: Clone
     {
         assert_eq!(self.inner_dims(), vec.dim());
@@ -787,7 +787,7 @@ where I: SpIndex,
         let start = self.indptr[i].index();
         let stop = self.indptr[i+1].index();
         // CsMat invariants imply CsVec invariants
-        Some(CsVec {
+        Some(CsVecBase {
             dim: self.inner_dims(),
             indices: &self.indices[start..stop],
             data: &self.data[start..stop],
@@ -1112,7 +1112,7 @@ DataStorage: DerefMut<Target=[N]> {
         let start = self.indptr[i].index();
         let stop = self.indptr[i+1].index();
         // CsMat invariants imply CsVec invariants
-        Some(CsVec {
+        Some(CsVecBase {
             dim: self.inner_dims(),
             indices: &self.indices[start..stop],
             data: &mut self.data[start..stop],

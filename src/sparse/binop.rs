@@ -264,7 +264,7 @@ where N: 'a + Num,
 pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
                          rhs: CsVecView<N>,
                          binop: F
-                        ) -> SpRes<CsVecOwned<N>>
+                        ) -> SpRes<CsVec<N>>
 where N: Num,
       F: Fn(&N, &N) -> N
 {

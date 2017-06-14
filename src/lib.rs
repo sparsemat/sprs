@@ -71,11 +71,11 @@ pub use sparse::{
     CsMatViewMut,
     CsMatViewMutI,
     CsMatVecView,
-    CsVec,
+    CsVecBase,
     CsVecView,
     CsVecViewI,
-    CsVecOwned,
-    CsVecOwnedI,
+    CsVec,
+    CsVecI,
 };
 
 
@@ -103,8 +103,8 @@ pub use sparse::binop;
 
 pub mod vec {
     pub use sparse::{
+        CsVecBase,
         CsVec,
-        CsVecOwned,
         CsVecView,
         CsVecViewMut,
     };

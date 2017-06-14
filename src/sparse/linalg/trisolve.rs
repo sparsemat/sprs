@@ -319,7 +319,7 @@ where N: Copy + Num
 #[cfg(test)]
 mod test {
 
-    use sparse::{CsMat, CsVecOwned};
+    use sparse::{CsMat, CsVec};
     use stack::{self, DStack};
     use std::collections::HashSet;
 
@@ -398,7 +398,7 @@ mod test {
                                     vec![0, 2, 5, 6, 8, 9],
                                     vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
                                     vec![1, 1, 2, 3, 2, 3, 7, 3, 5]);
-        let b = CsVecOwned::new(5, vec![1, 2, 4], vec![4, 9, 9]);
+        let b = CsVec::new(5, vec![1, 2, 4], vec![4, 9, 9]);
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
         let mut dstack = DStack::with_capacity(2 * 5);
@@ -414,7 +414,7 @@ mod test {
                                   .map(|&i| (i, xw[i]))
                                   .collect();
 
-        let expected_output = CsVecOwned::new(5,
+        let expected_output = CsVec::new(5,
                                               vec![1, 2, 4],
                                               vec![2, 1, 1]);
         let expected_output = expected_output.to_set();
@@ -432,7 +432,7 @@ mod test {
                                vec![0, 2, 4, 6, 7, 9, 10, 11],
                                vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
                                vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2]);
-        let b = CsVecOwned::new(7,
+        let b = CsVec::new(7,
                                 vec![0, 2, 3, 5],
                                 vec![1, 7, 7, 3]);
         let mut dstack = DStack::with_capacity(2 * 7);
@@ -450,10 +450,9 @@ mod test {
                                   .map(|&i| (i, xw[i]))
                                   .collect();
 
-        let expected_output = CsVecOwned::new(7,
-                                              vec![0, 2, 3, 5],
-                                              vec![1, 2, 1, 1]
-                                             ).to_set();
+        let expected_output = CsVec::new(7,
+                                         vec![0, 2, 3, 5],
+                                         vec![1, 2, 1, 1]).to_set();
 
         assert_eq!(x, expected_output);
     }

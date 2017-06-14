@@ -32,20 +32,20 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 /// A sparse vector, storing the indices of its non-zero data.
 /// The indices should be sorted.
 #[derive(PartialEq, Debug)]
-pub struct CsVec<N, IStorage, DStorage>
+pub struct CsVecBase<N, IStorage, DStorage>
 where DStorage: Deref<Target=[N]> {
     dim: usize,
     indices : IStorage,
     data : DStorage
 }
 
-pub type CsVecViewI<'a, N, I> = CsVec<N, &'a [I], &'a [N]>;
-pub type CsVecViewMut_<'a, N, I> = CsVec<N, &'a [I], &'a mut [N]>;
-pub type CsVecOwnedI<N, I> = CsVec<N, Vec<I>, Vec<N>>;
+pub type CsVecViewI<'a, N, I> = CsVecBase<N, &'a [I], &'a [N]>;
+pub type CsVecViewMut_<'a, N, I> = CsVecBase<N, &'a [I], &'a mut [N]>;
+pub type CsVecI<N, I> = CsVecBase<N, Vec<I>, Vec<N>>;
 
 pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
 pub type CsVecViewMut<'a, N> = CsVecViewMut_<'a, N, usize>;
-pub type CsVecOwned<N> = CsVecOwnedI<N, usize>;
+pub type CsVec<N> = CsVecI<N, usize>;
 
 mod prelude {
     pub use super::{
@@ -58,13 +58,13 @@ mod prelude {
         CsMat,
         CsMatVecView_,
         CsMatVecView,
-        CsVec,
+        CsVecBase,
         CsVecViewI,
         CsVecView,
         CsVecViewMut_,
         CsVecViewMut,
-        CsVecOwnedI,
-        CsVecOwned,
+        CsVecI,
+        CsVec,
     };
 }
 
