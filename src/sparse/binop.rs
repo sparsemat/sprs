@@ -261,17 +261,18 @@ where N: 'a + Num,
 /// to zero when e.g. only `lhs` has a non-zero at a given location).
 ///
 /// The function thus has a correct behavior iff `binop(0, 0) == 0`.
-pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
-                         rhs: CsVecView<N>,
-                         binop: F
-                        ) -> SpRes<CsVec<N>>
+pub fn csvec_binop<N, I, F>(lhs: CsVecViewI<N, I>,
+                            rhs: CsVecViewI<N, I>,
+                            binop: F
+                           ) -> SpRes<CsVecI<N, I>>
 where N: Num,
-      F: Fn(&N, &N) -> N
+      F: Fn(&N, &N) -> N,
+      I: SpIndex,
 {
     if lhs.dim() != rhs.dim() {
         panic!("Dimension mismatch");
     }
-    let mut res = CsVec::empty(lhs.dim());
+    let mut res = CsVecI::empty(lhs.dim());
     let max_nnz = lhs.nnz() + rhs.nnz();
     res.reserve_exact(max_nnz);
     for elem in lhs.iter().nnz_or_zip(rhs.iter()) {

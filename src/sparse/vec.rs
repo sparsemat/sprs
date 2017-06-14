@@ -364,10 +364,10 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
     /// Create a borrowed CsVec over slice data.
     pub fn new_view(
         n: usize,
-        indices: &'a [usize],
+        indices: &'a [I],
         data: &'a [N])
-    -> Result<CsVecView<'a, N>, SprsError> {
-        let v = CsVecView {
+    -> Result<CsVecViewI<'a, N, I>, SprsError> {
+        let v = CsVecViewI {
             dim: n,
             indices: indices,
             data: data,
@@ -398,10 +398,10 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
     /// perform unchecked slice access.
     pub unsafe fn new_view_raw(n: usize,
                                nnz: usize,
-                               indices: *const usize,
+                               indices: *const I,
                                data: *const N,
-                              ) -> CsVecView<'a, N> {
-        CsVecView {
+                              ) -> CsVecViewI<'a, N, I> {
+        CsVecViewI {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts(data, nnz),
