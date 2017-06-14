@@ -11,7 +11,7 @@ use ::Ix2;
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
 pub fn same_storage_fast_stack<'a, N, MatArray>(
-    mats: &MatArray) -> CsMatOwned<N>
+    mats: &MatArray) -> CsMat<N>
 where N: 'a + Clone,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -30,7 +30,7 @@ where N: 'a + Clone,
     let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
     let nnz = mats.iter().map(|x| x.nnz()).fold(0, |x, y| x + y);
 
-    let mut res = CsMatOwned::empty(storage_type, inner_dim);
+    let mut res = CsMat::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);
     res.reserve_nnz_exact(nnz);
     for mat in mats {
@@ -43,7 +43,7 @@ where N: 'a + Clone,
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> CsMatOwned<N>
+pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
 where N: 'a + Clone + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -57,7 +57,7 @@ where N: 'a + Clone + Default,
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> CsMatOwned<N>
+pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
 where N: 'a + Clone + Default,
       MatArray: AsRef<[CsMatView<'a, N>]> {
     let mats = mats.as_ref();
@@ -74,14 +74,14 @@ where N: 'a + Clone + Default,
 ///
 /// # Examples
 /// ```
-/// use sprs::CsMatOwned;
-/// let a = CsMatOwned::<f64>::eye(3);
-/// let b = CsMatOwned::<f64>::eye(4);
+/// use sprs::CsMat;
+/// let a = CsMat::<f64>::eye(3);
+/// let b = CsMat::<f64>::eye(4);
 /// let c = sprs::bmat(&[[Some(a.view()), None],
 ///                      [None, Some(b.view())]]);
 /// assert_eq!(c.rows(), 7);
 /// ```
-pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray) -> CsMatOwned<N>
+pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray) -> CsMat<N>
 where N: 'a + Clone + Default,
       OuterArray: 'a + AsRef<[InnerArray]>,
       InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]> {
@@ -124,7 +124,7 @@ where N: 'a + Clone + Default,
     for (i, row) in mats.iter().enumerate() {
         let with_zeros: Vec<_> = row.as_ref().iter().enumerate().map(|(j, m)| {
             let shape = (rows_per_row[i], cols_per_col[j]);
-            m.as_ref().map_or(CsMatOwned::zero(shape), |x| x.to_owned())
+            m.as_ref().map_or(CsMat::zero(shape), |x| x.to_owned())
         }).collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
         let stacked = hstack(&borrows);
@@ -138,7 +138,7 @@ where N: 'a + Clone + Default,
 /// lower than `epsilon`.
 ///
 /// If epsilon is negative, it will be clamped to zero.
-pub fn csr_from_dense<N>(m: ArrayView<N, Ix2>, epsilon: N) -> CsMatOwned<N>
+pub fn csr_from_dense<N>(m: ArrayView<N, Ix2>, epsilon: N) -> CsMat<N>
 where N: Num + Clone + cmp::PartialOrd + Signed
 {
     let epsilon = if epsilon > N::zero() { epsilon } else { N::zero() };
@@ -162,7 +162,7 @@ where N: Num + Clone + cmp::PartialOrd + Signed
             }
         }
     }
-    CsMatOwned {
+    CsMat {
         storage: CompressedStorage::CSR,
         nrows: rows,
         ncols: cols,
@@ -178,7 +178,7 @@ where N: Num + Clone + cmp::PartialOrd + Signed
 /// If epsilon is negative, it will be clamped to zero.
 pub fn csc_from_dense<N>(m: ArrayView<N, Ix2>,
                          epsilon: N
-                        ) -> CsMatOwned<N>
+                        ) -> CsMat<N>
 where N: Num + Clone + cmp::PartialOrd + Signed
 {
     csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
@@ -186,22 +186,22 @@ where N: Num + Clone + cmp::PartialOrd + Signed
 
 #[cfg(test)]
 mod test {
-    use sparse::CsMatOwned;
+    use sparse::CsMat;
     use test_data::{mat1, mat2, mat3, mat4};
     use ndarray::{arr2, Array};
 
-    fn mat1_vstack_mat2() -> CsMatOwned<f64> {
+    fn mat1_vstack_mat2() -> CsMat<f64> {
         let indptr = vec![0, 2, 4, 5, 6, 7, 11, 13, 13, 15, 17];
         let indices = vec![2, 3, 3, 4, 2, 1, 3, 0, 1, 2, 4, 0, 3, 2, 3, 1, 2];
         let data = vec![3., 4., 2., 5., 5., 8., 7., 6., 7., 3., 3.,
                         8., 9., 2., 4., 4., 4.];
-        CsMatOwned::new((10, 5), indptr, indices, data)
+        CsMat::new((10, 5), indptr, indices, data)
     }
 
     #[test]
     #[should_panic]
     fn same_storage_fast_stack_fail_empty_stacking_list() {
-        let _: CsMatOwned<f64> = super::same_storage_fast_stack(&[]);
+        let _: CsMat<f64> = super::same_storage_fast_stack(&[]);
     }
 
     #[test]
@@ -259,14 +259,14 @@ mod test {
     #[test]
     #[should_panic]
     fn bmat_fail_shapes() {
-        let _: CsMatOwned<f64> = super::bmat(
+        let _: CsMat<f64> = super::bmat(
             &vec![vec![None, None], vec![None]]);
     }
 
     #[test]
     #[should_panic]
     fn bmat_fail_empty_stacking_list() {
-        let _: CsMatOwned<f64> = super::bmat(&[[]]);
+        let _: CsMat<f64> = super::bmat(&[[]]);
     }
 
     #[test]
@@ -274,7 +274,7 @@ mod test {
     fn bmat_fail_empty_bmat_row() {
         let a = mat1();
         let c = mat3();
-        let _: CsMatOwned<f64> = super::bmat(&[[None, None],
+        let _: CsMat<f64> = super::bmat(&[[None, None],
                                                [Some(a.view()), Some(c.view())]]);
     }
 
@@ -283,17 +283,17 @@ mod test {
     fn bmat_fail_empty_bmat_col() {
         let a = mat1();
         let c = mat3();
-        let _: CsMatOwned<f64> = super::bmat(&[[Some(c.view()), None],
+        let _: CsMat<f64> = super::bmat(&[[Some(c.view()), None],
                                                [Some(a.view()), None]]);
     }
 
     #[test]
     fn bmat_simple() {
-        let a = CsMatOwned::<f64>::eye(5);
-        let b = CsMatOwned::<f64>::eye(4);
+        let a = CsMat::<f64>::eye(5);
+        let b = CsMat::<f64>::eye(4);
         let c = super::bmat(&[[Some(a.view()), None],
                               [None, Some(b.view())]]);
-        let expected = CsMatOwned::new(
+        let expected = CsMat::new(
             (9, 9),
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
@@ -307,7 +307,7 @@ mod test {
         let b = mat2();
         let c = super::bmat(&[[Some(a.view()), Some(b.view())],
                               [Some(b.view()), None]]);
-        let expected = CsMatOwned::new(
+        let expected = CsMat::new(
             (10, 10),
             vec![0,  6, 10, 11, 14, 17, 21, 23, 23, 25, 27],
             vec![2, 3, 5, 6, 7, 9, 3, 4, 5, 8, 2, 1, 7, 8, 3,
@@ -321,7 +321,7 @@ mod test {
         let f = super::bmat(&[[Some(d.view()), Some(a.view())],
                               [None, Some(e.view())]]
                            );
-        let expected = CsMatOwned::new(
+        let expected = CsMat::new(
             (10, 9),
             vec![0, 4, 8, 10, 12, 14, 16, 18, 21, 23, 24],
             vec![2, 3, 6, 7, 2, 3, 7, 8, 2, 6, 1, 5, 3, 7, 4,
@@ -336,17 +336,17 @@ mod test {
         let m = Array::eye(3);
         let m_sparse = super::csr_from_dense(m.view(), 0.);
 
-        assert_eq!(m_sparse, CsMatOwned::eye(3));
+        assert_eq!(m_sparse, CsMat::eye(3));
 
         let m = arr2(&[[1., 0., 2., 1e-7, 1.],
                        [0., 0., 0., 1.,   0.],
                        [3., 0., 1., 0.,   0.]]);
         let m_sparse = super::csr_from_dense(m.view(), 1e-5);
 
-        let expected_output = CsMatOwned::new((3, 5),
-                                              vec![0, 3, 4, 6],
-                                              vec![0, 2, 4, 3, 0, 2],
-                                              vec![1., 2., 1., 1., 3., 1.]);
+        let expected_output = CsMat::new((3, 5),
+                                         vec![0, 3, 4, 6],
+                                         vec![0, 2, 4, 3, 0, 2],
+                                         vec![1., 2., 1., 1., 3., 1.]);
 
         assert_eq!(m_sparse, expected_output);
     }
@@ -356,17 +356,17 @@ mod test {
         let m = Array::eye(3);
         let m_sparse = super::csc_from_dense(m.view(), 0.);
 
-        assert_eq!(m_sparse, CsMatOwned::eye_csc(3));
+        assert_eq!(m_sparse, CsMat::eye_csc(3));
 
         let m = arr2(&[[1., 0., 2., 1e-7, 1.],
                        [0., 0., 0., 1.,   0.],
                        [3., 0., 1., 0.,   0.]]);
         let m_sparse = super::csc_from_dense(m.view(), 1e-5);
 
-        let expected_output = CsMatOwned::new_csc((3, 5),
-                                                  vec![0, 2, 2, 4, 5, 6],
-                                                  vec![0, 2, 0, 2, 1, 0],
-                                                  vec![1., 3., 2., 1., 1., 1.]);
+        let expected_output = CsMat::new_csc((3, 5),
+                                             vec![0, 2, 2, 4, 5, 6],
+                                             vec![0, 2, 0, 2, 1, 0],
+                                             vec![1., 3., 2., 1., 1., 1.]);
 
         assert_eq!(m_sparse, expected_output);
     }

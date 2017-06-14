@@ -14,9 +14,9 @@ solvers is planned.
 Matrix construction
 
 ```rust
-use sprs::{CsMat, CsMatOwned, CsVec};
-let eye : CsMatOwned<f64> = CsMat::eye(3);
-let a = CsMat::new_csc((3, 3),
+use sprs::{CsMatBase, CsMat, CsVec};
+let eye : CsMat<f64> = CsMatBase::eye(3);
+let a = CsMatBase::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);
@@ -25,8 +25,8 @@ let a = CsMat::new_csc((3, 3),
 Matrix vector multiplication
 
 ```rust
-use sprs::{CsMat, CsVec};
-let eye = CsMat::eye(5);
+use sprs::{CsMatBase, CsVec};
+let eye = CsMatBase::eye(5);
 let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
 let y = &eye * &x;
 assert_eq!(x, y);
@@ -35,9 +35,9 @@ assert_eq!(x, y);
 Matrix matrix multiplication, addition
 
 ```rust
-use sprs::{CsMat, CsVec};
-let eye = CsMat::eye(3);
-let a = CsMat::new_csc((3, 3),
+use sprs::{CsMatBase, CsVec};
+let eye = CsMatBase::eye(3);
+let a = CsMatBase::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);
@@ -63,9 +63,9 @@ pub type Ix1 = ndarray::Ix1;
 pub type Ix2 = ndarray::Ix2;
 
 pub use sparse::{
+    CsMatBase,
     CsMat,
-    CsMatOwned,
-    CsMatOwnedI,
+    CsMatI,
     CsMatView,
     CsMatViewI,
     CsMatViewMut,

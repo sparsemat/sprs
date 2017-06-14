@@ -32,12 +32,12 @@ where N: Clone, I: SpIndex
 #[cfg(test)]
 mod test {
     use ndarray::{Array, arr2};
-    use ::CsMatOwned;
+    use ::CsMat;
     use test_data::{mat1};
 
     #[test]
     fn to_dense() {
-        let speye: CsMatOwned<f64> = CsMatOwned::eye(3);
+        let speye: CsMat<f64> = CsMat::eye(3);
         let mut deye = Array::zeros((3, 3));
 
         super::assign_to_dense(deye.view_mut(), speye.view());
@@ -45,7 +45,7 @@ mod test {
         let res = Array::eye(3);
         assert_eq!(deye, res);
 
-        let speye: CsMatOwned<f64> = CsMatOwned::eye_csc(3);
+        let speye: CsMat<f64> = CsMat::eye_csc(3);
         let mut deye = Array::zeros((3, 3));
 
         super::assign_to_dense(deye.view_mut(), speye.view());

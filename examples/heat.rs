@@ -45,7 +45,7 @@ fn is_border(row: usize, col: usize, shape: (usize, usize)) -> bool {
 /// This example shows how a relatively straightforward sparse matrix
 /// can be constructed with a minimal number of allocations by directly
 /// building up its sparse structure.
-fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
+fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMat<f64> {
     let (rows, cols) = shape;
     let nb_vert = rows * cols;
     let mut indptr = Vec::with_capacity(nb_vert + 1);
@@ -80,7 +80,7 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMatOwned<f64> {
 
     indptr.push(cumsum);
 
-    sprs::CsMatOwned::new((nb_vert, nb_vert), indptr, indices, data)
+    sprs::CsMat::new((nb_vert, nb_vert), indptr, indices, data)
 }
 
 /// Set a dirichlet boundary condition

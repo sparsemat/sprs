@@ -17,7 +17,7 @@ pub trait SpMatView<N, I: SpIndex> {
 
 
 impl<N, I, IpStorage, IndStorage, DataStorage> SpMatView<N, I>
-for CsMat<N, I, IpStorage, IndStorage, DataStorage>
+for CsMatBase<N, I, IpStorage, IndStorage, DataStorage>
 where I: SpIndex,
       IpStorage: Deref<Target=[I]>,
       IndStorage: Deref<Target=[I]>,

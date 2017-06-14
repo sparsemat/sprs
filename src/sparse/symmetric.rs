@@ -6,7 +6,7 @@ use sparse::prelude::*;
 use indexing::SpIndex;
 
 pub fn is_symmetric<N, I, IpStorage, IStorage, DStorage>(
-    mat: &CsMat<N, I, IpStorage, IStorage, DStorage>) -> bool
+    mat: &CsMatBase<N, I, IpStorage, IStorage, DStorage>) -> bool
 where
 N: Copy + PartialEq,
 I: SpIndex,
@@ -31,7 +31,7 @@ DStorage: Deref<Target=[N]> {
 
 #[cfg(test)]
 mod test {
-    use sparse::CsMat;
+    use sparse::CsMatView;
     use sparse::csmat::CompressedStorage::{CSR};
     use super::is_symmetric;
 
@@ -61,7 +61,11 @@ mod test {
             0.13, 0.52, 0.11, 1.4,
             0.01, 0.53, 0.56, 3.1];
 
-        let a = CsMat::new_view(CSR, (10, 10), indptr, indices, data).unwrap();
+        let a = CsMatView::new_view(CSR,
+                                    (10, 10),
+                                    indptr,
+                                    indices,
+                                    data).unwrap();
 
         assert!(is_symmetric(&a));
     }

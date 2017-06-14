@@ -319,7 +319,7 @@ where N: Copy + Num
 #[cfg(test)]
 mod test {
 
-    use sparse::{CsMatOwned, CsVecOwned};
+    use sparse::{CsMat, CsVecOwned};
     use stack::{self, DStack};
     use std::collections::HashSet;
 
@@ -328,10 +328,10 @@ mod test {
         // |1    | |3|   |3|
         // |0 2  | |1| = |2|
         // |1 0 1| |1|   |4|
-        let l = CsMatOwned::new((3, 3),
-                                vec![0, 1, 2, 4],
-                                vec![0, 1, 0, 2],
-                                vec![1, 2, 1, 1]);
+        let l = CsMat::new((3, 3),
+                           vec![0, 1, 2, 4],
+                           vec![0, 1, 0, 2],
+                           vec![1, 2, 1, 1]);
         let b = vec![3, 2, 4];
         let mut x = b.clone();
 
@@ -344,10 +344,10 @@ mod test {
         // |1    | |3|   |3|
         // |1 2  | |1| = |5|
         // |0 0 3| |1|   |3|
-        let l = CsMatOwned::new_csc((3, 3),
-                                    vec![0, 2, 3, 4],
-                                    vec![0, 1, 1, 2],
-                                    vec![1, 1, 2, 3]);
+        let l = CsMat::new_csc((3, 3),
+                               vec![0, 2, 3, 4],
+                               vec![0, 1, 1, 2],
+                               vec![1, 1, 2, 3]);
         let b = vec![3, 5, 3];
         let mut x = b.clone();
 
@@ -360,10 +360,10 @@ mod test {
         // |1 0 1| |3|   |4|
         // |  2 0| |1| = |2|
         // |    3| |1|   |3|
-        let u = CsMatOwned::new_csc((3, 3),
-                                    vec![0, 1, 2, 4],
-                                    vec![0, 1, 0, 2],
-                                    vec![1, 2, 1, 3]);
+        let u = CsMat::new_csc((3, 3),
+                               vec![0, 1, 2, 4],
+                               vec![0, 1, 0, 2],
+                               vec![1, 2, 1, 3]);
         let b = vec![4, 2, 3];
         let mut x = b.clone();
 
@@ -376,10 +376,10 @@ mod test {
         // |1 1 0| |3|   |4|
         // |  5 3| |1| = |8|
         // |    1| |1|   |1|
-        let u = CsMatOwned::new((3, 3),
-                                vec![0, 2, 4, 5],
-                                vec![0, 1, 1, 2, 2],
-                                vec![1, 1, 5, 3, 1]);
+        let u = CsMat::new((3, 3),
+                           vec![0, 2, 4, 5],
+                           vec![0, 1, 1, 2, 2],
+                           vec![1, 1, 5, 3, 1]);
         let b = vec![4, 8, 1];
         let mut x = b.clone();
 
@@ -394,7 +394,7 @@ mod test {
         // |  3 3    | |1|   |9|
         // |      7  | | |   | |
         // |  2   3 5| |1|   |9|
-        let l = CsMatOwned::new_csc((5, 5),
+        let l = CsMat::new_csc((5, 5),
                                     vec![0, 2, 5, 6, 8, 9],
                                     vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
                                     vec![1, 1, 2, 3, 2, 3, 7, 3, 5]);
@@ -428,12 +428,10 @@ mod test {
         // |        5    | | |   | |
         // |    1     1  | |1|   |3|
         // |  3     2   2| | |   | |
-        let l = CsMatOwned::new_csc((7, 7),
-                                    vec![0, 2, 4, 6, 7, 9, 10, 11],
-                                    vec![0, 2, 1, 6, 2, 5, 3, 4, 6,
-                                         5, 6],
-                                    vec![1, 1, 2, 3, 3, 1, 7, 5, 2,
-                                         1, 2]);
+        let l = CsMat::new_csc((7, 7),
+                               vec![0, 2, 4, 6, 7, 9, 10, 11],
+                               vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
+                               vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2]);
         let b = CsVecOwned::new(7,
                                 vec![0, 2, 3, 5],
                                 vec![1, 7, 7, 3]);

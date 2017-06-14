@@ -588,7 +588,7 @@ where I: SpIndex,
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = vec![I::zero(), I::from_usize(self.indices.len())];
-        CsMat {
+        CsMatBase {
             storage: CSR,
             nrows: 1,
             ncols: self.dim,
@@ -603,7 +603,7 @@ where I: SpIndex,
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = vec![I::zero(), I::from_usize(self.indices.len())];
-        CsMat {
+        CsMatBase {
             storage: CSC,
             nrows: self.dim,
             ncols: 1,
@@ -760,7 +760,7 @@ where N: 'a {
 }
 
 impl<'a, 'b, N, I, IS1, DS1, IpS2, IS2, DS2>
-Mul<&'b CsMat<N, I, IpS2, IS2, DS2>>
+Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>>
 for &'a CsVec<N, IS1, DS1>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
@@ -772,14 +772,14 @@ where N: 'a + Copy + Num + Default,
 
     type Output = CsVecOwnedI<N, I>;
 
-    fn mul(self, rhs: &CsMat<N, I, IpS2, IS2, DS2>) -> CsVecOwnedI<N, I> {
+    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2>) -> CsVecOwnedI<N, I> {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
 
 impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2>
 Mul<&'b CsVec<N, IS2, DS2>>
-for &'a CsMat<N, I, IpS1, IS1, DS1>
+for &'a CsMatBase<N, I, IpS1, IS1, DS1>
 where N: Copy + Num + Default,
       I: SpIndex,
       IpS1: Deref<Target=[I]>,

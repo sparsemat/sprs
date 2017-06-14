@@ -5,7 +5,7 @@ pub use self::csmat::{CompressedStorage};
 
 /// Compressed matrix in the CSR or CSC format.
 #[derive(PartialEq, Debug)]
-pub struct CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where I: SpIndex,
       IptrStorage: Deref<Target=[I]>,
       IndStorage: Deref<Target=[I]>,
@@ -18,12 +18,12 @@ where I: SpIndex,
     data : DataStorage
 }
 
-pub type CsMatOwnedI<N, I> = CsMat<N, I, Vec<I>, Vec<I>, Vec<N>>;
-pub type CsMatViewI<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a [N]>;
-pub type CsMatViewMutI<'a, N, I> = CsMat<N, I, &'a [I], &'a [I], &'a mut [N]>;
-pub type CsMatVecView_<'a, N, I> = CsMat<N, I, Vec<I>, &'a [I], &'a [N]>;
+pub type CsMatI<N, I> = CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>>;
+pub type CsMatViewI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a [N]>;
+pub type CsMatViewMutI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a mut [N]>;
+pub type CsMatVecView_<'a, N, I> = CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]>;
 
-pub type CsMatOwned<N> = CsMatOwnedI<N, usize>;
+pub type CsMat<N> = CsMatI<N, usize>;
 pub type CsMatView<'a, N> = CsMatViewI<'a, N, usize>;
 pub type CsMatViewMut<'a, N> = CsMatViewMutI<'a, N, usize>;
 // FIXME: a fixed size array would be better, but no Deref impl
@@ -49,13 +49,13 @@ pub type CsVecOwned<N> = CsVecOwnedI<N, usize>;
 
 mod prelude {
     pub use super::{
-        CsMat,
+        CsMatBase,
         CsMatViewI,
         CsMatView,
         CsMatViewMutI,
         CsMatViewMut,
-        CsMatOwnedI,
-        CsMatOwned,
+        CsMatI,
+        CsMat,
         CsMatVecView_,
         CsMatVecView,
         CsVec,
