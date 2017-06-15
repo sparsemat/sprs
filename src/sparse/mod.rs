@@ -61,7 +61,19 @@ pub use self::csmat::{CompressedStorage};
 /// ## Construction
 ///
 /// A sparse matrix can be directly constructed by providing its index pointer,
-/// indices and data arrays.
+/// indices and data arrays. The coherence of the provided structure is then
+/// verified.
+///
+/// For situations where the compressed structure is hard to figure out up front,
+/// the [triplet format](struct.TriMatBase.html) can be used. A matrix in the
+/// triplet format can then be efficiently converted to a `CsMat`.
+///
+/// Alternately, a sparse matrix can be constructed from other sparse matrices
+/// using [`vstack`], [`hstack`] or [`bmat`].
+///
+/// [`vstack`]: fn.vstack.html
+/// [`hstack`]: fn.hstack.html
+/// [`bmat`]: fn.bmat.html
 #[derive(PartialEq, Debug)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where I: SpIndex,
