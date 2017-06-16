@@ -247,105 +247,62 @@ for OuterIterator<'iter, N, I> {
 }
 
 
-impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]> {
-    /// Create a borrowed row or column CsMat matrix from raw data,
-    /// without checking their validity
-    ///
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_compressed_structure are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_vecview_raw(
-        storage: CompressedStorage, nrows : usize, ncols: usize,
-        indptr : Vec<I>, indices : *const I, data : *const N
-        )
-    -> CsMatVecView_<'a, N, I> {
-        let nnz = indptr[1].index();
-        CsMatVecView_ {
-            storage: storage,
-            nrows : nrows,
-            ncols: ncols,
-            indptr : indptr,
-            indices : slice::from_raw_parts(indices, nnz),
-            data : slice::from_raw_parts(data, nnz),
-        }
-    }
-}
-
-impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
-    /// Create a borrowed CsMat matrix from sliced data,
-    /// checking their validity
-    pub fn new_view(
-        storage: CompressedStorage, shape: Shape,
-        indptr : &'a[I], indices : &'a[I], data : &'a[N]
-        )
-    -> Result<CsMatViewI<'a, N, I>, SprsError> {
-        let m = CsMatViewI {
-            storage: storage,
-            nrows : shape.0,
-            ncols: shape.1,
-            indptr : indptr,
-            indices : indices,
-            data : data,
-        };
-        m.check_compressed_structure().and(Ok(m))
-    }
-
-    /// Create a borrowed CsMat matrix from raw data,
-    /// without checking their validity
-    ///
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_compressed_structure are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_view_raw(
-        storage: CompressedStorage, shape: Shape,
-        indptr : *const I, indices : *const I, data : *const N
-        )
-    -> CsMatViewI<'a, N, I> {
-        let (nrows, ncols) = shape;
-        let outer = match storage {
-            CSR => nrows,
-            CSC => ncols,
-        };
-        let indptr = slice::from_raw_parts(indptr, outer + 1);
-        let nnz = (*indptr.get_unchecked(outer)).index();
-        CsMatViewI {
-            storage: storage,
-            nrows : nrows,
-            ncols: ncols,
-            indptr : indptr,
-            indices : slice::from_raw_parts(indices, nnz),
-            data : slice::from_raw_parts(data, nnz),
-        }
-    }
-
-    /// Get a view into count contiguous outer dimensions, starting from i.
-    ///
-    /// eg this gets the rows from i to i + count in a CSR matrix
-    pub fn middle_outer_views(&self,
-                              i: usize, count: usize
-                             ) -> CsMatViewI<'a, N, I> {
-        if count == 0 {
-            panic!("Empty view");
-        }
-        let iend = i.checked_add(count).unwrap();
-        if i >= self.outer_dims() || iend > self.outer_dims() {
-            panic!("Out of bounds index");
-        }
-        CsMatViewI {
-            storage: self.storage,
-            nrows: count,
-            ncols: self.cols(),
-            indptr: &self.indptr[i..(iend+1)],
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-}
-
+/// # Constructor methods for owned sparse matrices
 impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
+
+    /// Identity matrix, stored as a CSR matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye(5);
+    /// assert!(eye.is_csr());
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
+    pub fn eye(dim: usize) -> CsMat<N>
+    where N: Num + Clone
+    {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
+        CsMat {
+            storage: CSR,
+            nrows: n,
+            ncols: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
+        }
+    }
+
+    /// Identity matrix, stored as a CSC matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye_csc(5);
+    /// assert!(eye.is_csc());
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
+    pub fn eye_csc(dim: usize) -> CsMat<N>
+    where N: Num + Clone
+    {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
+        CsMat {
+            storage: CSC,
+            nrows: n,
+            ncols: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
+        }
+    }
     /// Create an empty CsMat for building purposes
     pub fn empty(storage: CompressedStorage,
                  inner_size: usize
@@ -610,62 +567,83 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
 
 }
 
-impl<N: Num> CsMatBase<N, usize, Vec<usize>, Vec<usize>, Vec<N>> {
-    /// Identity matrix, stored as a CSR matrix.
+/// # Constructor methods for sparse matrix views
+///
+/// These constructors can be used to create views over non-matrix data
+/// such as slices.
+impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
+    /// Create a borrowed CsMat matrix from sliced data,
+    /// checking their validity
+    pub fn new_view(
+        storage: CompressedStorage, shape: Shape,
+        indptr : &'a[I], indices : &'a[I], data : &'a[N]
+        )
+    -> Result<CsMatViewI<'a, N, I>, SprsError> {
+        let m = CsMatViewI {
+            storage: storage,
+            nrows : shape.0,
+            ncols: shape.1,
+            indptr : indptr,
+            indices : indices,
+            data : data,
+        };
+        m.check_compressed_structure().and(Ok(m))
+    }
+
+    /// Create a borrowed CsMat matrix from raw data,
+    /// without checking their validity
     ///
-    /// ```rust
-    /// use sprs::{CsMat, CsVec};
-    /// let eye = CsMat::eye(5);
-    /// assert!(eye.is_csr());
-    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
-    /// let y = &eye * &x;
-    /// assert_eq!(x, y);
-    /// ```
-    pub fn eye(dim: usize) -> CsMat<N>
-    where N: Clone
-    {
-        let n = dim;
-        let indptr = (0..n+1).collect();
-        let indices = (0..n).collect();
-        let data = vec![N::one(); n];
-        CsMat {
-            storage: CSR,
-            nrows: n,
-            ncols: n,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_view_raw(
+        storage: CompressedStorage, shape: Shape,
+        indptr : *const I, indices : *const I, data : *const N
+        )
+    -> CsMatViewI<'a, N, I> {
+        let (nrows, ncols) = shape;
+        let outer = match storage {
+            CSR => nrows,
+            CSC => ncols,
+        };
+        let indptr = slice::from_raw_parts(indptr, outer + 1);
+        let nnz = (*indptr.get_unchecked(outer)).index();
+        CsMatViewI {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
         }
     }
 
-    /// Identity matrix, stored as a CSC matrix.
+    /// Get a view into count contiguous outer dimensions, starting from i.
     ///
-    /// ```rust
-    /// use sprs::{CsMat, CsVec};
-    /// let eye = CsMat::eye_csc(5);
-    /// assert!(eye.is_csc());
-    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
-    /// let y = &eye * &x;
-    /// assert_eq!(x, y);
-    /// ```
-    pub fn eye_csc(dim: usize) -> CsMat<N>
-    where N: Clone
-    {
-        let n = dim;
-        let indptr = (0..n+1).collect();
-        let indices = (0..n).collect();
-        let data = vec![N::one(); n];
-        CsMat {
-            storage: CSC,
-            nrows: n,
-            ncols: n,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+    /// eg this gets the rows from i to i + count in a CSR matrix
+    pub fn middle_outer_views(&self,
+                              i: usize, count: usize
+                             ) -> CsMatViewI<'a, N, I> {
+        if count == 0 {
+            panic!("Empty view");
+        }
+        let iend = i.checked_add(count).unwrap();
+        if i >= self.outer_dims() || iend > self.outer_dims() {
+            panic!("Out of bounds index");
+        }
+        CsMatViewI {
+            storage: self.storage,
+            nrows: count,
+            ncols: self.cols(),
+            indptr: &self.indptr[i..(iend+1)],
+            indices: &self.indices[..],
+            data: &self.data[..],
         }
     }
 
 }
+
 
 impl<N, I, IptrStorage, IndStorage, DataStorage>
 CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
@@ -1338,6 +1316,31 @@ pub mod raw {
         let mut last = I::zero();
         for iptr in indptr.iter_mut() {
             swap(iptr, &mut last);
+        }
+    }
+}
+
+impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]> {
+    /// Create a borrowed row or column CsMat matrix from raw data,
+    /// without checking their validity
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_vecview_raw(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : Vec<I>, indices : *const I, data : *const N
+        )
+    -> CsMatVecView_<'a, N, I> {
+        let nnz = indptr[1].index();
+        CsMatVecView_ {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
         }
     }
 }
