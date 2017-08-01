@@ -645,60 +645,13 @@ impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
 }
 
 
+/// # Common methods for all variants of compressed sparse matrices.
 impl<N, I, IptrStorage, IndStorage, DataStorage>
 CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where I: SpIndex,
       IptrStorage: Deref<Target=[I]>,
       IndStorage: Deref<Target=[I]>,
       DataStorage: Deref<Target=[N]> {
-
-    /// Return an outer iterator for the matrix
-    ///
-    /// This can be used for iterating over the rows (resp. cols) of
-    /// a CSR (resp. CSC) matrix.
-    ///
-    /// ```rust
-    /// use sprs::{CsMat};
-    /// let eye = CsMat::eye(5);
-    /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
-    ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
-    ///     assert_eq!(row_ind, col_ind);
-    ///     assert_eq!(val, 1.);
-    /// }
-    /// ```
-    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N, I> {
-        let inner_len = match self.storage {
-            CSR => self.ncols,
-            CSC => self.nrows
-        };
-        OuterIterator {
-            inner_len: inner_len,
-            indptr_iter: self.indptr.windows(2),
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-    /// Return an outer iterator over P*A, as well as the proper permutation
-    /// for iterating over the inner dimension of P*A*P^T
-    /// Unstable
-    pub fn outer_iterator_perm<'a, 'perm: 'a>(
-        &'a self, perm: PermViewI<'perm, I>)
-    -> OuterIteratorPerm<'a, 'perm, N, I> {
-        let (inner_len, oriented_perm) = match self.storage {
-            CSR => (self.ncols, perm.reborrow()),
-            CSC => (self.nrows, perm.reborrow_inv())
-        };
-        let n = self.indptr.len() - 1;
-        OuterIteratorPerm {
-            inner_len: inner_len,
-            outer_ind_iter: (0..n),
-            indptr: &self.indptr[..],
-            indices: &self.indices[..],
-            data: &self.data[..],
-            perm: oriented_perm
-        }
-    }
 
     /// The underlying storage of this matrix
     pub fn storage(&self) -> CompressedStorage {
@@ -754,39 +707,6 @@ where I: SpIndex,
         match self.storage {
             CSR => self.get_outer_inner(i, j),
             CSC => self.get_outer_inner(j, i)
-        }
-    }
-
-    /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
-    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
-        if i >= self.outer_dims() {
-            return None;
-        }
-        let start = self.indptr[i].index();
-        let stop = self.indptr[i+1].index();
-        // CsMat invariants imply CsVec invariants
-        Some(CsVecBase {
-            dim: self.inner_dims(),
-            indices: &self.indices[start..stop],
-            data: &self.data[start..stop],
-        })
-    }
-
-    /// Iteration on outer blocks of size block_size
-    pub fn outer_block_iter(&self, block_size: usize
-                           ) -> ChunkOuterBlocks<N, I> {
-        let m = CsMatBase {
-            storage: self.storage,
-            nrows: self.rows(),
-            ncols: self.cols(),
-            indptr: &self.indptr[..],
-            indices: &self.indices[..],
-            data: &self.data[..],
-        };
-        ChunkOuterBlocks {
-            mat: m,
-            dims_in_bloc: block_size,
-            bloc_count: 0,
         }
     }
 
@@ -874,6 +794,108 @@ where I: SpIndex,
             indptr: self.indptr.to_vec(),
             indices: self.indices.to_vec(),
             data: self.data.to_vec(),
+        }
+    }
+
+    /// Return a view into the current matrix
+    pub fn view(&self) -> CsMatViewI<N, I> {
+        CsMatViewI {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
+    }
+
+    pub fn to_dense(&self) -> Array<N, Ix2>
+    where N: Clone + Zero
+    {
+        let mut res = Array::zeros((self.rows(), self.cols()));
+        assign_to_dense(res.view_mut(), self.view());
+        res
+    }
+
+    /// Return an outer iterator for the matrix
+    ///
+    /// This can be used for iterating over the rows (resp. cols) of
+    /// a CSR (resp. CSC) matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let eye = CsMat::eye(5);
+    /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
+    ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
+    ///     assert_eq!(row_ind, col_ind);
+    ///     assert_eq!(val, 1.);
+    /// }
+    /// ```
+    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N, I> {
+        let inner_len = match self.storage {
+            CSR => self.ncols,
+            CSC => self.nrows
+        };
+        OuterIterator {
+            inner_len: inner_len,
+            indptr_iter: self.indptr.windows(2),
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
+    }
+
+    /// Return an outer iterator over P*A, as well as the proper permutation
+    /// for iterating over the inner dimension of P*A*P^T
+    /// Unstable
+    pub fn outer_iterator_perm<'a, 'perm: 'a>(
+        &'a self, perm: PermViewI<'perm, I>)
+    -> OuterIteratorPerm<'a, 'perm, N, I> {
+        let (inner_len, oriented_perm) = match self.storage {
+            CSR => (self.ncols, perm.reborrow()),
+            CSC => (self.nrows, perm.reborrow_inv())
+        };
+        let n = self.indptr.len() - 1;
+        OuterIteratorPerm {
+            inner_len: inner_len,
+            outer_ind_iter: (0..n),
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+            perm: oriented_perm
+        }
+    }
+
+
+    /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
+    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
+        if i >= self.outer_dims() {
+            return None;
+        }
+        let start = self.indptr[i].index();
+        let stop = self.indptr[i+1].index();
+        // CsMat invariants imply CsVec invariants
+        Some(CsVecBase {
+            dim: self.inner_dims(),
+            indices: &self.indices[start..stop],
+            data: &self.data[start..stop],
+        })
+    }
+
+    /// Iteration on outer blocks of size block_size
+    pub fn outer_block_iter(&self, block_size: usize
+                           ) -> ChunkOuterBlocks<N, I> {
+        let m = CsMatBase {
+            storage: self.storage,
+            nrows: self.rows(),
+            ncols: self.cols(),
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        };
+        ChunkOuterBlocks {
+            mat: m,
+            dims_in_bloc: block_size,
+            bloc_count: 0,
         }
     }
 
@@ -984,27 +1006,9 @@ where I: SpIndex,
         Ok(())
     }
 
-    /// Return a view into the current matrix
-    pub fn view(&self) -> CsMatViewI<N, I> {
-        CsMatViewI {
-            storage: self.storage,
-            nrows: self.nrows,
-            ncols: self.ncols,
-            indptr: &self.indptr[..],
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-    pub fn to_dense(&self) -> Array<N, Ix2>
-    where N: Clone + Zero
-    {
-        let mut res = Array::zeros((self.rows(), self.cols()));
-        assign_to_dense(res.view_mut(), self.view());
-        res
-    }
 }
 
+/// # Methods to convert between storage orders
 impl<N, I, IptrStorage, IndStorage, DataStorage>
 CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where N: Default,
@@ -1057,6 +1061,7 @@ where N: Default,
 
 }
 
+/// # Methods for sparse matrices holding mutable access to their values.
 impl<N, I, IptrStorage, IndStorage, DataStorage>
 CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where
@@ -1223,6 +1228,7 @@ DataStorage: DerefMut<Target=[N]> {
     }
 }
 
+/// Raw functions acting directly on the compressed structure.
 pub mod raw {
     use sparse::prelude::*;
     use indexing::SpIndex;
