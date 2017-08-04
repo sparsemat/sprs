@@ -117,6 +117,47 @@ pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
 pub type CsVecViewMut<'a, N> = CsVecViewMut_<'a, N, usize>;
 pub type CsVec<N> = CsVecI<N, usize>;
 
+/// Sparse matrix in the triplet format.
+///
+/// Sparse matrices in the triplet format use three arrays of equal sizes (accessible through the
+/// methods [`row_inds`], [`col_inds`], [`data`]), the first one
+/// storing the row indices of non-zero values, the second storing the
+/// corresponding column indices and the last array storing the corresponding
+/// scalar value. If a non-zero location is repeated in the arrays, the
+/// non-zero value is taken as the sum of the corresponding scalar entries.
+///
+/// [`row_inds`]: struct.TriMatBase.html#method.row_inds
+/// [`col_inds`]: struct.TriMatBase.html#method.col_inds
+/// [`data`]: struct.TriMatBase.html#method.data
+///
+/// This format is useful for iteratively building a sparse matrix, since the
+/// various non-zero entries can be specified in any order, or even partially
+/// as is common in physics with partial derivatives equations.
+///
+/// This format cannot be used for arithmetic operations. Arithmetic operations
+/// are more efficient in the [compressed format](struct.CsMatBase.html).
+/// A matrix in the triplet format can be converted to the compressed format
+/// using the methods [`to_csc`] and [`to_csr`].
+///
+/// [`to_csc`]: struct.TriMatBase.html#method.to_csc
+/// [`to_csr`]: struct.TriMatBase.html#method.to_csr
+#[derive(PartialEq, Debug)]
+pub struct TriMatBase<IStorage, DStorage> {
+    rows: usize,
+    cols: usize,
+    row_inds: IStorage,
+    col_inds: IStorage,
+    data: DStorage,
+}
+
+pub type TriMatI<N, I> = TriMatBase<Vec<I>, Vec<N>>;
+pub type TriMatViewI<'a, N, I> = TriMatBase<&'a [I], &'a [N]>;
+pub type TriMatViewMutI<'a, N, I> = TriMatBase<&'a mut [I], &'a mut [N]>;
+
+pub type TriMat<N> = TriMatI<N, usize>;
+pub type TriMatView<'a, N> = TriMatViewI<'a, N, usize>;
+pub type TriMatViewMut<'a, N> = TriMatViewMutI<'a, N, usize>;
+
 mod prelude {
     pub use super::{
         CsMatBase,
@@ -135,6 +176,13 @@ mod prelude {
         CsVecViewMut,
         CsVecI,
         CsVec,
+        TriMatBase,
+        TriMat,
+        TriMatI,
+        TriMatView,
+        TriMatViewI,
+        TriMatViewMut,
+        TriMatViewMutI,
     };
 }
 

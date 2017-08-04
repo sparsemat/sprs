@@ -9,7 +9,9 @@
 ///! entries. By convention, duplicate locations are summed up when converting
 ///! into CsMat.
 
-use sparse::{csmat, CsMatI};
+use std::ops::{Deref, DerefMut};
+use sparse::csmat;
+use sparse::prelude::*;
 use num_traits::Num;
 use indexing::SpIndex;
 
@@ -17,45 +19,11 @@ use indexing::SpIndex;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TripletIndex(pub usize);
 
-/// Triplet matrix owning its data
-pub struct TriMatBase<N, I> {
-    rows: usize,
-    cols: usize,
-    row_inds: Vec<I>,
-    col_inds: Vec<I>,
-    data: Vec<N>,
-}
-
-/// Triplet matrix view
-pub struct TriMatViewBase<'a, N: 'a, I: 'a> {
-    rows: usize,
-    cols: usize,
-    row_inds: &'a [I],
-    col_inds: &'a [I],
-    data: &'a [N],
-}
-
-/// Triplet matrix mutable view
-pub struct TriMatViewMutBase<'a, N: 'a, I: 'a> {
-    rows: usize,
-    cols: usize,
-    row_inds: &'a mut [I],
-    col_inds: &'a mut [I],
-    data: &'a mut [N],
-}
-
-pub type TriMat<N> = TriMatBase<N, usize>;
-pub type TriMatView<'a, N> = TriMatViewBase<'a, N, usize>;
-pub type TriMatViewMut<'a, N> = TriMatViewMutBase<'a, N, usize>;
-pub type TriMatI<N, I> = TriMatBase<N, I>;
-pub type TriMatViewI<'a, N, I> = TriMatViewBase<'a, N, I>;
-pub type TriMatViewMutI<'a, N, I> = TriMatViewMutBase<'a, N, I>;
-
-
-impl<N, I: SpIndex> TriMatBase<N, I> {
+/// # Methods for creating triplet matrices that own their data.
+impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
-    pub fn new(shape: (usize, usize)) -> TriMatBase<N, I> {
-        TriMatBase {
+    pub fn new(shape: (usize, usize)) -> TriMatI<N, I> {
+        TriMatI {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::new(),
@@ -66,8 +34,8 @@ impl<N, I: SpIndex> TriMatBase<N, I> {
 
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
     /// pre-allocate `cap` elements on the backing storage
-    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TriMatBase<N, I> {
-        TriMatBase {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TriMatI<N, I> {
+        TriMatI {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::with_capacity(cap),
@@ -87,7 +55,7 @@ impl<N, I: SpIndex> TriMatBase<N, I> {
                          row_inds: Vec<I>,
                          col_inds: Vec<I>,
                          data: Vec<N>)
-                         -> TriMatBase<N, I> {
+                         -> TriMatI<N, I> {
         assert!(row_inds.len() == col_inds.len(),
                 "all inputs should have the same length");
         assert!(data.len() == col_inds.len(),
@@ -98,91 +66,13 @@ impl<N, I: SpIndex> TriMatBase<N, I> {
                 "row indices should be within shape");
         assert!(col_inds.iter().all(|&j| j.index() < shape.1),
                 "col indices should be within shape");
-        TriMatBase {
+        TriMatI {
             rows: shape.0,
             cols: shape.1,
             row_inds: row_inds,
             col_inds: col_inds,
             data: data,
         }
-    }
-
-    /// The number of rows of the matrix
-    pub fn rows(&self) -> usize {
-        self.borrowed().rows()
-    }
-
-    /// The number of cols of the matrix
-    pub fn cols(&self) -> usize {
-        self.borrowed().cols()
-    }
-
-    /// The shape of the matrix, as a `(rows, cols)` tuple
-    pub fn shape(&self) -> (usize, usize) {
-        self.borrowed().shape()
-    }
-
-    /// The number of non-zero entries
-    pub fn nnz(&self) -> usize {
-        self.borrowed().nnz()
-    }
-
-    /// The non-zero row indices
-    pub fn row_inds(&self) -> &[I] {
-        self.borrowed().row_inds()
-    }
-
-    /// The non-zero column indices
-    pub fn col_inds(&self) -> &[I] {
-        self.borrowed().col_inds()
-    }
-
-    /// The non-zero values
-    pub fn data(&self) -> &[N] {
-        self.borrowed().data()
-    }
-
-    /// Find all non-zero entries at the location given by `row` and `col`
-    pub fn find_locations(&self, row: usize, col: usize) -> Vec<TripletIndex> {
-        self.borrowed().find_locations(row, col)
-    }
-
-    /// Return a view of this matrix
-    pub fn borrowed(&self) -> TriMatViewBase<N, I> {
-        TriMatViewBase {
-            rows: self.rows,
-            cols: self.cols,
-            row_inds: &self.row_inds[..],
-            col_inds: &self.col_inds[..],
-            data: &self.data[..],
-        }
-    }
-
-    /// Replace a non-zero value at the given index.
-    /// Indices can be obtained using find_locations.
-    pub fn set_triplet(&mut self,
-                       TripletIndex(triplet_ind): TripletIndex,
-                       row: usize,
-                       col: usize,
-                       val: N) {
-        self.borrowed_mut()
-            .set_triplet(TripletIndex(triplet_ind), row, col, val);
-    }
-
-    /// Get a mutable view into this matrix.
-    pub fn borrowed_mut(&mut self) -> TriMatViewMutBase<N, I> {
-        TriMatViewMutBase {
-            rows: self.rows,
-            cols: self.cols,
-            row_inds: &mut self.row_inds[..],
-            col_inds: &mut self.col_inds[..],
-            data: &mut self.data[..],
-        }
-    }
-
-    /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TriMatViewBase<N, I> {
-        self.borrowed().transpose_view()
     }
 
     /// Append a non-zero triplet to this matrix.
@@ -207,24 +97,14 @@ impl<N, I: SpIndex> TriMatBase<N, I> {
         self.col_inds.reserve_exact(cap);
         self.data.reserve_exact(cap);
     }
-
-    /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatI<N, I>
-    where N: Clone + Num
-    {
-        self.borrowed().to_csc()
-    }
-
-    /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatI<N, I>
-    where N: Clone + Num
-    {
-        self.borrowed().to_csr()
-    }
 }
 
 
-impl<'a, N, I: SpIndex> TriMatViewBase<'a, N, I> {
+/// # Common methods shared by all variants of triplet matrices
+impl<N, I: SpIndex, IStorage, DStorage> TriMatBase<IStorage, DStorage>
+where IStorage: Deref<Target=[I]>,
+      DStorage: Deref<Target=[N]>,
+{
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.rows
@@ -246,18 +126,18 @@ impl<'a, N, I: SpIndex> TriMatViewBase<'a, N, I> {
     }
 
     /// The non-zero row indices
-    pub fn row_inds(&self) -> &'a [I] {
-        self.row_inds
+    pub fn row_inds(&self) -> &[I] {
+        &self.row_inds[..]
     }
 
     /// The non-zero column indices
-    pub fn col_inds(&self) -> &'a [I] {
-        self.col_inds
+    pub fn col_inds(&self) -> &[I] {
+        &self.col_inds[..]
     }
 
     /// The non-zero values
-    pub fn data(&self) -> &'a [N] {
-        self.data
+    pub fn data(&self) -> &[N] {
+        &self.data[..]
     }
 
     /// Find all non-zero entries at the location given by `row` and `col`
@@ -272,13 +152,13 @@ impl<'a, N, I: SpIndex> TriMatViewBase<'a, N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TriMatViewBase<'a, N, I> {
-        TriMatViewBase {
+    pub fn transpose_view(&self) -> TriMatViewI<N, I> {
+        TriMatViewI {
             rows: self.cols,
             cols: self.rows,
-            row_inds: self.col_inds,
-            col_inds: self.row_inds,
-            data: self.data,
+            row_inds: &self.col_inds[..],
+            col_inds: &self.row_inds[..],
+            data: &self.data[..],
         }
     }
 
@@ -381,48 +261,10 @@ impl<'a, N, I: SpIndex> TriMatViewBase<'a, N, I> {
         let res = self.transpose_view().to_csc();
         res.transpose_into()
     }
-}
 
-
-impl<'a, N, I: SpIndex> TriMatViewMutBase<'a, N, I> {
-    /// The number of rows of the matrix
-    pub fn rows(&self) -> usize {
-        self.borrowed().rows()
-    }
-
-    /// The number of cols of the matrix
-    pub fn cols(&self) -> usize {
-        self.borrowed().cols()
-    }
-
-    /// The shape of the matrix, as a `(rows, cols)` tuple
-    pub fn shape(&self) -> (usize, usize) {
-        self.borrowed().shape()
-    }
-
-    /// The number of non-zero entries
-    pub fn nnz(&self) -> usize {
-        self.borrowed().nnz()
-    }
-
-    /// The non-zero row indices
-    pub fn row_inds(&self) -> &[I] {
-        self.borrowed().row_inds()
-    }
-
-    /// The non-zero column indices
-    pub fn col_inds(&self) -> &[I] {
-        self.borrowed().col_inds()
-    }
-
-    /// The non-zero values
-    pub fn data(&self) -> &[N] {
-        self.borrowed().data()
-    }
-
-    /// Return a view of this matrix
-    pub fn borrowed(&self) -> TriMatViewBase<N, I> {
-        TriMatViewBase {
+    pub fn view(&self) -> TriMatViewI<N, I>
+    {
+        TriMatViewI {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -430,12 +272,13 @@ impl<'a, N, I: SpIndex> TriMatViewMutBase<'a, N, I> {
             data: &self.data[..],
         }
     }
+}
 
-    /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TriMatViewBase<N, I> {
-        self.borrowed().transpose_view()
-    }
 
+impl<N, I: SpIndex, IStorage, DStorage> TriMatBase<IStorage, DStorage>
+where IStorage: DerefMut<Target=[I]>,
+      DStorage: DerefMut<Target=[N]>,
+{
     /// Replace a non-zero value at the given index.
     /// Indices can be obtained using find_locations.
     pub fn set_triplet(&mut self,
@@ -448,18 +291,15 @@ impl<'a, N, I: SpIndex> TriMatViewMutBase<'a, N, I> {
         self.data[triplet_ind] = val;
     }
 
-    /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatI<N, I>
-    where N: Clone + Num
+    pub fn view_mut(&mut self) -> TriMatViewMutI<N, I>
     {
-        self.borrowed().to_csc()
-    }
-
-    /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatI<N, I>
-    where N: Clone + Num
-    {
-        self.borrowed().to_csr()
+        TriMatViewMutI {
+            rows: self.rows,
+            cols: self.cols,
+            row_inds: &mut self.row_inds[..],
+            col_inds: &mut self.col_inds[..],
+            data: &mut self.data[..],
+        }
     }
 }
 

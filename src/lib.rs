@@ -87,6 +87,13 @@ pub use sparse::{
     CsVecViewI,
     CsVec,
     CsVecI,
+    TriMatBase,
+    TriMat,
+    TriMatView,
+    TriMatViewMut,
+    TriMatI,
+    TriMatViewI,
+    TriMatViewMutI,
 };
 
 
@@ -131,15 +138,6 @@ pub mod vec {
         NnzEither,
     };
 }
-
-pub use sparse::triplet::{
-    TriMat,
-    TriMatView,
-    TriMatViewMut,
-    TriMatI,
-    TriMatViewI,
-    TriMatViewMutI,
-};
 
 pub use sparse::construct::{
     vstack,
