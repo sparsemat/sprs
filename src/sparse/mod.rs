@@ -141,6 +141,25 @@ pub type CsVec<N> = CsVecI<N, usize>;
 ///
 /// [`to_csc`]: struct.TriMatBase.html#method.to_csc
 /// [`to_csr`]: struct.TriMatBase.html#method.to_csr
+///
+/// The `TriMatBase` type is parameterized by the storage type for the row and
+/// column indices, `IStorage`, and by the storage type for the non-zero values
+/// `DStorage`. Convenient aliases are availaible to specify frequent variant:
+/// [`TriMat`] refers to a triplet matrix owning the storage of its indices and
+/// and values, [`TriMatView`] refers to a triplet matrix with slices to store
+/// its indices and values, while [`TriMatViewMut`] refers to a a triplet matrix
+/// using mutable slices.
+///
+/// Additionaly, the type aliases [`TriMatI`], [`TriMatViewI`] and
+/// [`TriMatViewMutI`] can be used to choose an index type different from the
+/// default `usize`.
+///
+/// [`TriMat`]: type.TriMat.html
+/// [`TriMatView`]: type.TriMatView.html
+/// [`TriMatViewMut`]: type.TriMatViewMut.html
+/// [`TriMatI`]: type.TriMatI.html
+/// [`TriMatViewI`]: type.TriMatViewI.html
+/// [`TriMatViewMutI`]: type.TriMatViewMutI.html
 #[derive(PartialEq, Debug)]
 pub struct TriMatBase<IStorage, DStorage> {
     rows: usize,
