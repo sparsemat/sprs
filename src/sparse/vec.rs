@@ -700,7 +700,7 @@ where N: 'a,
         &mut self.data[..]
     }
 
-    pub fn view_mut(&mut self) -> CsVecViewMut_<N, I> {
+    pub fn view_mut(&mut self) -> CsVecViewMutI<N, I> {
         CsVecBase {
             dim: self.dim,
             indices: &self.indices[..],

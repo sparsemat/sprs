@@ -178,7 +178,7 @@ for OuterIteratorPerm<'iter, 'perm, N, I>
 impl <'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIteratorMut<'iter, N, I> {
-    type Item = CsVecViewMut_<'iter, N, I>;
+    type Item = CsVecViewMutI<'iter, N, I>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
@@ -1088,7 +1088,7 @@ DataStorage: DerefMut<Target=[N]> {
 
     /// Get a mutable view into the i-th outer dimension
     /// (eg i-th row for a CSR matrix)
-    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMut_<N, I>> {
+    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMutI<N, I>> {
         if i >= self.outer_dims() {
             return None;
         }

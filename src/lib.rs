@@ -87,6 +87,8 @@ pub use sparse::{
     CsVecViewI,
     CsVec,
     CsVecI,
+    CsVecViewMut,
+    CsVecViewMutI,
     TriMatBase,
     TriMat,
     TriMatView,

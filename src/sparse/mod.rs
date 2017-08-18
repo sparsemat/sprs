@@ -100,7 +100,32 @@ pub type CsMatViewMut<'a, N> = CsMatViewMutI<'a, N, usize>;
 pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 
 /// A sparse vector, storing the indices of its non-zero data.
-/// The indices should be sorted.
+///
+/// A `CsVec` represents a sparse vector by storing a sorted `indices()` array
+/// containing the locations of the non-zero values and a `data()` array
+/// containing the corresponding values. The format is compatible with `CsMat`,
+/// ie a `CsVec` can represent the row of a CSR matrix without any copying.
+///
+/// Similar to [`CsMat`] and [`TriMat`], the `CsVecBase` type is parameterized
+/// over the indexing storage backend `IStorage` and the data storage backend
+/// `DStorage`. Type aliases are provided for common cases: [`CsVec`] represents
+/// a sparse vector owning its data, with `Vec`s as storage backends;
+/// [`CsVecView`] represents a sparse vector borrowing its data, using slices
+/// as storage backends; and [`CsVecViewMut`] represents a sparse vector that
+/// mutably borrows its data (but immutably borrows its indices).
+///
+/// Additionaly, the type aliases [`CsVecI`], [`CsVecViewI`], and
+/// [`CsVecViewMutI`] can be used to choose an index type different from the
+/// default `usize`.
+///
+/// [`CsMat`]: struct.CsMatBase.html
+/// [`TriMat`]: struct.TriMatBase.html
+/// [`CsVec`]: type.CsVec.html
+/// [`CsVecView`]: type.CsVecView.html
+/// [`CsVecViewMut`]: type.CsVecViewMut.html
+/// [`CsVecI`]: type.CsVecI.html
+/// [`CsVecViewI`]: type.CsVecViewI.html
+/// [`CsVecViewMutI`]: type.CsVecViewMutI.html
 #[derive(PartialEq, Debug)]
 pub struct CsVecBase<N, IStorage, DStorage>
 where DStorage: Deref<Target=[N]> {
@@ -109,12 +134,12 @@ where DStorage: Deref<Target=[N]> {
     data : DStorage
 }
 
-pub type CsVecViewI<'a, N, I> = CsVecBase<N, &'a [I], &'a [N]>;
-pub type CsVecViewMut_<'a, N, I> = CsVecBase<N, &'a [I], &'a mut [N]>;
 pub type CsVecI<N, I> = CsVecBase<N, Vec<I>, Vec<N>>;
+pub type CsVecViewI<'a, N, I> = CsVecBase<N, &'a [I], &'a [N]>;
+pub type CsVecViewMutI<'a, N, I> = CsVecBase<N, &'a [I], &'a mut [N]>;
 
 pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
-pub type CsVecViewMut<'a, N> = CsVecViewMut_<'a, N, usize>;
+pub type CsVecViewMut<'a, N> = CsVecViewMutI<'a, N, usize>;
 pub type CsVec<N> = CsVecI<N, usize>;
 
 /// Sparse matrix in the triplet format.
@@ -191,7 +216,7 @@ mod prelude {
         CsVecBase,
         CsVecViewI,
         CsVecView,
-        CsVecViewMut_,
+        CsVecViewMutI,
         CsVecViewMut,
         CsVecI,
         CsVec,
