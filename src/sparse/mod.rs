@@ -127,16 +127,15 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
 #[derive(PartialEq, Debug)]
-pub struct CsVecBase<N, IStorage, DStorage>
-where DStorage: Deref<Target=[N]> {
+pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
     indices : IStorage,
     data : DStorage
 }
 
-pub type CsVecI<N, I> = CsVecBase<N, Vec<I>, Vec<N>>;
-pub type CsVecViewI<'a, N, I> = CsVecBase<N, &'a [I], &'a [N]>;
-pub type CsVecViewMutI<'a, N, I> = CsVecBase<N, &'a [I], &'a mut [N]>;
+pub type CsVecI<N, I> = CsVecBase<Vec<I>, Vec<N>>;
+pub type CsVecViewI<'a, N, I> = CsVecBase<&'a [I], &'a [N]>;
+pub type CsVecViewMutI<'a, N, I> = CsVecBase<&'a [I], &'a mut [N]>;
 
 pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
 pub type CsVecViewMut<'a, N> = CsVecViewMutI<'a, N, usize>;

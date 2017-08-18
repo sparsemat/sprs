@@ -51,7 +51,7 @@ pub trait VecDim<N> {
     fn dim(&self) -> usize;
 }
 
-impl<N, IS, DS: Deref<Target=[N]>> VecDim<N> for CsVecBase<N, IS, DS> {
+impl<N, IS, DS: Deref<Target=[N]>> VecDim<N> for CsVecBase<IS, DS> {
     fn dim(&self) -> usize {
         self.dim
     }
@@ -230,7 +230,7 @@ where I: SpIndex,
 
 impl<'a, N: 'a, I: 'a, IS, DS>
 IntoSparseVecIter<&'a N>
-for &'a CsVecBase<N, IS, DS>
+for &'a CsVecBase<IS, DS>
 where I: SpIndex,
       IS: Deref<Target=[I]>,
       DS: Deref<Target=[N]>
@@ -360,7 +360,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
 }
 
 /// # Methods operating on owning sparse vectors
-impl<N, I: SpIndex> CsVecBase<N, Vec<I>, Vec<N>> {
+impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     /// Create an owning CsVec from vector data.
     ///
     /// # Panics
@@ -436,7 +436,7 @@ impl<N, I: SpIndex> CsVecBase<N, Vec<I>, Vec<N>> {
 }
 
 /// # Common methods of sparse vectors
-impl<N, I, IStorage, DStorage> CsVecBase<N, IStorage, DStorage>
+impl<N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage>
 where I: SpIndex,
       IStorage: Deref<Target=[I]>,
       DStorage: Deref<Target=[N]> {
@@ -597,7 +597,7 @@ where I: SpIndex,
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
     pub fn dot<'b, T: IntoSparseVecIter<&'b N>>(&'b self, rhs: T) -> N
-    where N: Num + Copy,
+    where N: 'b + Num + Copy,
           I: 'b,
           <T as IntoSparseVecIter<&'b N>>::IterType: Iterator<Item=(usize, &'b N)>
     {
@@ -636,7 +636,7 @@ where I: SpIndex,
 }
 
 /// # Methods on sparse vectors with mutable access to their data
-impl<'a, N, I, IStorage, DStorage> CsVecBase<N, IStorage, DStorage>
+impl<'a, N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage>
 where N: 'a,
       I: 'a + SpIndex,
       IStorage: 'a + Deref<Target=[I]>,
@@ -686,7 +686,7 @@ where N: 'a,
 }
 
 /// # Methods propagating the lifetime of a `CsVecViewI`.
-impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<N, &'a [I], &'a [N]> {
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
 
     /// Create a borrowed CsVec over slice data.
     pub fn new_view(
@@ -740,7 +740,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<N, &'a [I], &'a [N]> {
 
 
 /// # Methods propagating the lifetome of a `CsVecViewMutI`.
-impl<'a, N, I> CsVecBase<N, &'a [I], &'a mut [N]>
+impl<'a, N, I> CsVecBase<&'a [I], &'a mut [N]>
 where N: 'a,
       I: 'a + SpIndex
 {
@@ -768,7 +768,7 @@ where N: 'a,
 
 impl<'a, 'b, N, I, IS1, DS1, IpS2, IS2, DS2>
 Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>>
-for &'a CsVecBase<N, IS1, DS1>
+for &'a CsVecBase<IS1, DS1>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IS1: 'a + Deref<Target=[I]>,
@@ -785,7 +785,7 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2>
-Mul<&'b CsVecBase<N, IS2, DS2>>
+Mul<&'b CsVecBase<IS2, DS2>>
 for &'a CsMatBase<N, I, IpS1, IS1, DS1>
 where N: Copy + Num + Default,
       I: SpIndex,
@@ -797,7 +797,7 @@ where N: Copy + Num + Default,
 
     type Output = CsVecI<N, I>;
 
-    fn mul(self, rhs: &CsVecBase<N, IS2, DS2>) -> CsVecI<N, I> {
+    fn mul(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         }
@@ -807,8 +807,8 @@ where N: Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<N, IS2, DS2>>
-for &'a CsVecBase<N, IS1, DS1>
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2>>
+for &'a CsVecBase<IS1, DS1>
 where N: Copy + Num,
       IS1: Deref<Target=[usize]>,
       DS1: Deref<Target=[N]>,
@@ -817,7 +817,7 @@ where N: Copy + Num,
 
     type Output = CsVec<N>;
 
-    fn add(self, rhs: &CsVecBase<N, IS2, DS2>) -> CsVec<N> {
+    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
         binop::csvec_binop(self.view(),
                            rhs.view(),
                            |&x, &y| x + y
@@ -825,8 +825,8 @@ where N: Copy + Num,
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<N, IS2, DS2>>
-for &'a CsVecBase<N, IS1, DS1>
+impl<'a, 'b, N, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2>>
+for &'a CsVecBase<IS1, DS1>
 where N: Copy + Num,
       IS1: Deref<Target=[usize]>,
       DS1: Deref<Target=[N]>,
@@ -835,7 +835,7 @@ where N: Copy + Num,
 
     type Output = CsVec<N>;
 
-    fn sub(self, rhs: &CsVecBase<N, IS2, DS2>) -> CsVec<N> {
+    fn sub(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
         binop::csvec_binop(self.view(),
                            rhs.view(),
                            |&x, &y| x - y
@@ -843,7 +843,7 @@ where N: Copy + Num,
     }
 }
 
-impl<N, IS, DS> Index<usize> for CsVecBase<N, IS, DS>
+impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS>
 where IS: Deref<Target=[usize]>,
       DS: Deref<Target=[N]> {
 
@@ -854,7 +854,7 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IS, DS> IndexMut<usize> for CsVecBase<N, IS, DS>
+impl<N, IS, DS> IndexMut<usize> for CsVecBase<IS, DS>
 where IS: Deref<Target=[usize]>,
       DS: DerefMut<Target=[N]> {
 
@@ -863,7 +863,7 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IS, DS> Index<NnzIndex> for CsVecBase<N, IS, DS>
+impl<N, IS, DS> Index<NnzIndex> for CsVecBase<IS, DS>
 where IS: Deref<Target=[usize]>,
       DS: Deref<Target=[N]>
 {
@@ -875,7 +875,7 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
-impl<N, IS, DS> IndexMut<NnzIndex> for CsVecBase<N, IS, DS>
+impl<N, IS, DS> IndexMut<NnzIndex> for CsVecBase<IS, DS>
 where IS: Deref<Target=[usize]>,
       DS: DerefMut<Target=[N]>
 {
