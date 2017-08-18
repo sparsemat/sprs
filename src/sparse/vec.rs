@@ -224,7 +224,7 @@ where I: SpIndex,
     }
 
     fn into_sparse_vec_iter(self) -> VectorIterator<'a, N, I> {
-        self.iter_()
+        self.iter_rbr()
     }
 }
 
@@ -359,56 +359,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
     }
 }
 
-impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
-
-    /// Create a borrowed CsVec over slice data.
-    pub fn new_view(
-        n: usize,
-        indices: &'a [I],
-        data: &'a [N])
-    -> Result<CsVecViewI<'a, N, I>, SprsError> {
-        let v = CsVecViewI {
-            dim: n,
-            indices: indices,
-            data: data,
-        };
-        v.check_structure().and(Ok(v))
-    }
-
-    /// Access element at given index, with logarithmic complexity
-    ///
-    /// Re-borrowing version of `at()`.
-    pub fn get_(&self, index: usize) -> Option<&'a N> {
-        self.nnz_index(index).map(|NnzIndex(position)| {
-            &self.data[position]
-        })
-    }
-
-    /// Re-borrowing version of `iter()`
-    fn iter_(&self) -> VectorIterator<'a, N, I> {
-        VectorIterator {
-            ind_data: self.indices.iter().zip(self.data.iter()),
-        }
-    }
-
-    /// Create a borrowed CsVec over slice data without checking the structure
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_structure are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_view_raw(n: usize,
-                               nnz: usize,
-                               indices: *const I,
-                               data: *const N,
-                              ) -> CsVecViewI<'a, N, I> {
-        CsVecViewI {
-            dim: n,
-            indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts(data, nnz),
-        }
-    }
-}
-
+/// # Methods operating on owning sparse vectors
 impl<N, I: SpIndex> CsVecBase<N, Vec<I>, Vec<N>> {
     /// Create an owning CsVec from vector data.
     ///
@@ -484,6 +435,7 @@ impl<N, I: SpIndex> CsVecBase<N, Vec<I>, Vec<N>> {
     }
 }
 
+/// # Common methods of sparse vectors
 impl<N, I, IStorage, DStorage> CsVecBase<N, IStorage, DStorage>
 where I: SpIndex,
       IStorage: Deref<Target=[I]>,
@@ -497,12 +449,6 @@ where I: SpIndex,
             data: &self.data[..],
         }
     }
-}
-
-impl<N, I, IStorage, DStorage> CsVecBase<N, IStorage, DStorage>
-where I: SpIndex,
-      IStorage: Deref<Target=[I]>,
-      DStorage: Deref<Target=[N]> {
 
     /// Iterate over the non zero values.
     ///
@@ -617,7 +563,7 @@ where I: SpIndex,
     pub fn get<'a>(&'a self, index: usize) -> Option<&'a N>
     where I: 'a
     {
-        self.view().get_(index)
+        self.view().get_rbr(index)
     }
 
     /// Find the non-zero index of the requested dimension index,
@@ -689,6 +635,7 @@ where I: SpIndex,
     }
 }
 
+/// # Methods on sparse vectors with mutable access to their data
 impl<'a, N, I, IStorage, DStorage> CsVecBase<N, IStorage, DStorage>
 where N: 'a,
       I: 'a + SpIndex,
@@ -738,19 +685,79 @@ where N: 'a,
 
 }
 
-impl<'a, N> CsVecViewMut<'a, N>
-where N: 'a {
+/// # Methods propagating the lifetime of a `CsVecViewI`.
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<N, &'a [I], &'a [N]> {
+
+    /// Create a borrowed CsVec over slice data.
+    pub fn new_view(
+        n: usize,
+        indices: &'a [I],
+        data: &'a [N])
+    -> Result<CsVecViewI<'a, N, I>, SprsError> {
+        let v = CsVecViewI {
+            dim: n,
+            indices: indices,
+            data: data,
+        };
+        v.check_structure().and(Ok(v))
+    }
+
+    /// Access element at given index, with logarithmic complexity
+    ///
+    /// Re-borrowing version of `at()`.
+    pub fn get_rbr(&self, index: usize) -> Option<&'a N> {
+        self.nnz_index(index).map(|NnzIndex(position)| {
+            &self.data[position]
+        })
+    }
+
+    /// Re-borrowing version of `iter()`. Namely, the iterator's lifetime
+    /// will be bound to the lifetime of the underlying slices instead
+    /// of being bound to the lifetime of the borrow.
+    fn iter_rbr(&self) -> VectorIterator<'a, N, I> {
+        VectorIterator {
+            ind_data: self.indices.iter().zip(self.data.iter()),
+        }
+    }
 
     /// Create a borrowed CsVec over slice data without checking the structure
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
+    pub unsafe fn new_view_raw(n: usize,
+                               nnz: usize,
+                               indices: *const I,
+                               data: *const N,
+                              ) -> CsVecViewI<'a, N, I> {
+        CsVecViewI {
+            dim: n,
+            indices: slice::from_raw_parts(indices, nnz),
+            data: slice::from_raw_parts(data, nnz),
+        }
+    }
+}
+
+
+/// # Methods propagating the lifetome of a `CsVecViewMutI`.
+impl<'a, N, I> CsVecBase<N, &'a [I], &'a mut [N]>
+where N: 'a,
+      I: 'a + SpIndex
+{
+
+    /// Create a borrowed CsVec over slice data without checking the structure
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_structure are enforced, and
+    /// because the lifetime of the pointers is unconstrained.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    /// For safety, lifetime of the resulting vector should match the lifetime
+    /// of the input pointers.
     pub unsafe fn new_view_mut_raw(n: usize,
                                    nnz: usize,
-                                   indices: *const usize,
+                                   indices: *const I,
                                    data: *mut N,
-                                  ) -> CsVecViewMut<'a, N> {
+                                  ) -> CsVecViewMutI<'a, N, I> {
         CsVecBase {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),

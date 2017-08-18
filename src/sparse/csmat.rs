@@ -919,7 +919,7 @@ where I: SpIndex,
                           outer_ind: usize,
                           inner_ind: usize
                          ) -> Option<&N> {
-        self.outer_view(outer_ind).and_then(|vec| vec.get_(inner_ind))
+        self.outer_view(outer_ind).and_then(|vec| vec.get_rbr(inner_ind))
     }
 
     /// Find the non-zero index of the element specified by row and col
