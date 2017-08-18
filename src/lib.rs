@@ -1,28 +1,39 @@
 /*!
-# sprs
 
 sprs is a sparse linear algebra library for Rust.
 
-It features a sparse matrix type, CsMat, and a sparse vector type, CsVec,
-both based on the compressed storage scheme.
+It features a sparse matrix type, [**`CsMat`**](struct.CsMatBase.html), and a sparse vector type,
+[**`CsVec`**](struct.CsVecBase.html), both based on the
+[compressed storage scheme](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_.28CSR.2C_CRS_or_Yale_format.29).
 
-All matrix algebra operations are supported, and support for direct sparse
-solvers is planned.
+## Features
 
-## Examples
+- sparse matrix/sparse matrix addition, multiplication.
+- sparse vector/sparse vector addition, dot product.
+- sparse matrix/dense matrix addition, multiplication.
+- sparse triangular solves.
+- powerful iteration over the sparse structure, enabling easy extension of the library.
+- matrix construction using the [triplet format](struct.TriMatBase.html),
+  vertical and horizontal stacking, block construction.
+- sparse cholesky solver in the separate crate `sprs-ldl`.
+- fully generic integer type for the storage of indices, enabling compact
+  representations.
+- planned interoperability with existing sparse solvers such as SuiteSparse.
 
-Matrix construction
+## Quick Examples
+
+Matrix construction:
 
 ```rust
-use sprs::{CsMat, CsMatOwned, CsVec};
-let eye : CsMatOwned<f64> = CsMat::eye(3);
+use sprs::{CsMat, CsVec};
+let eye : CsMat<f64> = CsMat::eye(3);
 let a = CsMat::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
                        vec![1., 2., 3., 4., 5.]);
 ```
 
-Matrix vector multiplication
+Matrix vector multiplication:
 
 ```rust
 use sprs::{CsMat, CsVec};
@@ -32,7 +43,7 @@ let y = &eye * &x;
 assert_eq!(x, y);
 ```
 
-Matrix matrix multiplication, addition
+Matrix matrix multiplication, addition:
 
 ```rust
 use sprs::{CsMat, CsVec};
@@ -63,19 +74,28 @@ pub type Ix1 = ndarray::Ix1;
 pub type Ix2 = ndarray::Ix2;
 
 pub use sparse::{
+    CsMatBase,
     CsMat,
-    CsMatOwned,
-    CsMatOwnedI,
+    CsMatI,
     CsMatView,
     CsMatViewI,
     CsMatViewMut,
     CsMatViewMutI,
     CsMatVecView,
-    CsVec,
+    CsVecBase,
     CsVecView,
     CsVecViewI,
-    CsVecOwned,
-    CsVecOwnedI,
+    CsVec,
+    CsVecI,
+    CsVecViewMut,
+    CsVecViewMutI,
+    TriMatBase,
+    TriMat,
+    TriMatView,
+    TriMatViewMut,
+    TriMatI,
+    TriMatViewI,
+    TriMatViewMutI,
 };
 
 
@@ -103,8 +123,8 @@ pub use sparse::binop;
 
 pub mod vec {
     pub use sparse::{
+        CsVecBase,
         CsVec,
-        CsVecOwned,
         CsVecView,
         CsVecViewMut,
     };
@@ -120,12 +140,6 @@ pub mod vec {
         NnzEither,
     };
 }
-
-pub use sparse::triplet::{
-    TripletMat,
-    TripletMatView,
-    TripletMatViewMut,
-};
 
 pub use sparse::construct::{
     vstack,

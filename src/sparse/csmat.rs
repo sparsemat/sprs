@@ -113,7 +113,7 @@ pub struct OuterIteratorMut<'iter, N: 'iter, I: 'iter> {
 impl <'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIterator<'iter, N, I> {
-    type Item = CsVec<N, &'iter[I], &'iter[N]>;
+    type Item = CsVecBase<&'iter[I], &'iter[N]>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
@@ -124,7 +124,7 @@ for OuterIterator<'iter, N, I> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
-                Some(CsVec {
+                Some(CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -145,7 +145,7 @@ impl <'iter, 'perm: 'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIteratorPerm<'iter, 'perm, N, I>
 {
-    type Item = (usize, CsVec<N, &'iter[I], &'iter[N]>);
+    type Item = (usize, CsVecBase<&'iter[I], &'iter[N]>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.outer_ind_iter.next() {
@@ -157,7 +157,7 @@ for OuterIteratorPerm<'iter, 'perm, N, I>
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
-                let vec = CsVec {
+                let vec = CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -178,7 +178,7 @@ for OuterIteratorPerm<'iter, 'perm, N, I>
 impl <'iter, N: 'iter, I: 'iter + SpIndex>
 Iterator
 for OuterIteratorMut<'iter, N, I> {
-    type Item = CsVecViewMut_<'iter, N, I>;
+    type Item = CsVecViewMutI<'iter, N, I>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
@@ -193,7 +193,7 @@ for OuterIteratorMut<'iter, N, I> {
                 self.data = next;
 
                 // CsMat invariants imply CsVec invariants
-                Some(CsVec {
+                Some(CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -228,7 +228,7 @@ for OuterIterator<'iter, N, I> {
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
-                Some(CsVec {
+                Some(CsVecBase {
                     dim: self.inner_len,
                     indices: indices,
                     data: data,
@@ -247,114 +247,71 @@ for OuterIterator<'iter, N, I> {
 }
 
 
-impl<'a, N:'a, I: 'a + SpIndex> CsMat<N, I, Vec<I>, &'a [I], &'a [N]> {
-    /// Create a borrowed row or column CsMat matrix from raw data,
-    /// without checking their validity
+/// # Constructor methods for owned sparse matrices
+impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
+
+    /// Identity matrix, stored as a CSR matrix.
     ///
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_compressed_structure are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_vecview_raw(
-        storage: CompressedStorage, nrows : usize, ncols: usize,
-        indptr : Vec<I>, indices : *const I, data : *const N
-        )
-    -> CsMatVecView_<'a, N, I> {
-        let nnz = indptr[1].index();
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye(5);
+    /// assert!(eye.is_csr());
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
+    pub fn eye(dim: usize) -> CsMat<N>
+    where N: Num + Clone
+    {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
         CsMat {
-            storage: storage,
-            nrows : nrows,
-            ncols: ncols,
-            indptr : indptr,
-            indices : slice::from_raw_parts(indices, nnz),
-            data : slice::from_raw_parts(data, nnz),
+            storage: CSR,
+            nrows: n,
+            ncols: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
         }
     }
-}
 
-impl<'a, N:'a, I: 'a + SpIndex> CsMat<N, I, &'a [I], &'a [I], &'a [N]> {
-    /// Create a borrowed CsMat matrix from sliced data,
-    /// checking their validity
-    pub fn new_view(
-        storage: CompressedStorage, shape: Shape,
-        indptr : &'a[I], indices : &'a[I], data : &'a[N]
-        )
-    -> Result<CsMatViewI<'a, N, I>, SprsError> {
-        let m = CsMat {
-            storage: storage,
-            nrows : shape.0,
-            ncols: shape.1,
-            indptr : indptr,
-            indices : indices,
-            data : data,
-        };
-        m.check_compressed_structure().and(Ok(m))
-    }
-
-    /// Create a borrowed CsMat matrix from raw data,
-    /// without checking their validity
+    /// Identity matrix, stored as a CSC matrix.
     ///
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_compressed_structure are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_view_raw(
-        storage: CompressedStorage, shape: Shape,
-        indptr : *const I, indices : *const I, data : *const N
-        )
-    -> CsMatViewI<'a, N, I> {
-        let (nrows, ncols) = shape;
-        let outer = match storage {
-            CSR => nrows,
-            CSC => ncols,
-        };
-        let indptr = slice::from_raw_parts(indptr, outer + 1);
-        let nnz = (*indptr.get_unchecked(outer)).index();
+    /// ```rust
+    /// use sprs::{CsMat, CsVec};
+    /// let eye = CsMat::eye_csc(5);
+    /// assert!(eye.is_csc());
+    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
+    /// let y = &eye * &x;
+    /// assert_eq!(x, y);
+    /// ```
+    pub fn eye_csc(dim: usize) -> CsMat<N>
+    where N: Num + Clone
+    {
+        let n = dim;
+        let indptr = (0..n+1).collect();
+        let indices = (0..n).collect();
+        let data = vec![N::one(); n];
         CsMat {
-            storage: storage,
-            nrows : nrows,
-            ncols: ncols,
-            indptr : indptr,
-            indices : slice::from_raw_parts(indices, nnz),
-            data : slice::from_raw_parts(data, nnz),
+            storage: CSC,
+            nrows: n,
+            ncols: n,
+            indptr: indptr,
+            indices: indices,
+            data: data,
         }
     }
-
-    /// Get a view into count contiguous outer dimensions, starting from i.
-    ///
-    /// eg this gets the rows from i to i + count in a CSR matrix
-    pub fn middle_outer_views(&self,
-                              i: usize, count: usize
-                             ) -> CsMatViewI<'a, N, I> {
-        if count == 0 {
-            panic!("Empty view");
-        }
-        let iend = i.checked_add(count).unwrap();
-        if i >= self.outer_dims() || iend > self.outer_dims() {
-            panic!("Out of bounds index");
-        }
-        CsMat {
-            storage: self.storage,
-            nrows: count,
-            ncols: self.cols(),
-            indptr: &self.indptr[i..(iend+1)],
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-}
-
-impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// Create an empty CsMat for building purposes
     pub fn empty(storage: CompressedStorage,
                  inner_size: usize
-                ) -> CsMatOwnedI<N, I> {
+                ) -> CsMatI<N, I> {
         let (nrows, ncols) = match storage {
             CSR => (0, inner_size),
             CSC => (inner_size, 0)
         };
-        CsMat {
+        CsMatI {
             storage: storage,
             nrows: nrows,
             ncols: ncols,
@@ -366,7 +323,7 @@ impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(shape: Shape) -> CsMatOwned<N> {
+    pub fn zero(shape: Shape) -> CsMat<N> {
         let (rows, cols) = shape;
         CsMat {
             storage: CSR,
@@ -423,10 +380,10 @@ impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
                indptr : Vec<I>,
                indices : Vec<I>,
                data : Vec<N>
-              ) -> CsMatOwnedI<N, I>
+              ) -> CsMatI<N, I>
     where N: Copy
     {
-        CsMat::new_(CSR, shape, indptr, indices, data).unwrap()
+        CsMatI::new_(CSR, shape, indptr, indices, data).unwrap()
     }
 
     /// Create an owned CSC matrix from moved data.
@@ -452,10 +409,10 @@ impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
                    indptr : Vec<I>,
                    indices : Vec<I>,
                    data : Vec<N>
-                  ) -> CsMatOwnedI<N, I>
+                  ) -> CsMatI<N, I>
     where N: Copy
     {
-        CsMat::new_(CSC, shape, indptr, indices, data).unwrap()
+        CsMatI::new_(CSC, shape, indptr, indices, data).unwrap()
     }
 
     fn new_(storage: CompressedStorage,
@@ -463,10 +420,10 @@ impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
             indptr : Vec<I>,
             indices : Vec<I>,
             data : Vec<N>
-           ) -> Result<CsMatOwnedI<N, I>, SprsError>
+           ) -> Result<CsMatI<N, I>, SprsError>
     where N: Copy
     {
-        let mut m = CsMat {
+        let mut m = CsMatI {
             storage: storage,
             nrows : shape.0,
             ncols: shape.1,
@@ -514,7 +471,7 @@ impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVec<N,&[I],&[N]>) -> Self
+    pub fn append_outer_csvec(mut self, vec: CsVecBase<&[I], &[N]>) -> Self
     where N: Clone
     {
         assert_eq!(self.inner_dims(), vec.dim());
@@ -610,117 +567,91 @@ impl<N, I: SpIndex> CsMat<N, I, Vec<I>, Vec<I>, Vec<N>> {
 
 }
 
-impl<N: Num> CsMat<N, usize, Vec<usize>, Vec<usize>, Vec<N>> {
-    /// Identity matrix, stored as a CSR matrix.
+/// # Constructor methods for sparse matrix views
+///
+/// These constructors can be used to create views over non-matrix data
+/// such as slices.
+impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
+    /// Create a borrowed CsMat matrix from sliced data,
+    /// checking their validity
+    pub fn new_view(
+        storage: CompressedStorage, shape: Shape,
+        indptr : &'a[I], indices : &'a[I], data : &'a[N]
+        )
+    -> Result<CsMatViewI<'a, N, I>, SprsError> {
+        let m = CsMatViewI {
+            storage: storage,
+            nrows : shape.0,
+            ncols: shape.1,
+            indptr : indptr,
+            indices : indices,
+            data : data,
+        };
+        m.check_compressed_structure().and(Ok(m))
+    }
+
+    /// Create a borrowed CsMat matrix from raw data,
+    /// without checking their validity
     ///
-    /// ```rust
-    /// use sprs::{CsMat, CsVec};
-    /// let eye = CsMat::eye(5);
-    /// assert!(eye.is_csr());
-    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
-    /// let y = &eye * &x;
-    /// assert_eq!(x, y);
-    /// ```
-    pub fn eye(dim: usize) -> CsMatOwned<N>
-    where N: Clone
-    {
-        let n = dim;
-        let indptr = (0..n+1).collect();
-        let indices = (0..n).collect();
-        let data = vec![N::one(); n];
-        CsMat {
-            storage: CSR,
-            nrows: n,
-            ncols: n,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_view_raw(
+        storage: CompressedStorage, shape: Shape,
+        indptr : *const I, indices : *const I, data : *const N
+        )
+    -> CsMatViewI<'a, N, I> {
+        let (nrows, ncols) = shape;
+        let outer = match storage {
+            CSR => nrows,
+            CSC => ncols,
+        };
+        let indptr = slice::from_raw_parts(indptr, outer + 1);
+        let nnz = (*indptr.get_unchecked(outer)).index();
+        CsMatViewI {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
         }
     }
 
-    /// Identity matrix, stored as a CSC matrix.
+    /// Get a view into count contiguous outer dimensions, starting from i.
     ///
-    /// ```rust
-    /// use sprs::{CsMat, CsVec};
-    /// let eye = CsMat::eye_csc(5);
-    /// assert!(eye.is_csc());
-    /// let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
-    /// let y = &eye * &x;
-    /// assert_eq!(x, y);
-    /// ```
-    pub fn eye_csc(dim: usize) -> CsMatOwned<N>
-    where N: Clone
-    {
-        let n = dim;
-        let indptr = (0..n+1).collect();
-        let indices = (0..n).collect();
-        let data = vec![N::one(); n];
-        CsMat {
-            storage: CSC,
-            nrows: n,
-            ncols: n,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+    /// eg this gets the rows from i to i + count in a CSR matrix
+    pub fn middle_outer_views(&self,
+                              i: usize, count: usize
+                             ) -> CsMatViewI<'a, N, I> {
+        if count == 0 {
+            panic!("Empty view");
+        }
+        let iend = i.checked_add(count).unwrap();
+        if i >= self.outer_dims() || iend > self.outer_dims() {
+            panic!("Out of bounds index");
+        }
+        CsMatViewI {
+            storage: self.storage,
+            nrows: count,
+            ncols: self.cols(),
+            indptr: &self.indptr[i..(iend+1)],
+            indices: &self.indices[..],
+            data: &self.data[..],
         }
     }
 
 }
 
+
+/// # Common methods for all variants of compressed sparse matrices.
 impl<N, I, IptrStorage, IndStorage, DataStorage>
-CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where I: SpIndex,
       IptrStorage: Deref<Target=[I]>,
       IndStorage: Deref<Target=[I]>,
       DataStorage: Deref<Target=[N]> {
-
-    /// Return an outer iterator for the matrix
-    ///
-    /// This can be used for iterating over the rows (resp. cols) of
-    /// a CSR (resp. CSC) matrix.
-    ///
-    /// ```rust
-    /// use sprs::{CsMat};
-    /// let eye = CsMat::eye(5);
-    /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
-    ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
-    ///     assert_eq!(row_ind, col_ind);
-    ///     assert_eq!(val, 1.);
-    /// }
-    /// ```
-    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N, I> {
-        let inner_len = match self.storage {
-            CSR => self.ncols,
-            CSC => self.nrows
-        };
-        OuterIterator {
-            inner_len: inner_len,
-            indptr_iter: self.indptr.windows(2),
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-    /// Return an outer iterator over P*A, as well as the proper permutation
-    /// for iterating over the inner dimension of P*A*P^T
-    /// Unstable
-    pub fn outer_iterator_perm<'a, 'perm: 'a>(
-        &'a self, perm: PermViewI<'perm, I>)
-    -> OuterIteratorPerm<'a, 'perm, N, I> {
-        let (inner_len, oriented_perm) = match self.storage {
-            CSR => (self.ncols, perm.reborrow()),
-            CSC => (self.nrows, perm.reborrow_inv())
-        };
-        let n = self.indptr.len() - 1;
-        OuterIteratorPerm {
-            inner_len: inner_len,
-            outer_ind_iter: (0..n),
-            indptr: &self.indptr[..],
-            indices: &self.indices[..],
-            data: &self.data[..],
-            perm: oriented_perm
-        }
-    }
 
     /// The underlying storage of this matrix
     pub fn storage(&self) -> CompressedStorage {
@@ -779,39 +710,6 @@ where I: SpIndex,
         }
     }
 
-    /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
-    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
-        if i >= self.outer_dims() {
-            return None;
-        }
-        let start = self.indptr[i].index();
-        let stop = self.indptr[i+1].index();
-        // CsMat invariants imply CsVec invariants
-        Some(CsVec {
-            dim: self.inner_dims(),
-            indices: &self.indices[start..stop],
-            data: &self.data[start..stop],
-        })
-    }
-
-    /// Iteration on outer blocks of size block_size
-    pub fn outer_block_iter(&self, block_size: usize
-                           ) -> ChunkOuterBlocks<N, I> {
-        let m = CsMat {
-            storage: self.storage,
-            nrows: self.rows(),
-            ncols: self.cols(),
-            indptr: &self.indptr[..],
-            indices: &self.indices[..],
-            data: &self.data[..],
-        };
-        ChunkOuterBlocks {
-            mat: m,
-            dims_in_bloc: block_size,
-            bloc_count: 0,
-        }
-    }
-
     /// The array of offsets in the indices() and data() slices.
     /// The elements of the slice at outer dimension i
     /// are available between the elements indptr[i] and indptr[i+1]
@@ -820,8 +718,8 @@ where I: SpIndex,
     /// # Example
     ///
     /// ```rust
-    /// use sprs::{CsMat, CsMatOwned};
-    /// let eye : CsMatOwned<f64> = CsMat::eye(5);
+    /// use sprs::{CsMat};
+    /// let eye : CsMat<f64> = CsMat::eye(5);
     /// // get the element of row 3
     /// // there is only one element in this row, with a column index of 3
     /// // and a value of 1.
@@ -874,7 +772,7 @@ where I: SpIndex,
     /// Transposed view of this matrix
     /// No allocation required (this is simply a storage order change)
     pub fn transpose_view(&self) -> CsMatViewI<N, I> {
-        CsMat {
+        CsMatViewI {
             storage: self.storage.other_storage(),
             nrows: self.ncols,
             ncols: self.nrows,
@@ -886,10 +784,10 @@ where I: SpIndex,
 
     /// Get an owned version of this matrix. If the matrix was already
     /// owned, this will make a deep copy.
-    pub fn to_owned(&self) -> CsMatOwnedI<N, I>
+    pub fn to_owned(&self) -> CsMatI<N, I>
     where N: Clone
     {
-        CsMat {
+        CsMatI {
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
@@ -899,7 +797,109 @@ where I: SpIndex,
         }
     }
 
-    pub fn map<F>(&self, f: F) -> CsMatOwnedI<N, I>
+    /// Return a view into the current matrix
+    pub fn view(&self) -> CsMatViewI<N, I> {
+        CsMatViewI {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
+    }
+
+    pub fn to_dense(&self) -> Array<N, Ix2>
+    where N: Clone + Zero
+    {
+        let mut res = Array::zeros((self.rows(), self.cols()));
+        assign_to_dense(res.view_mut(), self.view());
+        res
+    }
+
+    /// Return an outer iterator for the matrix
+    ///
+    /// This can be used for iterating over the rows (resp. cols) of
+    /// a CSR (resp. CSC) matrix.
+    ///
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let eye = CsMat::eye(5);
+    /// for (row_ind, row_vec) in eye.outer_iterator().enumerate() {
+    ///     let (col_ind, &val): (_, &f64) = row_vec.iter().next().unwrap();
+    ///     assert_eq!(row_ind, col_ind);
+    ///     assert_eq!(val, 1.);
+    /// }
+    /// ```
+    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N, I> {
+        let inner_len = match self.storage {
+            CSR => self.ncols,
+            CSC => self.nrows
+        };
+        OuterIterator {
+            inner_len: inner_len,
+            indptr_iter: self.indptr.windows(2),
+            indices: &self.indices[..],
+            data: &self.data[..],
+        }
+    }
+
+    /// Return an outer iterator over P*A, as well as the proper permutation
+    /// for iterating over the inner dimension of P*A*P^T
+    /// Unstable
+    pub fn outer_iterator_perm<'a, 'perm: 'a>(
+        &'a self, perm: PermViewI<'perm, I>)
+    -> OuterIteratorPerm<'a, 'perm, N, I> {
+        let (inner_len, oriented_perm) = match self.storage {
+            CSR => (self.ncols, perm.reborrow()),
+            CSC => (self.nrows, perm.reborrow_inv())
+        };
+        let n = self.indptr.len() - 1;
+        OuterIteratorPerm {
+            inner_len: inner_len,
+            outer_ind_iter: (0..n),
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+            perm: oriented_perm
+        }
+    }
+
+
+    /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
+    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
+        if i >= self.outer_dims() {
+            return None;
+        }
+        let start = self.indptr[i].index();
+        let stop = self.indptr[i+1].index();
+        // CsMat invariants imply CsVec invariants
+        Some(CsVecBase {
+            dim: self.inner_dims(),
+            indices: &self.indices[start..stop],
+            data: &self.data[start..stop],
+        })
+    }
+
+    /// Iteration on outer blocks of size block_size
+    pub fn outer_block_iter(&self, block_size: usize
+                           ) -> ChunkOuterBlocks<N, I> {
+        let m = CsMatBase {
+            storage: self.storage,
+            nrows: self.rows(),
+            ncols: self.cols(),
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: &self.data[..],
+        };
+        ChunkOuterBlocks {
+            mat: m,
+            dims_in_bloc: block_size,
+            bloc_count: 0,
+        }
+    }
+
+    pub fn map<F>(&self, f: F) -> CsMatI<N, I>
     where F: FnMut(&N) -> N,
           N: Clone
     {
@@ -919,7 +919,7 @@ where I: SpIndex,
                           outer_ind: usize,
                           inner_ind: usize
                          ) -> Option<&N> {
-        self.outer_view(outer_ind).and_then(|vec| vec.get_(inner_ind))
+        self.outer_view(outer_ind).and_then(|vec| vec.get_rbr(inner_ind))
     }
 
     /// Find the non-zero index of the element specified by row and col
@@ -1006,29 +1006,11 @@ where I: SpIndex,
         Ok(())
     }
 
-    /// Return a view into the current matrix
-    pub fn view(&self) -> CsMatViewI<N, I> {
-        CsMat {
-            storage: self.storage,
-            nrows: self.nrows,
-            ncols: self.ncols,
-            indptr: &self.indptr[..],
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-    pub fn to_dense(&self) -> Array<N, Ix2>
-    where N: Clone + Zero
-    {
-        let mut res = Array::zeros((self.rows(), self.cols()));
-        assign_to_dense(res.view_mut(), self.view());
-        res
-    }
 }
 
+/// # Methods to convert between storage orders
 impl<N, I, IptrStorage, IndStorage, DataStorage>
-CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where N: Default,
       I: SpIndex,
       IptrStorage: Deref<Target=[I]>,
@@ -1037,7 +1019,7 @@ where N: Default,
 
     /// Create a matrix mathematically equal to this one, but with the
     /// opposed storage (a CSC matrix will be converted to CSR, and vice versa)
-    pub fn to_other_storage(&self) -> CsMatOwnedI<N, I>
+    pub fn to_other_storage(&self) -> CsMatI<N, I>
     where N: Clone
     {
         let mut indptr = vec![I::zero(); self.inner_dims() + 1];
@@ -1045,7 +1027,7 @@ where N: Default,
         let mut data = vec![N::default(); self.nnz()];
         raw::convert_mat_storage(self.view(),
                                  &mut indptr, &mut indices, &mut data);
-        CsMat {
+        CsMatI {
             storage: self.storage().other_storage(),
             nrows: self.nrows,
             ncols: self.ncols,
@@ -1057,7 +1039,7 @@ where N: Default,
 
     /// Create a new CSC matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSC.
-    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
+    pub fn to_csc(&self) -> CsMatI<N, I>
     where N: Clone
     {
         match self.storage {
@@ -1068,7 +1050,7 @@ where N: Default,
 
     /// Create a new CSR matrix equivalent to this one.
     /// A new matrix will be created even if this matrix was already CSR.
-    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
+    pub fn to_csr(&self) -> CsMatI<N, I>
     where N: Clone
     {
         match self.storage {
@@ -1079,8 +1061,9 @@ where N: Default,
 
 }
 
+/// # Methods for sparse matrices holding mutable access to their values.
 impl<N, I, IptrStorage, IndStorage, DataStorage>
-CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where
 I: SpIndex,
 IptrStorage: Deref<Target=[I]>,
@@ -1105,14 +1088,14 @@ DataStorage: DerefMut<Target=[N]> {
 
     /// Get a mutable view into the i-th outer dimension
     /// (eg i-th row for a CSR matrix)
-    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMut_<N, I>> {
+    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMutI<N, I>> {
         if i >= self.outer_dims() {
             return None;
         }
         let start = self.indptr[i].index();
         let stop = self.indptr[i+1].index();
         // CsMat invariants imply CsVec invariants
-        Some(CsVec {
+        Some(CsVecBase {
             dim: self.inner_dims(),
             indices: &self.indices[start..stop],
             data: &mut self.data[start..stop],
@@ -1199,7 +1182,7 @@ DataStorage: DerefMut<Target=[N]> {
 }
 
 impl<N, I, IptrStorage, IndStorage, DataStorage>
-CsMat<N, I, IptrStorage, IndStorage, DataStorage>
+CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where
 I: SpIndex,
 IptrStorage: DerefMut<Target=[I]>,
@@ -1217,11 +1200,11 @@ DataStorage: DerefMut<Target=[N]> {
     /// # Example
     ///
     /// ```rust
-    /// use sprs::CsMatOwned;
+    /// use sprs::CsMat;
     /// // |   1   |
     /// // | 1     |
     /// // |   1 1 |
-    /// let mut mat = CsMatOwned::new_csc((3, 3),
+    /// let mut mat = CsMat::new_csc((3, 3),
     ///                                   vec![0, 1, 3, 4],
     ///                                   vec![1, 0, 2, 2],
     ///                                   vec![1.; 4]);
@@ -1245,6 +1228,7 @@ DataStorage: DerefMut<Target=[N]> {
     }
 }
 
+/// Raw functions acting directly on the compressed structure.
 pub mod raw {
     use sparse::prelude::*;
     use indexing::SpIndex;
@@ -1277,7 +1261,7 @@ pub mod raw {
         // we're building a csmat even though the indices are not sorted,
         // but it's not a problem since we don't rely on this property.
         // FIXME: this would be better with an explicit unsorted matrix type
-        let mat = CsMat {
+        let mat = CsMatBase {
             storage: in_storage,
             nrows: shape.0,
             ncols: shape.1,
@@ -1342,9 +1326,34 @@ pub mod raw {
     }
 }
 
+impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]> {
+    /// Create a borrowed row or column CsMat matrix from raw data,
+    /// without checking their validity
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_vecview_raw(
+        storage: CompressedStorage, nrows : usize, ncols: usize,
+        indptr : Vec<I>, indices : *const I, data : *const N
+        )
+    -> CsMatVecView_<'a, N, I> {
+        let nnz = indptr[1].index();
+        CsMatVecView_ {
+            storage: storage,
+            nrows : nrows,
+            ncols: ncols,
+            indptr : indptr,
+            indices : slice::from_raw_parts(indices, nnz),
+            data : slice::from_raw_parts(data, nnz),
+        }
+    }
+}
+
 impl<'a, 'b, N, I, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
-Add<&'b CsMat<N, I, IpS2, IS2, DS2>>
-for &'a CsMat<N, I, IpStorage, IStorage, DStorage>
+Add<&'b CsMatBase<N, I, IpS2, IS2, DS2>>
+for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IpStorage: 'a + Deref<Target=[I]>,
@@ -1353,9 +1362,9 @@ where N: 'a + Copy + Num + Default,
       IpS2: 'a + Deref<Target=[I]>,
       IS2: 'a + Deref<Target=[I]>,
       DS2: 'a + Deref<Target=[N]> {
-    type Output = CsMatOwnedI<N, I>;
+    type Output = CsMatI<N, I>;
 
-    fn add(self, rhs: &'b CsMat<N, I, IpS2, IS2, DS2>) -> CsMatOwnedI<N, I> {
+    fn add(self, rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2>) -> CsMatI<N, I> {
         if self.storage() != rhs.view().storage() {
             return binop::add_mat_same_storage(
                 self, &rhs.view().to_other_storage())
@@ -1365,16 +1374,16 @@ where N: 'a + Copy + Num + Default,
 }
 
 impl<'a, 'b, N, I, IpStorage, IStorage, DStorage, Mat> Sub<&'b Mat>
-for &'a CsMat<N, I, IpStorage, IStorage, DStorage>
+for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IpStorage: 'a + Deref<Target=[I]>,
       IStorage: 'a + Deref<Target=[I]>,
       DStorage: 'a + Deref<Target=[N]>,
       Mat: SpMatView<N, I> {
-    type Output = CsMatOwnedI<N, I>;
+    type Output = CsMatI<N, I>;
 
-    fn sub(self, rhs: &'b Mat) -> CsMatOwnedI<N, I> {
+    fn sub(self, rhs: &'b Mat) -> CsMatI<N, I> {
         if self.storage() != rhs.view().storage() {
             return binop::sub_mat_same_storage(
                 self, &rhs.view().to_other_storage())
@@ -1386,14 +1395,14 @@ where N: 'a + Copy + Num + Default,
 macro_rules! sparse_scalar_mul {
     ($scalar: ident) => (
         impl<'a, I, IpStorage, IStorage, DStorage> Mul<$scalar>
-        for &'a CsMat<$scalar, I, IpStorage, IStorage, DStorage>
+        for &'a CsMatBase<$scalar, I, IpStorage, IStorage, DStorage>
         where I: 'a + SpIndex,
               IpStorage: 'a + Deref<Target=[I]>,
               IStorage: 'a + Deref<Target=[I]>,
               DStorage: 'a + Deref<Target=[$scalar]> {
-            type Output = CsMatOwnedI<$scalar, I>;
+            type Output = CsMatI<$scalar, I>;
 
-            fn mul(self, rhs: $scalar) -> CsMatOwnedI<$scalar, I> {
+            fn mul(self, rhs: $scalar) -> CsMatI<$scalar, I> {
                 binop::scalar_mul_mat(self, rhs)
             }
         }
@@ -1410,8 +1419,8 @@ sparse_scalar_mul!(f32);
 sparse_scalar_mul!(f64);
 
 impl<'a, 'b, N, I, IpS1, IS1, DS1, IpS2, IS2, DS2>
-Mul<&'b CsMat<N, I, IpS2, IS2, DS2>>
-for &'a CsMat<N, I, IpS1, IS1, DS1>
+Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>>
+for &'a CsMatBase<N, I, IpS1, IS1, DS1>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IpS1: 'a + Deref<Target=[I]>,
@@ -1420,9 +1429,9 @@ where N: 'a + Copy + Num + Default,
       IpS2: 'b + Deref<Target=[I]>,
       IS2: 'b + Deref<Target=[I]>,
       DS2: 'b + Deref<Target=[N]> {
-    type Output = CsMatOwnedI<N, I>;
+    type Output = CsMatI<N, I>;
 
-    fn mul(self, rhs: &'b CsMat<N, I, IpS2, IS2, DS2>) -> CsMatOwnedI<N, I> {
+    fn mul(self, rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2>) -> CsMatI<N, I> {
         match (self.storage(), rhs.storage()) {
             (CSR, CSR) => {
                 let mut workspace = prod::workspace_csr(self, rhs);
@@ -1449,7 +1458,7 @@ where N: 'a + Copy + Num + Default,
 
 impl<'a, 'b, N, I, IpS, IS, DS, DS2>
 Add<&'b ArrayBase<DS2, Ix2>>
-for &'a CsMat<N, I, IpS, IS, DS>
+for &'a CsMatBase<N, I, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IpS: 'a + Deref<Target=[I]>,
@@ -1496,7 +1505,7 @@ where N: 'a + Copy + Num + Default,
 
 impl<'a, 'b, N, I, IpS, IS, DS, DS2>
 Mul<&'b ArrayBase<DS2, Ix2>>
-for &'a CsMat<N, I, IpS, IS, DS>
+for &'a CsMatBase<N, I, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IpS: 'a + Deref<Target=[I]>,
@@ -1547,7 +1556,7 @@ where N: 'a + Copy + Num + Default,
 
 impl<'a, 'b, N, I, IpS, IS, DS, DS2>
 Mul<&'b ArrayBase<DS2, Ix1>>
-for &'a CsMat<N, I, IpS, IS, DS>
+for &'a CsMatBase<N, I, IpS, IS, DS>
 where N: 'a + Copy + Num + Default,
       I: 'a + SpIndex,
       IpS: 'a + Deref<Target=[I]>,
@@ -1582,7 +1591,7 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<N, I, IpS, IS, DS> Index<[usize; 2]> for CsMat<N, I, IpS, IS, DS>
+impl<N, I, IpS, IS, DS> Index<[usize; 2]> for CsMatBase<N, I, IpS, IS, DS>
 where I: SpIndex,
       IpS: Deref<Target=[I]>,
       IS: Deref<Target=[I]>,
@@ -1597,7 +1606,7 @@ where I: SpIndex,
     }
 }
 
-impl<N, I, IpS, IS, DS> IndexMut<[usize; 2]> for CsMat<N, I, IpS, IS, DS>
+impl<N, I, IpS, IS, DS> IndexMut<[usize; 2]> for CsMatBase<N, I, IpS, IS, DS>
 where I: SpIndex,
       IpS: Deref<Target=[I]>,
       IS: Deref<Target=[I]>,
@@ -1611,7 +1620,7 @@ where I: SpIndex,
 }
 
 
-impl<N, I, IpS, IS, DS> Index<NnzIndex> for CsMat<N, I, IpS, IS, DS>
+impl<N, I, IpS, IS, DS> Index<NnzIndex> for CsMatBase<N, I, IpS, IS, DS>
 where I: SpIndex,
       IpS: Deref<Target=[I]>,
       IS: Deref<Target=[I]>,
@@ -1625,7 +1634,7 @@ where I: SpIndex,
     }
 }
 
-impl<N, I, IpS, IS, DS> IndexMut<NnzIndex> for CsMat<N, I, IpS, IS, DS>
+impl<N, I, IpS, IS, DS> IndexMut<NnzIndex> for CsMatBase<N, I, IpS, IS, DS>
 where I: SpIndex,
       IpS: Deref<Target=[I]>,
       IS: Deref<Target=[I]>,
@@ -1670,7 +1679,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for ChunkOuterBlocks<'a, N, I> {
 
 #[cfg(test)]
 mod test {
-    use sparse::{CsMat, CsMatOwned};
+    use sparse::{CsMatView, CsMat};
     use super::CompressedStorage::{CSC, CSR};
     use errors::SprsError;
     use test_data::{mat1, mat1_csc, mat1_times_2};
@@ -1680,7 +1689,7 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let m = CsMat::new_view(CSR, (3, 3), indptr_ok, indices_ok, data_ok);
+        let m = CsMatView::new_view(CSR, (3, 3), indptr_ok, indices_ok, data_ok);
         assert!(m.is_ok());
     }
 
@@ -1690,11 +1699,11 @@ mod test {
         let indptr_fail1 : &[usize] = &[0, 1, 2];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
-        let res = CsMat::new_view(CSR,
-                                  (3, 3),
-                                  indptr_fail1,
-                                  indices_ok,
-                                  data_ok);
+        let res = CsMatView::new_view(CSR,
+                                      (3, 3),
+                                      indptr_fail1,
+                                      indices_ok,
+                                      data_ok);
         res.unwrap(); // unreachable
     }
 
@@ -1704,11 +1713,11 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let data_ok : &[f64] = &[1., 1., 1.];
         let indices_fail2 : &[usize] = &[0, 1, 4];
-        let res = CsMat::new_view(CSR,
-                                  (3, 3),
-                                  indptr_ok,
-                                  indices_fail2,
-                                  data_ok);
+        let res = CsMatView::new_view(CSR,
+                                      (3, 3),
+                                      indptr_ok,
+                                      indices_fail2,
+                                      data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -1718,11 +1727,11 @@ mod test {
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
         let indptr_fail2 : &[usize] = &[0, 1, 2, 4];
-        let res = CsMat::new_view(CSR,
-                                  (3, 3),
-                                  indptr_fail2,
-                                  indices_ok,
-                                  data_ok);
+        let res = CsMatView::new_view(CSR,
+                                      (3, 3),
+                                      indptr_fail2,
+                                      indices_ok,
+                                      data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -1732,11 +1741,11 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let data_ok : &[f64] = &[1., 1., 1.];
         let indices_fail1 : &[usize] = &[0, 1];
-        let res = CsMat::new_view(CSR,
-                                  (3, 3),
-                                  indptr_ok,
-                                  indices_fail1,
-                                  data_ok);
+        let res = CsMatView::new_view(CSR,
+                                      (3, 3),
+                                      indptr_ok,
+                                      indices_fail1,
+                                      data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -1746,11 +1755,11 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_fail1 : &[f64] = &[1., 1., 1., 1.];
-        let res = CsMat::new_view(CSR,
-                                  (3, 3),
-                                  indptr_ok,
-                                  indices_ok,
-                                  data_fail1);
+        let res = CsMatView::new_view(CSR,
+                                      (3, 3),
+                                      indptr_ok,
+                                      indices_ok,
+                                      data_fail1);
         res.unwrap(); //unreachable
     }
 
@@ -1760,11 +1769,11 @@ mod test {
         let indptr_ok : &[usize] = &[0, 1, 2, 3];
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_fail2 : &[f64] = &[1., 1.,];
-        let res = CsMat::new_view(CSR,
-                                  (3, 3),
-                                  indptr_ok,
-                                  indices_ok,
-                                  data_fail2);
+        let res = CsMatView::new_view(CSR,
+                                      (3, 3),
+                                      indptr_ok,
+                                      indices_ok,
+                                      data_fail2);
         res.unwrap(); //unreachable
     }
 
@@ -1773,8 +1782,11 @@ mod test {
         let indices_ok : &[usize] = &[0, 1, 2];
         let data_ok : &[f64] = &[1., 1., 1.];
         let indptr_fail3 : &[usize] = &[0, 2, 1, 3];
-        assert_eq!(CsMat::new_view(CSR, (3, 3),
-                                   indptr_fail3, indices_ok, data_ok),
+        assert_eq!(CsMatView::new_view(CSR,
+                                       (3, 3),
+                                       indptr_fail3,
+                                       indices_ok,
+                                       data_ok),
                    Err(SprsError::UnsortedIndptr));
     }
 
@@ -1786,8 +1798,11 @@ mod test {
         let data: &[f64] = &[
             0.35310881, 0.42380633, 0.28035896, 0.58082095,
             0.53350123, 0.88132896, 0.72527863];
-        assert_eq!(CsMat::new_view(CSR, (5, 5),
-                                   indptr, indices, data),
+        assert_eq!(CsMatView::new_view(CSR,
+                                       (5, 5),
+                                       indptr,
+                                       indices,
+                                       data),
                    Err(SprsError::NonSortedIndices));
     }
 
@@ -1798,10 +1813,10 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        assert!(CsMat::new_view(CSR, (3, 4),
-                                indptr_ok, indices_ok, data_ok).is_ok());
-        assert!(CsMat::new_view(CSC, (4, 3),
-                                indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMatView::new_view(CSR, (3, 4),
+                                    indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(CsMatView::new_view(CSC, (4, 3),
+                                    indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -1812,7 +1827,11 @@ mod test {
         let data_ok : &[f64] = &[
             0.05734571, 0.15543348, 0.75628258,
             0.83054515, 0.71851547, 0.46202352];
-        let res = CsMat::new_view(CSC, (3, 4), indptr_ok, indices_ok, data_ok);
+        let res = CsMatView::new_view(CSC,
+                                      (3, 4),
+                                      indptr_ok,
+                                      indices_ok,
+                                      data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -1822,8 +1841,8 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::new_view(CSR, (3, 3),
-                                &indptr_ok, &indices_ok, &data_ok).is_ok());
+        assert!(CsMatView::new_view(CSR, (3, 3),
+                                    &indptr_ok, &indices_ok, &data_ok).is_ok());
     }
 
     #[test]
@@ -1832,7 +1851,7 @@ mod test {
         let indices_ok = vec![0, 1, 2];
         let data_ok : Vec<f64> = vec![1., 1., 1.];
         assert!(CsMat::new_(CSR, (3, 3),
-                            indptr_ok, indices_ok, data_ok).is_ok());
+                                 indptr_ok, indices_ok, data_ok).is_ok());
     }
 
     #[test]
@@ -1854,7 +1873,11 @@ mod test {
         let data: &[f64] = &[
             0.75672424, 0.1649078, 0.30140296, 0.10358244,
             0.6283315, 0.39244208, 0.57202407];
-        assert!(CsMat::new_view(CSR, (5, 5), indptr, indices, data).is_ok());
+        assert!(CsMatView::new_view(CSR,
+                                    (5, 5),
+                                    indptr,
+                                    indices,
+                                    data).is_ok());
     }
 
     #[test]
@@ -1877,7 +1900,7 @@ mod test {
 
     #[test]
     fn outer_block_iter() {
-        let mat : CsMatOwned<f64> = CsMat::eye(11);
+        let mat : CsMat<f64> = CsMat::eye(11);
         let mut block_iter = mat.outer_block_iter(3);
         assert_eq!(block_iter.next().unwrap().rows(), 3);
         assert_eq!(block_iter.next().unwrap().rows(), 3);
@@ -1894,7 +1917,7 @@ mod test {
 
     #[test]
     fn nnz_index() {
-        let mat : CsMatOwned<f64> = CsMat::eye(11);
+        let mat : CsMat<f64> = CsMat::eye(11);
 
         assert_eq!(mat.nnz_index(2, 3), None);
         assert_eq!(mat.nnz_index(5, 7), None);
@@ -1915,10 +1938,10 @@ mod test {
         // | 0 2 0 |
         // | 1 0 0 |
         // | 0 3 4 |
-        let mat = CsMatOwned::new_csc((3, 3),
-                                      vec![0, 1, 3, 4],
-                                      vec![1, 0, 2, 2],
-                                      vec![1., 2., 3., 4.]);
+        let mat = CsMat::new_csc((3, 3),
+                                 vec![0, 1, 3, 4],
+                                 vec![1, 0, 2, 2],
+                                 vec![1., 2., 3., 4.]);
         assert_eq!(mat[[1, 0]], 1.);
         assert_eq!(mat[[0, 1]], 2.);
         assert_eq!(mat[[2, 1]], 3.);
@@ -1932,25 +1955,25 @@ mod test {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
-        let mut mat = CsMatOwned::new_csc((3, 3),
-                                          vec![0, 1, 3, 4],
-                                          vec![1, 0, 2, 2],
-                                          vec![1.; 4]);
+        let mut mat = CsMat::new_csc((3, 3),
+                                     vec![0, 1, 3, 4],
+                                     vec![1, 0, 2, 2],
+                                     vec![1.; 4]);
 
         *mat.get_mut(2, 1).unwrap() = 3.;
 
-        let exp = CsMatOwned::new_csc((3, 3),
-                                      vec![0, 1, 3, 4],
-                                      vec![1, 0, 2, 2],
-                                      vec![1., 1., 3., 1.]);
+        let exp = CsMat::new_csc((3, 3),
+                                 vec![0, 1, 3, 4],
+                                 vec![1, 0, 2, 2],
+                                 vec![1., 1., 3., 1.]);
 
         assert_eq!(mat, exp);
 
         mat[[2, 2]] = 5.;
-        let exp = CsMatOwned::new_csc((3, 3),
-                                      vec![0, 1, 3, 4],
-                                      vec![1, 0, 2, 2],
-                                      vec![1., 1., 3., 5.]);
+        let exp = CsMat::new_csc((3, 3),
+                                 vec![0, 1, 3, 4],
+                                 vec![1, 0, 2, 2],
+                                 vec![1., 1., 3., 5.]);
 
         assert_eq!(mat, exp);
     }
@@ -1960,16 +1983,16 @@ mod test {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
-        let mat = CsMatOwned::new_csc((3, 3),
-                                      vec![0, 1, 3, 4],
-                                      vec![1, 0, 2, 2],
-                                      vec![1.; 4]);
+        let mat = CsMat::new_csc((3, 3),
+                                 vec![0, 1, 3, 4],
+                                 vec![1, 0, 2, 2],
+                                 vec![1.; 4]);
 
         let mut res = mat.map(|&x| x + 2.);
-        let expected = CsMatOwned::new_csc((3, 3),
-                                           vec![0, 1, 3, 4],
-                                           vec![1, 0, 2, 2],
-                                           vec![3.; 4]);
+        let expected = CsMat::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![3.; 4]);
         assert_eq!(res, expected);
 
         res.map_inplace(|&x| x / 3.);
@@ -1981,7 +2004,7 @@ mod test {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
-        let mut mat = CsMatOwned::empty(CSR, 0);
+        let mut mat = CsMat::empty(CSR, 0);
         mat.reserve_outer_dim(3);
         mat.reserve_nnz(4);
         // exercise the fast and easy path where the elements are added
@@ -1991,10 +2014,10 @@ mod test {
         mat.insert(2, 1, 1.);
         mat.insert(2, 2, 1.);
 
-        let expected = CsMatOwned::new((3, 3),
-                                       vec![0, 1, 2, 4],
-                                       vec![1, 0, 1, 2],
-                                       vec![1.; 4]);
+        let expected = CsMat::new((3, 3),
+                                  vec![0, 1, 2, 4],
+                                  vec![1, 0, 1, 2],
+                                  vec![1.; 4]);
         assert_eq!(mat, expected);
 
         // | 2 1 0 |
@@ -2003,10 +2026,10 @@ mod test {
         // exercise adding inside an already formed row (ie a search needs
         // to be performed)
         mat.insert(0, 0, 2.);
-        let expected = CsMatOwned::new((3, 3),
-                                       vec![0, 2, 3, 5],
-                                       vec![0, 1, 0, 1, 2],
-                                       vec![2., 1., 1., 1., 1.]);
+        let expected = CsMat::new((3, 3),
+                                  vec![0, 2, 3, 5],
+                                  vec![0, 1, 0, 1, 2],
+                                  vec![2., 1., 1., 1., 1.]);
         assert_eq!(mat, expected);
 
         // | 2 1 0 |
@@ -2015,10 +2038,10 @@ mod test {
         // exercise the fact that inserting in an existing element
         // should change this element's value
         mat.insert(1, 0, 3.);
-        let expected = CsMatOwned::new((3, 3),
-                                       vec![0, 2, 3, 5],
-                                       vec![0, 1, 0, 1, 2],
-                                       vec![2., 1., 3., 1., 1.]);
+        let expected = CsMat::new((3, 3),
+                                  vec![0, 2, 3, 5],
+                                  vec![0, 1, 0, 1, 2],
+                                  vec![2., 1., 3., 1., 1.]);
         assert_eq!(mat, expected);
     }
 
@@ -2027,10 +2050,10 @@ mod test {
         // | 0 1 0 |
         // | 1 0 0 |
         // | 0 1 1 |
-        let mut mat = CsMatOwned::new_csc((3, 3),
-                                          vec![0, 1, 3, 4],
-                                          vec![1, 0, 2, 2],
-                                          vec![1.; 4]);
+        let mut mat = CsMat::new_csc((3, 3),
+                                     vec![0, 1, 3, 4],
+                                     vec![1, 0, 2, 2],
+                                     vec![1.; 4]);
 
         for mut col_vec in mat.outer_iterator_mut() {
             for (row_ind, val) in col_vec.iter_mut() {
@@ -2038,20 +2061,20 @@ mod test {
             }
         }
 
-        let expected = CsMatOwned::new_csc((3, 3),
-                                           vec![0, 1, 3, 4],
-                                           vec![1, 0, 2, 2],
-                                           vec![2., 1., 3., 3.]);
+        let expected = CsMat::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![2., 1., 3., 3.]);
         assert_eq!(mat, expected);
     }
 
     #[test]
     #[should_panic]
     fn modify_fail() {
-        let mut mat = CsMatOwned::new_csc((3, 3),
-                                          vec![0, 1, 3, 4],
-                                          vec![1, 0, 2, 2],
-                                          vec![1.; 4]);
+        let mut mat = CsMat::new_csc((3, 3),
+                                      vec![0, 1, 3, 4],
+                                      vec![1, 0, 2, 2],
+                                      vec![1.; 4]);
 
         // we panic because we forget to modify the last index, which gets
         // pushed in the same col as its predecessor, yet has the same value

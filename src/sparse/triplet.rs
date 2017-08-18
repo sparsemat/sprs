@@ -2,14 +2,16 @@
 ///!
 ///! Useful for building a matrix, but not for computations. Therefore this
 ///! struct is mainly used to initialize a matrix before converting to
-///! to a CsMatOwned.
+///! to a CsMat.
 ///!
 ///! A triplet format matrix is formed of three arrays of equal length, storing
 ///! the row indices, the column indices, and the values of the non-zero
 ///! entries. By convention, duplicate locations are summed up when converting
-///! into CsMatOwned.
+///! into CsMat.
 
-use sparse::{csmat, CsMatOwnedI};
+use std::ops::{Deref, DerefMut};
+use sparse::csmat;
+use sparse::prelude::*;
 use num_traits::Num;
 use indexing::SpIndex;
 
@@ -17,19 +19,11 @@ use indexing::SpIndex;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TripletIndex(pub usize);
 
-/// Triplet matrix owning its data
-pub struct TripletMat<N, I> {
-    rows: usize,
-    cols: usize,
-    row_inds: Vec<I>,
-    col_inds: Vec<I>,
-    data: Vec<N>,
-}
-
-impl<N, I: SpIndex> TripletMat<N, I> {
+/// # Methods for creating triplet matrices that own their data.
+impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
-    pub fn new(shape: (usize, usize)) -> TripletMat<N, I> {
-        TripletMat {
+    pub fn new(shape: (usize, usize)) -> TriMatI<N, I> {
+        TriMatI {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::new(),
@@ -40,8 +34,8 @@ impl<N, I: SpIndex> TripletMat<N, I> {
 
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
     /// pre-allocate `cap` elements on the backing storage
-    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TripletMat<N, I> {
-        TripletMat {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TriMatI<N, I> {
+        TriMatI {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::with_capacity(cap),
@@ -61,7 +55,7 @@ impl<N, I: SpIndex> TripletMat<N, I> {
                          row_inds: Vec<I>,
                          col_inds: Vec<I>,
                          data: Vec<N>)
-                         -> TripletMat<N, I> {
+                         -> TriMatI<N, I> {
         assert!(row_inds.len() == col_inds.len(),
                 "all inputs should have the same length");
         assert!(data.len() == col_inds.len(),
@@ -72,91 +66,13 @@ impl<N, I: SpIndex> TripletMat<N, I> {
                 "row indices should be within shape");
         assert!(col_inds.iter().all(|&j| j.index() < shape.1),
                 "col indices should be within shape");
-        TripletMat {
+        TriMatI {
             rows: shape.0,
             cols: shape.1,
             row_inds: row_inds,
             col_inds: col_inds,
             data: data,
         }
-    }
-
-    /// The number of rows of the matrix
-    pub fn rows(&self) -> usize {
-        self.borrowed().rows()
-    }
-
-    /// The number of cols of the matrix
-    pub fn cols(&self) -> usize {
-        self.borrowed().cols()
-    }
-
-    /// The shape of the matrix, as a `(rows, cols)` tuple
-    pub fn shape(&self) -> (usize, usize) {
-        self.borrowed().shape()
-    }
-
-    /// The number of non-zero entries
-    pub fn nnz(&self) -> usize {
-        self.borrowed().nnz()
-    }
-
-    /// The non-zero row indices
-    pub fn row_inds(&self) -> &[I] {
-        self.borrowed().row_inds()
-    }
-
-    /// The non-zero column indices
-    pub fn col_inds(&self) -> &[I] {
-        self.borrowed().col_inds()
-    }
-
-    /// The non-zero values
-    pub fn data(&self) -> &[N] {
-        self.borrowed().data()
-    }
-
-    /// Find all non-zero entries at the location given by `row` and `col`
-    pub fn find_locations(&self, row: usize, col: usize) -> Vec<TripletIndex> {
-        self.borrowed().find_locations(row, col)
-    }
-
-    /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletMatView<N, I> {
-        TripletMatView {
-            rows: self.rows,
-            cols: self.cols,
-            row_inds: &self.row_inds[..],
-            col_inds: &self.col_inds[..],
-            data: &self.data[..],
-        }
-    }
-
-    /// Replace a non-zero value at the given index.
-    /// Indices can be obtained using find_locations.
-    pub fn set_triplet(&mut self,
-                       TripletIndex(triplet_ind): TripletIndex,
-                       row: usize,
-                       col: usize,
-                       val: N) {
-        self.borrowed_mut()
-            .set_triplet(TripletIndex(triplet_ind), row, col, val);
-    }
-
-    /// Get a mutable view into this matrix.
-    pub fn borrowed_mut(&mut self) -> TripletMatViewMut<N, I> {
-        TripletMatViewMut {
-            rows: self.rows,
-            cols: self.cols,
-            row_inds: &mut self.row_inds[..],
-            col_inds: &mut self.col_inds[..],
-            data: &mut self.data[..],
-        }
-    }
-
-    /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatView<N, I> {
-        self.borrowed().transpose_view()
     }
 
     /// Append a non-zero triplet to this matrix.
@@ -181,32 +97,14 @@ impl<N, I: SpIndex> TripletMat<N, I> {
         self.col_inds.reserve_exact(cap);
         self.data.reserve_exact(cap);
     }
-
-    /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
-    where N: Clone + Num
-    {
-        self.borrowed().to_csc()
-    }
-
-    /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
-    where N: Clone + Num
-    {
-        self.borrowed().to_csr()
-    }
 }
 
-/// Triplet matrix view
-pub struct TripletMatView<'a, N: 'a, I: 'a> {
-    rows: usize,
-    cols: usize,
-    row_inds: &'a [I],
-    col_inds: &'a [I],
-    data: &'a [N],
-}
 
-impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
+/// # Common methods shared by all variants of triplet matrices
+impl<N, I: SpIndex, IStorage, DStorage> TriMatBase<IStorage, DStorage>
+where IStorage: Deref<Target=[I]>,
+      DStorage: Deref<Target=[N]>,
+{
     /// The number of rows of the matrix
     pub fn rows(&self) -> usize {
         self.rows
@@ -228,18 +126,18 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
     }
 
     /// The non-zero row indices
-    pub fn row_inds(&self) -> &'a [I] {
-        self.row_inds
+    pub fn row_inds(&self) -> &[I] {
+        &self.row_inds[..]
     }
 
     /// The non-zero column indices
-    pub fn col_inds(&self) -> &'a [I] {
-        self.col_inds
+    pub fn col_inds(&self) -> &[I] {
+        &self.col_inds[..]
     }
 
     /// The non-zero values
-    pub fn data(&self) -> &'a [N] {
-        self.data
+    pub fn data(&self) -> &[N] {
+        &self.data[..]
     }
 
     /// Find all non-zero entries at the location given by `row` and `col`
@@ -254,18 +152,18 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatView<'a, N, I> {
-        TripletMatView {
+    pub fn transpose_view(&self) -> TriMatViewI<N, I> {
+        TriMatViewI {
             rows: self.cols,
             cols: self.rows,
-            row_inds: self.col_inds,
-            col_inds: self.row_inds,
-            data: self.data,
+            row_inds: &self.col_inds[..],
+            col_inds: &self.row_inds[..],
+            data: &self.data[..],
         }
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
+    pub fn to_csc(&self) -> CsMatI<N, I>
     where N: Clone + Num
     {
         let mut row_counts = vec![I::zero(); self.rows() + 1];
@@ -346,7 +244,7 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
                                     &mut out_indptr,
                                     &mut out_indices,
                                     &mut out_data);
-        CsMatOwnedI {
+        CsMatI {
             storage: csmat::CompressedStorage::CSC,
             nrows: self.rows,
             ncols: self.cols,
@@ -357,63 +255,16 @@ impl<'a, N, I: SpIndex> TripletMatView<'a, N, I> {
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
+    pub fn to_csr(&self) -> CsMatI<N, I>
     where N: Clone + Num
     {
         let res = self.transpose_view().to_csc();
         res.transpose_into()
     }
-}
 
-
-/// Triplet matrix mutable view
-pub struct TripletMatViewMut<'a, N: 'a, I: 'a> {
-    rows: usize,
-    cols: usize,
-    row_inds: &'a mut [I],
-    col_inds: &'a mut [I],
-    data: &'a mut [N],
-}
-
-impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
-    /// The number of rows of the matrix
-    pub fn rows(&self) -> usize {
-        self.borrowed().rows()
-    }
-
-    /// The number of cols of the matrix
-    pub fn cols(&self) -> usize {
-        self.borrowed().cols()
-    }
-
-    /// The shape of the matrix, as a `(rows, cols)` tuple
-    pub fn shape(&self) -> (usize, usize) {
-        self.borrowed().shape()
-    }
-
-    /// The number of non-zero entries
-    pub fn nnz(&self) -> usize {
-        self.borrowed().nnz()
-    }
-
-    /// The non-zero row indices
-    pub fn row_inds(&self) -> &[I] {
-        self.borrowed().row_inds()
-    }
-
-    /// The non-zero column indices
-    pub fn col_inds(&self) -> &[I] {
-        self.borrowed().col_inds()
-    }
-
-    /// The non-zero values
-    pub fn data(&self) -> &[N] {
-        self.borrowed().data()
-    }
-
-    /// Return a view of this matrix
-    pub fn borrowed(&self) -> TripletMatView<N, I> {
-        TripletMatView {
+    pub fn view(&self) -> TriMatViewI<N, I>
+    {
+        TriMatViewI {
             rows: self.rows,
             cols: self.cols,
             row_inds: &self.row_inds[..],
@@ -421,12 +272,13 @@ impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
             data: &self.data[..],
         }
     }
+}
 
-    /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TripletMatView<N, I> {
-        self.borrowed().transpose_view()
-    }
 
+impl<N, I: SpIndex, IStorage, DStorage> TriMatBase<IStorage, DStorage>
+where IStorage: DerefMut<Target=[I]>,
+      DStorage: DerefMut<Target=[N]>,
+{
     /// Replace a non-zero value at the given index.
     /// Indices can be obtained using find_locations.
     pub fn set_triplet(&mut self,
@@ -439,30 +291,27 @@ impl<'a, N, I: SpIndex> TripletMatViewMut<'a, N, I> {
         self.data[triplet_ind] = val;
     }
 
-    /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatOwnedI<N, I>
-    where N: Clone + Num
+    pub fn view_mut(&mut self) -> TriMatViewMutI<N, I>
     {
-        self.borrowed().to_csc()
-    }
-
-    /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatOwnedI<N, I>
-    where N: Clone + Num
-    {
-        self.borrowed().to_csr()
+        TriMatViewMutI {
+            rows: self.rows,
+            cols: self.cols,
+            row_inds: &mut self.row_inds[..],
+            col_inds: &mut self.col_inds[..],
+            data: &mut self.data[..],
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
 
-    use super::TripletMat;
-    use sparse::CsMatOwned;
+    use super::{TriMat, TriMatI};
+    use sparse::{CsMat, CsMatI};
 
     #[test]
     fn triplet_incremental() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMatI::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -474,17 +323,17 @@ mod test {
         triplet_mat.add_triplet(3, 2, 5.);
         triplet_mat.add_triplet(3, 3, 6.);
 
-        let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.]);
+        let csc: CsMatI<_, i32> = triplet_mat.to_csc();
+        let expected = CsMatI::new_csc((4, 4),
+                                       vec![0, 2, 3, 4, 6],
+                                       vec![0, 1, 0, 3, 2, 3],
+                                       vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
     #[test]
     fn triplet_unordered() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -501,16 +350,16 @@ mod test {
         triplet_mat.add_triplet(3, 2, 5.);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.]);
+        let expected = CsMat::new_csc((4, 4),
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
     #[test]
     fn triplet_additions() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -527,10 +376,10 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.]);
+        let expected = CsMat::new_csc((4, 4),
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 4., 6.]);
         assert_eq!(csc, expected);
     }
 
@@ -545,23 +394,23 @@ mod test {
         let col_inds = vec![0, 1, 0, 3, 2, 3, 1, 3];
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
 
-        let triplet_mat = super::TripletMat::from_triplets((5, 4),
+        let triplet_mat = super::TriMat::from_triplets((5, 4),
                                                            row_inds,
                                                            col_inds,
                                                            data);
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc((5, 4),
-                                           vec![0, 2, 4, 5, 8],
-                                           vec![0, 1, 0, 4, 3, 2, 3, 4],
-                                           vec![1, 3, 2, 7, 5, 4, 6, 8]);
+        let expected = CsMat::new_csc((5, 4),
+                                      vec![0, 2, 4, 5, 8],
+                                      vec![0, 1, 0, 4, 3, 2, 3, 4],
+                                      vec![1, 3, 2, 7, 5, 4, 6, 8]);
 
         assert_eq!(csc, expected);
     }
 
     #[test]
     fn triplet_mutate_entry() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         triplet_mat.add_triplet(0, 0, 1.);
         triplet_mat.add_triplet(0, 1, 2.);
         triplet_mat.add_triplet(1, 0, 3.);
@@ -575,16 +424,16 @@ mod test {
 
 
         let csc = triplet_mat.to_csc();
-        let expected = CsMatOwned::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 0., 6.]);
+        let expected = CsMat::new_csc((4, 4),
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 0., 6.]);
         assert_eq!(csc, expected);
     }
 
     #[test]
     fn triplet_to_csr() {
-        let mut triplet_mat = TripletMat::with_capacity((4, 4), 6);
+        let mut triplet_mat = TriMat::with_capacity((4, 4), 6);
         // |1 2    |
         // |3      |
         // |      4|
@@ -601,10 +450,10 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csr = triplet_mat.to_csr();
-        let expected = CsMatOwned::new_csc((4, 4),
-                                           vec![0, 2, 3, 4, 6],
-                                           vec![0, 1, 0, 3, 2, 3],
-                                           vec![1., 3., 2., 5., 4., 6.])
+        let expected = CsMat::new_csc((4, 4),
+                                      vec![0, 2, 3, 4, 6],
+                                      vec![0, 1, 0, 3, 2, 3],
+                                      vec![1., 3., 2., 5., 4., 6.])
                            .to_csr();
         assert_eq!(csr, expected);
     }
@@ -617,7 +466,7 @@ mod test {
         // |1   9     4     2|
         // |1     5         2|
         // |1         7   8 2|
-        let mut triplet_mat = TripletMat::with_capacity((6, 9), 22);
+        let mut triplet_mat = TriMat::with_capacity((6, 9), 22);
 
         triplet_mat.add_triplet(5, 8, 1); // (a) push 1 later
         triplet_mat.add_triplet(0, 0, 1);
@@ -648,17 +497,12 @@ mod test {
 
         let csc = triplet_mat.to_csc();
 
-        let expected = CsMatOwned::new_csc((6, 9),
-                                           vec![0, 6, 7, 8, 10, 11,
-                                                14, 15, 16, 22],
-                                           vec![0, 1, 2, 3, 4, 5, 2,
-                                                3, 2, 4, 0, 1, 3, 5,
-                                                2, 5, 0, 1, 2, 3, 4,
-                                                5],
-                                           vec![1, 1, 1, 1, 1, 1, 2,
-                                                9, 3, 5, 6, 1, 4, 7,
-                                                3, 8, 2, 2, 2, 2, 2,
-                                                2]);
+        let expected = CsMat::new_csc((6, 9),
+                                      vec![0, 6, 7, 8, 10, 11, 14, 15, 16, 22],
+                                      vec![0, 1, 2, 3, 4, 5, 2, 3, 2, 4, 0, 1,
+                                           3, 5, 2, 5, 0, 1, 2, 3, 4, 5],
+                                      vec![1, 1, 1, 1, 1, 1, 2, 9, 3, 5, 6, 1,
+                                           4, 7, 3, 8, 2, 2, 2, 2, 2, 2]);
 
         assert_eq!(csc, expected);
 

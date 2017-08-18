@@ -23,7 +23,7 @@ use ::SpRes;
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
                                               rhs: &Mat2
-                                             ) -> CsMatOwnedI<N, I>
+                                             ) -> CsMatI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat1: SpMatView<N, I>,
@@ -35,7 +35,7 @@ where N: Num + Copy,
 /// Sparse matrix subtraction, with same storage type
 pub fn sub_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
                                               rhs: &Mat2
-                                             ) -> CsMatOwnedI<N, I>
+                                             ) -> CsMatI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat1: SpMatView<N, I>,
@@ -47,7 +47,7 @@ where N: Num + Copy,
 /// Sparse matrix scalar multiplication, with same storage type
 pub fn mul_mat_same_storage<N, I, Mat1, Mat2>(lhs: &Mat1,
                                               rhs: &Mat2
-                                             ) -> CsMatOwnedI<N, I>
+                                             ) -> CsMatI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat1: SpMatView<N, I>,
@@ -59,7 +59,7 @@ where N: Num + Copy,
 /// Sparse matrix multiplication by a scalar
 pub fn scalar_mul_mat<N, I, Mat>(mat: &Mat,
                                  val: N
-                                ) -> CsMatOwnedI<N, I>
+                                ) -> CsMatI<N, I>
 where N: Num + Copy,
       I: SpIndex,
       Mat: SpMatView<N, I>
@@ -82,7 +82,7 @@ where N: Num + Copy,
 pub fn csmat_binop<N, I, F>(lhs: CsMatViewI<N, I>,
                             rhs: CsMatViewI<N, I>,
                             binop: F
-                           ) -> CsMatOwnedI<N, I>
+                           ) -> CsMatI<N, I>
 where N: Num,
       I: SpIndex,
       F: Fn(&N, &N) -> N
@@ -115,7 +115,7 @@ where N: Num,
                                            &mut out_data[..]);
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
-    CsMat {
+    CsMatI {
         storage: storage_type,
         nrows: nrows,
         ncols: ncols,
@@ -261,17 +261,18 @@ where N: 'a + Num,
 /// to zero when e.g. only `lhs` has a non-zero at a given location).
 ///
 /// The function thus has a correct behavior iff `binop(0, 0) == 0`.
-pub fn csvec_binop<N, F>(lhs: CsVecView<N>,
-                         rhs: CsVecView<N>,
-                         binop: F
-                        ) -> SpRes<CsVecOwned<N>>
+pub fn csvec_binop<N, I, F>(lhs: CsVecViewI<N, I>,
+                            rhs: CsVecViewI<N, I>,
+                            binop: F
+                           ) -> SpRes<CsVecI<N, I>>
 where N: Num,
-      F: Fn(&N, &N) -> N
+      F: Fn(&N, &N) -> N,
+      I: SpIndex,
 {
     if lhs.dim() != rhs.dim() {
         panic!("Dimension mismatch");
     }
-    let mut res = CsVec::empty(lhs.dim());
+    let mut res = CsVecI::empty(lhs.dim());
     let max_nnz = lhs.nnz() + rhs.nnz();
     res.reserve_exact(max_nnz);
     for elem in lhs.iter().nnz_or_zip(rhs.iter()) {
@@ -287,12 +288,12 @@ where N: Num,
 
 #[cfg(test)]
 mod test {
-    use sparse::{CsMat, CsMatOwned};
+    use sparse::CsMat;
     use sparse::CsVec;
     use test_data::{mat1, mat2, mat1_times_2, mat_dense1};
     use ndarray::{arr2, Array};
 
-    fn mat1_plus_mat2() -> CsMatOwned<f64> {
+    fn mat1_plus_mat2() -> CsMat<f64> {
         let indptr = vec![0,  5,  8,  9, 12, 15];
         let indices = vec![0, 1, 2, 3, 4, 0, 3, 4, 2, 1, 2, 3, 1, 2, 3];
         let data = vec![6.,  7.,  6.,  4.,  3.,
@@ -301,7 +302,7 @@ mod test {
         CsMat::new((5, 5), indptr, indices, data)
     }
 
-    fn mat1_minus_mat2() -> CsMatOwned<f64> {
+    fn mat1_minus_mat2() -> CsMat<f64> {
         let indptr = vec![0,  4,  7,  8, 11, 14];
         let indices = vec![0, 1, 3, 4, 0, 3, 4, 2, 1, 2, 3, 1, 2, 3];
         let data = vec![-6., -7.,  4., -3., -8.,
@@ -310,7 +311,7 @@ mod test {
         CsMat::new((5, 5), indptr, indices, data)
     }
 
-    fn mat1_times_mat2() -> CsMatOwned<f64> {
+    fn mat1_times_mat2() -> CsMat<f64> {
         let indptr = vec![0,  1,  2,  2, 2, 2];
         let indices = vec![2, 3];
         let data = vec![9., 18.];
@@ -331,15 +332,15 @@ mod test {
         assert_eq!(c, c_true);
 
         // test with CSR matrices having differ row patterns
-        let a = CsMatOwned::new((3, 3),
+        let a = CsMat::new((3, 3),
                                 vec![0, 1, 1, 2],
                                 vec![0, 2],
                                 vec![1., 1.]);
-        let b = CsMatOwned::new((3, 3),
+        let b = CsMat::new((3, 3),
                                 vec![0, 1, 2, 2],
                                 vec![0, 1],
                                 vec![1., 1.]);
-        let c = CsMatOwned::new((3, 3),
+        let c = CsMat::new((3, 3),
                                 vec![0, 1, 2, 3],
                                 vec![0, 1, 2],
                                 vec![2., 1., 1.]);
@@ -404,7 +405,7 @@ mod test {
     #[test]
     fn csr_add_dense_rowmaj() {
         let a = Array::zeros((3,3));
-        let b = CsMatOwned::eye(3);
+        let b = CsMat::eye(3);
 
         let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.);
 
@@ -432,7 +433,7 @@ mod test {
     #[test]
     fn csr_mul_dense_rowmaj() {
         let a = Array::from_elem((3,3), 1.);
-        let b = CsMatOwned::eye(3);
+        let b = CsMat::eye(3);
 
         let c = super::mul_dense_mat_same_ordering(&b, &a, 1.);
 
