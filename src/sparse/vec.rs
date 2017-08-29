@@ -30,6 +30,7 @@ use ::{Ix1};
 use num_traits::Num;
 
 use indexing::SpIndex;
+use array_backend::Array2;
 use sparse::permutation::PermViewI;
 use sparse::{prod, binop};
 use sparse::utils;
@@ -533,7 +534,9 @@ where I: SpIndex,
     pub fn row_view(&self) -> CsMatVecView_<N, I> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
-        let indptr = vec![I::zero(), I::from_usize(self.indices.len())];
+        let indptr = Array2 {
+            data: [I::zero(), I::from_usize(self.indices.len())],
+        };
         CsMatBase {
             storage: CSR,
             nrows: 1,
@@ -548,7 +551,9 @@ where I: SpIndex,
     pub fn col_view(&self) -> CsMatVecView_<N, I> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
-        let indptr = vec![I::zero(), I::from_usize(self.indices.len())];
+        let indptr = Array2 {
+            data: [I::zero(), I::from_usize(self.indices.len())],
+        };
         CsMatBase {
             storage: CSC,
             nrows: self.dim,

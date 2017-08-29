@@ -18,6 +18,7 @@ use ndarray::{self, ArrayBase, Array, ShapeBuilder};
 use ::{Ix1, Ix2, Shape};
 
 use indexing::SpIndex;
+use array_backend::Array2;
 
 use sparse::prelude::*;
 use sparse::permutation::PermViewI;
@@ -1336,15 +1337,16 @@ impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]> {
     /// perform unchecked slice access.
     pub unsafe fn new_vecview_raw(
         storage: CompressedStorage, nrows : usize, ncols: usize,
-        indptr : Vec<I>, indices : *const I, data : *const N
+        indptr : *const I, indices : *const I, data : *const N
         )
     -> CsMatVecView_<'a, N, I> {
+        let indptr = slice::from_raw_parts(indptr, 2);
         let nnz = indptr[1].index();
         CsMatVecView_ {
             storage: storage,
             nrows : nrows,
             ncols: ncols,
-            indptr : indptr,
+            indptr : Array2 {data: [indptr[0], indptr[1]]},
             indices : slice::from_raw_parts(indices, nnz),
             data : slice::from_raw_parts(data, nnz),
         }

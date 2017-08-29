@@ -1,5 +1,6 @@
 use std::ops::Deref;
 use indexing::SpIndex;
+use array_backend::Array2;
 
 pub use self::csmat::{CompressedStorage};
 
@@ -91,7 +92,7 @@ where I: SpIndex,
 pub type CsMatI<N, I> = CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>>;
 pub type CsMatViewI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a [N]>;
 pub type CsMatViewMutI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a mut [N]>;
-pub type CsMatVecView_<'a, N, I> = CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]>;
+pub type CsMatVecView_<'a, N, I> = CsMatBase<N, I, Array2<I>, &'a [I], &'a [N]>;
 
 pub type CsMat<N> = CsMatI<N, usize>;
 pub type CsMatView<'a, N> = CsMatViewI<'a, N, usize>;
