@@ -5,7 +5,10 @@ Changelog
 - 0.6.0
     - enable the selection of the integer type for storing indices in matrix
       types **breaking change**
-    - update to ndarray 0.8
+    - update to ndarray 0.10
+    - refactor triplet matrix to use the same idioms used in compressed matrix
+      **breaking change**
+    - enhance documentation of main data structures
 - 0.5.0
     - adapt to breaking changes in ndarray 0.7
 - 0.4.1:
