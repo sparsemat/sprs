@@ -243,7 +243,7 @@ where N: 'a + Num,
         // now some equivalent of nnz_or_zip is needed
         for items in orow.iter_mut()
                          .zip(rrow.iter().enumerate().nnz_or_zip(lrow.iter())) {
-            let (mut oval, lr_elems) = items;
+            let (oval, lr_elems) = items;
             let binop_val = match lr_elems {
                 Left((_, val)) => binop(val, &N::zero()),
                 Right((_, val)) => binop(&N::zero(), val),

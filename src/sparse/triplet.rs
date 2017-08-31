@@ -180,7 +180,7 @@ where IStorage: Deref<Target=[I]>,
         let mut data = vec![N::zero(); nnz_max];
 
         // reset row counts to 0
-        for mut count in row_counts.iter_mut() {
+        for count in row_counts.iter_mut() {
             *count = I::zero();
         }
 
@@ -198,7 +198,7 @@ where IStorage: Deref<Target=[I]>,
                 let iter = indices[start..stop]
                                .iter()
                                .zip(data[start..stop].iter_mut());
-                for (&col_cell, mut data_cell) in iter {
+                for (&col_cell, data_cell) in iter {
                     if col_cell.index() == j {
                         *data_cell = data_cell.clone() + val.clone();
                         col_exists = true;
