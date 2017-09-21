@@ -12,6 +12,7 @@ pub const LDL_MAIN_VERSION: usize = 2;
 pub const LDL_SUB_VERSION: usize = 1;
 pub const LDL_SUBSUB_VERSION: usize = 0;
 
+#[link(name = "ldl")]
 extern "C" {
     pub fn ldl_symbolic(n: ldl_int,
                         ap: *mut ldl_int,
