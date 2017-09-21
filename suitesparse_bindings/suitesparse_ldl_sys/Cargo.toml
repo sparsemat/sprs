@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 
 [dependencies]
+libc = "0.2"
