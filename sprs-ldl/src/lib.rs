@@ -439,14 +439,13 @@ mod test {
         self,
         CsMat,
         CsMatView,
-        CsMatOwned,
         Permutation,
         linalg,
     };
     use super::SymmetryCheck;
     use sprs::stack::DStack;
 
-    fn test_mat1() -> CsMatOwned<f64> {
+    fn test_mat1() -> CsMat<f64> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
         let indices = vec![0, 8, 1, 4, 9, 2, 3, 1, 4, 6, 7, 8, 9, 5, 4, 6, 9,
                            4, 7, 8, 0, 4, 7, 8, 1, 4, 6, 9];
@@ -616,10 +615,10 @@ mod test {
         // |   6 2  | |3| = |18|
         // |2      8| |4|   |34|
 
-        let mat = CsMatOwned::new_csc((4, 4),
-                                      vec![0, 2, 4, 6, 8],
-                                      vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                      vec![1, 2, 21, 6, 6, 2, 2, 8]);
+        let mat = CsMat::new_csc((4, 4),
+                                 vec![0, 2, 4, 6, 8],
+                                 vec![0, 3, 1, 2, 1, 2, 0, 3],
+                                 vec![1, 2, 21, 6, 6, 2, 2, 8]);
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 
