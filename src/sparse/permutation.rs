@@ -110,6 +110,50 @@ where IndStorage: Deref<Target=[I]> {
                 perm: _, perm_inv: ref p_ } => p_[index].index()
         }
     }
+
+    /// Get a vector representing this permutation
+    ///
+    /// n: dimension of the expected permutation matrix.
+    pub fn vec(&self, n: I) -> Vec<I> {
+        match self {
+            &Identity => (0..n.index()).map(I::from_usize).collect(),
+            &FinitePerm { perm: ref p, perm_inv: _} => {
+                assert!(n.index() == p.len());
+                p.to_vec()
+            },
+        }
+    }
+
+    /// Get a vector representing the inverse of this permutation
+    pub fn inv_vec(&self, n: I) -> Vec<I> {
+        match self {
+            &Identity => (0..n.index()).map(I::from_usize).collect(),
+            &FinitePerm { perm: _, perm_inv: ref p_} => {
+                assert!(n.index() == p_.len());
+                p_.to_vec()
+            },
+        }
+    }
+
+    pub fn to_other_idx_type<I2>(&self) -> PermOwnedI<I2>
+    where I2: SpIndex
+    {
+        match self {
+            &Identity => PermOwnedI::identity(),
+            &FinitePerm { perm: ref p, perm_inv: ref p_ } => {
+                let perm = p.iter()
+                            .map(|i| I2::from_usize(i.index()))
+                            .collect();
+                let perm_inv = p_.iter()
+                                 .map(|i| I2::from_usize(i.index()))
+                                 .collect();
+                FinitePerm {
+                    perm: perm,
+                    perm_inv: perm_inv,
+                }
+            },
+        }
+    }
 }
 
 impl<'a, 'b, N, I, IndStorage> Mul<&'a [N]> for &'b Permutation<I, IndStorage>
