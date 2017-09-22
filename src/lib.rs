@@ -74,6 +74,8 @@ pub type Ix_ = ndarray::Ix1;
 pub type Ix1 = ndarray::Ix1;
 pub type Ix2 = ndarray::Ix2;
 
+pub use indexing::SpIndex;
+
 pub use sparse::{
     CsMatBase,
     CsMat,
