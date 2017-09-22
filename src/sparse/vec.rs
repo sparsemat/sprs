@@ -535,17 +535,20 @@ where I: SpIndex,
     /// # Panics
     ///
     /// If the indices cannot be represented by the requested integer type.
-    pub fn to_other_idx_type<I2>(&self) -> CsVecI<N, I2>
+    pub fn to_other_types<I2>(&self) -> CsVecI<N, I2>
     where N: Clone,
           I2: SpIndex,
     {
         let indices = self.indices.iter()
                                   .map(|i| I2::from_usize(i.index()))
                                   .collect();
+        let data = self.data.iter()
+                            .map(|x| x.clone().into())
+                            .collect();
         CsVecI {
             dim: self.dim,
             indices: indices,
-            data: self.data.to_vec(),
+            data: data,
         }
     }
 
