@@ -17,6 +17,18 @@ pub struct LdlSymbolic {
     pinv: Vec<ldl_int>,
 }
 
+/// Structure holding the numeric ldlt decomposition computed by
+/// suitesparse's ldl
+#[derive(Debug, Clone)]
+pub struct LdlNumeric {
+    symbolic: LdlSymbolic,
+    li: Vec<ldl_int>,
+    lx: Vec<f64>,
+    d: Vec<f64>,
+    y: Vec<f64>,
+    pattern: Vec<ldl_int>
+}
+
 impl LdlSymbolic {
     /// Compute the symbolic LDLT decomposition of the given matrix.
     ///
@@ -77,6 +89,72 @@ impl LdlSymbolic {
         }
         res
     }
+
+    /// The size of the linear system associated with this decomposition
+    #[inline]
+    pub fn problem_size(&self) -> usize {
+        self.n as usize
+    }
+
+    /// The number of non-zero entries in L
+    #[inline]
+    pub fn nnz(&self) -> usize {
+        let n = self.problem_size();
+        self.lp[n] as usize
+    }
+
+    pub fn factor<N, I>(self, mat: CsMatViewI<N, I>) -> LdlNumeric
+    where N: Clone + Into<f64>,
+          I: SpIndex,
+    {
+        let n = self.problem_size();
+        let nnz = self.nnz();
+        let li = vec![0; nnz];
+        let lx = vec![0.; nnz];
+        let d = vec![0.; n];
+        let y = vec![0.; n];
+        let pattern = vec![0; n];
+        let mut ldl_numeric = LdlNumeric {
+            symbolic: self,
+            li: li,
+            lx: lx,
+            d: d,
+            y: y,
+            pattern: pattern,
+        };
+        ldl_numeric.update(mat);
+        ldl_numeric
+    }
+}
+
+impl LdlNumeric {
+
+    pub fn update<N, I>(&mut self, mat: CsMatViewI<N, I>)
+    where N: Clone + Into<f64>,
+          I: SpIndex,
+    {
+        let mat: CsMatI<f64, ldl_int> = mat.to_other_types();
+        let ap = mat.indptr().as_ptr() as *mut ldl_int;
+        let ai = mat.indices().as_ptr() as *mut ldl_int;
+        let ax = mat.data().as_ptr() as *mut f64;
+        unsafe {
+            ldl_numeric(self.symbolic.n,
+                        ap,
+                        ai,
+                        ax,
+                        self.symbolic.lp.as_mut_ptr(),
+                        self.symbolic.parent.as_mut_ptr(),
+                        self.symbolic.lnz.as_mut_ptr(),
+                        self.li.as_mut_ptr(),
+                        self.lx.as_mut_ptr(),
+                        self.d.as_mut_ptr(),
+                        self.y.as_mut_ptr(),
+                        self.pattern.as_mut_ptr(),
+                        self.symbolic.flag.as_mut_ptr(),
+                        self.symbolic.p.as_mut_ptr(),
+                        self.symbolic.pinv.as_mut_ptr());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -91,6 +169,7 @@ mod tests {
                                   vec![0, 3, 1, 2, 1, 2, 0, 3],
                                   vec![1, 2, 21, 6, 6, 2, 2, 8]);
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let _ldlt = LdlSymbolic::new_perm(mat.view(), perm);
+        let _ldlt_numeric = LdlSymbolic::new_perm(mat.view(), perm)
+            .factor(mat.view());
     }
 }
