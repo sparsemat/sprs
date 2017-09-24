@@ -15,19 +15,19 @@ pub const LDL_SUBSUB_VERSION: usize = 0;
 #[link(name = "ldl")]
 extern "C" {
     pub fn ldl_symbolic(n: ldl_int,
-                        ap: *mut ldl_int,
-                        ai: *mut ldl_int,
+                        ap: *const ldl_int,
+                        ai: *const ldl_int,
                         lp: *mut ldl_int,
                         parent: *mut ldl_int,
                         lnz: *mut ldl_int,
                         flag: *mut ldl_int,
-                        p: *mut ldl_int,
-                        pinv: *mut ldl_int);
+                        p: *const ldl_int,
+                        pinv: *const ldl_int);
 
     pub fn ldl_numeric(n: ldl_int,
-                       ap: *mut ldl_int,
-                       ai: *mut ldl_int,
-                       ax: *mut ldl_double,
+                       ap: *const ldl_int,
+                       ai: *const ldl_int,
+                       ax: *const ldl_double,
                        lp: *mut ldl_int,
                        parent: *mut ldl_int,
                        lnz: *mut ldl_int,
@@ -37,42 +37,42 @@ extern "C" {
                        y: *mut ldl_double,
                        pattern: *mut ldl_int,
                        flag: *mut ldl_int,
-                       p: *mut ldl_int,
-                       pinv: *mut ldl_int);
+                       p: *const ldl_int,
+                       pinv: *const ldl_int);
 
     pub fn ldl_lsolve(n: ldl_int,
                       x: *mut ldl_double,
-                      lp: *mut ldl_int,
-                      li: *mut ldl_int,
-                      lx: *mut ldl_double);
+                      lp: *const ldl_int,
+                      li: *const ldl_int,
+                      lx: *const ldl_double);
 
     pub fn ldl_dsolve(n: ldl_int,
                       x: *mut ldl_double,
-                      d: *mut ldl_double);
+                      d: *const ldl_double);
 
     pub fn ldl_ltsolve(n: ldl_int,
                        x: *mut ldl_double,
-                       lp: *mut ldl_int,
-                       li: *mut ldl_int,
-                       lx: *mut ldl_double);
+                       lp: *const ldl_int,
+                       li: *const ldl_int,
+                       lx: *const ldl_double);
 
     pub fn ldl_perm(n: ldl_int,
                     x: *mut ldl_double,
-                    b: *mut ldl_double,
-                    p: *mut ldl_int);
+                    b: *const ldl_double,
+                    p: *const ldl_int);
 
     pub fn ldl_permt(n: ldl_int,
                      x: *mut ldl_double,
-                     b: *mut ldl_double,
-                     p: *mut ldl_int);
+                     b: *const ldl_double,
+                     p: *const ldl_int);
 
     pub fn ldl_valid_perm(n: ldl_int,
-                          p: *mut ldl_int,
-                          flag: *mut ldl_int) -> ldl_int;
+                          p: *const ldl_int,
+                          flag: *const ldl_int) -> ldl_int;
 
     pub fn ldl_valid_matrix(n: ldl_int,
-                            ap: *mut ldl_int,
-                            ai: *mut ldl_int) -> ldl_int;
+                            ap: *const ldl_int,
+                            ai: *const ldl_int) -> ldl_int;
 }
 
 #[cfg(test)]

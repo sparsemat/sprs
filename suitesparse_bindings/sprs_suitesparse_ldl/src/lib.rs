@@ -1,8 +1,12 @@
 extern crate sprs;
 extern crate suitesparse_ldl_sys;
+extern crate num_traits;
+
+use std::ops::Deref;
 
 use sprs::{CsMatViewI, CsMatI, SpIndex, PermOwnedI};
 use suitesparse_ldl_sys::*;
+use num_traits::Num;
 
 /// Structure holding the symbolic ldlt decomposition computed by
 /// suitesparse's ldl
@@ -60,8 +64,8 @@ impl LdlSymbolic {
         let n = mat.rows();
         let n_ = n as ldl_int;
         let mat: CsMatI<f64, ldl_int> = mat.to_other_types();
-        let ap = mat.indptr().as_ptr() as *mut ldl_int;
-        let ai = mat.indices().as_ptr() as *mut ldl_int;
+        let ap = mat.indptr().as_ptr();
+        let ai = mat.indices().as_ptr();
         let valid_mat = unsafe { ldl_valid_matrix(n_, ap, ai) };
         let perm = perm.to_other_idx_type();
         let p = perm.vec(n_);
@@ -84,8 +88,8 @@ impl LdlSymbolic {
                          res.parent.as_mut_ptr(),
                          res.lnz.as_mut_ptr(),
                          res.flag.as_mut_ptr(),
-                         res.p.as_mut_ptr(),
-                         res.pinv.as_mut_ptr());
+                         res.p.as_ptr(),
+                         res.pinv.as_ptr());
         }
         res
     }
@@ -134,9 +138,9 @@ impl LdlNumeric {
           I: SpIndex,
     {
         let mat: CsMatI<f64, ldl_int> = mat.to_other_types();
-        let ap = mat.indptr().as_ptr() as *mut ldl_int;
-        let ai = mat.indices().as_ptr() as *mut ldl_int;
-        let ax = mat.data().as_ptr() as *mut f64;
+        let ap = mat.indptr().as_ptr();
+        let ai = mat.indices().as_ptr();
+        let ax = mat.data().as_ptr();
         unsafe {
             ldl_numeric(self.symbolic.n,
                         ap,
@@ -151,9 +155,44 @@ impl LdlNumeric {
                         self.y.as_mut_ptr(),
                         self.pattern.as_mut_ptr(),
                         self.symbolic.flag.as_mut_ptr(),
-                        self.symbolic.p.as_mut_ptr(),
-                        self.symbolic.pinv.as_mut_ptr());
+                        self.symbolic.p.as_ptr(),
+                        self.symbolic.pinv.as_ptr());
         }
+    }
+
+    /// Solve the system A x = rhs
+    pub fn solve<'a, N, V>(&self, rhs: &V) -> Vec<N>
+    where N: 'a + Copy + Num + Into<f64> + From<f64>,
+          V: Deref<Target = [N]>
+    {
+        assert!(self.symbolic.n as usize == rhs.len());
+        let mut x = vec![0.; rhs.len()];
+        let mut y = x.clone();
+        let rhs: Vec<f64> = rhs.iter().map(|&x| x.into()).collect();
+        unsafe {
+            ldl_perm(self.symbolic.n,
+                     x.as_mut_ptr(),
+                     rhs.as_ptr(),
+                     self.symbolic.p.as_ptr());
+            ldl_lsolve(self.symbolic.n,
+                       x.as_mut_ptr(),
+                       self.symbolic.lp.as_ptr(),
+                       self.li.as_ptr(),
+                       self.lx.as_ptr());
+            ldl_dsolve(self.symbolic.n,
+                       x.as_mut_ptr(),
+                       self.d.as_ptr());
+            ldl_ltsolve(self.symbolic.n,
+                        x.as_mut_ptr(),
+                        self.symbolic.lp.as_ptr(),
+                        self.li.as_ptr(),
+                        self.lx.as_ptr());
+            ldl_permt(self.symbolic.n,
+                      y.as_mut_ptr(),
+                      x.as_ptr(),
+                      self.symbolic.p.as_ptr());
+        }
+        y.iter().map(|&x| x.into()).collect()
     }
 }
 
@@ -167,9 +206,13 @@ mod tests {
         let mat = CsMatI::new_csc((4, 4),
                                   vec![0, 2, 4, 6, 8],
                                   vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                  vec![1, 2, 21, 6, 6, 2, 2, 8]);
+                                  vec![1., 2., 21., 6., 6., 2., 2., 8.]);
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let _ldlt_numeric = LdlSymbolic::new_perm(mat.view(), perm)
+        let ldlt = LdlSymbolic::new_perm(mat.view(), perm)
             .factor(mat.view());
+        let b = vec![9., 60., 18., 34.];
+        let x0 = vec![1., 2., 3., 4.];
+        let x = ldlt.solve(&b);
+        assert_eq!(x, x0);
     }
 }
