@@ -55,6 +55,7 @@ impl LdlSymbolic {
     /// # Panics
     ///
     /// * if mat is not symmetric
+    /// * if perm does not represent a valid permutation
     pub fn new_perm<N, I>(mat: CsMatViewI<N, I>,
                           perm: PermOwnedI<I>) -> LdlSymbolic
     where N: Clone + Into<f64>,
@@ -67,16 +68,24 @@ impl LdlSymbolic {
         let ap = mat.indptr().as_ptr();
         let ai = mat.indices().as_ptr();
         let valid_mat = unsafe { ldl_valid_matrix(n_, ap, ai) };
+        assert!(valid_mat == 1);
         let perm = perm.to_other_idx_type();
         let p = perm.vec(n_);
         let pinv = perm.inv_vec(n_);
-        assert!(valid_mat == 1);
+        let mut flag = vec![0; n];
+        let valid_p = unsafe {
+            ldl_valid_perm(n_, p.as_ptr(), flag.as_mut_ptr())
+        };
+        let valid_pinv = unsafe {
+            ldl_valid_perm(n_, pinv.as_ptr(), flag.as_mut_ptr())
+        };
+        assert!(valid_p == 1 && valid_pinv == 1);
         let mut res = LdlSymbolic {
             n: n_,
             lp: vec![0; n + 1],
             parent: vec![0; n],
             lnz: vec![0; n],
-            flag: vec![0; n],
+            flag: flag,
             p: p,
             pinv: pinv,
         };
@@ -107,6 +116,12 @@ impl LdlSymbolic {
         self.lp[n] as usize
     }
 
+    /// Factor a matrix, assuming it shares the same nonzero pattern
+    /// as the matrix this factorization was built from.
+    ///
+    /// # Panics
+    ///
+    /// If the matrix is not symmetric.
     pub fn factor<N, I>(self, mat: CsMatViewI<N, I>) -> LdlNumeric
     where N: Clone + Into<f64>,
           I: SpIndex,
@@ -133,6 +148,12 @@ impl LdlSymbolic {
 
 impl LdlNumeric {
 
+    /// Factor a new matrix, assuming it shares the same nonzero pattern
+    /// as the matrix this factorization was built from.
+    ///
+    /// # Panics
+    ///
+    /// If the matrix is not symmetric.
     pub fn update<N, I>(&mut self, mat: CsMatViewI<N, I>)
     where N: Clone + Into<f64>,
           I: SpIndex,
@@ -141,6 +162,7 @@ impl LdlNumeric {
         let ap = mat.indptr().as_ptr();
         let ai = mat.indices().as_ptr();
         let ax = mat.data().as_ptr();
+        assert!(unsafe { ldl_valid_matrix(self.symbolic.n, ap, ai) } != 0);
         unsafe {
             ldl_numeric(self.symbolic.n,
                         ap,
