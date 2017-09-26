@@ -148,6 +148,36 @@ impl LdlSymbolic {
 
 impl LdlNumeric {
 
+    /// Compute the numeric LDLT decomposition of the given matrix.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
+    pub fn new<N, I>(mat: CsMatViewI<N, I>) -> Self
+    where N: Clone + Into<f64>,
+          I: SpIndex,
+    {
+        let symbolic = LdlSymbolic::new(mat.view());
+        symbolic.factor(mat)
+    }
+
+    /// Compute the numeric decomposition L D L^T = P^T A P
+    /// where P is a permutation matrix.
+    ///
+    /// Using a good permutation matrix can reduce the non-zero count in L,
+    /// thus making the decomposition and the solves faster.
+    ///
+    /// # Panics
+    ///
+    /// * if mat is not symmetric
+    pub fn new_perm<N, I>(mat: CsMatViewI<N, I>, perm: PermOwnedI<I>) -> Self
+    where N: Clone + Into<f64>,
+          I: SpIndex,
+    {
+        let symbolic = LdlSymbolic::new_perm(mat.view(), perm);
+        symbolic.factor(mat)
+    }
+
     /// Factor a new matrix, assuming it shares the same nonzero pattern
     /// as the matrix this factorization was built from.
     ///
@@ -215,6 +245,18 @@ impl LdlNumeric {
                       self.symbolic.p.as_ptr());
         }
         y.iter().map(|&x| x.into()).collect()
+    }
+
+    /// The size of the linear system associated with this decomposition
+    #[inline]
+    pub fn problem_size(&self) -> usize {
+        self.symbolic.problem_size()
+    }
+
+    /// The number of non-zero entries in L
+    #[inline]
+    pub fn nnz(&self) -> usize {
+        self.symbolic.nnz()
     }
 }
 
