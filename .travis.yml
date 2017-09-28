@@ -8,6 +8,7 @@ script:
     - cd sprs-ldl; cargo build --verbose; cd ..
     - cd sprs-ldl; cargo test --verbose; cd ..
     - cargo run --example heat
+    - cd suitesparse_bindings/sprs_suitesparse_ldl/; cargo test --verbose; cd ..
 
 notifications:
   email:
