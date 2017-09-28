@@ -804,8 +804,8 @@ where I: SpIndex,
     ///
     /// If the indices or indptr values cannot be represented by the requested
     /// integer type.
-    pub fn to_other_idx_type<I2>(&self) -> CsMatI<N, I2>
-    where N: Clone,
+    pub fn to_other_types<I2, N2>(&self) -> CsMatI<N2, I2>
+    where N: Clone + Into<N2>,
           I2: SpIndex,
     {
         let indptr = self.indptr.iter()
@@ -814,13 +814,16 @@ where I: SpIndex,
         let indices = self.indices.iter()
                                   .map(|i| I2::from_usize(i.index()))
                                   .collect();
+        let data = self.data.iter()
+                            .map(|x| x.clone().into())
+                            .collect();
         CsMatI {
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
             indptr: indptr,
             indices: indices,
-            data: self.data.to_vec(),
+            data: data,
         }
     }
 
@@ -2116,16 +2119,17 @@ mod test {
     }
 
     #[test]
-    fn convert_idx_type() {
-        let mat = CsMat::eye(3);
-        let mat_: CsMatI<f64, u32> = mat.to_other_idx_type();
+    fn convert_types() {
+        let mat: CsMat<f32> = CsMat::eye(3);
+        let mat_: CsMatI<f64, u32> = mat.to_other_types();
         assert_eq!(mat_.indptr(), &[0, 1, 2, 3]);
 
         let mat = CsMatI::new_csc((3, 3),
                                   vec![0u32, 1, 3, 4],
                                   vec![1, 0, 2, 2],
                                   vec![1.; 4]);
-        let mat_: CsMatI<_, usize> = mat.to_other_idx_type();
+        let mat_: CsMatI<f32, usize> = mat.to_other_types();
         assert_eq!(mat_.indptr(), &[0, 1, 3, 4]);
+        assert_eq!(mat_.data(), &[1.0f32, 1., 1., 1.]);
     }
 }

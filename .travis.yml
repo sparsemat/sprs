@@ -1,5 +1,11 @@
 language: rust
 
+matrix:
+  include:
+    - rust: stable
+    - rust: beta
+    - rust: nightly
+
 script:
     - rustc --version
     - cargo --version
@@ -8,6 +14,7 @@ script:
     - cd sprs-ldl; cargo build --verbose; cd ..
     - cd sprs-ldl; cargo test --verbose; cd ..
     - cargo run --example heat
+    - cd suitesparse_bindings/sprs_suitesparse_ldl/; cargo test --verbose; cd ..
 
 notifications:
   email:
