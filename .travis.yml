@@ -1,5 +1,11 @@
 language: rust
 
+matrix:
+  include:
+    - rust: stable
+    - rust: beta
+    - rust: nightly
+
 script:
     - rustc --version
     - cargo --version
