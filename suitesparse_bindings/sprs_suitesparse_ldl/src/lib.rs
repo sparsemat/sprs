@@ -57,7 +57,9 @@ macro_rules! ldl_impl {
             where N: Clone + Into<f64>,
                   I: SpIndex,
             {
-                $Symbolic::new_perm(mat, PermOwnedI::identity())
+                assert_eq!(mat.rows(), mat.cols());
+                let n = mat.rows();
+                $Symbolic::new_perm(mat, PermOwnedI::identity(n))
             }
 
             /// Compute the symbolic decomposition L D L^T = P A P^T
@@ -84,8 +86,8 @@ macro_rules! ldl_impl {
                 let valid_mat = unsafe { $valid_matrix(n_, ap, ai) };
                 assert!(valid_mat == 1);
                 let perm = perm.to_other_idx_type();
-                let p = perm.vec(n_);
-                let pinv = perm.inv_vec(n_);
+                let p = perm.vec();
+                let pinv = perm.inv_vec();
                 let mut flag = vec![0; n];
                 let valid_p = unsafe {
                     $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr())
