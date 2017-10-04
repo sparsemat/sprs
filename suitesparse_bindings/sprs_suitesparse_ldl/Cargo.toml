@@ -5,6 +5,8 @@ version = "0.1.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/vbarrielle/sprs"
+keywords = ["sparse", "matrix", "cholesky", "factorization", "suitesparse"]
+readme = "README.md"
 
 [dependencies]
 num-traits = "0.1.32"

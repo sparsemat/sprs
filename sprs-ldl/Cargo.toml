@@ -9,7 +9,7 @@ readme = "README.rst"
 license = "LGPL-2.1"
 repository = "https://github.com/vbarrielle/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
-keywords = ["sparse", "matrix", "cholesky", "linalg"]
+keywords = ["sparse", "matrix", "cholesky", "factorization", "linalg"]
 
 [dependencies]
 
