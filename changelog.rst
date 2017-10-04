@@ -9,6 +9,8 @@ Changelog
     - refactor triplet matrix to use the same idioms used in compressed matrix
       **breaking change**
     - enhance documentation of main data structures
+    - permutation constructor for identity permutation now requires the dimension
+      on which the permutation should operate **breaking change**
 - 0.5.0
     - adapt to breaking changes in ndarray 0.7
 - 0.4.1:

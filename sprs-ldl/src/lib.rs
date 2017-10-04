@@ -106,7 +106,8 @@ impl<I: SpIndex> LdlSymbolic<I> {
     pub fn new<N>(mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
     where N: Copy + PartialEq,
     {
-        let perm: Permutation<I, Vec<I>> = Permutation::identity();
+        assert_eq!(mat.rows(), mat.cols());
+        let perm: Permutation<I, Vec<I>> = Permutation::identity(mat.rows());
         LdlSymbolic::new_perm(mat, perm)
     }
 
@@ -533,7 +534,7 @@ mod test {
         let mut parents = linalg::etree::ParentsOwned::new(10);
         let mut l_nz = [0; 10];
         let mut flag_workspace = [0; 10];
-        let perm: Permutation<usize, &[usize]> = Permutation::identity();
+        let perm: Permutation<usize, &[usize]> = Permutation::identity(10);
         let mat = test_mat1();
         super::ldl_symbolic(mat.view(),
                             &perm,
