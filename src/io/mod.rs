@@ -62,6 +62,11 @@ enum DataType {
     Real,
 }
 
+/// Read a sparse matrix file in the Matrix Market format and return a
+/// corresponding triplet matrix.
+///
+/// Presently, only general matrices are supported, but symmetric and hermitian
+/// matrices should be supported in the future.
 pub fn read_matrix_market<N, I, P>(mm_file: P) -> Result<TriMatI<N, I>, IoError>
 where I: SpIndex,
       N: NumCast,
@@ -73,6 +78,7 @@ where I: SpIndex,
     // MatrixMarket format specifies lines of at most 1024 chars
     let mut line = String::with_capacity(1024);
 
+    // Parse the header line, all tags are case insensitive.
     reader.read_line(&mut line)?;
     let header = line.to_lowercase();
     if !header.starts_with("%%matrixmarket matrix coordinate") {
@@ -86,9 +92,10 @@ where I: SpIndex,
     } else if line.contains("integer") {
         DataType::Integer
     } else {
+        // we currently don't support complex
         return Err(UnsupportedMatrixMarketFormat);
     };
-    // skip comment lines
+    // The header is followed by any number of comment or empty lines, skip
     loop {
         line.clear();
         let len = reader.read_line(&mut line)?;
@@ -99,6 +106,9 @@ where I: SpIndex,
         }
     }
     // read shape and number of entries
+    // this is a line like:
+    // rows cols entries
+    // with arbitrary amounts of whitespace
     let (rows, cols, entries) = {
         let mut infos = line.split_whitespace()
                             .filter_map(|s| s.parse::<usize>().ok());
@@ -113,6 +123,7 @@ where I: SpIndex,
     let mut row_inds = Vec::with_capacity(entries);
     let mut col_inds = Vec::with_capacity(entries);
     let mut data = Vec::with_capacity(entries);
+    // one non-zero entry per non-empty line
     for _ in 0..entries {
         // skip empty lines (no comment line should appear)
         loop {
@@ -124,6 +135,12 @@ where I: SpIndex,
                 break;
             }
         }
+        // Non-zero entries are lines of the form:
+        // row col value
+        // if the data type is integer of real, and
+        // row col real imag
+        // if the data type is complex.
+        // Again, this is with arbitrary amounts of whitespace
         let mut entry = line.split_whitespace();
         let row = entry.next()
                        .ok_or(BadMatrixMarketFile)
