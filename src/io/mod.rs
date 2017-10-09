@@ -57,6 +57,22 @@ impl From<io::Error> for IoError {
     }
 }
 
+impl PartialEq for IoError {
+    fn eq(&self, rhs: &IoError) -> bool {
+        match *self {
+            IoError::BadMatrixMarketFile => match *rhs {
+                IoError::BadMatrixMarketFile => true,
+                _ => false,
+            },
+            IoError::UnsupportedMatrixMarketFormat => match *rhs {
+                IoError::UnsupportedMatrixMarketFormat => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
+
 enum DataType {
     Integer,
     Real,
@@ -181,7 +197,7 @@ where I: SpIndex,
 
 #[cfg(test)]
 mod test {
-    use super::read_matrix_market;
+    use super::{read_matrix_market, IoError};
     #[test]
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";
@@ -193,5 +209,32 @@ mod test {
         assert_eq!(mat.col_inds(), &[0, 1, 2, 3, 1, 3, 4, 4]);
         assert_eq!(mat.data(),
                    &[1., 10.5, 1.5e-02, 6., 2.505e2, -2.8e2, 3.332e1, 1.2e+1]);
+    }
+
+    #[test]
+    fn int_matrix_market_read() {
+        let path = "data/matrix_market/simple_int.mm";
+        let mat = read_matrix_market::<i32, usize, _>(path).unwrap();
+        assert_eq!(mat.rows(), 5);
+        assert_eq!(mat.cols(), 5);
+        assert_eq!(mat.nnz(), 8);
+        assert_eq!(mat.row_inds(), &[0, 1, 2, 0, 3, 3, 3, 4]);
+        assert_eq!(mat.col_inds(), &[0, 1, 2, 3, 1, 3, 4, 4]);
+        assert_eq!(mat.data(), &[1, 1, 1, 6, 2, -2, 3, 1]);
+        // read int, convert to float
+        let mat = read_matrix_market::<f32, i16, _>(path).unwrap();
+        assert_eq!(mat.rows(), 5);
+        assert_eq!(mat.cols(), 5);
+        assert_eq!(mat.nnz(), 8);
+        assert_eq!(mat.row_inds(), &[0, 1, 2, 0, 3, 3, 3, 4]);
+        assert_eq!(mat.col_inds(), &[0, 1, 2, 3, 1, 3, 4, 4]);
+        assert_eq!(mat.data(), &[1., 1., 1., 6., 2., -2., 3., 1.]);
+    }
+
+    #[test]
+    fn matrix_market_read_fail_too_many_in_entry() {
+        let path = "data/matrix_market/bad_files/too_many_elems_in_entry.mm";
+        let res = read_matrix_market::<f64, i32, _>(path);
+        assert_eq!(res.unwrap_err(), IoError::BadMatrixMarketFile);
     }
 }
