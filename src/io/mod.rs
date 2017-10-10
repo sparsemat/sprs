@@ -9,7 +9,7 @@ use std::fmt;
 
 use num_traits::cast::NumCast;
 
-use sparse::{TriMatI, TriMatViewI};
+use sparse::{TriMatI, SparseMat};
 use indexing::SpIndex;
 use num_kinds::{PrimitiveKind, NumKind};
 
@@ -198,15 +198,15 @@ where I: SpIndex,
 
 /// Write a sparse matrix into the matrix market format.
 ///
-/// TODO: as the order of the non-zero entries does not matter, any matrix
-/// capable of producing an iterator of (row, col, val) should be accepted.
-pub fn write_matrix_market<N, I, P>(path: P,
-                                    mat: TriMatViewI<N, I>)
+/// TODO: add example once it's possible to save a compressed matrix
+pub fn write_matrix_market<'a, N, I, M, P>(path: P, mat: M)
     -> Result<(), io::Error>
-where I: SpIndex + fmt::Display,
-      N: PrimitiveKind + Copy + fmt::Display,
+where I: 'a + SpIndex + fmt::Display,
+      N: 'a + PrimitiveKind + Copy + fmt::Display,
+      M: IntoIterator<Item=(&'a N, (I, I))> + SparseMat,
       P: AsRef<Path>,
 {
+    let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
     let f = File::create(path)?;
     let mut writer = io::BufWriter::new(f);
 
@@ -222,10 +222,10 @@ where I: SpIndex + fmt::Display,
     write!(writer, "% written by sprs\n")?;
 
     // dimensions and nnz
-    write!(writer, "{} {} {}\n", mat.rows(), mat.cols(), mat.nnz())?;
+    write!(writer, "{} {} {}\n", rows, cols, nnz)?;
 
     // entries
-    for (row, col, val) in izip!(mat.row_inds(), mat.col_inds(), mat.data()) {
+    for (val, (row, col)) in mat.into_iter() {
         write!(writer, "{} {} {}\n", row.index() + 1, col.index() + 1, val)?;
     }
     Ok(())
@@ -284,5 +284,20 @@ mod test {
         write_matrix_market(&save_path, mat.view()).unwrap();
         let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
         assert_eq!(mat, mat2);
+        write_matrix_market(&save_path, &mat2).unwrap();
+        let mat3 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat3);
+    }
+
+    #[test]
+    fn read_write_read_matrix_market_via_csc() {
+        let path = "data/matrix_market/simple.mm";
+        let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
+        let csc = mat.to_csc();
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("simple_csc.mm");
+        write_matrix_market(&save_path, &csc).unwrap();
+        let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
+        assert_eq!(csc, mat2.to_csc());
     }
 }

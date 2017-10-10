@@ -9,10 +9,11 @@
 /// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 
 use std::default::Default;
-use std::slice::{self, Windows};
+use std::slice::{self, Iter, Windows};
 use std::ops::{Deref, DerefMut, Add, Sub, Mul, Range, Index, IndexMut};
 use std::mem;
 use num_traits::{Num, Zero};
+use std::iter::{Enumerate, Zip};
 
 use ndarray::{self, ArrayBase, Array, ShapeBuilder};
 use ::{Ix1, Ix2, Shape};
@@ -247,6 +248,41 @@ for OuterIterator<'iter, N, I> {
     }
 }
 
+pub struct CsIter<'a, N: 'a, I: 'a>
+{
+    storage: CompressedStorage,
+    cur_outer: I,
+    indptr: &'a [I],
+    inner_iter: Enumerate<Zip<Iter<'a, I>, Iter<'a, N>>>,
+}
+
+impl<'a, N, I> Iterator for CsIter<'a, N, I>
+where I: SpIndex,
+      N: 'a,
+{
+    type Item = (&'a N, (I, I));
+    fn next(&mut self) -> Option<<Self as Iterator>::Item>
+    {
+        match self.inner_iter.next() {
+            None => None,
+            Some((nnz_index, (&inner_ind, val))) => {
+                let nnz_end = self.indptr[self.cur_outer.index() + 1];
+                if nnz_index == nnz_end.index() {
+                    self.cur_outer += I::from_usize(1);
+                }
+                let (row, col) = match self.storage {
+                    CSR => (self.cur_outer, inner_ind),
+                    CSC => (inner_ind, self.cur_outer),
+                };
+                Some((val, (row, col)))
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner_iter.size_hint()
+    }
+}
 
 /// # Constructor methods for owned sparse matrices
 impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
@@ -643,6 +679,21 @@ impl<'a, N:'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
         }
     }
 
+    /// Get an iterator that yields the non-zero locations and values stored in
+    /// this matrix, in the fastest iteration order.
+    ///
+    /// This method will yield the correct lifetime for iterating over a sparse
+    /// matrix view.
+    pub fn iter_rbr(&self) -> CsIter<'a, N, I> {
+        CsIter {
+            storage: self.storage,
+            cur_outer: I::from_usize(0),
+            indptr: &self.indptr[..],
+            inner_iter: self.indices.iter()
+                                    .zip(self.data.iter())
+                                    .enumerate(),
+        }
+    }
 }
 
 
@@ -1034,6 +1085,19 @@ where I: SpIndex,
         }
 
         Ok(())
+    }
+
+    /// Get an iterator that yields the non-zero locations and values stored in
+    /// this matrix, in the fastest iteration order.
+    pub fn iter(&self) -> CsIter<N, I> {
+        CsIter {
+            storage: self.storage,
+            cur_outer: I::from_usize(0),
+            indptr: &self.indptr[..],
+            inner_iter: self.indices.iter()
+                                    .zip(self.data.iter())
+                                    .enumerate(),
+        }
     }
 
 }
@@ -1677,6 +1741,70 @@ where I: SpIndex,
     }
 }
 
+impl<N, I, IpS, IS, DS> SparseMat for CsMatBase<N, I, IpS, IS, DS>
+where I: SpIndex,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
+      DS: Deref<Target=[N]>,
+{
+    fn rows(&self) -> usize {
+        self.rows()
+    }
+
+    fn cols(&self) -> usize {
+        self.cols()
+    }
+
+    fn nnz(&self) -> usize {
+        self.nnz()
+    }
+}
+
+impl<'a, N, I, IpS, IS, DS> SparseMat for &'a CsMatBase<N, I, IpS, IS, DS>
+where I: 'a + SpIndex,
+      N: 'a,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
+      DS: Deref<Target=[N]>,
+{
+    fn rows(&self) -> usize {
+        (*self).rows()
+    }
+
+    fn cols(&self) -> usize {
+        (*self).cols()
+    }
+
+    fn nnz(&self) -> usize {
+        (*self).nnz()
+    }
+}
+
+impl<'a, N, I, IpS, IS, DS> IntoIterator for &'a CsMatBase<N, I, IpS, IS, DS>
+where I: 'a + SpIndex,
+      N: 'a,
+      IpS: Deref<Target=[I]>,
+      IS: Deref<Target=[I]>,
+      DS: Deref<Target=[N]>,
+{
+    type Item = (&'a N, (I, I));
+    type IntoIter = CsIter<'a, N, I>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, N, I> IntoIterator for CsMatViewI<'a, N, I>
+where I: 'a + SpIndex,
+      N: 'a,
+{
+    type Item = (&'a N, (I, I));
+    type IntoIter = CsIter<'a, N, I>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_rbr()
+    }
+}
+
 /// An iterator over non-overlapping blocks of a matrix,
 /// along the least-varying dimension
 pub struct ChunkOuterBlocks<'a, N: 'a, I: 'a + SpIndex> {
@@ -2131,5 +2259,19 @@ mod test {
         let mat_: CsMatI<f32, usize> = mat.to_other_types();
         assert_eq!(mat_.indptr(), &[0, 1, 3, 4]);
         assert_eq!(mat_.data(), &[1.0f32, 1., 1., 1.]);
+    }
+
+    #[test]
+    fn iter() {
+        let mat = CsMat::new_csc((3, 3),
+                                 vec![0, 1, 3, 4],
+                                 vec![1, 0, 2, 2],
+                                 vec![1.; 4]);
+        let mut iter = mat.iter();
+        assert_eq!(iter.next(), Some((&1., (1, 0))));
+        assert_eq!(iter.next(), Some((&1., (0, 1))));
+        assert_eq!(iter.next(), Some((&1., (2, 1))));
+        assert_eq!(iter.next(), Some((&1., (2, 2))));
+        assert_eq!(iter.next(), None);
     }
 }

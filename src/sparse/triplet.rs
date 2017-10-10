@@ -10,14 +10,75 @@
 ///! into CsMat.
 
 use std::ops::{Deref, DerefMut};
-use sparse::csmat;
 use sparse::prelude::*;
 use num_traits::Num;
 use indexing::SpIndex;
+use std::slice::Iter;
 
 /// Indexing type into a Triplet
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TripletIndex(pub usize);
+
+impl<'a, N, I, IS, DS> IntoIterator for &'a TriMatBase<IS, DS>
+where I: 'a + SpIndex,
+      N: 'a,
+      IS: Deref<Target=[I]>,
+      DS: Deref<Target=[N]>,
+{
+    type Item = (&'a N, (I, I));
+    type IntoIter = TriMatIter<Iter<'a, I>, Iter<'a, I>, Iter<'a, N>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.triplet_iter()
+    }
+}
+
+impl<'a, N, I> IntoIterator for TriMatViewI<'a, N, I>
+where I: SpIndex,
+{
+    type Item = (&'a N, (I, I));
+    type IntoIter = TriMatIter<Iter<'a, I>, Iter<'a, I>, Iter<'a, N>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.triplet_iter_rbr()
+    }
+}
+
+impl<N, I, IS, DS> SparseMat for TriMatBase<IS, DS>
+where I: SpIndex,
+      IS: Deref<Target=[I]>,
+      DS: Deref<Target=[N]>,
+{
+    fn rows(&self) -> usize {
+        self.rows()
+    }
+
+    fn cols(&self) -> usize {
+        self.cols()
+    }
+
+    fn nnz(&self) -> usize {
+        self.nnz()
+    }
+}
+
+impl<'a, N, I, IS, DS> SparseMat for &'a TriMatBase<IS, DS>
+where I: 'a + SpIndex,
+      N: 'a,
+      IS: Deref<Target=[I]>,
+      DS: Deref<Target=[N]>,
+{
+    fn rows(&self) -> usize {
+        (*self).rows()
+    }
+
+    fn cols(&self) -> usize {
+        (*self).cols()
+    }
+
+    fn nnz(&self) -> usize {
+        (*self).nnz()
+    }
+}
+
 
 /// # Methods for creating triplet matrices that own their data.
 impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
@@ -162,96 +223,23 @@ where IStorage: Deref<Target=[I]>,
         }
     }
 
+    /// Get an iterator over non-zero elements stored by this matrix
+    pub fn triplet_iter(&self) -> TriMatIter<Iter<I>, Iter<I>, Iter<N>> {
+        TriMatIter {
+            rows: self.rows,
+            cols: self.cols,
+            nnz: self.nnz(),
+            row_inds: self.row_inds.iter(),
+            col_inds: self.col_inds.iter(),
+            data: self.data.iter(),
+        }
+    }
+
     /// Create a CSC matrix from this triplet matrix
     pub fn to_csc(&self) -> CsMatI<N, I>
     where N: Clone + Num
     {
-        let mut row_counts = vec![I::zero(); self.rows() + 1];
-        for &i in self.row_inds.iter() {
-            row_counts[i.index() + 1] += I::one();
-        }
-        let mut indptr = row_counts.clone();
-        // cum sum
-        for i in 1..(self.rows() + 1) {
-            indptr[i] += indptr[i - 1];
-        }
-        let nnz_max = indptr[self.rows()].index();
-        let mut indices = vec![I::zero(); nnz_max];
-        let mut data = vec![N::zero(); nnz_max];
-
-        // reset row counts to 0
-        for count in row_counts.iter_mut() {
-            *count = I::zero();
-        }
-
-        for (val, (&i, &j)) in self.data
-                                   .iter()
-                                   .zip(self.row_inds
-                                            .iter()
-                                            .zip(self.col_inds.iter())) {
-            let i = i.index();
-            let j = j.index();
-            let start = indptr[i].index();
-            let stop = start + row_counts[i].index();
-            let col_exists = {
-                let mut col_exists = false;
-                let iter = indices[start..stop]
-                               .iter()
-                               .zip(data[start..stop].iter_mut());
-                for (&col_cell, data_cell) in iter {
-                    if col_cell.index() == j {
-                        *data_cell = data_cell.clone() + val.clone();
-                        col_exists = true;
-                        break;
-                    }
-                }
-                col_exists
-            };
-            if !col_exists {
-                indices[stop] = I::from_usize(j);
-                data[stop] = val.clone();
-                row_counts[i] += I::one();
-            }
-        }
-
-        // compress the nonzero entries
-        let mut dst_start = indptr[0].index();
-        for i in 0..self.rows() {
-            let start = indptr[i].index();
-            let col_nnz = row_counts[i].index();
-            if start != dst_start {
-                for k in 0..col_nnz {
-                    indices[dst_start + k] = indices[start + k];
-                    data[dst_start + k] = data[start + k].clone();
-                }
-            }
-            indptr[i] = I::from_usize(dst_start);
-            dst_start += col_nnz;
-        }
-        indptr[self.rows()] = I::from_usize(dst_start);
-
-        // at this point we have a CSR matrix with unsorted columns
-        // transposing it will yield the desired CSC matrix with sorted rows
-        let nnz = indptr[self.rows()].index();
-        let mut out_indptr = vec![I::zero(); self.cols() + 1];
-        let mut out_indices = vec![I::zero(); nnz];
-        let mut out_data = vec![N::zero(); nnz];
-        csmat::raw::convert_storage(csmat::CompressedStorage::CSR,
-                                    self.shape(),
-                                    &indptr,
-                                    &indices[..nnz],
-                                    &data[..nnz],
-                                    &mut out_indptr,
-                                    &mut out_indices,
-                                    &mut out_data);
-        CsMatI {
-            storage: csmat::CompressedStorage::CSC,
-            nrows: self.rows,
-            ncols: self.cols,
-            indptr: out_indptr,
-            indices: out_indices,
-            data: out_data
-        }
+        self.triplet_iter().into_csc()
     }
 
     /// Create a CSR matrix from this triplet matrix
@@ -274,6 +262,22 @@ where IStorage: Deref<Target=[I]>,
     }
 }
 
+impl<'a, N, I: SpIndex> TriMatBase<&'a [I], &'a[N]> {
+    /// Get an iterator over non-zero elements stored by this matrix
+    ///
+    /// Reborrowing version of `triplet_iter()`.
+    pub fn triplet_iter_rbr(&self)
+        -> TriMatIter<Iter<'a, I>, Iter<'a, I>, Iter<'a, N>> {
+        TriMatIter {
+            rows: self.rows,
+            cols: self.cols,
+            nnz: self.nnz(),
+            row_inds: self.row_inds.iter(),
+            col_inds: self.col_inds.iter(),
+            data: self.data.iter(),
+        }
+    }
+}
 
 impl<N, I: SpIndex, IStorage, DStorage> TriMatBase<IStorage, DStorage>
 where IStorage: DerefMut<Target=[I]>,
