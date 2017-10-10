@@ -2,15 +2,16 @@
 
 use std::path::Path;
 use std::io;
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 use std::fs::File;
 use std::error::Error;
 use std::fmt;
 
 use num_traits::cast::NumCast;
 
-use sparse::TriMatI;
+use sparse::{TriMatI, TriMatViewI};
 use indexing::SpIndex;
+use num_kinds::{PrimitiveKind, NumKind};
 
 #[derive(Debug)]
 pub enum IoError {
@@ -195,9 +196,45 @@ where I: SpIndex,
     Ok(TriMatI::from_triplets((rows, cols), row_inds, col_inds, data))
 }
 
+/// Write a sparse matrix into the matrix market format.
+///
+/// TODO: as the order of the non-zero entries does not matter, any matrix
+/// capable of producing an iterator of (row, col, val) should be accepted.
+pub fn write_matrix_market<N, I, P>(path: P,
+                                    mat: TriMatViewI<N, I>)
+    -> Result<(), io::Error>
+where I: SpIndex + fmt::Display,
+      N: PrimitiveKind + Copy + fmt::Display,
+      P: AsRef<Path>,
+{
+    let f = File::create(path)?;
+    let mut writer = io::BufWriter::new(f);
+
+    // header
+    let data_type = match N::num_kind() {
+        NumKind::Integer => "integer",
+        NumKind::Float => "real",
+        NumKind::Complex => "complex",
+    };
+    write!(writer,
+           "%%MatrixMarket matrix coordinate {} general\n",
+           data_type)?;
+    write!(writer, "% written by sprs\n")?;
+
+    // dimensions and nnz
+    write!(writer, "{} {} {}\n", mat.rows(), mat.cols(), mat.nnz())?;
+
+    // entries
+    for (row, col, val) in izip!(mat.row_inds(), mat.col_inds(), mat.data()) {
+        write!(writer, "{} {} {}\n", row.index() + 1, col.index() + 1, val)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
-    use super::{read_matrix_market, IoError};
+    use super::{read_matrix_market, write_matrix_market, IoError};
+    use tempdir::TempDir;
     #[test]
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";
@@ -236,5 +273,16 @@ mod test {
         let path = "data/matrix_market/bad_files/too_many_elems_in_entry.mm";
         let res = read_matrix_market::<f64, i32, _>(path);
         assert_eq!(res.unwrap_err(), IoError::BadMatrixMarketFile);
+    }
+
+    #[test]
+    fn read_write_read_matrix_market() {
+        let path = "data/matrix_market/simple.mm";
+        let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("simple.mm");
+        write_matrix_market(&save_path, mat.view()).unwrap();
+        let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2);
     }
 }

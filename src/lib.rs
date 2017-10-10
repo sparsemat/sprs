@@ -61,7 +61,10 @@ assert_eq!(a, b.to_csc());
 #![deny(warnings)]
 
 extern crate num_traits;
+extern crate num_complex;
 extern crate ndarray;
+#[macro_use] extern crate itertools;
+#[cfg(test)] extern crate tempdir;
 #[cfg(feature = "alga")]
 extern crate alga;
 
@@ -71,6 +74,7 @@ pub mod stack;
 pub mod indexing;
 pub mod array_backend;
 pub mod io;
+mod num_kinds;
 
 /// Deprecated type alias, will be removed on next breaking change
 pub type Ix_ = ndarray::Ix1;

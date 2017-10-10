@@ -60,5 +60,5 @@ macro_rules! complex_prim_kind_impl {
     )
 }
 
-float_prim_kind_impl!(Complex32);
-float_prim_kind_impl!(Complex64);
+complex_prim_kind_impl!(Complex32);
+complex_prim_kind_impl!(Complex64);
