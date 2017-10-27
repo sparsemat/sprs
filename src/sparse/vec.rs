@@ -511,6 +511,10 @@ where I: SpIndex,
             return Err(SprsError::NonSortedIndices);
         }
 
+        if self.dim == 0 && self.indices.len() == 0 && self.data.len() == 0 {
+            return Ok(());
+        }
+
         let max_ind = self.indices.iter().max().unwrap_or(&I::zero()).index();
         if max_ind >= self.dim {
             panic!("Out of bounds index");
@@ -1165,5 +1169,10 @@ mod test {
             vec![0, 1, 3, 4, 5, 7],
             vec![2., 4., -1., -3., 8., -1.]);
         (a, b, expected_sum)
+    }
+
+    #[test]
+    fn can_construct_zero_sized_vectors() {
+        CsVec::<f64>::new(0, vec![], vec![]);
     }
 }
