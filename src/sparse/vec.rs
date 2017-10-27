@@ -991,6 +991,8 @@ mod alga_impls {
             CsVecI::zero()
         }
     }
+
+    impl<N: Copy + Num, I: SpIndex> AbstractSemigroup<Additive> for CsVecI<N, I> {}
 }
 
 #[cfg(test)]
