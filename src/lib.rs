@@ -62,6 +62,8 @@ assert_eq!(a, b.to_csc());
 
 extern crate num_traits;
 extern crate ndarray;
+#[cfg(feature = "alga")]
+extern crate alga;
 
 mod sparse;
 pub mod errors;

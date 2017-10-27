@@ -127,7 +127,7 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 /// [`CsVecI`]: type.CsVecI.html
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
     indices : IStorage,

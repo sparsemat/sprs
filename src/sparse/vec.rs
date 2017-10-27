@@ -975,6 +975,18 @@ impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
     }
 }
 
+#[cfg(feature = "alga")]
+mod alga_impls {
+    use super::*;
+    use alga::general::*;
+
+    impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive> for CsVecI<N, I> {
+        fn operate(&self, right: &CsVecI<N, I>) -> CsVecI<N, I> {
+            self + right
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use sparse::{CsVec, CsVecI};

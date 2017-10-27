@@ -15,11 +15,10 @@ exclude = [
     "data/*"
 ]
 
+[features]
+default = ["alga"]
+
 [dependencies]
-
 num-traits = "0.1.32"
-
-
-[dependencies.ndarray]
-version = "0.10.0"
-
+ndarray = "0.10.0"
+alga = { version = "0.5", optional = true }
