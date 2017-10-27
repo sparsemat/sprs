@@ -834,62 +834,66 @@ where N: Copy + Num + Default,
     }
 }
 
-impl<N, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
+impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
 for CsVecBase<IS1, DS1>
 where N: Copy + Num,
-      IS1: Deref<Target=[usize]>,
+      I: SpIndex,
+      IS1: Deref<Target=[I]>,
       DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[usize]>,
+      IS2: Deref<Target=[I]>,
       DS2: Deref<Target=[N]>
 {
-    type Output = CsVec<N>;
+    type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVec<N> {
+    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         &self + &rhs
     }
 }
 
-impl<'a, N, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2>>
+impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2>>
 for CsVecBase<IS1, DS1>
 where N: Copy + Num,
-      IS1: Deref<Target=[usize]>,
+      I: SpIndex,
+      IS1: Deref<Target=[I]>,
       DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[usize]>,
+      IS2: Deref<Target=[I]>,
       DS2: Deref<Target=[N]>
 {
-    type Output = CsVec<N>;
+    type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
+    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         &self + rhs
     }
 }
 
-impl<'a, N, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
+impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
 for &'a CsVecBase<IS1, DS1>
 where N: Copy + Num,
-      IS1: Deref<Target=[usize]>,
+      I: SpIndex,
+      IS1: Deref<Target=[I]>,
       DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[usize]>,
+      IS2: Deref<Target=[I]>,
       DS2: Deref<Target=[N]>
 {
-    type Output = CsVec<N>;
+    type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVec<N> {
+    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         self + &rhs
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2>>
+impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2>>
 for &'a CsVecBase<IS1, DS1>
 where N: Copy + Num,
-      IS1: Deref<Target=[usize]>,
+      I: SpIndex,
+      IS1: Deref<Target=[I]>,
       DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[usize]>,
+      IS2: Deref<Target=[I]>,
       DS2: Deref<Target=[N]> {
 
-    type Output = CsVec<N>;
+    type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
+    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         binop::csvec_binop(self.view(),
                            rhs.view(),
                            |&x, &y| x + y
