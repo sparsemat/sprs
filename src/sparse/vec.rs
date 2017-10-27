@@ -834,6 +834,51 @@ where N: Copy + Num + Default,
     }
 }
 
+impl<N, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
+for CsVecBase<IS1, DS1>
+where N: Copy + Num,
+      IS1: Deref<Target=[usize]>,
+      DS1: Deref<Target=[N]>,
+      IS2: Deref<Target=[usize]>,
+      DS2: Deref<Target=[N]>
+{
+    type Output = CsVec<N>;
+
+    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVec<N> {
+        &self + &rhs
+    }
+}
+
+impl<'a, N, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2>>
+for CsVecBase<IS1, DS1>
+where N: Copy + Num,
+      IS1: Deref<Target=[usize]>,
+      DS1: Deref<Target=[N]>,
+      IS2: Deref<Target=[usize]>,
+      DS2: Deref<Target=[N]>
+{
+    type Output = CsVec<N>;
+
+    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
+        &self + rhs
+    }
+}
+
+impl<'a, N, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
+for &'a CsVecBase<IS1, DS1>
+where N: Copy + Num,
+      IS1: Deref<Target=[usize]>,
+      DS1: Deref<Target=[N]>,
+      IS2: Deref<Target=[usize]>,
+      DS2: Deref<Target=[N]>
+{
+    type Output = CsVec<N>;
+
+    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVec<N> {
+        self + &rhs
+    }
+}
+
 impl<'a, 'b, N, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2>>
 for &'a CsVecBase<IS1, DS1>
 where N: Copy + Num,
@@ -1082,5 +1127,39 @@ mod test {
                                   vec![0, 2, 4, 6],
                                   vec![2., 3., 6., 8.]);
         assert_eq!(vec, expected);
+    }
+
+    #[test]
+    fn adds_vectors_by_value() {
+        let (a, b, expected_sum) = addition_sample();
+        assert_eq!(expected_sum, a + b);
+    }
+
+    #[test]
+    fn adds_vectors_by_left_value_and_right_reference() {
+        let (a, b, expected_sum) = addition_sample();
+        assert_eq!(expected_sum, a + &b);
+    }
+
+    #[test]
+    fn adds_vectors_by_left_reference_and_right_value() {
+        let (a, b, expected_sum) = addition_sample();
+        assert_eq!(expected_sum, &a + b);
+    }
+
+    #[test]
+    fn adds_vectors_by_reference() {
+        let (a, b, expected_sum) = addition_sample();
+        assert_eq!(expected_sum, &a + &b);
+    }
+
+    fn addition_sample() -> (CsVec<f64>, CsVec<f64>, CsVec<f64>) {
+        let dim = 8;
+        let a = CsVec::new(dim, vec![0, 3, 5, 7], vec![2., -3., 7., -1.]);
+        let b = CsVec::new(dim, vec![1, 3, 4, 5], vec![4., 2., -3., 1.]);
+        let expected_sum = CsVec::new(dim,
+            vec![0, 1, 3, 4, 5, 7],
+            vec![2., 4., -1., -3., 8., -1.]);
+        (a, b, expected_sum)
     }
 }
