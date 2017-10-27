@@ -1022,6 +1022,8 @@ mod alga_impls {
 
     impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractGroup<Additive> for CsVecI<N, I> {}
 
+    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractGroupAbelian<Additive> for CsVecI<N, I> {}
+
     #[cfg(test)]
     mod test {
         use super::*;
