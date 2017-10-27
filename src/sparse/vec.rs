@@ -1027,6 +1027,18 @@ mod alga_impls {
         use super::*;
 
         #[test]
+        fn additive_operator_is_addition() {
+            let a = CsVec::new(2, vec![0], vec![2.]);
+            let b = CsVec::new(2, vec![0], vec![3.]);
+            assert_eq!(AbstractMagma::<Additive>::operate(&a, &b), &a + &b);
+        }
+
+        #[test]
+        fn additive_identity_is_zero() {
+            assert_eq!(CsVec::<f64>::zero(), Identity::<Additive>::identity());
+        }
+
+        #[test]
         fn additive_inverse_is_negated() {
             let vector = CsVec::new(2, vec![0], vec![2.]);
             assert_eq!(-vector.clone(), Inverse::<Additive>::inverse(&vector));
