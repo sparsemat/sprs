@@ -1006,6 +1006,26 @@ mod alga_impls {
     impl<N: Copy + Num, I: SpIndex> AbstractSemigroup<Additive> for CsVecI<N, I> {}
 
     impl<N: Copy + Num, I: SpIndex> AbstractMonoid<Additive> for CsVecI<N, I> {}
+
+    impl<N, I> Inverse<Additive> for CsVecI<N, I>
+        where N: Clone + Neg<Output=N> + Copy + Num,
+              I: SpIndex
+    {
+        fn inverse(&self) -> CsVecI<N, I> {
+            -self.clone()
+        }
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn additive_inverse_is_negated() {
+            let vector = CsVec::new(2, vec![0], vec![2.]);
+            assert_eq!(-vector.clone(), Inverse::<Additive>::inverse(&vector));
+        }
+    }
 }
 
 #[cfg(test)]
