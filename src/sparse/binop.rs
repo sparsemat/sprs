@@ -261,14 +261,15 @@ where N: 'a + Num,
 /// to zero when e.g. only `lhs` has a non-zero at a given location).
 ///
 /// The function thus has a correct behavior iff `binop(0, 0) == 0`.
-pub fn csvec_binop<N, I, F>(lhs: CsVecViewI<N, I>,
-                            rhs: CsVecViewI<N, I>,
+pub fn csvec_binop<N, I, F>(mut lhs: CsVecViewI<N, I>,
+                            mut rhs: CsVecViewI<N, I>,
                             binop: F
                            ) -> SpRes<CsVecI<N, I>>
 where N: Num,
       F: Fn(&N, &N) -> N,
       I: SpIndex,
 {
+    csvec_fix_zeros(&mut lhs, &mut rhs);
     if lhs.dim() != rhs.dim() {
         panic!("Dimension mismatch");
     }
@@ -284,6 +285,15 @@ where N: Num,
         res.append(ind, binop_val);
     }
     Ok(res)
+}
+
+fn csvec_fix_zeros<N, I: SpIndex>(lhs: &mut CsVecViewI<N, I>, rhs: &mut CsVecViewI<N, I>) {
+    if rhs.dim() == 0 {
+        rhs.dim = lhs.dim;
+    }
+    if lhs.dim() == 0 {
+        lhs.dim = rhs.dim;
+    }
 }
 
 #[cfg(test)]
@@ -400,6 +410,20 @@ mod test {
                                          vec![0, 1, 2, 4, 5, 6],
                                          vec![1., 3., 4., 1., 3., 4.]);
         assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn zero_sized_vector_works_as_right_vector_operand() {
+        let vector = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let zero = CsVec::<f64>::new(0, vec![], vec![]);
+        assert_eq!(&vector + zero, vector);
+    }
+
+    #[test]
+    fn zero_sized_vector_works_as_left_vector_operand() {
+        let vector = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let zero = CsVec::<f64>::new(0, vec![], vec![]);
+        assert_eq!(zero + &vector, vector);
     }
 
     #[test]
