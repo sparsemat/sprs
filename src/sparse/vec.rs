@@ -27,7 +27,7 @@ use std::marker::PhantomData;
 use ndarray::{self, ArrayBase};
 use ::{Ix1};
 
-use num_traits::Num;
+use num_traits::{Num, Zero};
 
 use indexing::SpIndex;
 use array_backend::Array2;
@@ -965,11 +965,22 @@ where IS: Deref<Target=[usize]>,
     }
 }
 
+impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
+    fn zero() -> CsVecI<N, I> {
+        CsVecI::new(0, vec![], vec![])
+    }
+
+    fn is_zero(&self) -> bool {
+        self.data.iter().all(|x| x.is_zero())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use sparse::{CsVec, CsVecI};
     use super::SparseIterTools;
     use ndarray::Array;
+    use num_traits::Zero;
 
     fn test_vec1() -> CsVec<f64> {
         let n = 8;
@@ -1174,5 +1185,23 @@ mod test {
     #[test]
     fn can_construct_zero_sized_vectors() {
         CsVec::<f64>::new(0, vec![], vec![]);
+    }
+
+    #[test]
+    fn zero_element_vanishes_when_added() {
+        let zero = CsVec::<f64>::zero();
+        let vector = CsVec::new(3, vec![0, 2], vec![1., 2.]);
+        assert_eq!(&vector + &zero, vector);
+    }
+
+    #[test]
+    fn zero_element_is_identified_as_zero() {
+        assert!(CsVec::<f32>::zero().is_zero());
+    }
+
+    #[test]
+    fn larger_zero_vector_is_identified_as_zero() {
+        let vector = CsVec::new(3, vec![1, 2], vec![0., 0.]);
+        assert!(vector.is_zero());
     }
 }
