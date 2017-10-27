@@ -985,6 +985,12 @@ mod alga_impls {
             self + right
         }
     }
+
+    impl<N: Copy + Num, I: SpIndex> Identity<Additive> for CsVecI<N, I> {
+        fn identity() -> CsVecI<N, I> {
+            CsVecI::zero()
+        }
+    }
 }
 
 #[cfg(test)]
