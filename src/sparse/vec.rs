@@ -17,7 +17,7 @@
 /// ```
 
 use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
-use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut};
+use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut, Neg};
 use std::convert::AsRef;
 use std::cmp;
 use std::slice::{self, Iter, IterMut};
@@ -923,6 +923,17 @@ where N: Copy + Num,
     }
 }
 
+impl<N: Num + Copy + Neg<Output=N>, I: SpIndex> Neg for CsVecI<N, I> {
+    type Output = CsVecI<N, I>;
+
+    fn neg(mut self) -> CsVecI<N, I> {
+        for value in &mut self.data {
+            *value = -*value;
+        }
+        self
+    }
+}
+
 impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS>
 where IS: Deref<Target=[usize]>,
       DS: Deref<Target=[N]> {
@@ -1202,6 +1213,13 @@ mod test {
             vec![0, 1, 3, 4, 5, 7],
             vec![2., 4., -1., -3., 8., -1.]);
         (a, b, expected_sum)
+    }
+
+    #[test]
+    fn negates_vectors() {
+        let vector = CsVec::new(4, vec![0, 3], vec![2., -3.]);
+        let negated = CsVec::new(4, vec![0, 3], vec![-2., 3.]);
+        assert_eq!(-vector, negated);
     }
 
     #[test]
