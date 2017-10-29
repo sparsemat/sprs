@@ -179,6 +179,9 @@ pub fn csr_mul_csvec<N, I>(lhs: CsMatViewI<N, I>,
 where N: Copy + Num,
       I: SpIndex,
 {
+    if rhs.dim == 0 {
+        return rhs.to_owned();
+    }
     if lhs.cols() != rhs.dim() {
         panic!("Dimension mismatch");
     }
@@ -480,6 +483,12 @@ mod test {
         let res = &a * &v;
         let expected_output = CsVec::new(5, vec![0, 1, 2], vec![3., 5., 5.]);
         assert_eq!(expected_output, res);
+    }
+
+    #[test]
+    fn mul_csr_zero_csvec() {
+        let zero = CsVec::new(0, vec![], vec![]);
+        assert_eq!(&mat1() * &zero, zero);
     }
 
     #[test]
