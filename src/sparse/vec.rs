@@ -1012,7 +1012,11 @@ mod alga_impls {
               I: SpIndex
     {
         fn inverse(&self) -> CsVecI<N, I> {
-            -self.clone()
+            CsVecBase {
+                data: self.data.iter().map(|x| -*x).collect(),
+                indices: self.indices.clone(),
+                dim: self.dim
+            }
         }
     }
 

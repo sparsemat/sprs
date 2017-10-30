@@ -22,3 +22,10 @@ default = ["alga"]
 num-traits = "0.1.32"
 ndarray = "0.10.0"
 alga = { version = "0.5", optional = true }
+
+[dev-dependencies]
+bencher = "0.1"
+
+[[bench]]
+name = "suite"
+harness = false
