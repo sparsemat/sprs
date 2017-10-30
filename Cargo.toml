@@ -15,11 +15,17 @@ exclude = [
     "data/*"
 ]
 
+[features]
+default = ["alga"]
+
 [dependencies]
-
 num-traits = "0.1.32"
+ndarray = "0.10.0"
+alga = { version = "0.5", optional = true }
 
+[dev-dependencies]
+bencher = "0.1"
 
-[dependencies.ndarray]
-version = "0.10.0"
-
+[[bench]]
+name = "suite"
+harness = false

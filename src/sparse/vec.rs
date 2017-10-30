@@ -17,7 +17,7 @@
 /// ```
 
 use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
-use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut};
+use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut, Neg};
 use std::convert::AsRef;
 use std::cmp;
 use std::slice::{self, Iter, IterMut};
@@ -923,6 +923,17 @@ where N: Copy + Num,
     }
 }
 
+impl<N: Num + Copy + Neg<Output=N>, I: SpIndex> Neg for CsVecI<N, I> {
+    type Output = CsVecI<N, I>;
+
+    fn neg(mut self) -> CsVecI<N, I> {
+        for value in &mut self.data {
+            *value = -*value;
+        }
+        self
+    }
+}
+
 impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS>
 where IS: Deref<Target=[usize]>,
       DS: Deref<Target=[N]> {
@@ -972,6 +983,72 @@ impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
 
     fn is_zero(&self) -> bool {
         self.data.iter().all(|x| x.is_zero())
+    }
+}
+
+#[cfg(feature = "alga")]
+mod alga_impls {
+    use super::*;
+    use alga::general::*;
+
+    impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive> for CsVecI<N, I> {
+        fn operate(&self, right: &CsVecI<N, I>) -> CsVecI<N, I> {
+            self + right
+        }
+    }
+
+    impl<N: Copy + Num, I: SpIndex> Identity<Additive> for CsVecI<N, I> {
+        fn identity() -> CsVecI<N, I> {
+            CsVecI::zero()
+        }
+    }
+
+    impl<N: Copy + Num, I: SpIndex> AbstractSemigroup<Additive> for CsVecI<N, I> {}
+
+    impl<N: Copy + Num, I: SpIndex> AbstractMonoid<Additive> for CsVecI<N, I> {}
+
+    impl<N, I> Inverse<Additive> for CsVecI<N, I>
+        where N: Clone + Neg<Output=N> + Copy + Num,
+              I: SpIndex
+    {
+        fn inverse(&self) -> CsVecI<N, I> {
+            CsVecBase {
+                data: self.data.iter().map(|x| -*x).collect(),
+                indices: self.indices.clone(),
+                dim: self.dim
+            }
+        }
+    }
+
+    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractQuasigroup<Additive> for CsVecI<N, I> {}
+
+    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractLoop<Additive> for CsVecI<N, I> {}
+
+    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractGroup<Additive> for CsVecI<N, I> {}
+
+    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractGroupAbelian<Additive> for CsVecI<N, I> {}
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[test]
+        fn additive_operator_is_addition() {
+            let a = CsVec::new(2, vec![0], vec![2.]);
+            let b = CsVec::new(2, vec![0], vec![3.]);
+            assert_eq!(AbstractMagma::<Additive>::operate(&a, &b), &a + &b);
+        }
+
+        #[test]
+        fn additive_identity_is_zero() {
+            assert_eq!(CsVec::<f64>::zero(), Identity::<Additive>::identity());
+        }
+
+        #[test]
+        fn additive_inverse_is_negated() {
+            let vector = CsVec::new(2, vec![0], vec![2.]);
+            assert_eq!(-vector.clone(), Inverse::<Additive>::inverse(&vector));
+        }
     }
 }
 
@@ -1180,6 +1257,13 @@ mod test {
             vec![0, 1, 3, 4, 5, 7],
             vec![2., 4., -1., -3., 8., -1.]);
         (a, b, expected_sum)
+    }
+
+    #[test]
+    fn negates_vectors() {
+        let vector = CsVec::new(4, vec![0, 3], vec![2., -3.]);
+        let negated = CsVec::new(4, vec![0, 3], vec![-2., 3.]);
+        assert_eq!(-vector, negated);
     }
 
     #[test]
