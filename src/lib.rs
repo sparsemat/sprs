@@ -61,7 +61,9 @@ assert_eq!(a, b.to_csc());
 #![deny(warnings)]
 
 extern crate num_traits;
+extern crate num_complex;
 extern crate ndarray;
+#[cfg(test)] extern crate tempdir;
 #[cfg(feature = "alga")]
 extern crate alga;
 
@@ -70,6 +72,8 @@ pub mod errors;
 pub mod stack;
 pub mod indexing;
 pub mod array_backend;
+pub mod io;
+mod num_kinds;
 
 /// Deprecated type alias, will be removed on next breaking change
 pub type Ix_ = ndarray::Ix1;
@@ -101,6 +105,8 @@ pub use sparse::{
     TriMatI,
     TriMatViewI,
     TriMatViewMutI,
+    TriMatIter,
+    SparseMat,
 };
 
 
@@ -170,3 +176,22 @@ pub type SpRes<T> = Result<T, errors::SprsError>;
 
 #[cfg(test)]
 mod test_data;
+
+#[cfg(test)]
+mod test {
+    use super::CsMat;
+
+    #[test]
+    fn iter_rbr() {
+        let mat = CsMat::new((3, 3),
+                             vec![0, 2, 3, 3],
+                             vec![1, 2, 0],
+                             vec![0.1, 0.2, 0.3]);
+        let view = mat.view();
+        let mut iter = view.iter();
+        assert_eq!(iter.next(), Some((&0.1, (0, 1))));
+        assert_eq!(iter.next(), Some((&0.2, (0, 2))));
+        assert_eq!(iter.next(), Some((&0.3, (1, 0))));
+        assert_eq!(iter.next(), None);
+    }
+}
