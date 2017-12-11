@@ -13,7 +13,7 @@ pub fn assign_to_dense<N, I>(mut array: ArrayViewMut<N, Ix2>,
                              spmat: CsMatViewI<N, I>)
 where N: Clone, I: SpIndex
 {
-    if spmat.cols() != array.shape()[0] {
+    if spmat.cols() != array.shape()[1] {
         panic!("Dimension mismatch");
     }
     if spmat.rows() != array.shape()[0] {
@@ -33,7 +33,7 @@ where N: Clone, I: SpIndex
 mod test {
     use ndarray::{Array, arr2};
     use ::CsMat;
-    use test_data::{mat1};
+    use test_data::{mat1, mat3};
 
     #[test]
     fn to_dense() {
@@ -59,5 +59,13 @@ mod test {
                               [0., 8., 0., 0., 0.],
                               [0., 0., 0., 7., 0.]]);
         assert_eq!(expected, res);
+
+        let res2 = mat3().to_dense();
+        let expected2 = arr2(&[[0., 0., 3., 4.],
+                              [0., 0., 2., 5.],
+                              [0., 0., 5., 0.],
+                              [0., 8., 0., 0.],
+                              [0., 0., 0., 7.]]);
+        assert_eq!(expected2, res2);
     }
 }
