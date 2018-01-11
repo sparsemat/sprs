@@ -16,7 +16,7 @@
 /// assert_eq!(iter.next(), None);
 /// ```
 
-use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate};
+use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate, Sum};
 use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut, Neg};
 use std::convert::AsRef;
 use std::cmp;
@@ -282,6 +282,63 @@ where S: ndarray::Data<Elem=N>
 
     fn into_sparse_vec_iter(self) -> Enumerate<ndarray::iter::Iter<'a, N, Ix1>> {
         self.iter().enumerate()
+    }
+}
+
+/// A trait for types representing dense vectors, useful for
+/// defining a fast sparse-dense dot product.
+pub trait DenseVector<N>
+{
+    /// The dimension of the vector
+    fn dim(&self) -> usize;
+
+    /// Random access to an element in the vector.
+    ///
+    /// # Panics
+    ///
+    /// If the index is out of bounds
+    fn index(&self, idx: usize) -> &N;
+}
+
+impl<'a, N: 'a> DenseVector<N> for &'a[N] {
+    fn dim(&self) -> usize {
+        self.len()
+    }
+
+    fn index(&self, idx: usize) -> &N {
+        &self[idx]
+    }
+}
+
+impl<N> DenseVector<N> for Vec<N> {
+    fn dim(&self) -> usize {
+        self.len()
+    }
+
+    fn index(&self, idx: usize) -> &N {
+        &self[idx]
+    }
+}
+
+impl<'a, N: 'a> DenseVector<N> for &'a Vec<N> {
+    fn dim(&self) -> usize {
+        self.len()
+    }
+
+    fn index(&self, idx: usize) -> &N {
+        &self[idx]
+    }
+}
+
+impl<N, S> DenseVector<N> for ArrayBase<S, Ix1>
+where S: ndarray::Data<Elem=N>
+{
+    fn dim(&self) -> usize {
+        self.shape()[0]
+    }
+
+    fn index(&self, idx: usize) -> &N {
+        &self[[idx]]
     }
 }
 
@@ -613,6 +670,9 @@ where I: SpIndex,
     /// that can be interpreted as a sparse vector (hence sparse vectors, std
     /// vectors and slices, and ndarray's dense vectors work).
     ///
+    /// However, even if dense vectors work, it is more performant to use
+    /// the [`dot_dense`](struct.CsVecBase.html#method.dot_dense).
+    ///
     /// # Panics
     ///
     /// If the dimension of the vectors do not match.
@@ -636,6 +696,21 @@ where I: SpIndex,
         self.iter().nnz_zip(rhs.into_sparse_vec_iter())
                    .map(|(_, &lval, &rval)| lval * rval)
                    .fold(N::zero(), |x, y| x + y)
+    }
+
+    /// Sparse-dense vector dot product. The right-hand-side can be any type
+    /// that can be interpreted as a dense vector (hence std vectors and
+    /// slices, and ndarray's dense vectors work).
+    ///
+    /// # Panics
+    ///
+    /// If the dimension of the vectors do not match.
+    pub fn dot_dense<T>(&self, rhs: T) -> N
+    where T: DenseVector<N>,
+          N: Num + Copy + Sum,
+    {
+        assert_eq!(self.dim(), rhs.dim());
+        self.iter().map(|(idx, val)| *val * *rhs.index(idx.index())).sum()
     }
 
     /// Fill a dense vector with our values
@@ -1114,12 +1189,18 @@ mod test {
         assert_eq!(12., vec2.dot(vec3.view()));
 
         let dense_vec = vec![1., 2., 3., 4., 5., 6., 7., 8.];
+        {
         let slice = &dense_vec[..];
-        assert_eq!(16., vec1.dot(&dense_vec));
-        assert_eq!(16., vec1.dot(slice));
+            assert_eq!(16., vec1.dot(&dense_vec));
+            assert_eq!(16., vec1.dot(slice));
+            assert_eq!(16., vec1.dot_dense(slice));
+            assert_eq!(16., vec1.dot_dense(&dense_vec));
+        }
+        assert_eq!(16., vec1.dot_dense(dense_vec));
 
         let ndarray_vec = Array::linspace(1., 8., 8);
         assert_eq!(16., vec1.dot(&ndarray_vec));
+        assert_eq!(16., vec1.dot_dense(ndarray_vec.view()));
     }
 
     #[test]
