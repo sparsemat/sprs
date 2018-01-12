@@ -217,7 +217,7 @@ where N: 'a + Num + Copy,
     if !lhs.is_csr() {
         panic!("Storage mismatch");
     }
-    if !rhs.is_standard_layout() {
+    if !rhs.is_standard_layout() && rhs.shape()[1] != 1 {
         panic!("Storage mismatch");
     }
     // for now we implement a naive strategy, but later on it would
@@ -275,7 +275,7 @@ where N: 'a + Num + Copy,
     if !lhs.is_csc() {
         panic!("Storage mismatch");
     }
-    if !rhs.is_standard_layout() {
+    if !rhs.is_standard_layout() && rhs.shape()[1] != 1 {
         panic!("Storage mismatch");
     }
 
@@ -312,7 +312,7 @@ where N: 'a + Num + Copy,
     if !lhs.is_csc() {
         panic!("Storage mismatch");
     }
-    if rhs.is_standard_layout() {
+    if rhs.is_standard_layout() && rhs.shape()[1] != 1 {
         panic!("Storage mismatch");
     }
 
@@ -351,7 +351,7 @@ where N: 'a + Num + Copy,
     if !lhs.is_csr() {
         panic!("Storage mismatch");
     }
-    if rhs.is_standard_layout() {
+    if rhs.is_standard_layout() && rhs.shape()[1] != 1 {
         panic!("Storage mismatch");
     }
     let axis1 = Axis(1);
