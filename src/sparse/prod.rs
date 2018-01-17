@@ -2,6 +2,7 @@
 
 use sparse::prelude::*;
 use indexing::SpIndex;
+use std::iter::Sum;
 use num_traits::Num;
 use sparse::compressed::SpMatView;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
@@ -176,7 +177,7 @@ where N: Num + Copy,
 /// CSR-vector multiplication
 pub fn csr_mul_csvec<N, I>(lhs: CsMatViewI<N, I>,
                            rhs: CsVecViewI<N, I>) -> CsVecI<N, I>
-where N: Copy + Num,
+where N: Copy + Num + Sum,
       I: SpIndex,
 {
     if rhs.dim == 0 {

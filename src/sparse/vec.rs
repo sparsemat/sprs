@@ -201,21 +201,37 @@ for VectorIterator<'a, N, I> {
 }
 
 /// Trait for types that can be iterated as sparse vectors
-pub trait IntoSparseVecIter<N> {
+pub trait IntoSparseVecIter<'a, N: 'a> {
 
     type IterType;
 
     /// Transform self into an iterator that yields (usize, &N) tuples
     /// where the usize is the index of the value in the sparse vector.
     /// The indices should be sorted.
-    fn into_sparse_vec_iter(self) -> <Self as IntoSparseVecIter<N>>::IterType
-    where <Self as IntoSparseVecIter<N>>::IterType: Iterator<Item=(usize, N)>;
+    fn into_sparse_vec_iter(self) -> <Self as IntoSparseVecIter<'a, N>>::IterType
+    where <Self as IntoSparseVecIter<'a, N>>::IterType: Iterator<Item=(usize, &'a N)>;
 
     /// The dimension of the vector
     fn dim(&self) -> usize;
+
+    /// Indicator to check whether the vector is actually dense
+    fn is_dense(&self) -> bool {
+        false
+    }
+
+    /// Random access to an element in the vector.
+    ///
+    /// # Panics
+    ///
+    /// - if the vector is not dense
+    /// - if the index is out of bounds
+    #[allow(unused_variables)]
+    fn index(self, idx: usize) -> &'a N where Self: Sized {
+        panic!("cannot be called on a vector that is not dense");
+    }
 }
 
-impl<'a, N: 'a, I: 'a> IntoSparseVecIter<&'a N> for CsVecViewI<'a, N, I>
+impl<'a, N: 'a, I: 'a> IntoSparseVecIter<'a, N> for CsVecViewI<'a, N, I>
 where I: SpIndex,
 {
     type IterType = VectorIterator<'a, N, I>;
@@ -230,7 +246,7 @@ where I: SpIndex,
 }
 
 impl<'a, N: 'a, I: 'a, IS, DS>
-IntoSparseVecIter<&'a N>
+IntoSparseVecIter<'a, N>
 for &'a CsVecBase<IS, DS>
 where I: SpIndex,
       IS: Deref<Target=[I]>,
@@ -247,7 +263,7 @@ where I: SpIndex,
     }
 }
 
-impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a [N] {
+impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a [N] {
     type IterType = Enumerate<Iter<'a, N>>;
 
     fn dim(&self) -> usize {
@@ -257,9 +273,17 @@ impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a [N] {
     fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
         self.into_iter().enumerate()
     }
+
+    fn is_dense(&self) -> bool {
+        true
+    }
+
+    fn index(self, idx: usize) -> &'a N {
+        &self[idx]
+    }
 }
 
-impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a Vec<N> {
+impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a Vec<N> {
     type IterType = Enumerate<Iter<'a, N>>;
 
     fn dim(&self) -> usize {
@@ -269,9 +293,17 @@ impl<'a, N: 'a> IntoSparseVecIter<&'a N> for &'a Vec<N> {
     fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
         self.into_iter().enumerate()
     }
+
+    fn is_dense(&self) -> bool {
+        true
+    }
+
+    fn index(self, idx: usize) -> &'a N {
+        &self[idx]
+    }
 }
 
-impl<'a, N: 'a, S> IntoSparseVecIter<&'a N> for &'a ArrayBase<S, Ix1>
+impl<'a, N: 'a, S> IntoSparseVecIter<'a, N> for &'a ArrayBase<S, Ix1>
 where S: ndarray::Data<Elem=N>
 {
     type IterType = Enumerate<ndarray::iter::Iter<'a, N, Ix1>>;
@@ -282,6 +314,14 @@ where S: ndarray::Data<Elem=N>
 
     fn into_sparse_vec_iter(self) -> Enumerate<ndarray::iter::Iter<'a, N, Ix1>> {
         self.iter().enumerate()
+    }
+
+    fn is_dense(&self) -> bool {
+        true
+    }
+
+    fn index(self, idx: usize) -> &'a N {
+        &self[[idx]]
     }
 }
 
@@ -687,20 +727,32 @@ where I: SpIndex,
     /// assert_eq!(4., v1.dot(&v1));
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
-    pub fn dot<'b, T: IntoSparseVecIter<&'b N>>(&'b self, rhs: T) -> N
-    where N: 'b + Num + Copy,
+    pub fn dot<'b, T: IntoSparseVecIter<'b, N>>(&'b self, rhs: T) -> N
+    where N: 'b + Num + Copy + Sum,
           I: 'b,
-          <T as IntoSparseVecIter<&'b N>>::IterType: Iterator<Item=(usize, &'b N)>
+          <T as IntoSparseVecIter<'b, N>>::IterType: Iterator<Item=(usize, &'b N)>,
+          T: Copy // T is supposed to be a reference type
     {
         assert_eq!(self.dim(), rhs.dim());
-        self.iter().nnz_zip(rhs.into_sparse_vec_iter())
-                   .map(|(_, &lval, &rval)| lval * rval)
-                   .fold(N::zero(), |x, y| x + y)
+        if rhs.is_dense() {
+            self.iter()
+                .map(|(idx, val)| *val * *rhs.index(idx.index()))
+                .sum()
+        }
+        else {
+            self.iter().nnz_zip(rhs.into_sparse_vec_iter())
+                       .map(|(_, &lval, &rval)| lval * rval)
+                       .fold(N::zero(), |x, y| x + y)
+        }
     }
 
     /// Sparse-dense vector dot product. The right-hand-side can be any type
     /// that can be interpreted as a dense vector (hence std vectors and
     /// slices, and ndarray's dense vectors work).
+    ///
+    /// Since the `dot` method can work with the same performance on
+    /// dot vectors, the main interest of this method is to enforce at
+    /// compile time that the rhs is dense.
     ///
     /// # Panics
     ///
@@ -893,7 +945,7 @@ where N: 'a + Copy + Num + Default,
 impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2>
 Mul<&'b CsVecBase<IS2, DS2>>
 for &'a CsMatBase<N, I, IpS1, IS1, DS1>
-where N: Copy + Num + Default,
+where N: Copy + Num + Default + Sum,
       I: SpIndex,
       IpS1: Deref<Target=[I]>,
       IS1: Deref<Target=[I]>,
