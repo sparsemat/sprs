@@ -1612,7 +1612,11 @@ where N: 'a + Copy + Num + Default,
     fn mul(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         let rows = self.rows();
         let cols = rhs.shape()[1];
-        match (self.storage(), rhs.is_standard_layout()) {
+        // when the number of colums is small, it is more efficient
+        // to perform the product by iterating over the columns of
+        // the rhs, otherwise iterating by rows can take advantage of
+        // vectorized axpy.
+        match (self.storage(), cols >= 8) {
             (CSR, true) => {
                 let mut res = Array::zeros((rows, cols));
                 prod::csr_mulacc_dense_rowmaj(self.view(),
@@ -1669,13 +1673,13 @@ where N: 'a + Copy + Num + Default,
             let res_reshape = res.view_mut().into_shape((rows, 1)).unwrap();
             match self.storage() {
                 CSR => {
-                    prod::csr_mulacc_dense_rowmaj(self.view(),
+                    prod::csr_mulacc_dense_colmaj(self.view(),
                                                   rhs_reshape,
                                                   res_reshape
                                                  );
                 }
                 CSC => {
-                    prod::csc_mulacc_dense_rowmaj(self.view(),
+                    prod::csc_mulacc_dense_colmaj(self.view(),
                                                   rhs_reshape,
                                                   res_reshape
                                                  );
