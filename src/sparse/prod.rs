@@ -2,6 +2,7 @@
 
 use sparse::prelude::*;
 use indexing::SpIndex;
+use std::iter::Sum;
 use num_traits::Num;
 use sparse::compressed::SpMatView;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
@@ -176,7 +177,7 @@ where N: Num + Copy,
 /// CSR-vector multiplication
 pub fn csr_mul_csvec<N, I>(lhs: CsMatViewI<N, I>,
                            rhs: CsVecViewI<N, I>) -> CsVecI<N, I>
-where N: Copy + Num,
+where N: Copy + Num + Sum,
       I: SpIndex,
 {
     if rhs.dim == 0 {
@@ -197,7 +198,7 @@ where N: Copy + Num,
 
 /// CSR-dense rowmaj multiplication
 ///
-/// Performs better if out is rowmaj.
+/// Performs better if rhs has a decent number of colums.
 pub fn csr_mulacc_dense_rowmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
@@ -217,37 +218,15 @@ where N: 'a + Num + Copy,
     if !lhs.is_csr() {
         panic!("Storage mismatch");
     }
-    if !rhs.is_standard_layout() {
-        panic!("Storage mismatch");
-    }
-    // for now we implement a naive strategy, but later on it would
-    // be nice to pick a data dependent block-size to optimize caching effects
-    let lblock_size = 4;
-    let rblock_size = 4;
-    let axis0 = Axis(0);
-    for (mut oblock, lblock) in out.axis_chunks_iter_mut(axis0, lblock_size)
-                                   .zip(lhs.outer_block_iter(lblock_size)) {
-        for (rcount, rblock) in rhs.axis_chunks_iter(axis0, rblock_size)
-                                   .enumerate() {
-            let col_start = rblock_size * rcount;
-            let col_end = col_start + rblock_size;
 
-            for (line, mut oline) in lblock.outer_iterator()
-                                           .zip(oblock.axis_iter_mut(axis0)) {
-                'col_block: for (col_ind, &lval) in line.iter() {
-                    if col_ind < col_start {
-                        continue 'col_block;
-                    }
-                    if col_ind >= col_end {
-                        break 'col_block;
-                    }
-                    let k_inblock = col_ind - col_start;
-                    let rline = rblock.subview(axis0, k_inblock);
-                    for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
-                        let prev = *oval;
-                        *oval = prev + lval * rval;
-                    }
-                }
+    let axis0 = Axis(0);
+    for (line, mut oline) in lhs.outer_iterator().zip(out.axis_iter_mut(axis0)) {
+        for (col_ind, &lval) in line.iter() {
+            let rline = rhs.row(col_ind);
+            // TODO: call an axpy primitive to benefit from vectorisation?
+            for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
+                let prev = *oval;
+                *oval = prev + lval * rval;
             }
         }
     }
@@ -255,7 +234,7 @@ where N: 'a + Num + Copy,
 
 /// CSC-dense rowmaj multiplication
 ///
-/// Performs better if out is rowmaj
+/// Performs better if rhs has a decent number of colums.
 pub fn csc_mulacc_dense_rowmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
@@ -275,9 +254,6 @@ where N: 'a + Num + Copy,
     if !lhs.is_csc() {
         panic!("Storage mismatch");
     }
-    if !rhs.is_standard_layout() {
-        panic!("Storage mismatch");
-    }
 
     for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
         for (orow, &lval) in lcol.iter() {
@@ -292,7 +268,7 @@ where N: 'a + Num + Copy,
 
 /// CSC-dense colmaj multiplication
 ///
-/// Performs better if out is colmaj
+/// Performs better if rhs has few columns.
 pub fn csc_mulacc_dense_colmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
@@ -312,9 +288,6 @@ where N: 'a + Num + Copy,
     if !lhs.is_csc() {
         panic!("Storage mismatch");
     }
-    if rhs.is_standard_layout() {
-        panic!("Storage mismatch");
-    }
 
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
@@ -331,7 +304,7 @@ where N: 'a + Num + Copy,
 
 /// CSR-dense colmaj multiplication
 ///
-/// Performs better if out is colmaj
+/// Performs better if rhs has few columns.
 pub fn csr_mulacc_dense_colmaj<'a, N, I>(lhs: CsMatViewI<N, I>,
                                          rhs: ArrayView<N, Ix2>,
                                          mut out: ArrayViewMut<'a, N, Ix2>
@@ -349,9 +322,6 @@ where N: 'a + Num + Copy,
         panic!("Dimension mismatch");
     }
     if !lhs.is_csr() {
-        panic!("Storage mismatch");
-    }
-    if rhs.is_standard_layout() {
         panic!("Storage mismatch");
     }
     let axis1 = Axis(1);

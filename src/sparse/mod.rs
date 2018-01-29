@@ -142,6 +142,8 @@ pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
 pub type CsVecViewMut<'a, N> = CsVecViewMutI<'a, N, usize>;
 pub type CsVec<N> = CsVecI<N, usize>;
 
+impl<'a, N, I> Copy for CsVecViewI<'a, N, I> {}
+
 /// Sparse matrix in the triplet format.
 ///
 /// Sparse matrices in the triplet format use three arrays of equal sizes (accessible through the
