@@ -2,6 +2,10 @@
 Changelog
 =========
 
+- 0.6.1
+    - fix ``to_dense`` for non-square matrices
+    - improve performance of sparse-dense dot products and matrix vector
+      products.
 - 0.6.0
     - enable the selection of the integer type for storing indices in matrix
       types **breaking change**
