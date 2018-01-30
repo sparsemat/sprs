@@ -198,7 +198,18 @@ where I: SpIndex,
 
 /// Write a sparse matrix into the matrix market format.
 ///
-/// TODO: add example once it's possible to save a compressed matrix
+/// # Example
+///
+/// ```rust,no_run
+/// use sprs::{CsMat};
+/// # use std::io;
+/// # fn save_id5() -> Result<(), io::Error> {
+/// let save_path = "/tmp/identity5.mm";
+/// let eye : CsMat<f64> = CsMat::eye(5);
+/// sprs::io::write_matrix_market(&save_path, &eye)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn write_matrix_market<'a, N, I, M, P>(path: P, mat: M)
     -> Result<(), io::Error>
 where I: 'a + SpIndex + fmt::Display,
