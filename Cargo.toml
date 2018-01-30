@@ -35,3 +35,10 @@ harness = false
 [[bench]]
 name = "sparse_dense_products"
 harness = false
+
+[workspace]
+members = [
+    "sprs-ldl",
+    "suitesparse_bindings/suitesparse_ldl_sys",
+    "suitesparse_bindings/sprs_suitesparse_ldl",
+]
