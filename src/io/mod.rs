@@ -74,9 +74,46 @@ impl PartialEq for IoError {
     }
 }
 
+#[derive(Debug, PartialEq)]
 enum DataType {
     Integer,
     Real,
+    Complex,
+}
+
+#[derive(Debug, PartialEq)]
+enum SymmetryMode {
+    General,
+    Hermitian,
+    Symmetric,
+    SkewSymmetric,
+}
+
+fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
+    if !header.starts_with("%%matrixmarket matrix coordinate") {
+        return Err(BadMatrixMarketFile);
+    }
+    let data_type = if header.contains("real") {
+        DataType::Real
+    } else if header.contains("integer") {
+        DataType::Integer
+    } else if header.contains("complex") {
+        DataType::Complex
+    } else {
+        return Err(BadMatrixMarketFile);
+    };
+    let sym_mode = if header.contains("general") {
+        SymmetryMode::General
+    } else if header.contains("symmetric") {
+        SymmetryMode::Symmetric
+    } else if header.contains("skewsymmetric") {
+        SymmetryMode::SkewSymmetric
+    } else if header.contains("hermitian") {
+        SymmetryMode::Hermitian
+    } else {
+        return Err(BadMatrixMarketFile);
+    };
+    Ok((sym_mode, data_type))
 }
 
 /// Read a sparse matrix file in the Matrix Market format and return a
@@ -98,20 +135,15 @@ where I: SpIndex,
     // Parse the header line, all tags are case insensitive.
     reader.read_line(&mut line)?;
     let header = line.to_lowercase();
-    if !header.starts_with("%%matrixmarket matrix coordinate") {
-        return Err(BadMatrixMarketFile);
-    }
-    if !header.contains("general") {
-        return Err(UnsupportedMatrixMarketFormat);
-    }
-    let data_type = if line.contains("real") {
-        DataType::Real
-    } else if line.contains("integer") {
-        DataType::Integer
-    } else {
+    let (sym_mode, data_type) = parse_header(&header)?;
+    if data_type == DataType::Complex {
         // we currently don't support complex
         return Err(UnsupportedMatrixMarketFormat);
-    };
+    }
+    if sym_mode != SymmetryMode::General {
+        // support for symmetry is planned but not possible yet
+        return Err(UnsupportedMatrixMarketFormat);
+    }
     // The header is followed by any number of comment or empty lines, skip
     loop {
         line.clear();
@@ -187,6 +219,7 @@ where I: SpIndex,
                                               .or(Err(BadMatrixMarketFile)))?;
                 data.push(NumCast::from(val).unwrap());
             },
+            DataType::Complex => unreachable!(),
         }
         if entry.next().is_some() {
             return Err(BadMatrixMarketFile);
