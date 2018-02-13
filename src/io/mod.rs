@@ -123,7 +123,7 @@ fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
 /// matrices should be supported in the future.
 pub fn read_matrix_market<N, I, P>(mm_file: P) -> Result<TriMatI<N, I>, IoError>
 where I: SpIndex,
-      N: NumCast,
+      N: NumCast + Clone,
       P: AsRef<Path>,
 {
     let mm_file = mm_file.as_ref();
@@ -140,8 +140,8 @@ where I: SpIndex,
         // we currently don't support complex
         return Err(UnsupportedMatrixMarketFormat);
     }
-    if sym_mode != SymmetryMode::General {
-        // support for symmetry is planned but not possible yet
+    if sym_mode == SymmetryMode::Hermitian {
+        // support for Hermitian requires complex support
         return Err(UnsupportedMatrixMarketFormat);
     }
     // The header is followed by any number of comment or empty lines, skip
@@ -169,9 +169,14 @@ where I: SpIndex,
         }
         (rows, cols, entries)
     };
-    let mut row_inds = Vec::with_capacity(entries);
-    let mut col_inds = Vec::with_capacity(entries);
-    let mut data = Vec::with_capacity(entries);
+    let nnz_max = if sym_mode == SymmetryMode::General {
+        entries
+    } else {
+        2 * entries
+    };
+    let mut row_inds = Vec::with_capacity(nnz_max);
+    let mut col_inds = Vec::with_capacity(nnz_max);
+    let mut data = Vec::with_capacity(nnz_max);
     // one non-zero entry per non-empty line
     for _ in 0..entries {
         // skip empty lines (no comment line should appear)
@@ -202,24 +207,37 @@ where I: SpIndex,
         // MatrixMarket indices are 1-based
         let row = row.checked_sub(1).ok_or(BadMatrixMarketFile)?;
         let col = col.checked_sub(1).ok_or(BadMatrixMarketFile)?;
-        row_inds.push(I::from_usize(row));
-        col_inds.push(I::from_usize(col));
-        match data_type {
+        let val : N = match data_type {
             DataType::Integer => {
                 let val = entry.next()
                                .ok_or(BadMatrixMarketFile)
                                .and_then(|s| s.parse::<usize>()
                                               .or(Err(BadMatrixMarketFile)))?;
-                data.push(NumCast::from(val).unwrap());
+                NumCast::from(val).unwrap()
             },
             DataType::Real => {
                 let val = entry.next()
                                .ok_or(BadMatrixMarketFile)
                                .and_then(|s| s.parse::<f64>()
                                               .or(Err(BadMatrixMarketFile)))?;
-                data.push(NumCast::from(val).unwrap());
+                NumCast::from(val).unwrap()
             },
             DataType::Complex => unreachable!(),
+        };
+        row_inds.push(I::from_usize(row));
+        col_inds.push(I::from_usize(col));
+        data.push(val.clone());
+        if sym_mode != SymmetryMode::General && row != col {
+            if sym_mode == SymmetryMode::Hermitian {
+                unreachable!();
+            } else {
+                row_inds.push(I::from_usize(col));
+                col_inds.push(I::from_usize(row));
+                data.push(val);
+            }
+        }
+        if sym_mode == SymmetryMode::SkewSymmetric && row == col {
+            return Err(BadMatrixMarketFile);
         }
         if entry.next().is_some() {
             return Err(BadMatrixMarketFile);
@@ -278,6 +296,7 @@ where I: 'a + SpIndex + fmt::Display,
 #[cfg(test)]
 mod test {
     use super::{read_matrix_market, write_matrix_market, IoError};
+    use CsMat;
     use tempdir::TempDir;
     #[test]
     fn simple_matrix_market_read() {
@@ -343,5 +362,18 @@ mod test {
         write_matrix_market(&save_path, &csc).unwrap();
         let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
         assert_eq!(csc, mat2.to_csc());
+    }
+
+    #[test]
+    fn read_symmetric_matrix_market() {
+        let path = "data/matrix_market/symmetric.mm";
+        let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
+        let csc = mat.to_csc();
+        let expected = CsMat::new_csc((5, 5),
+                                      vec![0, 1, 3, 4, 6, 8],
+                                      vec![0, 1, 3, 2, 1, 4, 3, 4],
+                                      vec![1., 10.5, 2.505e2, 1.5e-2, 2.505e2,
+                                           3.332e1, 3.332e1, 1.2e1]);
+        assert_eq!(csc, expected);
     }
 }
