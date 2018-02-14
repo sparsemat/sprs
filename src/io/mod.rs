@@ -2,7 +2,7 @@
 
 use std::path::Path;
 use std::io;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Write, Seek, SeekFrom};
 use std::fs::File;
 use std::error::Error;
 use std::fmt;
@@ -293,9 +293,65 @@ where I: 'a + SpIndex + fmt::Display,
     Ok(())
 }
 
+/// Write a symmetric sparse matrix into the matrix market format.
+///
+/// This function does not enforce the actual symmetry of the matrix,
+/// instead only the elements below the diagonal are written.
+pub fn write_matrix_market_sym<'a, N, I, M, P>(path: P, mat: M)
+    -> Result<(), io::Error>
+where I: 'a + SpIndex + fmt::Display,
+      N: 'a + PrimitiveKind + Copy + fmt::Display,
+      M: IntoIterator<Item=(&'a N, (I, I))> + SparseMat,
+      P: AsRef<Path>,
+{
+    let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
+    let f = File::create(path)?;
+    let mut writer = io::BufWriter::new(f);
+
+    // header
+    let data_type = match N::num_kind() {
+        NumKind::Integer => "integer",
+        NumKind::Float => "real",
+        NumKind::Complex => "complex",
+    };
+    write!(writer,
+           "%%MatrixMarket matrix coordinate {} symmetric\n",
+           data_type)?;
+    write!(writer, "% written by sprs\n")?;
+
+    // record current position to be able to rewrite nnz
+    let dim_header_pos = writer.seek(SeekFrom::Current(0))?;
+    // dimensions and nnz
+    write!(writer, "{} {} {}\n", rows, cols, nnz)?;
+
+    // entries
+    let mut entries = 0;
+    for (val, (row, col)) in mat.into_iter().filter(|&(_, (r, c))| r <= c) {
+        write!(writer, "{} {} {}\n", row.index() + 1, col.index() + 1, val)?;
+        entries += 1;
+    }
+    assert!(entries <= nnz);
+    writer.seek(SeekFrom::Start(dim_header_pos))?;
+    write!(writer, "{} {} {}", rows, cols, entries)?;
+    let dim_header_size = format!("{} {} {}", rows, cols, nnz).len();
+    let new_size = format!("{} {} {}", rows, cols, entries).len();
+    if new_size < dim_header_size {
+        let nb_spaces = dim_header_size - new_size;
+        for _ in 0..nb_spaces {
+            writer.write(b" ")?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
-    use super::{read_matrix_market, write_matrix_market, IoError};
+    use super::{
+        read_matrix_market,
+        write_matrix_market,
+        write_matrix_market_sym,
+        IoError,
+    };
     use CsMat;
     use tempdir::TempDir;
     #[test]
@@ -375,5 +431,34 @@ mod test {
                                       vec![1., 10.5, 2.505e2, 1.5e-2, 2.505e2,
                                            3.332e1, 3.332e1, 1.2e1]);
         assert_eq!(csc, expected);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("symmetric.mm");
+        write_matrix_market_sym(&save_path, &csc).unwrap();
+        let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
+        assert_eq!(csc, mat2.to_csc());
+    }
+
+    #[test]
+    /// Test whether the seek and replace strategy in the symmetric write
+    /// works.
+    fn tricky_symmetric_matrix_market() {
+        // design a 5x5 symmetric matrix such that the number
+        // of nonzeros has more digits than the number of symmetric entries
+        // We take the matrix
+        // | .  2  .  .  1 |
+        // | 2  .  3  .  . |
+        // | .  3  .  5  . |
+        // | .  .  5  .  4 |
+        // | 1  .  .  4  . |
+        let mat = CsMat::new((5, 5),
+                              vec![0, 2, 4, 6, 8, 10],
+                              vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
+                              vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4]);
+        //let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        //let save_path = tmp_dir.path().join("symmetric.mm");
+        let save_path = "/tmp/test.mm";
+        write_matrix_market_sym(&save_path, &mat).unwrap();
+        let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2.to_csr());
     }
 }
