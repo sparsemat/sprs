@@ -82,7 +82,7 @@ enum DataType {
 }
 
 #[derive(Debug, PartialEq)]
-enum SymmetryMode {
+pub enum SymmetryMode {
     General,
     Hermitian,
     Symmetric,
@@ -298,7 +298,16 @@ where I: 'a + SpIndex + fmt::Display,
 ///
 /// This function does not enforce the actual symmetry of the matrix,
 /// instead only the elements below the diagonal are written.
-pub fn write_matrix_market_sym<'a, N, I, M, P>(path: P, mat: M)
+///
+/// If `sym` is `SymmetryMode::SkewSymmetric`, the diagonal elements
+/// are also ignored.
+///
+/// Note that this method can also be used to write general sparse
+/// matrices, but this would be slightly less efficient than using
+/// `write_matrix_market`.
+pub fn write_matrix_market_sym<'a, N, I, M, P>(path: P,
+                                               mat: M,
+                                               sym: SymmetryMode)
     -> Result<(), io::Error>
 where I: 'a + SpIndex + fmt::Display,
       N: 'a + PrimitiveKind + Copy + fmt::Display,
@@ -315,22 +324,64 @@ where I: 'a + SpIndex + fmt::Display,
         NumKind::Float => "real",
         NumKind::Complex => "complex",
     };
+    let mode = match sym {
+        SymmetryMode::General => "general",
+        SymmetryMode::Symmetric => "symmetric",
+        SymmetryMode::SkewSymmetric => "skew-symmetric",
+        SymmetryMode::Hermitian => "hermitian",
+    };
     write!(writer,
-           "%%MatrixMarket matrix coordinate {} symmetric\n",
-           data_type)?;
+           "%%MatrixMarket matrix coordinate {} {}\n",
+           data_type,
+           mode)?;
     write!(writer, "% written by sprs\n")?;
 
-    // record current position to be able to rewrite nnz
+    // We cannot know in advance how many entries will be written since
+    // this is affected by the symmetry mode. However, we do know that it
+    // can't be greater than the current nnz. Thus, the text size required
+    // to store the number of entries can only decrease. We record the position
+    // where we wrote the header and will later rewrite the number of entries,
+    // replacing possible extra digits by spaces.
     let dim_header_pos = writer.seek(SeekFrom::Current(0))?;
     // dimensions and nnz
     write!(writer, "{} {} {}\n", rows, cols, nnz)?;
 
     // entries
     let mut entries = 0;
-    for (val, (row, col)) in mat.into_iter().filter(|&(_, (r, c))| r <= c) {
-        write!(writer, "{} {} {}\n", row.index() + 1, col.index() + 1, val)?;
-        entries += 1;
-    }
+    match sym {
+        SymmetryMode::General => {
+            for (val, (row, col)) in mat.into_iter() {
+                write!(writer,
+                       "{} {} {}\n",
+                       row.index() + 1,
+                       col.index() + 1,
+                       val)?;
+                entries += 1;
+            }
+        },
+        SymmetryMode::SkewSymmetric => {
+            for (val, (row, col)) in mat.into_iter()
+                                        .filter(|&(_, (r, c))| r < c) {
+                write!(writer,
+                       "{} {} {}\n",
+                       row.index() + 1,
+                       col.index() + 1,
+                       val)?;
+                entries += 1;
+            }
+        },
+        _ => {
+            for (val, (row, col)) in mat.into_iter()
+                                        .filter(|&(_, (r, c))| r <= c) {
+                write!(writer,
+                       "{} {} {}\n",
+                       row.index() + 1,
+                       col.index() + 1,
+                       val)?;
+                entries += 1;
+            }
+        },
+    };
     assert!(entries <= nnz);
     writer.seek(SeekFrom::Start(dim_header_pos))?;
     write!(writer, "{} {} {}", rows, cols, entries)?;
@@ -351,6 +402,7 @@ mod test {
         read_matrix_market,
         write_matrix_market,
         write_matrix_market_sym,
+        SymmetryMode,
         IoError,
     };
     use CsMat;
@@ -441,7 +493,9 @@ mod test {
         assert_eq!(csc, expected);
         let tmp_dir = TempDir::new("sprs-tmp").unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
-        write_matrix_market_sym(&save_path, &csc).unwrap();
+        write_matrix_market_sym(&save_path,
+                                &csc,
+                                SymmetryMode::Symmetric).unwrap();
         let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
         assert_eq!(csc, mat2.to_csc());
     }
@@ -464,7 +518,39 @@ mod test {
                               vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4]);
         let tmp_dir = TempDir::new("sprs-tmp").unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
-        write_matrix_market_sym(&save_path, &mat).unwrap();
+        write_matrix_market_sym(&save_path,
+                                &mat,
+                                SymmetryMode::Symmetric).unwrap();
+        let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2.to_csr());
+    }
+
+    #[test]
+    fn skew_symmetric_matrix_market() {
+        let mat = CsMat::new((5, 5),
+                              vec![0, 2, 4, 6, 8, 10],
+                              vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
+                              vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4]);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("skew_symmetric.mm");
+        write_matrix_market_sym(&save_path,
+                                &mat,
+                                SymmetryMode::SkewSymmetric).unwrap();
+        let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2.to_csr());
+    }
+
+    #[test]
+    fn general_matrix_via_symmetric_save() {
+        let mat = CsMat::new((5, 5),
+                              vec![0, 2, 4, 6, 8, 10],
+                              vec![0, 3, 0, 2, 1, 3, 2, 4, 0, 3],
+                              vec![2, -1, 2, 3, 3, 5, 5, 4, 1, 4]);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("general.mm");
+        write_matrix_market_sym(&save_path,
+                                &mat,
+                                SymmetryMode::General).unwrap();
         let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
         assert_eq!(mat, mat2.to_csr());
     }
