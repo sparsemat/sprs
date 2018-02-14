@@ -183,7 +183,8 @@ where I: SpIndex,
         loop {
             line.clear();
             let len = reader.read_line(&mut line)?;
-            if len == 0 {
+            // check for an all whitespace line
+            if len != 0 && line.split_whitespace().next() == None {
                 continue;
             } else {
                 break;
@@ -395,6 +396,13 @@ mod test {
     }
 
     #[test]
+    fn matrix_market_read_fail_not_enough_entries() {
+        let path = "data/matrix_market/bad_files/not_enough_entries.mm";
+        let res = read_matrix_market::<f64, i32, _>(path);
+        assert_eq!(res.unwrap_err(), IoError::BadMatrixMarketFile);
+    }
+
+    #[test]
     fn read_write_read_matrix_market() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
@@ -454,9 +462,8 @@ mod test {
                               vec![0, 2, 4, 6, 8, 10],
                               vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
                               vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4]);
-        //let tmp_dir = TempDir::new("sprs-tmp").unwrap();
-        //let save_path = tmp_dir.path().join("symmetric.mm");
-        let save_path = "/tmp/test.mm";
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("symmetric.mm");
         write_matrix_market_sym(&save_path, &mat).unwrap();
         let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
         assert_eq!(mat, mat2.to_csr());
