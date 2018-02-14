@@ -106,7 +106,7 @@ fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
         SymmetryMode::General
     } else if header.contains("symmetric") {
         SymmetryMode::Symmetric
-    } else if header.contains("skewsymmetric") {
+    } else if header.contains("skew-symmetric") {
         SymmetryMode::SkewSymmetric
     } else if header.contains("hermitian") {
         SymmetryMode::Hermitian
