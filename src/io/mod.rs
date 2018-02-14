@@ -2,7 +2,7 @@
 
 use std::path::Path;
 use std::io;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Write, Seek, SeekFrom};
 use std::fs::File;
 use std::error::Error;
 use std::fmt;
@@ -74,9 +74,46 @@ impl PartialEq for IoError {
     }
 }
 
+#[derive(Debug, PartialEq)]
 enum DataType {
     Integer,
     Real,
+    Complex,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SymmetryMode {
+    General,
+    Hermitian,
+    Symmetric,
+    SkewSymmetric,
+}
+
+fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
+    if !header.starts_with("%%matrixmarket matrix coordinate") {
+        return Err(BadMatrixMarketFile);
+    }
+    let data_type = if header.contains("real") {
+        DataType::Real
+    } else if header.contains("integer") {
+        DataType::Integer
+    } else if header.contains("complex") {
+        DataType::Complex
+    } else {
+        return Err(BadMatrixMarketFile);
+    };
+    let sym_mode = if header.contains("general") {
+        SymmetryMode::General
+    } else if header.contains("symmetric") {
+        SymmetryMode::Symmetric
+    } else if header.contains("skew-symmetric") {
+        SymmetryMode::SkewSymmetric
+    } else if header.contains("hermitian") {
+        SymmetryMode::Hermitian
+    } else {
+        return Err(BadMatrixMarketFile);
+    };
+    Ok((sym_mode, data_type))
 }
 
 /// Read a sparse matrix file in the Matrix Market format and return a
@@ -86,7 +123,7 @@ enum DataType {
 /// matrices should be supported in the future.
 pub fn read_matrix_market<N, I, P>(mm_file: P) -> Result<TriMatI<N, I>, IoError>
 where I: SpIndex,
-      N: NumCast,
+      N: NumCast + Clone,
       P: AsRef<Path>,
 {
     let mm_file = mm_file.as_ref();
@@ -98,20 +135,15 @@ where I: SpIndex,
     // Parse the header line, all tags are case insensitive.
     reader.read_line(&mut line)?;
     let header = line.to_lowercase();
-    if !header.starts_with("%%matrixmarket matrix coordinate") {
-        return Err(BadMatrixMarketFile);
-    }
-    if !header.contains("general") {
-        return Err(UnsupportedMatrixMarketFormat);
-    }
-    let data_type = if line.contains("real") {
-        DataType::Real
-    } else if line.contains("integer") {
-        DataType::Integer
-    } else {
+    let (sym_mode, data_type) = parse_header(&header)?;
+    if data_type == DataType::Complex {
         // we currently don't support complex
         return Err(UnsupportedMatrixMarketFormat);
-    };
+    }
+    if sym_mode == SymmetryMode::Hermitian {
+        // support for Hermitian requires complex support
+        return Err(UnsupportedMatrixMarketFormat);
+    }
     // The header is followed by any number of comment or empty lines, skip
     loop {
         line.clear();
@@ -137,16 +169,22 @@ where I: SpIndex,
         }
         (rows, cols, entries)
     };
-    let mut row_inds = Vec::with_capacity(entries);
-    let mut col_inds = Vec::with_capacity(entries);
-    let mut data = Vec::with_capacity(entries);
+    let nnz_max = if sym_mode == SymmetryMode::General {
+        entries
+    } else {
+        2 * entries
+    };
+    let mut row_inds = Vec::with_capacity(nnz_max);
+    let mut col_inds = Vec::with_capacity(nnz_max);
+    let mut data = Vec::with_capacity(nnz_max);
     // one non-zero entry per non-empty line
     for _ in 0..entries {
         // skip empty lines (no comment line should appear)
         loop {
             line.clear();
             let len = reader.read_line(&mut line)?;
-            if len == 0 {
+            // check for an all whitespace line
+            if len != 0 && line.split_whitespace().next() == None {
                 continue;
             } else {
                 break;
@@ -170,23 +208,37 @@ where I: SpIndex,
         // MatrixMarket indices are 1-based
         let row = row.checked_sub(1).ok_or(BadMatrixMarketFile)?;
         let col = col.checked_sub(1).ok_or(BadMatrixMarketFile)?;
-        row_inds.push(I::from_usize(row));
-        col_inds.push(I::from_usize(col));
-        match data_type {
+        let val : N = match data_type {
             DataType::Integer => {
                 let val = entry.next()
                                .ok_or(BadMatrixMarketFile)
-                               .and_then(|s| s.parse::<usize>()
+                               .and_then(|s| s.parse::<isize>()
                                               .or(Err(BadMatrixMarketFile)))?;
-                data.push(NumCast::from(val).unwrap());
+                NumCast::from(val).unwrap()
             },
             DataType::Real => {
                 let val = entry.next()
                                .ok_or(BadMatrixMarketFile)
                                .and_then(|s| s.parse::<f64>()
                                               .or(Err(BadMatrixMarketFile)))?;
-                data.push(NumCast::from(val).unwrap());
+                NumCast::from(val).unwrap()
             },
+            DataType::Complex => unreachable!(),
+        };
+        row_inds.push(I::from_usize(row));
+        col_inds.push(I::from_usize(col));
+        data.push(val.clone());
+        if sym_mode != SymmetryMode::General && row != col {
+            if sym_mode == SymmetryMode::Hermitian {
+                unreachable!();
+            } else {
+                row_inds.push(I::from_usize(col));
+                col_inds.push(I::from_usize(row));
+                data.push(val);
+            }
+        }
+        if sym_mode == SymmetryMode::SkewSymmetric && row == col {
+            return Err(BadMatrixMarketFile);
         }
         if entry.next().is_some() {
             return Err(BadMatrixMarketFile);
@@ -242,9 +294,118 @@ where I: 'a + SpIndex + fmt::Display,
     Ok(())
 }
 
+/// Write a symmetric sparse matrix into the matrix market format.
+///
+/// This function does not enforce the actual symmetry of the matrix,
+/// instead only the elements below the diagonal are written.
+///
+/// If `sym` is `SymmetryMode::SkewSymmetric`, the diagonal elements
+/// are also ignored.
+///
+/// Note that this method can also be used to write general sparse
+/// matrices, but this would be slightly less efficient than using
+/// `write_matrix_market`.
+pub fn write_matrix_market_sym<'a, N, I, M, P>(path: P,
+                                               mat: M,
+                                               sym: SymmetryMode)
+    -> Result<(), io::Error>
+where I: 'a + SpIndex + fmt::Display,
+      N: 'a + PrimitiveKind + Copy + fmt::Display,
+      M: IntoIterator<Item=(&'a N, (I, I))> + SparseMat,
+      P: AsRef<Path>,
+{
+    let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
+    let f = File::create(path)?;
+    let mut writer = io::BufWriter::new(f);
+
+    // header
+    let data_type = match N::num_kind() {
+        NumKind::Integer => "integer",
+        NumKind::Float => "real",
+        NumKind::Complex => "complex",
+    };
+    let mode = match sym {
+        SymmetryMode::General => "general",
+        SymmetryMode::Symmetric => "symmetric",
+        SymmetryMode::SkewSymmetric => "skew-symmetric",
+        SymmetryMode::Hermitian => "hermitian",
+    };
+    write!(writer,
+           "%%MatrixMarket matrix coordinate {} {}\n",
+           data_type,
+           mode)?;
+    write!(writer, "% written by sprs\n")?;
+
+    // We cannot know in advance how many entries will be written since
+    // this is affected by the symmetry mode. However, we do know that it
+    // can't be greater than the current nnz. Thus, the text size required
+    // to store the number of entries can only decrease. We record the position
+    // where we wrote the header and will later rewrite the number of entries,
+    // replacing possible extra digits by spaces.
+    let dim_header_pos = writer.seek(SeekFrom::Current(0))?;
+    // dimensions and nnz
+    write!(writer, "{} {} {}\n", rows, cols, nnz)?;
+
+    // entries
+    let mut entries = 0;
+    match sym {
+        SymmetryMode::General => {
+            for (val, (row, col)) in mat.into_iter() {
+                write!(writer,
+                       "{} {} {}\n",
+                       row.index() + 1,
+                       col.index() + 1,
+                       val)?;
+                entries += 1;
+            }
+        },
+        SymmetryMode::SkewSymmetric => {
+            for (val, (row, col)) in mat.into_iter()
+                                        .filter(|&(_, (r, c))| r < c) {
+                write!(writer,
+                       "{} {} {}\n",
+                       row.index() + 1,
+                       col.index() + 1,
+                       val)?;
+                entries += 1;
+            }
+        },
+        _ => {
+            for (val, (row, col)) in mat.into_iter()
+                                        .filter(|&(_, (r, c))| r <= c) {
+                write!(writer,
+                       "{} {} {}\n",
+                       row.index() + 1,
+                       col.index() + 1,
+                       val)?;
+                entries += 1;
+            }
+        },
+    };
+    assert!(entries <= nnz);
+    writer.seek(SeekFrom::Start(dim_header_pos))?;
+    write!(writer, "{} {} {}", rows, cols, entries)?;
+    let dim_header_size = format!("{} {} {}", rows, cols, nnz).len();
+    let new_size = format!("{} {} {}", rows, cols, entries).len();
+    if new_size < dim_header_size {
+        let nb_spaces = dim_header_size - new_size;
+        for _ in 0..nb_spaces {
+            writer.write(b" ")?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
-    use super::{read_matrix_market, write_matrix_market, IoError};
+    use super::{
+        read_matrix_market,
+        write_matrix_market,
+        write_matrix_market_sym,
+        SymmetryMode,
+        IoError,
+    };
+    use CsMat;
     use tempdir::TempDir;
     #[test]
     fn simple_matrix_market_read() {
@@ -287,6 +448,13 @@ mod test {
     }
 
     #[test]
+    fn matrix_market_read_fail_not_enough_entries() {
+        let path = "data/matrix_market/bad_files/not_enough_entries.mm";
+        let res = read_matrix_market::<f64, i32, _>(path);
+        assert_eq!(res.unwrap_err(), IoError::BadMatrixMarketFile);
+    }
+
+    #[test]
     fn read_write_read_matrix_market() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
@@ -310,5 +478,80 @@ mod test {
         write_matrix_market(&save_path, &csc).unwrap();
         let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
         assert_eq!(csc, mat2.to_csc());
+    }
+
+    #[test]
+    fn read_symmetric_matrix_market() {
+        let path = "data/matrix_market/symmetric.mm";
+        let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
+        let csc = mat.to_csc();
+        let expected = CsMat::new_csc((5, 5),
+                                      vec![0, 1, 3, 4, 6, 8],
+                                      vec![0, 1, 3, 2, 1, 4, 3, 4],
+                                      vec![1., 10.5, 2.505e2, 1.5e-2, 2.505e2,
+                                           3.332e1, 3.332e1, 1.2e1]);
+        assert_eq!(csc, expected);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("symmetric.mm");
+        write_matrix_market_sym(&save_path,
+                                &csc,
+                                SymmetryMode::Symmetric).unwrap();
+        let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
+        assert_eq!(csc, mat2.to_csc());
+    }
+
+    #[test]
+    /// Test whether the seek and replace strategy in the symmetric write
+    /// works.
+    fn tricky_symmetric_matrix_market() {
+        // design a 5x5 symmetric matrix such that the number
+        // of nonzeros has more digits than the number of symmetric entries
+        // We take the matrix
+        // | .  2  .  .  1 |
+        // | 2  .  3  .  . |
+        // | .  3  .  5  . |
+        // | .  .  5  .  4 |
+        // | 1  .  .  4  . |
+        let mat = CsMat::new((5, 5),
+                              vec![0, 2, 4, 6, 8, 10],
+                              vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
+                              vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4]);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("symmetric.mm");
+        write_matrix_market_sym(&save_path,
+                                &mat,
+                                SymmetryMode::Symmetric).unwrap();
+        let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2.to_csr());
+    }
+
+    #[test]
+    fn skew_symmetric_matrix_market() {
+        let mat = CsMat::new((5, 5),
+                              vec![0, 2, 4, 6, 8, 10],
+                              vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
+                              vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4]);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("skew_symmetric.mm");
+        write_matrix_market_sym(&save_path,
+                                &mat,
+                                SymmetryMode::SkewSymmetric).unwrap();
+        let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2.to_csr());
+    }
+
+    #[test]
+    fn general_matrix_via_symmetric_save() {
+        let mat = CsMat::new((5, 5),
+                              vec![0, 2, 4, 6, 8, 10],
+                              vec![0, 3, 0, 2, 1, 3, 2, 4, 0, 3],
+                              vec![2, -1, 2, 3, 3, 5, 5, 4, 1, 4]);
+        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let save_path = tmp_dir.path().join("general.mm");
+        write_matrix_market_sym(&save_path,
+                                &mat,
+                                SymmetryMode::General).unwrap();
+        let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
+        assert_eq!(mat, mat2.to_csr());
     }
 }

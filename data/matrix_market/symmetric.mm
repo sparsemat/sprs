@@ -1,4 +1,4 @@
-%%MatrixMarket matrix coordinate real general
+%%MatrixMarket matrix coordinate real symmetric
 %===============================================================================
 %
 % This ASCII file represents a sparse MxN matrix with L
@@ -20,14 +20,11 @@
 % Indices are 1-based, i.e. A(1,1) is the first element.
 %
 %===============================================================================
-  5  5  8
+  5  5  6
     1     1   1.000e+00
     2     2   1.050e+01
-
     3     3   1.500e-02
-    
-    1     4   6.000e+00
     4     2   2.505e+02
-    4     4  -2.800e+02
-    4     5   3.332e+01
+    5     4   3.332e+01
     5     5   1.200e+01
+
