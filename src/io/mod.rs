@@ -212,7 +212,7 @@ where I: SpIndex,
             DataType::Integer => {
                 let val = entry.next()
                                .ok_or(BadMatrixMarketFile)
-                               .and_then(|s| s.parse::<usize>()
+                               .and_then(|s| s.parse::<isize>()
                                               .or(Err(BadMatrixMarketFile)))?;
                 NumCast::from(val).unwrap()
             },
