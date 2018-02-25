@@ -1,0 +1,20 @@
+[package]
+name = "cholesky"
+version = "0.1.0"
+authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
+publish = false
+
+[dependencies]
+
+tempdir = "0.3.5"
+reqwest = "0.8.5"
+tar = "0.4"
+libflate = "0.1"
+
+[dependencies.sprs]
+version = "0.6.1"
+path = "../.."
+
+[dependencies.sprs_suitesparse_ldl]
+version = "0.1.0"
+path = "../../suitesparse_bindings/sprs_suitesparse_ldl"
