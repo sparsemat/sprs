@@ -266,9 +266,16 @@ where I: SpIndex,
         match self.inner_iter.next() {
             None => None,
             Some((nnz_index, (&inner_ind, val))) => {
-                let nnz_end = self.indptr[self.cur_outer.index() + 1];
-                if nnz_index == nnz_end.index() {
-                    self.cur_outer += I::from_usize(1);
+                // loop to find the correct outer dimension. Looping
+                // is necessary because there can be several adjacent
+                // empty outer dimensions.
+                loop {
+                    let nnz_end = self.indptr[self.cur_outer.index() + 1];
+                    if nnz_index == nnz_end.index() {
+                        self.cur_outer += I::from_usize(1);
+                    } else {
+                        break;
+                    }
                 }
                 let (row, col) = match self.storage {
                     CSR => (self.cur_outer, inner_ind),
@@ -2206,6 +2213,16 @@ mod test {
                                   vec![0, 1, 0, 1, 2],
                                   vec![2., 1., 3., 1., 1.]);
         assert_eq!(mat, expected);
+    }
+
+    #[test]
+    /// Non-regression test for https://github.com/vbarrielle/sprs/issues/129
+    fn bug_129() {
+        let mut mat = CsMat::zero((3, 100));
+        mat.insert(2, 3, 42);
+        let mut iter = mat.iter();
+        assert_eq!(iter.next(), Some((&42, (2, 3))));
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
