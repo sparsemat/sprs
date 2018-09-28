@@ -77,7 +77,7 @@ Matrix matrix multiplication, addition
   let b = &eye * &a;
   assert_eq!(a, b.to_csr());
 
-For a more comple example, be sure to check out the `heat diffusion`_ example.
+For a more complete example, be sure to check out the `heat diffusion`_ example.
 
 .. _`heat diffusion`: examples/heat.rs
 
