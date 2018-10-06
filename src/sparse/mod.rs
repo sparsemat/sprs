@@ -1,8 +1,8 @@
-use std::ops::Deref;
-use indexing::SpIndex;
 use array_backend::Array2;
+use indexing::SpIndex;
+use std::ops::Deref;
 
-pub use self::csmat::{CompressedStorage};
+pub use self::csmat::CompressedStorage;
 
 /// Compressed matrix in the CSR or CSC format, with sorted indices.
 ///
@@ -77,21 +77,24 @@ pub use self::csmat::{CompressedStorage};
 /// [`bmat`]: fn.bmat.html
 #[derive(PartialEq, Debug)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
-where I: SpIndex,
-      IptrStorage: Deref<Target=[I]>,
-      IndStorage: Deref<Target=[I]>,
-      DataStorage: Deref<Target=[N]> {
+where
+    I: SpIndex,
+    IptrStorage: Deref<Target = [I]>,
+    IndStorage: Deref<Target = [I]>,
+    DataStorage: Deref<Target = [N]>,
+{
     storage: CompressedStorage,
-    nrows : usize,
-    ncols : usize,
-    indptr : IptrStorage,
-    indices : IndStorage,
-    data : DataStorage
+    nrows: usize,
+    ncols: usize,
+    indptr: IptrStorage,
+    indices: IndStorage,
+    data: DataStorage,
 }
 
 pub type CsMatI<N, I> = CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>>;
 pub type CsMatViewI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a [N]>;
-pub type CsMatViewMutI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a mut [N]>;
+pub type CsMatViewMutI<'a, N, I> =
+    CsMatBase<N, I, &'a [I], &'a [I], &'a mut [N]>;
 pub type CsMatVecView_<'a, N, I> = CsMatBase<N, I, Array2<I>, &'a [I], &'a [N]>;
 
 pub type CsMat<N> = CsMatI<N, usize>;
@@ -130,8 +133,8 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 #[derive(PartialEq, Debug, Clone)]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
-    indices : IStorage,
-    data : DStorage
+    indices: IStorage,
+    data: DStorage,
 }
 
 pub type CsVecI<N, I> = CsVecBase<Vec<I>, Vec<N>>;
@@ -224,31 +227,11 @@ pub struct TriMatIter<RI, CI, DI> {
 
 mod prelude {
     pub use super::{
-        CsMatBase,
-        CsMatViewI,
-        CsMatView,
-        CsMatViewMutI,
-        CsMatViewMut,
-        CsMatI,
-        CsMat,
-        CsMatVecView_,
-        CsMatVecView,
-        CsVecBase,
-        CsVecViewI,
-        CsVecView,
-        CsVecViewMutI,
-        CsVecViewMut,
-        CsVecI,
-        CsVec,
-        TriMatBase,
-        TriMat,
-        TriMatI,
-        TriMatView,
-        TriMatViewI,
-        TriMatViewMut,
-        TriMatViewMutI,
-        TriMatIter,
-        SparseMat,
+        CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatVecView_, CsMatView,
+        CsMatViewI, CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase, CsVecI,
+        CsVecView, CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat,
+        TriMatBase, TriMatI, TriMatIter, TriMatView, TriMatViewI,
+        TriMatViewMut, TriMatViewMutI,
     };
 }
 
@@ -267,9 +250,11 @@ pub trait SparseMat {
 mod utils {
     use indexing::SpIndex;
 
-    pub fn sort_indices_data_slices<N: Copy, I:SpIndex>(indices: &mut [I],
-                                                        data: &mut [N],
-                                                        buf: &mut Vec<(I, N)>) {
+    pub fn sort_indices_data_slices<N: Copy, I: SpIndex>(
+        indices: &mut [I],
+        data: &mut [N],
+        buf: &mut Vec<(I, N)>,
+    ) {
         let len = indices.len();
         assert_eq!(len, data.len());
         let indices = &mut indices[..len];
@@ -289,15 +274,15 @@ mod utils {
     }
 }
 
+pub mod binop;
+pub mod compressed;
+pub mod construct;
 pub mod csmat;
-pub mod triplet;
-pub mod vec;
+pub mod linalg;
 pub mod permutation;
 pub mod prod;
-pub mod binop;
-pub mod construct;
-pub mod linalg;
 pub mod symmetric;
-pub mod compressed;
 pub mod to_dense;
+pub mod triplet;
 pub mod triplet_iter;
+pub mod vec;

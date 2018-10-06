@@ -17,13 +17,13 @@ pub trait PrimitiveKind {
 }
 
 macro_rules! integer_prim_kind_impl {
-    ($prim: ty) => (
+    ($prim: ty) => {
         impl PrimitiveKind for $prim {
             fn num_kind() -> NumKind {
                 NumKind::Integer
             }
         }
-    )
+    };
 }
 
 integer_prim_kind_impl!(i8);
@@ -38,26 +38,26 @@ integer_prim_kind_impl!(isize);
 integer_prim_kind_impl!(usize);
 
 macro_rules! float_prim_kind_impl {
-    ($prim: ty) => (
+    ($prim: ty) => {
         impl PrimitiveKind for $prim {
             fn num_kind() -> NumKind {
                 NumKind::Float
             }
         }
-    )
+    };
 }
 
 float_prim_kind_impl!(f32);
 float_prim_kind_impl!(f64);
 
 macro_rules! complex_prim_kind_impl {
-    ($prim: ty) => (
+    ($prim: ty) => {
         impl PrimitiveKind for $prim {
             fn num_kind() -> NumKind {
                 NumKind::Complex
             }
         }
-    )
+    };
 }
 
 complex_prim_kind_impl!(Complex32);

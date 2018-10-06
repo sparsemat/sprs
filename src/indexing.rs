@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 ///! Abstraction over types of indices
 ///!
 ///! Our sparse matrices can use any integer type for its indices among
@@ -6,9 +7,7 @@
 ///! By default, sprs matrices will use `usize`, but it can be useful to switch
 ///! to another index type to reduce the memory usage of sparse matrices, of for
 ///! compatibility purposes when calling into an existing library through FFI.
-
 use std::ops::AddAssign;
-use std::fmt::Debug;
 
 use num_traits::int::PrimInt;
 
@@ -16,9 +15,7 @@ use num_traits::int::PrimInt;
 ///
 /// This is a convenience trait to enable using various integer sizes for sparse
 /// matrix indices.
-pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default
-{
-
+pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default {
     /// Convert to usize
     ///
     /// # Panics
@@ -49,7 +46,7 @@ impl SpIndex for usize {
 }
 
 macro_rules! sp_index_signed_impl {
-    ($int: ident) => (
+    ($int: ident) => {
         impl SpIndex for $int {
             #[inline(always)]
             fn index(self) -> usize {
@@ -64,7 +61,7 @@ macro_rules! sp_index_signed_impl {
                 ind as $int
             }
         }
-    )
+    };
 }
 
 sp_index_signed_impl!(isize);
@@ -73,7 +70,7 @@ sp_index_signed_impl!(i32);
 sp_index_signed_impl!(i16);
 
 macro_rules! sp_index_unsigned_impl {
-    ($int: ident) => (
+    ($int: ident) => {
         impl SpIndex for $int {
             #[inline(always)]
             fn index(self) -> usize {
@@ -87,7 +84,7 @@ macro_rules! sp_index_unsigned_impl {
                 ind as $int
             }
         }
-    )
+    };
 }
 
 sp_index_unsigned_impl!(u64);

@@ -1,6 +1,5 @@
 /// Stack implementations tuned for the graph traversal algorithms
 /// encountered in sparse matrix solves/factorizations
-
 use std::default::Default;
 use std::slice;
 
@@ -28,11 +27,14 @@ impl<I: Default> Default for StackVal<I> {
     }
 }
 
-impl<I> DStack<I> where I: Copy {
-
+impl<I> DStack<I>
+where
+    I: Copy,
+{
     /// Create a new double stacked suited for containing at most n elements
     pub fn with_capacity(n: usize) -> DStack<I>
-    where I: Default
+    where
+        I: Default,
     {
         assert!(n > 1);
         DStack {

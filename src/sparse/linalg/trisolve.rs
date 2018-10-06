@@ -1,19 +1,20 @@
-/// Sparse triangular solves
-
-use std::ops::IndexMut;
-use num_traits::Num;
-use sparse::CsMatViewI;
-use sparse::vec;
-use sparse::CsVecViewI;
 use errors::SprsError;
-use stack::{self, StackVal, DStack};
 use indexing::SpIndex;
+use num_traits::Num;
+use sparse::vec;
+use sparse::CsMatViewI;
+use sparse::CsVecViewI;
+use stack::{self, DStack, StackVal};
+/// Sparse triangular solves
+use std::ops::IndexMut;
 
-fn check_solver_dimensions<N, I, V: ?Sized>(lower_tri_mat: &CsMatViewI<N, I>,
-                                            rhs: &V)
-where N: Copy + Num,
-      V: vec::VecDim<N>,
-      I: SpIndex,
+fn check_solver_dimensions<N, I, V: ?Sized>(
+    lower_tri_mat: &CsMatViewI<N, I>,
+    rhs: &V,
+) where
+    N: Copy + Num,
+    V: vec::VecDim<N>,
+    I: SpIndex,
 {
     let (cols, rows) = (lower_tri_mat.cols(), lower_tri_mat.rows());
     if cols != rows {
@@ -31,12 +32,14 @@ where N: Copy + Num,
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn lsolve_csr_dense_rhs<N, I, V: ?Sized>(lower_tri_mat: CsMatViewI<N, I>,
-                                             rhs: &mut V)
-                                            -> Result<(), SprsError>
-where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
-      I: SpIndex,
+pub fn lsolve_csr_dense_rhs<N, I, V: ?Sized>(
+    lower_tri_mat: CsMatViewI<N, I>,
+    rhs: &mut V,
+) -> Result<(), SprsError>
+where
+    N: Copy + Num,
+    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    I: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csr() {
@@ -71,7 +74,6 @@ where N: Copy + Num,
     Ok(())
 }
 
-
 /// Solve a sparse lower triangular matrix system, with a csc matrix
 /// and a dense vector as inputs
 ///
@@ -82,12 +84,14 @@ where N: Copy + Num,
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn lsolve_csc_dense_rhs<N, I, V: ?Sized>(lower_tri_mat: CsMatViewI<N, I>,
-                                             rhs: &mut V)
-                                            -> Result<(), SprsError>
-where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
-      I: SpIndex,
+pub fn lsolve_csc_dense_rhs<N, I, V: ?Sized>(
+    lower_tri_mat: CsMatViewI<N, I>,
+    rhs: &mut V,
+) -> Result<(), SprsError>
+where
+    N: Copy + Num,
+    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    I: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csc() {
@@ -108,12 +112,14 @@ where N: Copy + Num,
     Ok(())
 }
 
-fn lspsolve_csc_process_col<N: Copy + Num, I, V: ?Sized>(col: CsVecViewI<N, I>,
-                                                         col_ind: usize,
-                                                         rhs: &mut V)
-                                                         -> Result<(), SprsError>
-where V: vec::VecDim<N> + IndexMut<usize, Output = N>,
-      I: SpIndex,
+fn lspsolve_csc_process_col<N: Copy + Num, I, V: ?Sized>(
+    col: CsVecViewI<N, I>,
+    col_ind: usize,
+    rhs: &mut V,
+) -> Result<(), SprsError>
+where
+    V: vec::VecDim<N> + IndexMut<usize, Output = N>,
+    I: SpIndex,
 {
     if let Some(&diag_val) = col.get(col_ind) {
         if diag_val == N::zero() {
@@ -145,12 +151,14 @@ where V: vec::VecDim<N> + IndexMut<usize, Output = N>,
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn usolve_csc_dense_rhs<N, I, V: ?Sized>(upper_tri_mat: CsMatViewI<N, I>,
-                                             rhs: &mut V)
-                                            -> Result<(), SprsError>
-where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
-      I: SpIndex,
+pub fn usolve_csc_dense_rhs<N, I, V: ?Sized>(
+    upper_tri_mat: CsMatViewI<N, I>,
+    rhs: &mut V,
+) -> Result<(), SprsError>
+where
+    N: Copy + Num,
+    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    I: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csc() {
@@ -195,12 +203,14 @@ where N: Copy + Num,
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn usolve_csr_dense_rhs<N, I, V: ?Sized>(upper_tri_mat: CsMatViewI<N, I>,
-                                             rhs: &mut V)
-                                            -> Result<(), SprsError>
-where N: Copy + Num,
-      V: IndexMut<usize, Output = N> + vec::VecDim<N>,
-      I: SpIndex,
+pub fn usolve_csr_dense_rhs<N, I, V: ?Sized>(
+    upper_tri_mat: CsMatViewI<N, I>,
+    rhs: &mut V,
+) -> Result<(), SprsError>
+where
+    N: Copy + Num,
+    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    I: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csr() {
@@ -256,22 +266,26 @@ where N: Copy + Num,
 /// * if dstack is not empty
 /// * if w_workspace is not of length n
 ///
-pub fn lsolve_csc_sparse_rhs<N, I>(lower_tri_mat: CsMatViewI<N, I>,
-                                   rhs: CsVecViewI<N, I>,
-                                   dstack: &mut DStack<StackVal<usize>>,
-                                   x_workspace: &mut [N],
-                                   visited: &mut [bool]
-                                  ) -> Result<(), SprsError>
-where N: Copy + Num,
-      I: SpIndex,
+pub fn lsolve_csc_sparse_rhs<N, I>(
+    lower_tri_mat: CsMatViewI<N, I>,
+    rhs: CsVecViewI<N, I>,
+    dstack: &mut DStack<StackVal<usize>>,
+    x_workspace: &mut [N],
+    visited: &mut [bool],
+) -> Result<(), SprsError>
+where
+    N: Copy + Num,
+    I: SpIndex,
 {
     if !lower_tri_mat.is_csc() {
         panic!("Storage mismatch");
     }
     let n = lower_tri_mat.rows();
     assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
-    assert!(dstack.is_left_empty() && dstack.is_right_empty(),
-            "dstack should be empty");
+    assert!(
+        dstack.is_left_empty() && dstack.is_right_empty(),
+        "dstack should be empty"
+    );
     assert!(x_workspace.len() == n, "x should be of len n");
 
     // the solve works out the sparsity of the solution using depth first
@@ -336,10 +350,12 @@ mod test {
         // |1    | |3|   |3|
         // |0 2  | |1| = |2|
         // |1 0 1| |1|   |4|
-        let l = CsMat::new((3, 3),
-                           vec![0, 1, 2, 4],
-                           vec![0, 1, 0, 2],
-                           vec![1, 2, 1, 1]);
+        let l = CsMat::new(
+            (3, 3),
+            vec![0, 1, 2, 4],
+            vec![0, 1, 0, 2],
+            vec![1, 2, 1, 1],
+        );
         let b = vec![3, 2, 4];
         let mut x = b.clone();
 
@@ -352,10 +368,12 @@ mod test {
         // |1    | |3|   |3|
         // |1 2  | |1| = |5|
         // |0 0 3| |1|   |3|
-        let l = CsMat::new_csc((3, 3),
-                               vec![0, 2, 3, 4],
-                               vec![0, 1, 1, 2],
-                               vec![1, 1, 2, 3]);
+        let l = CsMat::new_csc(
+            (3, 3),
+            vec![0, 2, 3, 4],
+            vec![0, 1, 1, 2],
+            vec![1, 1, 2, 3],
+        );
         let b = vec![3, 5, 3];
         let mut x = b.clone();
 
@@ -368,10 +386,12 @@ mod test {
         // |1 0 1| |3|   |4|
         // |  2 0| |1| = |2|
         // |    3| |1|   |3|
-        let u = CsMat::new_csc((3, 3),
-                               vec![0, 1, 2, 4],
-                               vec![0, 1, 0, 2],
-                               vec![1, 2, 1, 3]);
+        let u = CsMat::new_csc(
+            (3, 3),
+            vec![0, 1, 2, 4],
+            vec![0, 1, 0, 2],
+            vec![1, 2, 1, 3],
+        );
         let b = vec![4, 2, 3];
         let mut x = b.clone();
 
@@ -384,10 +404,12 @@ mod test {
         // |1 1 0| |3|   |4|
         // |  5 3| |1| = |8|
         // |    1| |1|   |1|
-        let u = CsMat::new((3, 3),
-                           vec![0, 2, 4, 5],
-                           vec![0, 1, 1, 2, 2],
-                           vec![1, 1, 5, 3, 1]);
+        let u = CsMat::new(
+            (3, 3),
+            vec![0, 2, 4, 5],
+            vec![0, 1, 1, 2, 2],
+            vec![1, 1, 5, 3, 1],
+        );
         let b = vec![4, 8, 1];
         let mut x = b.clone();
 
@@ -402,29 +424,31 @@ mod test {
         // |  3 3    | |1|   |9|
         // |      7  | | |   | |
         // |  2   3 5| |1|   |9|
-        let l = CsMat::new_csc((5, 5),
-                                    vec![0, 2, 5, 6, 8, 9],
-                                    vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
-                                    vec![1, 1, 2, 3, 2, 3, 7, 3, 5]);
+        let l = CsMat::new_csc(
+            (5, 5),
+            vec![0, 2, 5, 6, 8, 9],
+            vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
+            vec![1, 1, 2, 3, 2, 3, 7, 3, 5],
+        );
         let b = CsVec::new(5, vec![1, 2, 4], vec![4, 9, 9]);
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
         let mut dstack = DStack::with_capacity(2 * 5);
-        super::lsolve_csc_sparse_rhs(l.view(),
-                                     b.view(),
-                                     &mut dstack,
-                                     &mut xw,
-                                     &mut visited)
-            .unwrap();
+        super::lsolve_csc_sparse_rhs(
+            l.view(),
+            b.view(),
+            &mut dstack,
+            &mut xw,
+            &mut visited,
+        ).unwrap();
 
-        let x: HashSet<_> = dstack.iter_right()
-                                  .map(stack::extract_stack_val)
-                                  .map(|&i| (i, xw[i]))
-                                  .collect();
+        let x: HashSet<_> = dstack
+            .iter_right()
+            .map(stack::extract_stack_val)
+            .map(|&i| (i, xw[i]))
+            .collect();
 
-        let expected_output = CsVec::new(5,
-                                              vec![1, 2, 4],
-                                              vec![2, 1, 1]);
+        let expected_output = CsVec::new(5, vec![1, 2, 4], vec![2, 1, 1]);
         let expected_output = expected_output.to_set();
 
         assert_eq!(x, expected_output);
@@ -436,31 +460,32 @@ mod test {
         // |        5    | | |   | |
         // |    1     1  | |1|   |3|
         // |  3     2   2| | |   | |
-        let l = CsMat::new_csc((7, 7),
-                               vec![0, 2, 4, 6, 7, 9, 10, 11],
-                               vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
-                               vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2]);
-        let b = CsVec::new(7,
-                                vec![0, 2, 3, 5],
-                                vec![1, 7, 7, 3]);
+        let l = CsMat::new_csc(
+            (7, 7),
+            vec![0, 2, 4, 6, 7, 9, 10, 11],
+            vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
+            vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2],
+        );
+        let b = CsVec::new(7, vec![0, 2, 3, 5], vec![1, 7, 7, 3]);
         let mut dstack = DStack::with_capacity(2 * 7);
         let mut xw = vec![1; 7]; // inital values should not matter
         let mut visited = vec![false; 7]; // inital values matter here
 
-        super::lsolve_csc_sparse_rhs(l.view(),
-                                     b.view(),
-                                     &mut dstack,
-                                     &mut xw,
-                                     &mut visited)
-            .unwrap();
-        let x: HashSet<_> = dstack.iter_right()
-                                  .map(stack::extract_stack_val)
-                                  .map(|&i| (i, xw[i]))
-                                  .collect();
+        super::lsolve_csc_sparse_rhs(
+            l.view(),
+            b.view(),
+            &mut dstack,
+            &mut xw,
+            &mut visited,
+        ).unwrap();
+        let x: HashSet<_> = dstack
+            .iter_right()
+            .map(stack::extract_stack_val)
+            .map(|&i| (i, xw[i]))
+            .collect();
 
-        let expected_output = CsVec::new(7,
-                                         vec![0, 2, 3, 5],
-                                         vec![1, 2, 1, 1]).to_set();
+        let expected_output =
+            CsVec::new(7, vec![0, 2, 3, 5], vec![1, 2, 1, 1]).to_set();
 
         assert_eq!(x, expected_output);
     }

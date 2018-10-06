@@ -1,3 +1,4 @@
+extern crate ndarray;
 ///! This file demonstrates basic usage of the sprs library,
 ///! where a heat diffusion problem with Dirichlet boundary condition
 ///! is solved for equilibrium. For simplicity we omit any relevant
@@ -14,9 +15,7 @@
 ///! This shows how a laplacian matrix can be constructed by directly
 ///! constructing the compressed structure, and how the resulting linear
 ///! system can be solved using an iterative method.
-
 extern crate sprs;
-extern crate ndarray;
 
 type VecView<'a, T> = ndarray::ArrayView<'a, T, ndarray::Ix1>;
 type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix1>;
@@ -49,7 +48,7 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMat<f64> {
     let (rows, cols) = shape;
     let nb_vert = rows * cols;
     let mut indptr = Vec::with_capacity(nb_vert + 1);
-    let nnz = 5*nb_vert + 5;
+    let nnz = 5 * nb_vert + 5;
     let mut indices = Vec::with_capacity(nnz);
     let mut data = Vec::with_capacity(nnz);
     let mut cumsum = 0;
@@ -67,8 +66,7 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMat<f64> {
             if is_border(i, j, shape) {
                 // establish Dirichlet boundary conditions
                 add_elt(i, j, 1.);
-            }
-            else {
+            } else {
                 add_elt(i - 1, j, 1.);
                 add_elt(i, j - 1, 1.);
                 add_elt(i, j, -4.);
@@ -84,17 +82,18 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMat<f64> {
 }
 
 /// Set a dirichlet boundary condition
-fn set_boundary_condition<F>(mut rhs: VecViewMut<f64>,
-                             grid_shape: (usize, usize),
-                             f: F
-                            )
-where F: Fn(usize, usize) -> f64
+fn set_boundary_condition<F>(
+    mut rhs: VecViewMut<f64>,
+    grid_shape: (usize, usize),
+    f: F,
+) where
+    F: Fn(usize, usize) -> f64,
 {
     let (rows, cols) = grid_shape;
     for i in 0..rows {
         for j in 0..cols {
             if is_border(i, j, grid_shape) {
-                let index = i*rows + j;
+                let index = i * rows + j;
                 rhs[[index]] = f(i, j);
             }
         }
@@ -103,12 +102,13 @@ where F: Fn(usize, usize) -> f64
 
 /// Gauss-Seidel method to solve the system
 /// see https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method#Algorithm
-fn gauss_seidel(mat: sprs::CsMatView<f64>,
-                mut x: VecViewMut<f64>,
-                rhs: VecView<f64>,
-                max_iter: usize,
-                eps: f64
-                ) -> Result<(usize, f64), f64> {
+fn gauss_seidel(
+    mat: sprs::CsMatView<f64>,
+    mut x: VecViewMut<f64>,
+    rhs: VecView<f64>,
+    max_iter: usize,
+    eps: f64,
+) -> Result<(usize, f64), f64> {
     assert!(mat.rows() == mat.cols());
     assert!(mat.rows() == x.shape()[0]);
     let mut error = (&mat * &x - rhs).scalar_sum().sqrt();
@@ -119,8 +119,7 @@ fn gauss_seidel(mat: sprs::CsMatView<f64>,
             for (col_ind, &val) in vec.iter() {
                 if row_ind != col_ind {
                     sigma += val * x[[col_ind]];
-                }
-                else {
+                } else {
                     diag = Some(val);
                 }
             }
@@ -128,7 +127,7 @@ fn gauss_seidel(mat: sprs::CsMatView<f64>,
             // is satisfied for a laplacian matrix
             let diag = diag.unwrap();
             let cur_rhs = rhs[[row_ind]];
-            x[[row_ind]] = ( cur_rhs - sigma) / diag;
+            x[[row_ind]] = (cur_rhs - sigma) / diag;
         }
 
         error = (&mat * &x - rhs).scalar_sum().sqrt();
@@ -153,9 +152,10 @@ fn main() {
 
     match gauss_seidel(lap.view(), x.view_mut(), rhs.view(), 300, 1e-8) {
         Ok((iters, error)) => {
-            println!("Solved system in {} iterations with residual error {}",
-                     iters,
-                     error);
+            println!(
+                "Solved system in {} iterations with residual error {}",
+                iters, error
+            );
             let grid = x.view().into_shape((rows, cols)).unwrap();
             for i in 0..rows {
                 for j in 0..cols {
