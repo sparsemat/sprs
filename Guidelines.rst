@@ -25,3 +25,18 @@ Contract violation
   corresponding to the matrix' dimension, different lengths for ``indices`` and
   ``data``, etc.
 - *Wrong workspace length*
+
+Code formatting
+===============
+
+A consistent code style is enforced automatically using rustfmt_. Before
+opening a pull request, please ensure that your code has been formatted
+using ``rustfmt`` on the latest stable Rust channel:
+
+.. code-block:: console
+
+  rustup default stable
+  rustup component add rustfmt-preview
+  cargo fmt --all
+
+.. _rustfmt: https://github.com/rust-lang-nursery/rustfmt
