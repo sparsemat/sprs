@@ -1,12 +1,12 @@
+extern crate num_traits;
 extern crate sprs;
 extern crate suitesparse_ldl_sys;
-extern crate num_traits;
 
 use std::ops::Deref;
 
-use sprs::{CsMatViewI, CsMatI, SpIndex, PermOwnedI};
-use suitesparse_ldl_sys::*;
 use num_traits::Num;
+use sprs::{CsMatI, CsMatViewI, PermOwnedI, SpIndex};
+use suitesparse_ldl_sys::*;
 
 macro_rules! ldl_impl {
     ($int: ty,
@@ -278,46 +278,51 @@ macro_rules! ldl_impl {
     )
 }
 
-ldl_impl!(ldl_int,
-          LdlSymbolic,
-          LdlNumeric,
-          ldl_symbolic,
-          ldl_numeric,
-          ldl_lsolve,
-          ldl_dsolve,
-          ldl_ltsolve,
-          ldl_perm,
-          ldl_permt,
-          ldl_valid_perm,
-          ldl_valid_matrix);
+ldl_impl!(
+    ldl_int,
+    LdlSymbolic,
+    LdlNumeric,
+    ldl_symbolic,
+    ldl_numeric,
+    ldl_lsolve,
+    ldl_dsolve,
+    ldl_ltsolve,
+    ldl_perm,
+    ldl_permt,
+    ldl_valid_perm,
+    ldl_valid_matrix
+);
 
-ldl_impl!(ldl_long,
-          LdlLongSymbolic,
-          LdlLongNumeric,
-          ldl_l_symbolic,
-          ldl_l_numeric,
-          ldl_l_lsolve,
-          ldl_l_dsolve,
-          ldl_l_ltsolve,
-          ldl_l_perm,
-          ldl_l_permt,
-          ldl_l_valid_perm,
-          ldl_l_valid_matrix);
+ldl_impl!(
+    ldl_long,
+    LdlLongSymbolic,
+    LdlLongNumeric,
+    ldl_l_symbolic,
+    ldl_l_numeric,
+    ldl_l_lsolve,
+    ldl_l_dsolve,
+    ldl_l_ltsolve,
+    ldl_l_perm,
+    ldl_l_permt,
+    ldl_l_valid_perm,
+    ldl_l_valid_matrix
+);
 
 #[cfg(test)]
 mod tests {
+    use super::{LdlLongSymbolic, LdlSymbolic};
     use sprs::{CsMatI, PermOwnedI};
-    use super::{LdlSymbolic, LdlLongSymbolic};
 
     #[test]
     fn ldl_symbolic() {
-        let mat = CsMatI::new_csc((4, 4),
-                                  vec![0, 2, 4, 6, 8],
-                                  vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                  vec![1., 2., 21., 6., 6., 2., 2., 8.]);
+        let mat = CsMatI::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1., 2., 21., 6., 6., 2., 2., 8.],
+        );
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let ldlt = LdlSymbolic::new_perm(mat.view(), perm)
-            .factor(mat.view());
+        let ldlt = LdlSymbolic::new_perm(mat.view(), perm).factor(mat.view());
         let b = vec![9., 60., 18., 34.];
         let x0 = vec![1., 2., 3., 4.];
         let x = ldlt.solve(&b);
@@ -326,13 +331,15 @@ mod tests {
 
     #[test]
     fn ldl_long_symbolic() {
-        let mat = CsMatI::new_csc((4, 4),
-                                  vec![0, 2, 4, 6, 8],
-                                  vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                  vec![1., 2., 21., 6., 6., 2., 2., 8.]);
+        let mat = CsMatI::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1., 2., 21., 6., 6., 2., 2., 8.],
+        );
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let ldlt = LdlLongSymbolic::new_perm(mat.view(), perm)
-            .factor(mat.view());
+        let ldlt =
+            LdlLongSymbolic::new_perm(mat.view(), perm).factor(mat.view());
         let b = vec![9., 60., 18., 34.];
         let x0 = vec![1., 2., 3., 4.];
         let x = ldlt.solve(&b);

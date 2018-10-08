@@ -3,23 +3,23 @@
 
 use num_traits::Num;
 
+use indexing::SpIndex;
 use sparse::csmat;
 use sparse::{CsMatI, TriMatIter};
-use indexing::SpIndex;
 
 impl<'a, N, I, RI, CI, DI> Iterator for TriMatIter<RI, CI, DI>
-where I: 'a + SpIndex,
-      N: 'a,
-      RI: Iterator<Item=&'a I>,
-      CI: Iterator<Item=&'a I>,
-      DI: Iterator<Item=&'a N>,
+where
+    I: 'a + SpIndex,
+    N: 'a,
+    RI: Iterator<Item = &'a I>,
+    CI: Iterator<Item = &'a I>,
+    DI: Iterator<Item = &'a N>,
 {
     type Item = (&'a N, (I, I));
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        match (self.row_inds.next(), self.col_inds.next(), self.data.next() ) {
-            (Some(row), Some(col), Some(val)) =>
-                Some((val, (*row, *col))),
+        match (self.row_inds.next(), self.col_inds.next(), self.data.next()) {
+            (Some(row), Some(col), Some(val)) => Some((val, (*row, *col))),
             _ => None,
         }
     }
@@ -30,18 +30,21 @@ where I: 'a + SpIndex,
 }
 
 impl<'a, N, I, RI, CI, DI> TriMatIter<RI, CI, DI>
-where I: 'a + SpIndex,
-      N: 'a,
-      RI: Iterator<Item=&'a I>,
-      CI: Iterator<Item=&'a I>,
-      DI: Iterator<Item=&'a N>,
+where
+    I: 'a + SpIndex,
+    N: 'a,
+    RI: Iterator<Item = &'a I>,
+    CI: Iterator<Item = &'a I>,
+    DI: Iterator<Item = &'a N>,
 {
     /// Create a new `TriMatIter` from iterators
-    pub fn new(shape: (usize, usize),
-               nnz: usize,
-               row_inds: RI,
-               col_inds: CI,
-               data: DI) -> Self {
+    pub fn new(
+        shape: (usize, usize),
+        nnz: usize,
+        row_inds: RI,
+        col_inds: CI,
+        data: DI,
+    ) -> Self {
         Self {
             rows: shape.0,
             cols: shape.1,
@@ -97,15 +100,17 @@ where I: 'a + SpIndex,
 }
 
 impl<'a, N, I, RI, CI, DI> TriMatIter<RI, CI, DI>
-where I: 'a + SpIndex,
-      N: 'a + Clone,
-      RI: Clone + Iterator<Item=&'a I>,
-      CI: Clone + Iterator<Item=&'a I>,
-      DI: Clone + Iterator<Item=&'a N>,
+where
+    I: 'a + SpIndex,
+    N: 'a + Clone,
+    RI: Clone + Iterator<Item = &'a I>,
+    CI: Clone + Iterator<Item = &'a I>,
+    DI: Clone + Iterator<Item = &'a N>,
 {
     /// Consume this matrix to create a CSC matrix
     pub fn into_csc(self) -> CsMatI<N, I>
-    where N: Num
+    where
+        N: Num,
     {
         let mut row_counts = vec![I::zero(); self.rows() + 1];
         for i in self.clone().into_row_inds() {
@@ -133,8 +138,8 @@ where I: 'a + SpIndex,
             let col_exists = {
                 let mut col_exists = false;
                 let iter = indices[start..stop]
-                               .iter()
-                               .zip(data[start..stop].iter_mut());
+                    .iter()
+                    .zip(data[start..stop].iter_mut());
                 for (&col_cell, data_cell) in iter {
                     if col_cell.index() == j {
                         *data_cell = data_cell.clone() + val.clone();
@@ -173,22 +178,23 @@ where I: 'a + SpIndex,
         let mut out_indptr = vec![I::zero(); self.cols() + 1];
         let mut out_indices = vec![I::zero(); nnz];
         let mut out_data = vec![N::zero(); nnz];
-        csmat::raw::convert_storage(csmat::CompressedStorage::CSR,
-                                    self.shape(),
-                                    &indptr,
-                                    &indices[..nnz],
-                                    &data[..nnz],
-                                    &mut out_indptr,
-                                    &mut out_indices,
-                                    &mut out_data);
+        csmat::raw::convert_storage(
+            csmat::CompressedStorage::CSR,
+            self.shape(),
+            &indptr,
+            &indices[..nnz],
+            &data[..nnz],
+            &mut out_indptr,
+            &mut out_indices,
+            &mut out_data,
+        );
         CsMatI {
             storage: csmat::CompressedStorage::CSC,
             nrows: self.rows,
             ncols: self.cols,
             indptr: out_indptr,
             indices: out_indices,
-            data: out_data
+            data: out_data,
         }
     }
-
 }

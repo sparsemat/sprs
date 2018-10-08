@@ -1,6 +1,5 @@
 ///! Data structures to work with elimination trees (etree).
 ///! etrees arise when considering cholesky factorization, QR factorization, ...
-
 use std::ops::{Deref, DerefMut};
 
 pub type Parent = Option<usize>;
@@ -8,16 +7,18 @@ pub type Parent = Option<usize>;
 /// Store an etree as the parent information of each node.
 /// This reflects the fact that etrees can in fact have multiple roots.
 #[derive(Debug, Clone)]
-pub struct Parents<S> where S: Deref<Target=[Parent]> {
-    parents: S
+pub struct Parents<S>
+where
+    S: Deref<Target = [Parent]>,
+{
+    parents: S,
 }
 
 pub type ParentsView<'a> = Parents<&'a [Parent]>;
 pub type ParentsViewMut<'a> = Parents<&'a mut [Parent]>;
 pub type ParentsOwned = Parents<Vec<Parent>>;
 
-impl<S: Deref<Target=[Parent]>> Parents<S> {
-
+impl<S: Deref<Target = [Parent]>> Parents<S> {
     /// Get the parent of a node. Returns None if the node is a root.
     ///
     /// # Panics
@@ -44,13 +45,12 @@ impl<S: Deref<Target=[Parent]>> Parents<S> {
     /// Get a view of this object
     pub fn view(&self) -> ParentsView {
         ParentsView {
-            parents: &self.parents[..]
+            parents: &self.parents[..],
         }
     }
 }
 
-impl<S: DerefMut<Target=[Parent]>> Parents<S> {
-
+impl<S: DerefMut<Target = [Parent]>> Parents<S> {
     /// Set the parent of a node.
     ///
     /// # Panics
@@ -85,13 +85,12 @@ impl<S: DerefMut<Target=[Parent]>> Parents<S> {
 
     pub fn view_mut(&mut self) -> ParentsViewMut {
         ParentsViewMut {
-            parents: &mut self.parents[..]
+            parents: &mut self.parents[..],
         }
     }
 }
 
 impl Parents<Vec<Parent>> {
-
     /// Create a new tree with all nodes set as root
     pub fn new(nb_nodes: usize) -> ParentsOwned {
         ParentsOwned {

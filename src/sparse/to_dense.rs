@@ -1,17 +1,19 @@
-///! Utilities for sparse-to-dense conversion
-
-use ndarray::{ArrayViewMut, Axis};
-use indexing::SpIndex;
 use super::CsMatViewI;
-use ::Ix2;
+use indexing::SpIndex;
+///! Utilities for sparse-to-dense conversion
+use ndarray::{ArrayViewMut, Axis};
+use Ix2;
 
 /// Assign a sparse matrix into a dense matrix
 ///
 /// The dense matrix will not be zeroed prior to assignment,
 /// so existing values not corresponding to non-zeroes will be preserved.
-pub fn assign_to_dense<N, I>(mut array: ArrayViewMut<N, Ix2>,
-                             spmat: CsMatViewI<N, I>)
-where N: Clone, I: SpIndex
+pub fn assign_to_dense<N, I>(
+    mut array: ArrayViewMut<N, Ix2>,
+    spmat: CsMatViewI<N, I>,
+) where
+    N: Clone,
+    I: SpIndex,
 {
     if spmat.cols() != array.shape()[1] {
         panic!("Dimension mismatch");
@@ -31,9 +33,9 @@ where N: Clone, I: SpIndex
 
 #[cfg(test)]
 mod test {
-    use ndarray::{Array, arr2};
-    use ::CsMat;
+    use ndarray::{arr2, Array};
     use test_data::{mat1, mat3};
+    use CsMat;
 
     #[test]
     fn to_dense() {
@@ -53,19 +55,23 @@ mod test {
         assert_eq!(deye, res);
 
         let res = mat1().to_dense();
-        let expected = arr2(&[[0., 0., 3., 4., 0.],
-                              [0., 0., 0., 2., 5.],
-                              [0., 0., 5., 0., 0.],
-                              [0., 8., 0., 0., 0.],
-                              [0., 0., 0., 7., 0.]]);
+        let expected = arr2(&[
+            [0., 0., 3., 4., 0.],
+            [0., 0., 0., 2., 5.],
+            [0., 0., 5., 0., 0.],
+            [0., 8., 0., 0., 0.],
+            [0., 0., 0., 7., 0.],
+        ]);
         assert_eq!(expected, res);
 
         let res2 = mat3().to_dense();
-        let expected2 = arr2(&[[0., 0., 3., 4.],
-                              [0., 0., 2., 5.],
-                              [0., 0., 5., 0.],
-                              [0., 8., 0., 0.],
-                              [0., 0., 0., 7.]]);
+        let expected2 = arr2(&[
+            [0., 0., 3., 4.],
+            [0., 0., 2., 5.],
+            [0., 0., 5., 0.],
+            [0., 8., 0., 0.],
+            [0., 0., 0., 7.],
+        ]);
         assert_eq!(expected2, res2);
     }
 }

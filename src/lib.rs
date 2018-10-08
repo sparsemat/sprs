@@ -60,20 +60,21 @@ assert_eq!(a, b.to_csc());
 
 #![deny(warnings)]
 
-extern crate num_traits;
-extern crate num_complex;
-extern crate ndarray;
-#[cfg(test)] extern crate tempdir;
 #[cfg(feature = "alga")]
 extern crate alga;
+extern crate ndarray;
+extern crate num_complex;
+extern crate num_traits;
+#[cfg(test)]
+extern crate tempdir;
 
-mod sparse;
-pub mod errors;
-pub mod stack;
-pub mod indexing;
 pub mod array_backend;
+pub mod errors;
+pub mod indexing;
 pub mod io;
 mod num_kinds;
+mod sparse;
+pub mod stack;
 
 /// Deprecated type alias, will be removed on next breaking change
 pub type Ix_ = ndarray::Ix1;
@@ -83,94 +84,44 @@ pub type Ix2 = ndarray::Ix2;
 pub use indexing::SpIndex;
 
 pub use sparse::{
-    CsMatBase,
-    CsMat,
-    CsMatI,
-    CsMatView,
-    CsMatViewI,
-    CsMatViewMut,
-    CsMatViewMutI,
-    CsMatVecView,
-    CsVecBase,
-    CsVecView,
-    CsVecViewI,
-    CsVec,
-    CsVecI,
-    CsVecViewMut,
-    CsVecViewMutI,
-    TriMatBase,
-    TriMat,
-    TriMatView,
-    TriMatViewMut,
-    TriMatI,
-    TriMatViewI,
+    CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatView, CsMatViewI,
+    CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase, CsVecI, CsVecView,
+    CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat, TriMatBase,
+    TriMatI, TriMatIter, TriMatView, TriMatViewI, TriMatViewMut,
     TriMatViewMutI,
-    TriMatIter,
-    SparseMat,
 };
 
-
-pub use sparse::symmetric::{
-    is_symmetric,
-};
+pub use sparse::symmetric::is_symmetric;
 
 pub use sparse::permutation::{
-    Permutation,
-    PermView,
-    PermViewI,
-    PermOwned,
-    PermOwnedI,
+    PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
 };
 
-pub use sparse::CompressedStorage::{
-    self,
-    CSR,
-    CSC,
-};
+pub use sparse::CompressedStorage::{self, CSC, CSR};
 
+pub use sparse::binop;
 pub use sparse::linalg;
 pub use sparse::prod;
-pub use sparse::binop;
 
 pub mod vec {
-    pub use sparse::{
-        CsVecBase,
-        CsVec,
-        CsVecView,
-        CsVecViewMut,
-    };
+    pub use sparse::{CsVec, CsVecBase, CsVecView, CsVecViewMut};
 
     pub use sparse::vec::{
-        NnzIndex,
-        VecDim,
-        VectorIterator,
-        VectorIteratorMut,
-        SparseIterTools,
-        IntoSparseVecIter,
-        NnzOrZip,
-        NnzEither,
+        IntoSparseVecIter, NnzEither, NnzIndex, NnzOrZip, SparseIterTools,
+        VecDim, VectorIterator, VectorIteratorMut,
     };
 }
 
 pub use sparse::construct::{
-    vstack,
-    hstack,
-    bmat,
-    csr_from_dense,
-    csc_from_dense,
+    bmat, csc_from_dense, csr_from_dense, hstack, vstack,
 };
 
-pub use sparse::to_dense::{
-    assign_to_dense,
-};
-
-
+pub use sparse::to_dense::assign_to_dense;
 
 /// The shape of a matrix. This a 2-tuple with the first element indicating
 /// the number of rows, and the second element indicating the number of
 /// columns.
 pub type Shape = (usize, usize); // FIXME: maybe we could use Ix2 here?
-
 
 pub type SpRes<T> = Result<T, errors::SprsError>;
 
@@ -183,10 +134,12 @@ mod test {
 
     #[test]
     fn iter_rbr() {
-        let mat = CsMat::new((3, 3),
-                             vec![0, 2, 3, 3],
-                             vec![1, 2, 0],
-                             vec![0.1, 0.2, 0.3]);
+        let mat = CsMat::new(
+            (3, 3),
+            vec![0, 2, 3, 3],
+            vec![1, 2, 0],
+            vec![0.1, 0.2, 0.3],
+        );
         let view = mat.view();
         let mut iter = view.iter();
         assert_eq!(iter.next(), Some((&0.1, (0, 1))));

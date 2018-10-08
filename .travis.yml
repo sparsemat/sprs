@@ -6,6 +6,7 @@ before_install:
 matrix:
   include:
     - rust: stable
+      env: RUN_RUSTFMT=true
     - rust: beta
     - rust: nightly
 
@@ -14,6 +15,7 @@ script:
     - cargo --version
     - cargo test --all --verbose
     - cargo run --example heat
+    - ./.travis_rustfmt
 
 notifications:
   email:

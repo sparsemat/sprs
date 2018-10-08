@@ -1,3 +1,8 @@
+use ndarray::{self, ArrayBase};
+use std::cmp;
+use std::collections::HashSet;
+use std::convert::AsRef;
+use std::hash::Hash;
 /// A sparse vector, which can be extracted from a sparse matrix
 ///
 /// # Example
@@ -15,28 +20,22 @@
 /// assert_eq!(iter.next(), Some((6, &1.)));
 /// assert_eq!(iter.next(), None);
 /// ```
-
-use std::iter::{Zip, Peekable, FilterMap, IntoIterator, Enumerate, Sum};
-use std::ops::{Deref, DerefMut, Mul, Add, Sub, Index, IndexMut, Neg};
-use std::convert::AsRef;
-use std::cmp;
-use std::slice::{self, Iter, IterMut};
-use std::collections::HashSet;
-use std::hash::Hash;
+use std::iter::{Enumerate, FilterMap, IntoIterator, Peekable, Sum, Zip};
 use std::marker::PhantomData;
-use ndarray::{self, ArrayBase};
-use ::{Ix1};
+use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub};
+use std::slice::{self, Iter, IterMut};
+use Ix1;
 
 use num_traits::{Num, Zero};
 
-use indexing::SpIndex;
 use array_backend::Array2;
-use sparse::permutation::PermViewI;
-use sparse::{prod, binop};
-use sparse::utils;
-use sparse::prelude::*;
-use sparse::csmat::CompressedStorage::{CSR, CSC};
 use errors::SprsError;
+use indexing::SpIndex;
+use sparse::csmat::CompressedStorage::{CSC, CSR};
+use sparse::permutation::PermViewI;
+use sparse::prelude::*;
+use sparse::utils;
+use sparse::{binop, prod};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
@@ -52,18 +51,20 @@ pub trait VecDim<N> {
     fn dim(&self) -> usize;
 }
 
-impl<N, IS, DS: Deref<Target=[N]>> VecDim<N> for CsVecBase<IS, DS> {
+impl<N, IS, DS: Deref<Target = [N]>> VecDim<N> for CsVecBase<IS, DS> {
     fn dim(&self) -> usize {
         self.dim
     }
 }
 
-impl<N, T: ?Sized> VecDim<N> for T where T: AsRef<[N]> {
+impl<N, T: ?Sized> VecDim<N> for T
+where
+    T: AsRef<[N]>,
+{
     fn dim(&self) -> usize {
         self.as_ref().len()
     }
 }
-
 
 /// An iterator over the non-zero elements of a sparse vector
 pub struct VectorIterator<'a, N: 'a, I: 'a> {
@@ -80,16 +81,13 @@ pub struct VectorIteratorMut<'a, N: 'a, I: 'a> {
     ind_data: Zip<Iter<'a, I>, IterMut<'a, N>>,
 }
 
-
-impl <'a, N: 'a, I: 'a + SpIndex>
-Iterator
-for VectorIterator<'a, N, I> {
+impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIterator<'a, N, I> {
     type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((inner_ind.index(), data))
+            Some((inner_ind, data)) => Some((inner_ind.index(), data)),
         }
     }
 
@@ -98,16 +96,15 @@ for VectorIterator<'a, N, I> {
     }
 }
 
-impl <'a, N: 'a, I: 'a + SpIndex>
-Iterator
-for VectorIteratorPerm<'a, N, I> {
+impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorPerm<'a, N, I> {
     type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some(
-                (self.perm.at(inner_ind.index()), data))
+            Some((inner_ind, data)) => {
+                Some((self.perm.at(inner_ind.index()), data))
+            }
         }
     }
 
@@ -116,15 +113,13 @@ for VectorIteratorPerm<'a, N, I> {
     }
 }
 
-impl <'a, N: 'a, I: 'a + SpIndex>
-Iterator
-for VectorIteratorMut<'a, N, I> {
+impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorMut<'a, N, I> {
     type Item = (usize, &'a mut N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((inner_ind.index(), data))
+            Some((inner_ind, data)) => Some((inner_ind.index(), data)),
         }
     }
 
@@ -153,10 +148,14 @@ pub trait SparseIterTools: Iterator {
     /// assert_eq!(nnz_or_iter.next(), Some(NnzEither::Left((4, &3.))));
     /// assert_eq!(nnz_or_iter.next(), None);
     /// ```
-    fn nnz_or_zip<'a, I, N1, N2>(self, other: I)
-    -> NnzOrZip<'a, Self, I::IntoIter, N1, N2>
-    where Self: Iterator<Item=(usize, &'a N1)> + Sized,
-          I: IntoIterator<Item=(usize, &'a N2)> {
+    fn nnz_or_zip<'a, I, N1, N2>(
+        self,
+        other: I,
+    ) -> NnzOrZip<'a, Self, I::IntoIter, N1, N2>
+    where
+        Self: Iterator<Item = (usize, &'a N1)> + Sized,
+        I: IntoIterator<Item = (usize, &'a N2)>,
+    {
         NnzOrZip {
             left: self.peekable(),
             right: other.into_iter().peekable(),
@@ -178,11 +177,17 @@ pub trait SparseIterTools: Iterator {
     /// assert_eq!(nnz_zip.next(), Some((2, &2., &-2.)));
     /// assert_eq!(nnz_zip.next(), None);
     /// ```
-    fn nnz_zip<'a, I, N1, N2>(self, other: I)
-    -> FilterMap<NnzOrZip<'a, Self, I::IntoIter, N1, N2>,
-                 fn(NnzEither<'a, N1,N2>) -> Option<(usize, &'a N1, &'a N2)>>
-    where Self: Iterator<Item=(usize, &'a N1)> + Sized,
-          I: IntoIterator<Item=(usize, &'a N2)> {
+    fn nnz_zip<'a, I, N1, N2>(
+        self,
+        other: I,
+    ) -> FilterMap<
+        NnzOrZip<'a, Self, I::IntoIter, N1, N2>,
+        fn(NnzEither<'a, N1, N2>) -> Option<(usize, &'a N1, &'a N2)>,
+    >
+    where
+        Self: Iterator<Item = (usize, &'a N1)> + Sized,
+        I: IntoIterator<Item = (usize, &'a N2)>,
+    {
         let nnz_or_iter = NnzOrZip {
             left: self.peekable(),
             right: other.into_iter().peekable(),
@@ -192,24 +197,23 @@ pub trait SparseIterTools: Iterator {
     }
 }
 
-impl<T: Iterator> SparseIterTools for Enumerate<T> {
-}
+impl<T: Iterator> SparseIterTools for Enumerate<T> {}
 
-impl<'a, N: 'a, I: 'a + SpIndex>
-SparseIterTools
-for VectorIterator<'a, N, I> {
-}
+impl<'a, N: 'a, I: 'a + SpIndex> SparseIterTools for VectorIterator<'a, N, I> {}
 
 /// Trait for types that can be iterated as sparse vectors
 pub trait IntoSparseVecIter<'a, N: 'a> {
-
     type IterType;
 
     /// Transform self into an iterator that yields (usize, &N) tuples
     /// where the usize is the index of the value in the sparse vector.
     /// The indices should be sorted.
-    fn into_sparse_vec_iter(self) -> <Self as IntoSparseVecIter<'a, N>>::IterType
-    where <Self as IntoSparseVecIter<'a, N>>::IterType: Iterator<Item=(usize, &'a N)>;
+    fn into_sparse_vec_iter(
+        self,
+    ) -> <Self as IntoSparseVecIter<'a, N>>::IterType
+    where
+        <Self as IntoSparseVecIter<'a, N>>::IterType:
+            Iterator<Item = (usize, &'a N)>;
 
     /// The dimension of the vector
     fn dim(&self) -> usize;
@@ -226,13 +230,17 @@ pub trait IntoSparseVecIter<'a, N: 'a> {
     /// - if the vector is not dense
     /// - if the index is out of bounds
     #[allow(unused_variables)]
-    fn index(self, idx: usize) -> &'a N where Self: Sized {
+    fn index(self, idx: usize) -> &'a N
+    where
+        Self: Sized,
+    {
         panic!("cannot be called on a vector that is not dense");
     }
 }
 
 impl<'a, N: 'a, I: 'a> IntoSparseVecIter<'a, N> for CsVecViewI<'a, N, I>
-where I: SpIndex,
+where
+    I: SpIndex,
 {
     type IterType = VectorIterator<'a, N, I>;
 
@@ -245,12 +253,12 @@ where I: SpIndex,
     }
 }
 
-impl<'a, N: 'a, I: 'a, IS, DS>
-IntoSparseVecIter<'a, N>
-for &'a CsVecBase<IS, DS>
-where I: SpIndex,
-      IS: Deref<Target=[I]>,
-      DS: Deref<Target=[N]>
+impl<'a, N: 'a, I: 'a, IS, DS> IntoSparseVecIter<'a, N>
+    for &'a CsVecBase<IS, DS>
+where
+    I: SpIndex,
+    IS: Deref<Target = [I]>,
+    DS: Deref<Target = [N]>,
 {
     type IterType = VectorIterator<'a, N, I>;
 
@@ -304,7 +312,8 @@ impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a Vec<N> {
 }
 
 impl<'a, N: 'a, S> IntoSparseVecIter<'a, N> for &'a ArrayBase<S, Ix1>
-where S: ndarray::Data<Elem=N>
+where
+    S: ndarray::Data<Elem = N>,
 {
     type IterType = Enumerate<ndarray::iter::Iter<'a, N, Ix1>>;
 
@@ -312,7 +321,9 @@ where S: ndarray::Data<Elem=N>
         self.shape()[0]
     }
 
-    fn into_sparse_vec_iter(self) -> Enumerate<ndarray::iter::Iter<'a, N, Ix1>> {
+    fn into_sparse_vec_iter(
+        self,
+    ) -> Enumerate<ndarray::iter::Iter<'a, N, Ix1>> {
         self.iter().enumerate()
     }
 
@@ -327,8 +338,7 @@ where S: ndarray::Data<Elem=N>
 
 /// A trait for types representing dense vectors, useful for
 /// defining a fast sparse-dense dot product.
-pub trait DenseVector<N>
-{
+pub trait DenseVector<N> {
     /// The dimension of the vector
     fn dim(&self) -> usize;
 
@@ -340,7 +350,7 @@ pub trait DenseVector<N>
     fn index(&self, idx: usize) -> &N;
 }
 
-impl<'a, N: 'a> DenseVector<N> for &'a[N] {
+impl<'a, N: 'a> DenseVector<N> for &'a [N] {
     fn dim(&self) -> usize {
         self.len()
     }
@@ -371,7 +381,8 @@ impl<'a, N: 'a> DenseVector<N> for &'a Vec<N> {
 }
 
 impl<N, S> DenseVector<N> for ArrayBase<S, Ix1>
-where S: ndarray::Data<Elem=N>
+where
+    S: ndarray::Data<Elem = N>,
 {
     fn dim(&self) -> usize {
         self.shape()[0]
@@ -385,8 +396,10 @@ where S: ndarray::Data<Elem=N>
 /// An iterator over the non zeros of either of two vector iterators, ordered,
 /// such that the sum of the vectors may be computed
 pub struct NnzOrZip<'a, Ite1, Ite2, N1: 'a, N2: 'a>
-where Ite1: Iterator<Item=(usize, &'a N1)>,
-      Ite2: Iterator<Item=(usize, &'a N2)> {
+where
+    Ite1: Iterator<Item = (usize, &'a N1)>,
+    Ite2: Iterator<Item = (usize, &'a N2)>,
+{
     left: Peekable<Ite1>,
     right: Peekable<Ite2>,
     life: PhantomData<(&'a N1, &'a N2)>,
@@ -396,22 +409,24 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
 pub enum NnzEither<'a, N1: 'a, N2: 'a> {
     Both((usize, &'a N1, &'a N2)),
     Left((usize, &'a N1)),
-    Right((usize, &'a N2))
+    Right((usize, &'a N2)),
 }
 
-fn filter_both_nnz<'a, N: 'a, M: 'a>(elem: NnzEither<'a, N, M>)
--> Option<(usize, &'a N, &'a M)> {
+fn filter_both_nnz<'a, N: 'a, M: 'a>(
+    elem: NnzEither<'a, N, M>,
+) -> Option<(usize, &'a N, &'a M)> {
     match elem {
         NnzEither::Both((ind, lval, rval)) => Some((ind, lval, rval)),
-        _ => None
+        _ => None,
     }
 }
 
-impl <'a, Ite1, Ite2, N1: 'a, N2: 'a>
-Iterator
-for NnzOrZip<'a, Ite1, Ite2, N1, N2>
-where Ite1: Iterator<Item=(usize, &'a N1)>,
-      Ite2: Iterator<Item=(usize, &'a N2)> {
+impl<'a, Ite1, Ite2, N1: 'a, N2: 'a> Iterator
+    for NnzOrZip<'a, Ite1, Ite2, N1, N2>
+where
+    Ite1: Iterator<Item = (usize, &'a N1)>,
+    Ite2: Iterator<Item = (usize, &'a N2)>,
+{
     type Item = NnzEither<'a, N1, N2>;
 
     fn next(&mut self) -> Option<(NnzEither<'a, N1, N2>)> {
@@ -420,7 +435,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
                 let (rind, rval) = self.right.next().unwrap();
                 Some(NnzEither::Right((rind, rval)))
             }
-            (Some(&(_,_)), None) => {
+            (Some(&(_, _)), None) => {
                 let (lind, lval) = self.left.next().unwrap();
                 Some(NnzEither::Left((lind, lval)))
             }
@@ -429,12 +444,10 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
                 if lind < rind {
                     let (lind, lval) = self.left.next().unwrap();
                     Some(NnzEither::Left((lind, lval)))
-                }
-                else if rind < lind {
+                } else if rind < lind {
                     let (rind, rval) = self.right.next().unwrap();
                     Some(NnzEither::Right((rind, rval)))
-                }
-                else {
+                } else {
                     let (lind, lval) = self.left.next().unwrap();
                     let (_, rval) = self.right.next().unwrap();
                     Some(NnzEither::Both((lind, lval, rval)))
@@ -451,7 +464,7 @@ where Ite1: Iterator<Item=(usize, &'a N1)>,
             (Some(x), Some(y)) => Some(x + y),
             (Some(x), None) => Some(x),
             (None, Some(y)) => Some(y),
-            (None, None) => None
+            (None, None) => None,
         };
         (cmp::max(left_lower, right_lower), upper)
     }
@@ -465,20 +478,20 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     ///
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
-    pub fn new(n: usize,
-               mut indices: Vec<I>,
-               mut data: Vec<N>
-              ) -> CsVecI<N, I>
-    where N: Copy
+    pub fn new(n: usize, mut indices: Vec<I>, mut data: Vec<N>) -> CsVecI<N, I>
+    where
+        N: Copy,
     {
         let mut buf = Vec::with_capacity(indices.len());
-        utils::sort_indices_data_slices(&mut indices[..],
-                                        &mut data[..],
-                                        &mut buf);
+        utils::sort_indices_data_slices(
+            &mut indices[..],
+            &mut data[..],
+            &mut buf,
+        );
         let v = CsVecI {
             dim: n,
             indices: indices,
-            data: data
+            data: data,
         };
         v.check_structure().and(Ok(v)).unwrap()
     }
@@ -535,10 +548,11 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
 
 /// # Common methods of sparse vectors
 impl<N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage>
-where I: SpIndex,
-      IStorage: Deref<Target=[I]>,
-      DStorage: Deref<Target=[N]> {
-
+where
+    I: SpIndex,
+    IStorage: Deref<Target = [I]>,
+    DStorage: Deref<Target = [N]>,
+{
     /// Get a view of this vector.
     pub fn view(&self) -> CsVecViewI<N, I> {
         CsVecViewI {
@@ -569,14 +583,16 @@ where I: SpIndex,
 
     /// Permuted iteration. Not finished
     #[doc(hidden)]
-    pub fn iter_perm<'a, 'perm: 'a>(&'a self,
-                                    perm: PermViewI<'perm, I>)
-    -> VectorIteratorPerm<'a, N, I>
-    where N: 'a
+    pub fn iter_perm<'a, 'perm: 'a>(
+        &'a self,
+        perm: PermViewI<'perm, I>,
+    ) -> VectorIteratorPerm<'a, N, I>
+    where
+        N: 'a,
     {
         VectorIteratorPerm {
             ind_data: self.indices.iter().zip(self.data.iter()),
-            perm: perm
+            perm: perm,
         }
     }
 
@@ -604,7 +620,7 @@ where I: SpIndex,
     /// - indices is sorted
     /// - indices are lower than dims()
     pub fn check_structure(&self) -> Result<(), SprsError> {
-        if ! self.indices.windows(2).all(|x| x[0] < x[1]) {
+        if !self.indices.windows(2).all(|x| x[0] < x[1]) {
             return Err(SprsError::NonSortedIndices);
         }
 
@@ -622,7 +638,8 @@ where I: SpIndex,
 
     /// Allocate a new vector equal to this one.
     pub fn to_owned(&self) -> CsVecI<N, I>
-    where N: Clone
+    where
+        N: Clone,
     {
         CsVecI {
             dim: self.dim,
@@ -637,15 +654,16 @@ where I: SpIndex,
     ///
     /// If the indices cannot be represented by the requested integer type.
     pub fn to_other_types<I2>(&self) -> CsVecI<N, I2>
-    where N: Clone,
-          I2: SpIndex,
+    where
+        N: Clone,
+        I2: SpIndex,
     {
-        let indices = self.indices.iter()
-                                  .map(|i| I2::from_usize(i.index()))
-                                  .collect();
-        let data = self.data.iter()
-                            .map(|x| x.clone().into())
-                            .collect();
+        let indices = self
+            .indices
+            .iter()
+            .map(|i| I2::from_usize(i.index()))
+            .collect();
+        let data = self.data.iter().map(|x| x.clone().into()).collect();
         CsVecI {
             dim: self.dim,
             indices: indices,
@@ -689,7 +707,8 @@ where I: SpIndex,
 
     /// Access element at given index, with logarithmic complexity
     pub fn get<'a>(&'a self, index: usize) -> Option<&'a N>
-    where I: 'a
+    where
+        I: 'a,
     {
         self.view().get_rbr(index)
     }
@@ -701,9 +720,10 @@ where I: SpIndex,
     /// once it is available, the NnzIndex enables retrieving the data with
     /// O(1) complexity.
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
-        self.indices.binary_search(&I::from_usize(index))
-                    .map(|i| NnzIndex(i.index()))
-                    .ok()
+        self.indices
+            .binary_search(&I::from_usize(index))
+            .map(|i| NnzIndex(i.index()))
+            .ok()
     }
 
     /// Sparse vector dot product. The right-hand-side can be any type
@@ -728,21 +748,23 @@ where I: SpIndex,
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
     pub fn dot<'b, T: IntoSparseVecIter<'b, N>>(&'b self, rhs: T) -> N
-    where N: 'b + Num + Copy + Sum,
-          I: 'b,
-          <T as IntoSparseVecIter<'b, N>>::IterType: Iterator<Item=(usize, &'b N)>,
-          T: Copy // T is supposed to be a reference type
+    where
+        N: 'b + Num + Copy + Sum,
+        I: 'b,
+        <T as IntoSparseVecIter<'b, N>>::IterType:
+            Iterator<Item = (usize, &'b N)>,
+        T: Copy, // T is supposed to be a reference type
     {
         assert_eq!(self.dim(), rhs.dim());
         if rhs.is_dense() {
             self.iter()
                 .map(|(idx, val)| *val * *rhs.index(idx.index()))
                 .sum()
-        }
-        else {
-            self.iter().nnz_zip(rhs.into_sparse_vec_iter())
-                       .map(|(_, &lval, &rval)| lval * rval)
-                       .fold(N::zero(), |x, y| x + y)
+        } else {
+            self.iter()
+                .nnz_zip(rhs.into_sparse_vec_iter())
+                .map(|(_, &lval, &rval)| lval * rval)
+                .fold(N::zero(), |x, y| x + y)
         }
     }
 
@@ -758,16 +780,21 @@ where I: SpIndex,
     ///
     /// If the dimension of the vectors do not match.
     pub fn dot_dense<T>(&self, rhs: T) -> N
-    where T: DenseVector<N>,
-          N: Num + Copy + Sum,
+    where
+        T: DenseVector<N>,
+        N: Num + Copy + Sum,
     {
         assert_eq!(self.dim(), rhs.dim());
-        self.iter().map(|(idx, val)| *val * *rhs.index(idx.index())).sum()
+        self.iter()
+            .map(|(idx, val)| *val * *rhs.index(idx.index()))
+            .sum()
     }
 
     /// Fill a dense vector with our values
     pub fn scatter(&self, out: &mut [N])
-    where N: Clone {
+    where
+        N: Clone,
+    {
         for (ind, val) in self.iter() {
             out[ind] = val.clone();
         }
@@ -775,8 +802,12 @@ where I: SpIndex,
 
     /// Transform this vector into a set of (index, value) tuples
     pub fn to_set(self) -> HashSet<(usize, N)>
-    where N: Hash + Eq + Clone {
-        self.indices().iter().map(|i| i.index())
+    where
+        N: Hash + Eq + Clone,
+    {
+        self.indices()
+            .iter()
+            .map(|i| i.index())
             .zip(self.data.iter().cloned())
             .collect()
     }
@@ -784,8 +815,9 @@ where I: SpIndex,
     /// Apply a function to each non-zero element, yielding a new matrix
     /// with the same sparsity structure.
     pub fn map<F>(&self, f: F) -> CsVecI<N, I>
-    where F: FnMut(&N) -> N,
-          N: Clone
+    where
+        F: FnMut(&N) -> N,
+        N: Clone,
     {
         let mut res = self.to_owned();
         res.map_inplace(f);
@@ -795,11 +827,12 @@ where I: SpIndex,
 
 /// # Methods on sparse vectors with mutable access to their data
 impl<'a, N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage>
-where N: 'a,
-      I: 'a + SpIndex,
-      IStorage: 'a + Deref<Target=[I]>,
-      DStorage: DerefMut<Target=[N]> {
-
+where
+    N: 'a,
+    I: 'a + SpIndex,
+    IStorage: 'a + Deref<Target = [I]>,
+    DStorage: DerefMut<Target = [N]>,
+{
     /// The underlying non zero values as a mutable slice.
     fn data_mut(&mut self) -> &mut [N] {
         &mut self.data[..]
@@ -817,15 +850,15 @@ where N: 'a,
     pub fn get_mut(&mut self, index: usize) -> Option<&mut N> {
         if let Some(NnzIndex(position)) = self.nnz_index(index) {
             Some(&mut self.data[position])
-        }
-        else {
+        } else {
             None
         }
     }
 
     /// Apply a function to each non-zero element, mutating it
     pub fn map_inplace<F>(&mut self, mut f: F)
-    where F: FnMut(&N) -> N
+    where
+        F: FnMut(&N) -> N,
     {
         for val in &mut self.data[..] {
             *val = f(val);
@@ -840,18 +873,16 @@ where N: 'a,
             ind_data: self.indices.iter().zip(self.data.iter_mut()),
         }
     }
-
 }
 
 /// # Methods propagating the lifetime of a `CsVecViewI`.
 impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
-
     /// Create a borrowed CsVec over slice data.
     pub fn new_view(
         n: usize,
         indices: &'a [I],
-        data: &'a [N])
-    -> Result<CsVecViewI<'a, N, I>, SprsError> {
+        data: &'a [N],
+    ) -> Result<CsVecViewI<'a, N, I>, SprsError> {
         let v = CsVecViewI {
             dim: n,
             indices: indices,
@@ -864,9 +895,8 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
     ///
     /// Re-borrowing version of `at()`.
     pub fn get_rbr(&self, index: usize) -> Option<&'a N> {
-        self.nnz_index(index).map(|NnzIndex(position)| {
-            &self.data[position]
-        })
+        self.nnz_index(index)
+            .map(|NnzIndex(position)| &self.data[position])
     }
 
     /// Re-borrowing version of `iter()`. Namely, the iterator's lifetime
@@ -883,11 +913,12 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
-    pub unsafe fn new_view_raw(n: usize,
-                               nnz: usize,
-                               indices: *const I,
-                               data: *const N,
-                              ) -> CsVecViewI<'a, N, I> {
+    pub unsafe fn new_view_raw(
+        n: usize,
+        nnz: usize,
+        indices: *const I,
+        data: *const N,
+    ) -> CsVecViewI<'a, N, I> {
         CsVecViewI {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
@@ -896,13 +927,12 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
     }
 }
 
-
 /// # Methods propagating the lifetome of a `CsVecViewMutI`.
 impl<'a, N, I> CsVecBase<&'a [I], &'a mut [N]>
-where N: 'a,
-      I: 'a + SpIndex
+where
+    N: 'a,
+    I: 'a + SpIndex,
 {
-
     /// Create a borrowed CsVec over slice data without checking the structure
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_structure are enforced, and
@@ -911,11 +941,12 @@ where N: 'a,
     /// perform unchecked slice access.
     /// For safety, lifetime of the resulting vector should match the lifetime
     /// of the input pointers.
-    pub unsafe fn new_view_mut_raw(n: usize,
-                                   nnz: usize,
-                                   indices: *const I,
-                                   data: *mut N,
-                                  ) -> CsVecViewMutI<'a, N, I> {
+    pub unsafe fn new_view_mut_raw(
+        n: usize,
+        nnz: usize,
+        indices: *const I,
+        data: *mut N,
+    ) -> CsVecViewMutI<'a, N, I> {
         CsVecBase {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
@@ -925,16 +956,16 @@ where N: 'a,
 }
 
 impl<'a, 'b, N, I, IS1, DS1, IpS2, IS2, DS2>
-Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>>
-for &'a CsVecBase<IS1, DS1>
-where N: 'a + Copy + Num + Default,
-      I: 'a + SpIndex,
-      IS1: 'a + Deref<Target=[I]>,
-      DS1: 'a + Deref<Target=[N]>,
-      IpS2: 'b + Deref<Target=[I]>,
-      IS2: 'b + Deref<Target=[I]>,
-      DS2: 'b + Deref<Target=[N]> {
-
+    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>> for &'a CsVecBase<IS1, DS1>
+where
+    N: 'a + Copy + Num + Default,
+    I: 'a + SpIndex,
+    IS1: 'a + Deref<Target = [I]>,
+    DS1: 'a + Deref<Target = [N]>,
+    IpS2: 'b + Deref<Target = [I]>,
+    IS2: 'b + Deref<Target = [I]>,
+    DS2: 'b + Deref<Target = [N]>,
+{
     type Output = CsVecI<N, I>;
 
     fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2>) -> CsVecI<N, I> {
@@ -942,37 +973,36 @@ where N: 'a + Copy + Num + Default,
     }
 }
 
-impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2>
-Mul<&'b CsVecBase<IS2, DS2>>
-for &'a CsMatBase<N, I, IpS1, IS1, DS1>
-where N: Copy + Num + Default + Sum,
-      I: SpIndex,
-      IpS1: Deref<Target=[I]>,
-      IS1: Deref<Target=[I]>,
-      DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[I]>,
-      DS2: Deref<Target=[N]> {
-
+impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
+    for &'a CsMatBase<N, I, IpS1, IS1, DS1>
+where
+    N: Copy + Num + Default + Sum,
+    I: SpIndex,
+    IpS1: Deref<Target = [I]>,
+    IS1: Deref<Target = [I]>,
+    DS1: Deref<Target = [N]>,
+    IS2: Deref<Target = [I]>,
+    DS2: Deref<Target = [N]>,
+{
     type Output = CsVecI<N, I>;
 
     fn mul(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
-        }
-        else {
+        } else {
             (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
         }
     }
 }
 
-impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
-for CsVecBase<IS1, DS1>
-where N: Copy + Num,
-      I: SpIndex,
-      IS1: Deref<Target=[I]>,
-      DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[I]>,
-      DS2: Deref<Target=[N]>
+impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>> for CsVecBase<IS1, DS1>
+where
+    N: Copy + Num,
+    I: SpIndex,
+    IS1: Deref<Target = [I]>,
+    DS1: Deref<Target = [N]>,
+    IS2: Deref<Target = [I]>,
+    DS2: Deref<Target = [N]>,
 {
     type Output = CsVecI<N, I>;
 
@@ -982,13 +1012,14 @@ where N: Copy + Num,
 }
 
 impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2>>
-for CsVecBase<IS1, DS1>
-where N: Copy + Num,
-      I: SpIndex,
-      IS1: Deref<Target=[I]>,
-      DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[I]>,
-      DS2: Deref<Target=[N]>
+    for CsVecBase<IS1, DS1>
+where
+    N: Copy + Num,
+    I: SpIndex,
+    IS1: Deref<Target = [I]>,
+    DS1: Deref<Target = [N]>,
+    IS2: Deref<Target = [I]>,
+    DS2: Deref<Target = [N]>,
 {
     type Output = CsVecI<N, I>;
 
@@ -998,13 +1029,14 @@ where N: Copy + Num,
 }
 
 impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
-for &'a CsVecBase<IS1, DS1>
-where N: Copy + Num,
-      I: SpIndex,
-      IS1: Deref<Target=[I]>,
-      DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[I]>,
-      DS2: Deref<Target=[N]>
+    for &'a CsVecBase<IS1, DS1>
+where
+    N: Copy + Num,
+    I: SpIndex,
+    IS1: Deref<Target = [I]>,
+    DS1: Deref<Target = [N]>,
+    IS2: Deref<Target = [I]>,
+    DS2: Deref<Target = [N]>,
 {
     type Output = CsVecI<N, I>;
 
@@ -1014,43 +1046,39 @@ where N: Copy + Num,
 }
 
 impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2>>
-for &'a CsVecBase<IS1, DS1>
-where N: Copy + Num,
-      I: SpIndex,
-      IS1: Deref<Target=[I]>,
-      DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[I]>,
-      DS2: Deref<Target=[N]> {
-
+    for &'a CsVecBase<IS1, DS1>
+where
+    N: Copy + Num,
+    I: SpIndex,
+    IS1: Deref<Target = [I]>,
+    DS1: Deref<Target = [N]>,
+    IS2: Deref<Target = [I]>,
+    DS2: Deref<Target = [N]>,
+{
     type Output = CsVecI<N, I>;
 
     fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
-        binop::csvec_binop(self.view(),
-                           rhs.view(),
-                           |&x, &y| x + y
-                          ).unwrap()
+        binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x + y).unwrap()
     }
 }
 
 impl<'a, 'b, N, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2>>
-for &'a CsVecBase<IS1, DS1>
-where N: Copy + Num,
-      IS1: Deref<Target=[usize]>,
-      DS1: Deref<Target=[N]>,
-      IS2: Deref<Target=[usize]>,
-      DS2: Deref<Target=[N]> {
-
+    for &'a CsVecBase<IS1, DS1>
+where
+    N: Copy + Num,
+    IS1: Deref<Target = [usize]>,
+    DS1: Deref<Target = [N]>,
+    IS2: Deref<Target = [usize]>,
+    DS2: Deref<Target = [N]>,
+{
     type Output = CsVec<N>;
 
     fn sub(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
-        binop::csvec_binop(self.view(),
-                           rhs.view(),
-                           |&x, &y| x - y
-                          ).unwrap()
+        binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x - y).unwrap()
     }
 }
 
-impl<N: Num + Copy + Neg<Output=N>, I: SpIndex> Neg for CsVecI<N, I> {
+impl<N: Num + Copy + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
     type Output = CsVecI<N, I>;
 
     fn neg(mut self) -> CsVecI<N, I> {
@@ -1062,9 +1090,10 @@ impl<N: Num + Copy + Neg<Output=N>, I: SpIndex> Neg for CsVecI<N, I> {
 }
 
 impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS>
-where IS: Deref<Target=[usize]>,
-      DS: Deref<Target=[N]> {
-
+where
+    IS: Deref<Target = [usize]>,
+    DS: Deref<Target = [N]>,
+{
     type Output = N;
 
     fn index(&self, index: usize) -> &N {
@@ -1073,17 +1102,19 @@ where IS: Deref<Target=[usize]>,
 }
 
 impl<N, IS, DS> IndexMut<usize> for CsVecBase<IS, DS>
-where IS: Deref<Target=[usize]>,
-      DS: DerefMut<Target=[N]> {
-
+where
+    IS: Deref<Target = [usize]>,
+    DS: DerefMut<Target = [N]>,
+{
     fn index_mut(&mut self, index: usize) -> &mut N {
         self.get_mut(index).unwrap()
     }
 }
 
 impl<N, IS, DS> Index<NnzIndex> for CsVecBase<IS, DS>
-where IS: Deref<Target=[usize]>,
-      DS: Deref<Target=[N]>
+where
+    IS: Deref<Target = [usize]>,
+    DS: Deref<Target = [N]>,
 {
     type Output = N;
 
@@ -1094,8 +1125,9 @@ where IS: Deref<Target=[usize]>,
 }
 
 impl<N, IS, DS> IndexMut<NnzIndex> for CsVecBase<IS, DS>
-where IS: Deref<Target=[usize]>,
-      DS: DerefMut<Target=[N]>
+where
+    IS: Deref<Target = [usize]>,
+    DS: DerefMut<Target = [N]>,
 {
     fn index_mut(&mut self, index: NnzIndex) -> &mut N {
         let NnzIndex(i) = index;
@@ -1118,7 +1150,9 @@ mod alga_impls {
     use super::*;
     use alga::general::*;
 
-    impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive> for CsVecI<N, I> {
+    impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive>
+        for CsVecI<N, I>
+    {
         fn operate(&self, right: &CsVecI<N, I>) -> CsVecI<N, I> {
             self + right
         }
@@ -1135,25 +1169,34 @@ mod alga_impls {
     impl<N: Copy + Num, I: SpIndex> AbstractMonoid<Additive> for CsVecI<N, I> {}
 
     impl<N, I> Inverse<Additive> for CsVecI<N, I>
-        where N: Clone + Neg<Output=N> + Copy + Num,
-              I: SpIndex
+    where
+        N: Clone + Neg<Output = N> + Copy + Num,
+        I: SpIndex,
     {
         fn inverse(&self) -> CsVecI<N, I> {
             CsVecBase {
                 data: self.data.iter().map(|x| -*x).collect(),
                 indices: self.indices.clone(),
-                dim: self.dim
+                dim: self.dim,
             }
         }
     }
 
-    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractQuasigroup<Additive> for CsVecI<N, I> {}
+    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex>
+        AbstractQuasigroup<Additive> for CsVecI<N, I>
+    {}
 
-    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractLoop<Additive> for CsVecI<N, I> {}
+    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex> AbstractLoop<Additive>
+        for CsVecI<N, I>
+    {}
 
-    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractGroup<Additive> for CsVecI<N, I> {}
+    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex> AbstractGroup<Additive>
+        for CsVecI<N, I>
+    {}
 
-    impl<N: Copy + Num + Neg<Output=N>, I: SpIndex> AbstractGroupAbelian<Additive> for CsVecI<N, I> {}
+    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex>
+        AbstractGroupAbelian<Additive> for CsVecI<N, I>
+    {}
 
     #[cfg(test)]
     mod test {
@@ -1181,10 +1224,10 @@ mod alga_impls {
 
 #[cfg(test)]
 mod test {
-    use sparse::{CsVec, CsVecI};
     use super::SparseIterTools;
     use ndarray::Array;
     use num_traits::Zero;
+    use sparse::{CsVec, CsVecI};
 
     fn test_vec1() -> CsVec<f64> {
         let n = 8;
@@ -1242,7 +1285,7 @@ mod test {
 
         let dense_vec = vec![1., 2., 3., 4., 5., 6., 7., 8.];
         {
-        let slice = &dense_vec[..];
+            let slice = &dense_vec[..];
             assert_eq!(16., vec1.dot(&dense_vec));
             assert_eq!(16., vec1.dot(slice));
             assert_eq!(16., vec1.dot_dense(slice));
@@ -1293,17 +1336,13 @@ mod test {
 
         *vec.get_mut(4).unwrap() = 2.;
 
-        let expected = CsVec::new(8,
-                                  vec![0, 2, 4, 6],
-                                  vec![1., 1., 2., 1.],);
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 1., 2., 1.]);
 
         assert_eq!(vec, expected);
 
         vec[6] = 3.;
 
-        let expected = CsVec::new(8,
-                                  vec![0, 2, 4, 6],
-                                  vec![1., 1., 2., 3.],);
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 1., 2., 3.]);
 
         assert_eq!(vec, expected);
     }
@@ -1319,13 +1358,9 @@ mod test {
 
     #[test]
     fn map_inplace() {
-        let mut vec = CsVec::new(8,
-                                 vec![0, 2, 4, 6],
-                                 vec![1., 2., 3., 4.]);
+        let mut vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
         vec.map_inplace(|&x| x + 1.);
-        let expected = CsVec::new(8,
-                                  vec![0, 2, 4, 6],
-                                  vec![2., 3., 4., 5.]);
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 3., 4., 5.]);
         assert_eq!(vec, expected);
     }
 
@@ -1333,28 +1368,21 @@ mod test {
     fn map() {
         let vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
         let res = vec.map(|&x| x * 2.);
-        let expected = CsVec::new(8,
-                                  vec![0, 2, 4, 6],
-                                  vec![2., 4., 6., 8.]);
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 4., 6., 8.]);
         assert_eq!(res, expected);
     }
 
     #[test]
     fn iter_mut() {
-        let mut vec = CsVec::new(8,
-                                 vec![0, 2, 4, 6],
-                                 vec![1., 2., 3., 4.]);
+        let mut vec = CsVec::new(8, vec![0, 2, 4, 6], vec![1., 2., 3., 4.]);
         for (ind, val) in vec.iter_mut() {
             if ind == 2 {
                 *val += 1.;
-            }
-            else {
+            } else {
                 *val *= 2.;
             }
         }
-        let expected = CsVec::new(8,
-                                  vec![0, 2, 4, 6],
-                                  vec![2., 3., 6., 8.]);
+        let expected = CsVec::new(8, vec![0, 2, 4, 6], vec![2., 3., 6., 8.]);
         assert_eq!(vec, expected);
     }
 
@@ -1386,9 +1414,11 @@ mod test {
         let dim = 8;
         let a = CsVec::new(dim, vec![0, 3, 5, 7], vec![2., -3., 7., -1.]);
         let b = CsVec::new(dim, vec![1, 3, 4, 5], vec![4., 2., -3., 1.]);
-        let expected_sum = CsVec::new(dim,
+        let expected_sum = CsVec::new(
+            dim,
             vec![0, 1, 3, 4, 5, 7],
-            vec![2., 4., -1., -3., 8., -1.]);
+            vec![2., 4., -1., -3., 8., -1.],
+        );
         (a, b, expected_sum)
     }
 

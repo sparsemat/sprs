@@ -19,7 +19,7 @@ impl<T> Deref for Array2<T> {
 }
 
 impl<T> DerefMut for Array2<T> {
-    fn deref_mut(&mut self) -> &mut[T] {
+    fn deref_mut(&mut self) -> &mut [T] {
         &mut self.data[..]
     }
 }

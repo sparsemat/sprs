@@ -1,3 +1,4 @@
+extern crate num_traits;
 ///! Cholesky factorization module.
 ///!
 ///! Contains LDLT decomposition methods.
@@ -18,7 +19,6 @@
 ///! to precompute part of the factorization by using the `LdlSymbolic` struct.
 ///! This struct can the be converted into a `LdlNumeric` once the non-zero
 ///! values are known, using the `LdlSymbolic::factor` method.
-
 // This method is adapted from the LDL library by Tim Davis:
 //
 // LDL Copyright (c) 2005 by Timothy A. Davis.  All Rights Reserved.
@@ -52,24 +52,17 @@
 //     the code and to distribute modified code is granted, provided the
 //     Copyright, this License, and the Availability note are retained,
 //     and a notice that the code was modified is included.
-
 extern crate sprs;
-extern crate num_traits;
 
 use std::ops::Deref;
 use std::ops::IndexMut;
 
 use num_traits::Num;
 
-use sprs::{
-    CsMatViewI,
-    is_symmetric,
-    Permutation,
-    PermOwnedI,
-};
 use sprs::indexing::SpIndex;
 use sprs::linalg;
 use sprs::stack::DStack;
+use sprs::{is_symmetric, CsMatViewI, PermOwnedI, Permutation};
 
 pub enum SymmetryCheck {
     CheckSymmetry,
@@ -104,7 +97,8 @@ impl<I: SpIndex> LdlSymbolic<I> {
     ///
     /// * if mat is not symmetric
     pub fn new<N>(mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
-    where N: Copy + PartialEq,
+    where
+        N: Copy + PartialEq,
     {
         assert_eq!(mat.rows(), mat.cols());
         let perm: Permutation<I, Vec<I>> = Permutation::identity(mat.rows());
@@ -120,25 +114,29 @@ impl<I: SpIndex> LdlSymbolic<I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm<N>(mat: CsMatViewI<N, I>,
-                       perm: PermOwnedI<I>
-                      ) -> LdlSymbolic<I>
-    where N: Copy + PartialEq,
-          I: SpIndex,
+    pub fn new_perm<N>(
+        mat: CsMatViewI<N, I>,
+        perm: PermOwnedI<I>,
+    ) -> LdlSymbolic<I>
+    where
+        N: Copy + PartialEq,
+        I: SpIndex,
     {
         let n = mat.cols();
         assert!(mat.rows() == n, "matrix should be square");
-        let mut l_colptr = vec![I::zero(); n+1];
+        let mut l_colptr = vec![I::zero(); n + 1];
         let mut parents = linalg::etree::ParentsOwned::new(n);
         let mut l_nz = vec![I::zero(); n];
         let mut flag_workspace = vec![I::zero(); n];
-        ldl_symbolic(mat,
-                     &perm,
-                     &mut l_colptr,
-                     parents.view_mut(),
-                     &mut l_nz,
-                     &mut flag_workspace,
-                     SymmetryCheck::CheckSymmetry);
+        ldl_symbolic(
+            mat,
+            &perm,
+            &mut l_colptr,
+            parents.view_mut(),
+            &mut l_nz,
+            &mut flag_workspace,
+            SymmetryCheck::CheckSymmetry,
+        );
 
         LdlSymbolic {
             colptr: l_colptr,
@@ -164,7 +162,8 @@ impl<I: SpIndex> LdlSymbolic<I> {
 
     /// Compute the numerical decomposition of the given matrix.
     pub fn factor<N>(self, mat: CsMatViewI<N, I>) -> LdlNumeric<N, I>
-    where N: Copy + Num + PartialOrd,
+    where
+        N: Copy + Num + PartialOrd,
     {
         let n = self.problem_size();
         let nnz = self.nnz();
@@ -193,7 +192,8 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     ///
     /// * if mat is not symmetric
     pub fn new(mat: CsMatViewI<N, I>) -> Self
-    where N: Copy + Num + PartialOrd,
+    where
+        N: Copy + Num + PartialOrd,
     {
         let symbolic = LdlSymbolic::new(mat.view());
         symbolic.factor(mat)
@@ -209,7 +209,8 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     ///
     /// * if mat is not symmetric
     pub fn new_perm(mat: CsMatViewI<N, I>, perm: PermOwnedI<I>) -> Self
-    where N: Copy + Num + PartialOrd,
+    where
+        N: Copy + Num + PartialOrd,
     {
         let symbolic = LdlSymbolic::new_perm(mat.view(), perm);
         symbolic.factor(mat)
@@ -219,25 +220,29 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// have the same non-zero pattern as the original matrix, otherwise
     /// the result is unspecified.
     pub fn update(&mut self, mat: CsMatViewI<N, I>)
-    where N: Copy + Num + PartialOrd,
+    where
+        N: Copy + Num + PartialOrd,
     {
-        ldl_numeric(mat.view(),
-                    &self.symbolic.colptr,
-                    self.symbolic.parents.view(),
-                    &self.symbolic.perm,
-                    &mut self.symbolic.nz,
-                    &mut self.l_indices,
-                    &mut self.l_data,
-                    &mut self.diag,
-                    &mut self.y_workspace,
-                    &mut self.pattern_workspace,
-                    &mut self.symbolic.flag_workspace);
+        ldl_numeric(
+            mat.view(),
+            &self.symbolic.colptr,
+            self.symbolic.parents.view(),
+            &self.symbolic.perm,
+            &mut self.symbolic.nz,
+            &mut self.l_indices,
+            &mut self.l_data,
+            &mut self.diag,
+            &mut self.y_workspace,
+            &mut self.pattern_workspace,
+            &mut self.symbolic.flag_workspace,
+        );
     }
 
     /// Solve the system A x = rhs
     pub fn solve<'a, V>(&self, rhs: &V) -> Vec<N>
-    where N: 'a + Copy + Num,
-          V: Deref<Target = [N]>
+    where
+        N: 'a + Copy + Num,
+        V: Deref<Target = [N]>,
     {
         let mut x = &self.symbolic.perm * &rhs[..];
         let l = self.l_view();
@@ -248,16 +253,17 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
         &pinv * &x
     }
 
-    fn l_view(&self) -> CsMatViewI<N, I>
-    {
+    fn l_view(&self) -> CsMatViewI<N, I> {
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm
         unsafe {
-            CsMatViewI::new_view_raw(sprs::CSC,
-                                     (n, n),
-                                     self.symbolic.colptr.as_ptr(),
-                                     self.l_indices.as_ptr(),
-                                     self.l_data.as_ptr())
+            CsMatViewI::new_view_raw(
+                sprs::CSC,
+                (n, n),
+                self.symbolic.colptr.as_ptr(),
+                self.l_indices.as_ptr(),
+                self.l_data.as_ptr(),
+            )
         }
     }
 
@@ -272,22 +278,22 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     pub fn nnz(&self) -> usize {
         self.symbolic.nnz()
     }
-
 }
 
 /// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
-pub fn ldl_symbolic<N, I, PStorage>(mat: CsMatViewI<N, I>,
-                                    perm: &Permutation<I, PStorage>,
-                                    l_colptr: &mut [I],
-                                    mut parents: linalg::etree::ParentsViewMut,
-                                    l_nz: &mut [I],
-                                    flag_workspace: &mut [I],
-                                    check_symmetry: SymmetryCheck)
-where N: Clone + Copy + PartialEq,
-      I: SpIndex,
-      PStorage: Deref<Target = [I]>
+pub fn ldl_symbolic<N, I, PStorage>(
+    mat: CsMatViewI<N, I>,
+    perm: &Permutation<I, PStorage>,
+    l_colptr: &mut [I],
+    mut parents: linalg::etree::ParentsViewMut,
+    l_nz: &mut [I],
+    flag_workspace: &mut [I],
+    check_symmetry: SymmetryCheck,
+) where
+    N: Clone + Copy + PartialEq,
+    I: SpIndex,
+    PStorage: Deref<Target = [I]>,
 {
-
     match check_symmetry {
         SymmetryCheck::DontCheckSymmetry => (),
         SymmetryCheck::CheckSymmetry => {
@@ -302,7 +308,6 @@ where N: Clone + Copy + PartialEq,
     let outer_it = mat.outer_iterator_perm(perm.view());
     // compute the elimination tree of L
     for (k, (_, vec)) in outer_it.enumerate() {
-
         flag_workspace[k] = I::from_usize(k); // this node is visited
         parents.set_root(k);
         l_nz[k] = I::zero();
@@ -327,30 +332,30 @@ where N: Clone + Copy + PartialEq,
         prev += l_nz[k];
     }
     l_colptr[n] = prev;
-
 }
 
 /// Perform numeric LDLT decomposition
 ///
 /// pattern_workspace is a DStack of capacity n
-pub fn ldl_numeric<N, I, PStorage>(mat: CsMatViewI<N, I>,
-                                   l_colptr: &[I],
-                                   parents: linalg::etree::ParentsView,
-                                   perm: &Permutation<I, PStorage>,
-                                   l_nz: &mut [I],
-                                   l_indices: &mut [I],
-                                   l_data: &mut [N],
-                                   diag: &mut [N],
-                                   y_workspace: &mut [N],
-                                   pattern_workspace: &mut DStack<I>,
-                                   flag_workspace: &mut [I])
-where N: Clone + Copy + PartialEq + Num + PartialOrd,
-      I: SpIndex,
-      PStorage: Deref<Target = [I]>
+pub fn ldl_numeric<N, I, PStorage>(
+    mat: CsMatViewI<N, I>,
+    l_colptr: &[I],
+    parents: linalg::etree::ParentsView,
+    perm: &Permutation<I, PStorage>,
+    l_nz: &mut [I],
+    l_indices: &mut [I],
+    l_data: &mut [N],
+    diag: &mut [N],
+    y_workspace: &mut [N],
+    pattern_workspace: &mut DStack<I>,
+    flag_workspace: &mut [I],
+) where
+    N: Clone + Copy + PartialEq + Num + PartialOrd,
+    I: SpIndex,
+    PStorage: Deref<Target = [I]>,
 {
     let outer_it = mat.outer_iterator_perm(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
-
         // compute the nonzero pattern of the kth row of L
         // in topological order
 
@@ -359,8 +364,9 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
         l_nz[k] = I::zero();
         pattern_workspace.clear_right();
 
-        for (inner_ind, &val) in vec.iter_perm(perm.inv())
-                                    .filter(|&(i, _)| i <= k) {
+        for (inner_ind, &val) in
+            vec.iter_perm(perm.inv()).filter(|&(i, _)| i <= k)
+        {
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             pattern_workspace.clear_left();
@@ -406,9 +412,10 @@ where N: Clone + Copy + PartialEq + Num + PartialOrd,
 /// Triangular solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
 pub fn ldl_lsolve<N, I, V: ?Sized>(l: &CsMatViewI<N, I>, x: &mut V)
-where N: Clone + Copy + Num,
-      I: SpIndex,
-      V: IndexMut<usize, Output = N>
+where
+    N: Clone + Copy + Num,
+    I: SpIndex,
+    V: IndexMut<usize, Output = N>,
 {
     for (col_ind, vec) in l.outer_iterator().enumerate() {
         let x_col = x[col_ind];
@@ -421,9 +428,10 @@ where N: Clone + Copy + Num,
 /// Triangular transposed solve specialized on lower triangular matrices
 /// produced by ldlt (diagonal terms are omitted and assumed to be 1).
 pub fn ldl_ltsolve<N, I, V: ?Sized>(l: &CsMatViewI<N, I>, x: &mut V)
-where N: Clone + Copy + Num,
-      I: SpIndex,
-      V: IndexMut<usize, Output = N>
+where
+    N: Clone + Copy + Num,
+    I: SpIndex,
+    V: IndexMut<usize, Output = N>,
 {
     for (outer_ind, vec) in l.outer_iterator().enumerate().rev() {
         let mut x_outer = x[outer_ind];
@@ -436,96 +444,106 @@ where N: Clone + Copy + Num,
 
 #[cfg(test)]
 mod test {
-    use sprs::{
-        self,
-        CsMat,
-        CsMatView,
-        Permutation,
-        linalg,
-    };
     use super::SymmetryCheck;
     use sprs::stack::DStack;
+    use sprs::{self, linalg, CsMat, CsMatView, Permutation};
 
     fn test_mat1() -> CsMat<f64> {
         let indptr = vec![0, 2, 5, 6, 7, 13, 14, 17, 20, 24, 28];
-        let indices = vec![0, 8, 1, 4, 9, 2, 3, 1, 4, 6, 7, 8, 9, 5, 4, 6, 9,
-                           4, 7, 8, 0, 4, 7, 8, 1, 4, 6, 9];
-        let data = vec![1.7, 0.13, 1., 0.02, 0.01, 1.5, 1.1, 0.02, 2.6, 0.16,
-                        0.09, 0.52, 0.53, 1.2, 0.16, 1.3, 0.56, 0.09, 1.6,
-                        0.11, 0.13, 0.52, 0.11, 1.4, 0.01, 0.53, 0.56, 3.1];
+        let indices = vec![
+            0, 8, 1, 4, 9, 2, 3, 1, 4, 6, 7, 8, 9, 5, 4, 6, 9, 4, 7, 8, 0, 4,
+            7, 8, 1, 4, 6, 9,
+        ];
+        let data = vec![
+            1.7, 0.13, 1., 0.02, 0.01, 1.5, 1.1, 0.02, 2.6, 0.16, 0.09, 0.52,
+            0.53, 1.2, 0.16, 1.3, 0.56, 0.09, 1.6, 0.11, 0.13, 0.52, 0.11, 1.4,
+            0.01, 0.53, 0.56, 3.1,
+        ];
         CsMat::new_csc((10, 10), indptr, indices, data)
     }
 
     fn test_vec1() -> Vec<f64> {
-        vec![0.287, 0.22, 0.45, 0.44, 2.486, 0.72, 1.55, 1.424, 1.621, 3.759]
+        vec![
+            0.287, 0.22, 0.45, 0.44, 2.486, 0.72, 1.55, 1.424, 1.621, 3.759,
+        ]
     }
 
     fn expected_factors1() -> (Vec<usize>, Vec<usize>, Vec<f64>, Vec<f64>) {
         let expected_lp = vec![0, 1, 3, 3, 3, 7, 7, 10, 12, 13, 13];
         let expected_li = vec![8, 4, 9, 6, 7, 8, 9, 7, 8, 9, 8, 9, 9];
-        let expected_lx = vec![0.076470588235294124,
-                               0.02,
-                               0.01,
-                               0.061547930450838589,
-                               0.034620710878596701,
-                               0.20003077396522542,
-                               0.20380058470533929,
-                               -0.0042935346524025902,
-                               -0.024807089102770519,
-                               0.40878266366119237,
-                               0.05752526570865537,
-                               -0.010068305077340346,
-                               -0.071852278207562709];
-        let expected_d = vec![1.7,
-                              1.,
-                              1.5,
-                              1.1000000000000001,
-                              2.5996000000000001,
-                              1.2,
-                              1.290152331127866,
-                              1.5968603527854308,
-                              1.2799646117414738,
-                              2.7695677698030283];
+        let expected_lx = vec![
+            0.076470588235294124,
+            0.02,
+            0.01,
+            0.061547930450838589,
+            0.034620710878596701,
+            0.20003077396522542,
+            0.20380058470533929,
+            -0.0042935346524025902,
+            -0.024807089102770519,
+            0.40878266366119237,
+            0.05752526570865537,
+            -0.010068305077340346,
+            -0.071852278207562709,
+        ];
+        let expected_d = vec![
+            1.7,
+            1.,
+            1.5,
+            1.1000000000000001,
+            2.5996000000000001,
+            1.2,
+            1.290152331127866,
+            1.5968603527854308,
+            1.2799646117414738,
+            2.7695677698030283,
+        ];
         (expected_lp, expected_li, expected_lx, expected_d)
     }
 
     fn expected_lsolve_res1() -> Vec<f64> {
-        vec![0.28699999999999998,
-             0.22,
-             0.45000000000000001,
-             0.44,
-             2.4816000000000003,
-             0.71999999999999997,
-             1.3972626557931991,
-             1.3440844395148306,
-             1.0599997771886431,
-             2.7695677698030279]
+        vec![
+            0.28699999999999998,
+            0.22,
+            0.45000000000000001,
+            0.44,
+            2.4816000000000003,
+            0.71999999999999997,
+            1.3972626557931991,
+            1.3440844395148306,
+            1.0599997771886431,
+            2.7695677698030279,
+        ]
     }
 
     fn expected_dsolve_res1() -> Vec<f64> {
-        vec![0.16882352941176471,
-             0.22,
-             0.29999999999999999,
-             0.39999999999999997,
-             0.95460840129250657,
-             0.59999999999999998,
-             1.0830214557467768,
-             0.84170443406044937,
-             0.82814772179243734,
-             0.99999999999999989]
+        vec![
+            0.16882352941176471,
+            0.22,
+            0.29999999999999999,
+            0.39999999999999997,
+            0.95460840129250657,
+            0.59999999999999998,
+            1.0830214557467768,
+            0.84170443406044937,
+            0.82814772179243734,
+            0.99999999999999989,
+        ]
     }
 
     fn expected_res1() -> Vec<f64> {
-        vec![0.099999999999999992,
-             0.19999999999999998,
-             0.29999999999999999,
-             0.39999999999999997,
-             0.5,
-             0.59999999999999998,
-             0.70000000000000007,
-             0.79999999999999993,
-             0.90000000000000002,
-             0.99999999999999989]
+        vec![
+            0.099999999999999992,
+            0.19999999999999998,
+            0.29999999999999999,
+            0.39999999999999997,
+            0.5,
+            0.59999999999999998,
+            0.70000000000000007,
+            0.79999999999999993,
+            0.90000000000000002,
+            0.99999999999999989,
+        ]
     }
 
     #[test]
@@ -536,13 +554,15 @@ mod test {
         let mut flag_workspace = [0; 10];
         let perm: Permutation<usize, &[usize]> = Permutation::identity(10);
         let mat = test_mat1();
-        super::ldl_symbolic(mat.view(),
-                            &perm,
-                            &mut l_colptr,
-                            parents.view_mut(),
-                            &mut l_nz,
-                            &mut flag_workspace,
-                            SymmetryCheck::CheckSymmetry);
+        super::ldl_symbolic(
+            mat.view(),
+            &perm,
+            &mut l_colptr,
+            parents.view_mut(),
+            &mut l_nz,
+            &mut flag_workspace,
+            SymmetryCheck::CheckSymmetry,
+        );
 
         let nnz = l_colptr[10];
         let mut l_indices = vec![0; nnz];
@@ -550,17 +570,19 @@ mod test {
         let mut diag = [0.; 10];
         let mut y_workspace = [0.; 10];
         let mut pattern_workspace = DStack::with_capacity(10);
-        super::ldl_numeric(mat.view(),
-                           &l_colptr,
-                           parents.view(),
-                           &perm,
-                           &mut l_nz,
-                           &mut l_indices,
-                           &mut l_data,
-                           &mut diag,
-                           &mut y_workspace,
-                           &mut pattern_workspace,
-                           &mut flag_workspace);
+        super::ldl_numeric(
+            mat.view(),
+            &l_colptr,
+            parents.view(),
+            &perm,
+            &mut l_nz,
+            &mut l_indices,
+            &mut l_data,
+            &mut diag,
+            &mut y_workspace,
+            &mut pattern_workspace,
+            &mut flag_workspace,
+        );
 
         let (expected_lp, expected_li, expected_lx, expected_d) =
             expected_factors1();
@@ -578,11 +600,13 @@ mod test {
         let b = test_vec1();
         let mut x = b.clone();
         let n = b.len();
-        let l = CsMatView::new_view(sprs::CSC,
-                                    (n, n),
-                                    &expected_lp,
-                                    &expected_li,
-                                    &expected_lx).unwrap();
+        let l = CsMatView::new_view(
+            sprs::CSC,
+            (n, n),
+            &expected_lp,
+            &expected_li,
+            &expected_lx,
+        ).unwrap();
         super::ldl_lsolve(&l, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
         linalg::diag_solve(&expected_d, &mut x);
@@ -616,10 +640,12 @@ mod test {
         // |   6 2  | |3| = |18|
         // |2      8| |4|   |34|
 
-        let mat = CsMat::new_csc((4, 4),
-                                 vec![0, 2, 4, 6, 8],
-                                 vec![0, 3, 1, 2, 1, 2, 0, 3],
-                                 vec![1, 2, 21, 6, 6, 2, 2, 8]);
+        let mat = CsMat::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1, 2, 21, 6, 6, 2, 2, 8],
+        );
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 
