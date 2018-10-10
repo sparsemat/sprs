@@ -1642,7 +1642,7 @@ where
 }
 
 macro_rules! sparse_scalar_mul {
-    ($scalar: ident) => {
+    ($scalar:ident) => {
         impl<'a, I, IpStorage, IStorage, DStorage> Mul<$scalar>
             for &'a CsMatBase<$scalar, I, IpStorage, IStorage, DStorage>
         where

@@ -46,7 +46,7 @@ impl SpIndex for usize {
 }
 
 macro_rules! sp_index_signed_impl {
-    ($int: ident) => {
+    ($int:ident) => {
         impl SpIndex for $int {
             #[inline(always)]
             fn index(self) -> usize {
@@ -70,7 +70,7 @@ sp_index_signed_impl!(i32);
 sp_index_signed_impl!(i16);
 
 macro_rules! sp_index_unsigned_impl {
-    ($int: ident) => {
+    ($int:ident) => {
         impl SpIndex for $int {
             #[inline(always)]
             fn index(self) -> usize {

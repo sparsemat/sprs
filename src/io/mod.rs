@@ -28,10 +28,10 @@ impl fmt::Display for IoError {
             IoError::Io(ref err) => err.fmt(f),
             IoError::BadMatrixMarketFile => {
                 write!(f, "Bad matrix market file.")
-            },
+            }
             IoError::UnsupportedMatrixMarketFormat => {
                 write!(f, "Unsupported matrix market format.")
-            },
+            }
         }
     }
 }
