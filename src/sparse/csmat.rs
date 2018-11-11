@@ -1077,14 +1077,26 @@ where
         let outer = self.outer_dims();
 
         if self.indptr.len() != outer + 1 {
-            panic!("Indptr length does not match dimension");
+            panic!(
+                "Indptr length does not match dimension: {} != {}",
+                self.indptr.len(),
+                outer + 1
+            );
         }
         if self.indices.len() != self.data.len() {
-            panic!("Indices and data lengths do not match");
+            panic!(
+                "Indices and data lengths do not match: {} != {}",
+                self.indices.len(),
+                self.data.len()
+            );
         }
         let nnz = self.indices.len();
         if nnz != self.nnz() {
-            panic!("Indices length and inpdtr's nnz do not match");
+            panic!(
+                "Indices length and inpdtr's nnz do not match: {} != {}",
+                nnz,
+                self.nnz()
+            );
         }
         if let Some(&max_indptr) = self.indptr.iter().max() {
             if max_indptr.index() > nnz {
