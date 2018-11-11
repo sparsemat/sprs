@@ -21,7 +21,7 @@ macro_rules! ldl_impl {
      $permt: ident,
      $valid_perm: ident,
      $valid_matrix: ident
-     ) => (
+     ) => {
         /// Structure holding the symbolic ldlt decomposition computed by
         /// suitesparse's ldl
         #[derive(Debug, Clone)]
@@ -44,7 +44,7 @@ macro_rules! ldl_impl {
             lx: Vec<f64>,
             d: Vec<f64>,
             y: Vec<f64>,
-            pattern: Vec<$int>
+            pattern: Vec<$int>,
         }
 
         impl $Symbolic {
@@ -54,8 +54,9 @@ macro_rules! ldl_impl {
             ///
             /// * if the matrix is not symmetric
             pub fn new<N, I>(mat: CsMatViewI<N, I>) -> $Symbolic
-            where N: Clone + Into<f64>,
-                  I: SpIndex,
+            where
+                N: Clone + Into<f64>,
+                I: SpIndex,
             {
                 assert_eq!(mat.rows(), mat.cols());
                 let n = mat.rows();
@@ -72,10 +73,13 @@ macro_rules! ldl_impl {
             ///
             /// * if mat is not symmetric
             /// * if perm does not represent a valid permutation
-            pub fn new_perm<N, I>(mat: CsMatViewI<N, I>,
-                                  perm: PermOwnedI<I>) -> $Symbolic
-            where N: Clone + Into<f64>,
-                  I: SpIndex,
+            pub fn new_perm<N, I>(
+                mat: CsMatViewI<N, I>,
+                perm: PermOwnedI<I>,
+            ) -> $Symbolic
+            where
+                N: Clone + Into<f64>,
+                I: SpIndex,
             {
                 assert!(mat.rows() == mat.cols());
                 let n = mat.rows();
@@ -89,9 +93,8 @@ macro_rules! ldl_impl {
                 let p = perm.vec();
                 let pinv = perm.inv_vec();
                 let mut flag = vec![0; n];
-                let valid_p = unsafe {
-                    $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr())
-                };
+                let valid_p =
+                    unsafe { $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr()) };
                 let valid_pinv = unsafe {
                     $valid_perm(n_, pinv.as_ptr(), flag.as_mut_ptr())
                 };
@@ -106,15 +109,17 @@ macro_rules! ldl_impl {
                     pinv: pinv,
                 };
                 unsafe {
-                    $symbolic(n_,
-                              ap,
-                              ai,
-                              res.lp.as_mut_ptr(),
-                              res.parent.as_mut_ptr(),
-                              res.lnz.as_mut_ptr(),
-                              res.flag.as_mut_ptr(),
-                              res.p.as_ptr(),
-                              res.pinv.as_ptr());
+                    $symbolic(
+                        n_,
+                        ap,
+                        ai,
+                        res.lp.as_mut_ptr(),
+                        res.parent.as_mut_ptr(),
+                        res.lnz.as_mut_ptr(),
+                        res.flag.as_mut_ptr(),
+                        res.p.as_ptr(),
+                        res.pinv.as_ptr(),
+                    );
                 }
                 res
             }
@@ -139,8 +144,9 @@ macro_rules! ldl_impl {
             ///
             /// If the matrix is not symmetric.
             pub fn factor<N, I>(self, mat: CsMatViewI<N, I>) -> $Numeric
-            where N: Clone + Into<f64>,
-                  I: SpIndex,
+            where
+                N: Clone + Into<f64>,
+                I: SpIndex,
             {
                 let n = self.problem_size();
                 let nnz = self.nnz();
@@ -163,15 +169,15 @@ macro_rules! ldl_impl {
         }
 
         impl $Numeric {
-
             /// Compute the numeric LDLT decomposition of the given matrix.
             ///
             /// # Panics
             ///
             /// * if mat is not symmetric
             pub fn new<N, I>(mat: CsMatViewI<N, I>) -> Self
-            where N: Clone + Into<f64>,
-                  I: SpIndex,
+            where
+                N: Clone + Into<f64>,
+                I: SpIndex,
             {
                 let symbolic = $Symbolic::new(mat.view());
                 symbolic.factor(mat)
@@ -186,9 +192,13 @@ macro_rules! ldl_impl {
             /// # Panics
             ///
             /// * if mat is not symmetric
-            pub fn new_perm<N, I>(mat: CsMatViewI<N, I>, perm: PermOwnedI<I>) -> Self
-            where N: Clone + Into<f64>,
-                  I: SpIndex,
+            pub fn new_perm<N, I>(
+                mat: CsMatViewI<N, I>,
+                perm: PermOwnedI<I>,
+            ) -> Self
+            where
+                N: Clone + Into<f64>,
+                I: SpIndex,
             {
                 let symbolic = $Symbolic::new_perm(mat.view(), perm);
                 symbolic.factor(mat)
@@ -201,8 +211,9 @@ macro_rules! ldl_impl {
             ///
             /// If the matrix is not symmetric.
             pub fn update<N, I>(&mut self, mat: CsMatViewI<N, I>)
-            where N: Clone + Into<f64>,
-                  I: SpIndex,
+            where
+                N: Clone + Into<f64>,
+                I: SpIndex,
             {
                 let mat: CsMatI<f64, $int> = mat.to_other_types();
                 let ap = mat.indptr().as_ptr();
@@ -210,55 +221,64 @@ macro_rules! ldl_impl {
                 let ax = mat.data().as_ptr();
                 assert!(unsafe { $valid_matrix(self.symbolic.n, ap, ai) } != 0);
                 unsafe {
-                    $numeric(self.symbolic.n,
-                             ap,
-                             ai,
-                             ax,
-                             self.symbolic.lp.as_mut_ptr(),
-                             self.symbolic.parent.as_mut_ptr(),
-                             self.symbolic.lnz.as_mut_ptr(),
-                             self.li.as_mut_ptr(),
-                             self.lx.as_mut_ptr(),
-                             self.d.as_mut_ptr(),
-                             self.y.as_mut_ptr(),
-                             self.pattern.as_mut_ptr(),
-                             self.symbolic.flag.as_mut_ptr(),
-                             self.symbolic.p.as_ptr(),
-                             self.symbolic.pinv.as_ptr());
+                    $numeric(
+                        self.symbolic.n,
+                        ap,
+                        ai,
+                        ax,
+                        self.symbolic.lp.as_mut_ptr(),
+                        self.symbolic.parent.as_mut_ptr(),
+                        self.symbolic.lnz.as_mut_ptr(),
+                        self.li.as_mut_ptr(),
+                        self.lx.as_mut_ptr(),
+                        self.d.as_mut_ptr(),
+                        self.y.as_mut_ptr(),
+                        self.pattern.as_mut_ptr(),
+                        self.symbolic.flag.as_mut_ptr(),
+                        self.symbolic.p.as_ptr(),
+                        self.symbolic.pinv.as_ptr(),
+                    );
                 }
             }
 
             /// Solve the system A x = rhs
             pub fn solve<'a, N, V>(&self, rhs: &V) -> Vec<N>
-            where N: 'a + Copy + Num + Into<f64> + From<f64>,
-                  V: Deref<Target = [N]>
+            where
+                N: 'a + Copy + Num + Into<f64> + From<f64>,
+                V: Deref<Target = [N]>,
             {
                 assert!(self.symbolic.n as usize == rhs.len());
                 let mut x = vec![0.; rhs.len()];
                 let mut y = x.clone();
                 let rhs: Vec<f64> = rhs.iter().map(|&x| x.into()).collect();
                 unsafe {
-                    $perm(self.symbolic.n,
-                          x.as_mut_ptr(),
-                          rhs.as_ptr(),
-                          self.symbolic.p.as_ptr());
-                    $lsolve(self.symbolic.n,
-                            x.as_mut_ptr(),
-                            self.symbolic.lp.as_ptr(),
-                            self.li.as_ptr(),
-                            self.lx.as_ptr());
-                    $dsolve(self.symbolic.n,
-                            x.as_mut_ptr(),
-                            self.d.as_ptr());
-                    $ltsolve(self.symbolic.n,
-                             x.as_mut_ptr(),
-                             self.symbolic.lp.as_ptr(),
-                             self.li.as_ptr(),
-                             self.lx.as_ptr());
-                    $permt(self.symbolic.n,
-                           y.as_mut_ptr(),
-                           x.as_ptr(),
-                           self.symbolic.p.as_ptr());
+                    $perm(
+                        self.symbolic.n,
+                        x.as_mut_ptr(),
+                        rhs.as_ptr(),
+                        self.symbolic.p.as_ptr(),
+                    );
+                    $lsolve(
+                        self.symbolic.n,
+                        x.as_mut_ptr(),
+                        self.symbolic.lp.as_ptr(),
+                        self.li.as_ptr(),
+                        self.lx.as_ptr(),
+                    );
+                    $dsolve(self.symbolic.n, x.as_mut_ptr(), self.d.as_ptr());
+                    $ltsolve(
+                        self.symbolic.n,
+                        x.as_mut_ptr(),
+                        self.symbolic.lp.as_ptr(),
+                        self.li.as_ptr(),
+                        self.lx.as_ptr(),
+                    );
+                    $permt(
+                        self.symbolic.n,
+                        y.as_mut_ptr(),
+                        x.as_ptr(),
+                        self.symbolic.p.as_ptr(),
+                    );
                 }
                 y.iter().map(|&x| x.into()).collect()
             }
@@ -275,7 +295,7 @@ macro_rules! ldl_impl {
                 self.symbolic.nnz()
             }
         }
-    )
+    };
 }
 
 ldl_impl!(
