@@ -31,7 +31,7 @@ use sparse::utils;
 use sparse::vec;
 
 /// Describe the storage of a CsMat
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum CompressedStorage {
     /// Compressed row storage
     CSR,
