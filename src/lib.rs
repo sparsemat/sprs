@@ -65,6 +65,9 @@ extern crate alga;
 extern crate ndarray;
 extern crate num_complex;
 extern crate num_traits;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 #[cfg(test)]
 extern crate tempdir;
 

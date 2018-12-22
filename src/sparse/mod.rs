@@ -75,7 +75,7 @@ pub use self::csmat::CompressedStorage;
 /// [`vstack`]: fn.vstack.html
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Serialize, Deserialize)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where
     I: SpIndex,
@@ -130,7 +130,7 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 /// [`CsVecI`]: type.CsVecI.html
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
     indices: IStorage,
