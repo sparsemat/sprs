@@ -383,12 +383,10 @@ mod test {
 
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
-        assert!(
-            res_vec
-                .iter()
-                .zip(expected_output.iter())
-                .all(|(x, y)| (*x - *y).abs() < epsilon)
-        );
+        assert!(res_vec
+            .iter()
+            .zip(expected_output.iter())
+            .all(|(x, y)| (*x - *y).abs() < epsilon));
     }
 
     #[test]
@@ -411,12 +409,10 @@ mod test {
 
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
-        assert!(
-            res_vec
-                .iter()
-                .zip(expected_output.iter())
-                .all(|(x, y)| (*x - *y).abs() < epsilon)
-        );
+        assert!(res_vec
+            .iter()
+            .zip(expected_output.iter())
+            .all(|(x, y)| (*x - *y).abs() < epsilon));
     }
 
     #[test]
@@ -543,11 +539,10 @@ mod test {
             [43.4, 54.1, 12.65, 44.35, 39.9, 23.4, 76.6],
         ]);
         let eps = 1e-8;
-        assert!(
-            res.iter()
-                .zip(expected_output.iter())
-                .all(|(&x, &y)| (x - y).abs() <= eps)
-        );
+        assert!(res
+            .iter()
+            .zip(expected_output.iter())
+            .all(|(&x, &y)| (x - y).abs() <= eps));
     }
 
     #[test]

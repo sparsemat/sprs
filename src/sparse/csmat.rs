@@ -2050,14 +2050,22 @@ mod test {
             0.05734571, 0.15543348, 0.75628258, 0.83054515, 0.71851547,
             0.46202352,
         ];
-        assert!(
-            CsMatView::new_view(CSR, (3, 4), indptr_ok, indices_ok, data_ok)
-                .is_ok()
-        );
-        assert!(
-            CsMatView::new_view(CSC, (4, 3), indptr_ok, indices_ok, data_ok)
-                .is_ok()
-        );
+        assert!(CsMatView::new_view(
+            CSR,
+            (3, 4),
+            indptr_ok,
+            indices_ok,
+            data_ok
+        )
+        .is_ok());
+        assert!(CsMatView::new_view(
+            CSC,
+            (4, 3),
+            indptr_ok,
+            indices_ok,
+            data_ok
+        )
+        .is_ok());
     }
 
     #[test]
@@ -2079,10 +2087,14 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok: Vec<f64> = vec![1., 1., 1.];
-        assert!(
-            CsMatView::new_view(CSR, (3, 3), &indptr_ok, &indices_ok, &data_ok)
-                .is_ok()
-        );
+        assert!(CsMatView::new_view(
+            CSR,
+            (3, 3),
+            &indptr_ok,
+            &indices_ok,
+            &data_ok
+        )
+        .is_ok());
     }
 
     #[test]
@@ -2115,9 +2127,7 @@ mod test {
             0.75672424, 0.1649078, 0.30140296, 0.10358244, 0.6283315,
             0.39244208, 0.57202407,
         ];
-        assert!(
-            CsMatView::new_view(CSR, (5, 5), indptr, indices, data).is_ok()
-        );
+        assert!(CsMatView::new_view(CSR, (5, 5), indptr, indices, data).is_ok());
     }
 
     #[test]

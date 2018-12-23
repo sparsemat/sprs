@@ -483,7 +483,8 @@ mod test {
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
-        ).to_csr();
+        )
+        .to_csr();
         assert_eq!(csr, expected);
     }
 

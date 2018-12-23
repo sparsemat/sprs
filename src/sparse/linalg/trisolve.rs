@@ -440,7 +440,8 @@ mod test {
             &mut dstack,
             &mut xw,
             &mut visited,
-        ).unwrap();
+        )
+        .unwrap();
 
         let x: HashSet<_> = dstack
             .iter_right()
@@ -477,7 +478,8 @@ mod test {
             &mut dstack,
             &mut xw,
             &mut visited,
-        ).unwrap();
+        )
+        .unwrap();
         let x: HashSet<_> = dstack
             .iter_right()
             .map(stack::extract_stack_val)

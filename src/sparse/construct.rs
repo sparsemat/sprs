@@ -121,7 +121,8 @@ where
             row.as_ref().iter().fold(0, |nrows, mopt| {
                 mopt.as_ref().map_or(nrows, |m| cmp::max(nrows, m.rows()))
             })
-        }).collect();
+        })
+        .collect();
     let cols_per_col: Vec<_> = (0..super_cols)
         .map(|j| {
             mats.iter().fold(0, |ncols, row| {
@@ -129,7 +130,8 @@ where
                     .as_ref()
                     .map_or(ncols, |m| cmp::max(ncols, m.cols()))
             })
-        }).collect();
+        })
+        .collect();
     let mut to_vstack = Vec::new();
     to_vstack.reserve(super_rows);
     for (i, row) in mats.iter().enumerate() {
@@ -140,7 +142,8 @@ where
             .map(|(j, m)| {
                 let shape = (rows_per_row[i], cols_per_col[j]);
                 m.as_ref().map_or(CsMat::zero(shape), |x| x.to_owned())
-            }).collect();
+            })
+            .collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
         let stacked = hstack(&borrows);
         to_vstack.push(stacked);
