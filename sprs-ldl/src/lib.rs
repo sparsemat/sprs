@@ -606,7 +606,8 @@ mod test {
             &expected_lp,
             &expected_li,
             &expected_lx,
-        ).unwrap();
+        )
+        .unwrap();
         super::ldl_lsolve(&l, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
         linalg::diag_solve(&expected_d, &mut x);

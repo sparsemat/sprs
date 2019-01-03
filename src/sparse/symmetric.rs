@@ -21,9 +21,11 @@ where
         for (inner_ind, &value) in vec.iter() {
             match mat.get_outer_inner(inner_ind, outer_ind) {
                 None => return false,
-                Some(&transposed_val) => if transposed_val != value {
-                    return false;
-                },
+                Some(&transposed_val) => {
+                    if transposed_val != value {
+                        return false;
+                    }
+                }
             }
         }
     }

@@ -36,7 +36,7 @@ using ``rustfmt`` on the latest stable Rust channel:
 .. code-block:: console
 
   rustup default stable
-  rustup component add rustfmt-preview
+  rustup component add rustfmt
   cargo fmt --all
 
 .. _rustfmt: https://github.com/rust-lang-nursery/rustfmt
