@@ -300,15 +300,15 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye(dim: usize) -> CsMat<N>
+    pub fn eye(dim: usize) -> CsMatI<N, I>
     where
         N: Num + Clone,
     {
         let n = dim;
-        let indptr = (0..n + 1).collect();
-        let indices = (0..n).collect();
+        let indptr = (0..n + 1).map(I::from_usize).collect();
+        let indices = (0..n).map(I::from_usize).collect();
         let data = vec![N::one(); n];
-        CsMat {
+        CsMatI {
             storage: CSR,
             nrows: n,
             ncols: n,
@@ -328,15 +328,15 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye_csc(dim: usize) -> CsMat<N>
+    pub fn eye_csc(dim: usize) -> CsMatI<N, I>
     where
         N: Num + Clone,
     {
         let n = dim;
-        let indptr = (0..n + 1).collect();
-        let indices = (0..n).collect();
+        let indptr = (0..n + 1).map(I::from_usize).collect();
+        let indices = (0..n).map(I::from_usize).collect();
         let data = vec![N::one(); n];
-        CsMat {
+        CsMatI {
             storage: CSC,
             nrows: n,
             ncols: n,
@@ -366,13 +366,13 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(shape: Shape) -> CsMat<N> {
+    pub fn zero(shape: Shape) -> CsMatI<N, I> {
         let (rows, cols) = shape;
-        CsMat {
+        CsMatI {
             storage: CSR,
             nrows: rows,
             ncols: cols,
-            indptr: vec![0; rows + 1],
+            indptr: vec![I::zero(); rows + 1],
             indices: Vec::new(),
             data: Vec::new(),
         }

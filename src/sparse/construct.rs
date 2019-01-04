@@ -1,5 +1,6 @@
 //! High level construction of sparse matrices by stacking, by block, ...
 
+use indexing::SpIndex;
 use ndarray::ArrayView;
 use num_traits::{Num, Signed};
 use sparse::csmat::CompressedStorage;
@@ -10,10 +11,13 @@ use Ix2;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
-pub fn same_storage_fast_stack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
+pub fn same_storage_fast_stack<'a, N, I, MatArray>(
+    mats: &MatArray,
+) -> CsMatI<N, I>
 where
     N: 'a + Clone,
-    MatArray: AsRef<[CsMatView<'a, N>]>,
+    I: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
     if mats.len() == 0 {
@@ -31,7 +35,7 @@ where
     let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
     let nnz = mats.iter().map(|x| x.nnz()).fold(0, |x, y| x + y);
 
-    let mut res = CsMat::empty(storage_type, inner_dim);
+    let mut res = CsMatI::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);
     res.reserve_nnz_exact(nnz);
     for mat in mats {
@@ -44,10 +48,11 @@ where
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
+pub fn vstack<'a, N, I, MatArray>(mats: &MatArray) -> CsMatI<N, I>
 where
     N: 'a + Clone + Default,
-    MatArray: AsRef<[CsMatView<'a, N>]>,
+    I: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csr()) {
@@ -60,10 +65,11 @@ where
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
+pub fn hstack<'a, N, MatArray, I>(mats: &MatArray) -> CsMatI<N, I>
 where
     N: 'a + Clone + Default,
-    MatArray: AsRef<[CsMatView<'a, N>]>,
+    I: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csc()) {
@@ -86,11 +92,12 @@ where
 ///                      [None, Some(b.view())]]);
 /// assert_eq!(c.rows(), 7);
 /// ```
-pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray) -> CsMat<N>
+pub fn bmat<'a, N, I, OuterArray, InnerArray>(mats: &OuterArray) -> CsMatI<N, I>
 where
     N: 'a + Clone + Default,
+    I: 'a + SpIndex,
     OuterArray: 'a + AsRef<[InnerArray]>,
-    InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]>,
+    InnerArray: 'a + AsRef<[Option<CsMatViewI<'a, N, I>>]>,
 {
     let mats = mats.as_ref();
     let super_rows = mats.len();
@@ -141,7 +148,7 @@ where
             .enumerate()
             .map(|(j, m)| {
                 let shape = (rows_per_row[i], cols_per_col[j]);
-                m.as_ref().map_or(CsMat::zero(shape), |x| x.to_owned())
+                m.as_ref().map_or(CsMatI::zero(shape), |x| x.to_owned())
             })
             .collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
