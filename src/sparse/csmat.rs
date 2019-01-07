@@ -816,6 +816,27 @@ where
         &self.data[..]
     }
 
+    /// Destruct the matrix object and recycle its storage containers.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use sprs::{CsMat};
+    /// let (indptr, indices, data) = CsMat::<i32>::eye(3).into_raw_storage();
+    /// assert_eq!(indptr, vec![0, 1, 2, 3]);
+    /// assert_eq!(indices, vec![0, 1, 2]);
+    /// assert_eq!(data, vec![1, 1, 1]);
+    /// ```
+    pub fn into_raw_storage(self) -> (IptrStorage, IndStorage, DataStorage) {
+        let Self {
+            indptr,
+            indices,
+            data,
+            ..
+        } = self;
+        (indptr, indices, data)
+    }
+
     /// Test whether the matrix is in CSC storage
     pub fn is_csc(&self) -> bool {
         self.storage == CSC

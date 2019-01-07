@@ -606,6 +606,12 @@ where
         &self.data
     }
 
+    /// Destruct the vector object and recycle its storage containers.
+    pub fn into_raw_storage(self) -> (IStorage, DStorage) {
+        let Self { indices, data, .. } = self;
+        (indices, data)
+    }
+
     /// The dimension of this vector.
     pub fn dim(&self) -> usize {
         self.dim
