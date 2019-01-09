@@ -112,9 +112,7 @@ pub mod vec {
     };
 }
 
-pub use sparse::construct::{
-    bmat, csc_from_dense, csr_from_dense, hstack, vstack,
-};
+pub use sparse::construct::{bmat, hstack, vstack};
 
 pub use sparse::to_dense::assign_to_dense;
 
