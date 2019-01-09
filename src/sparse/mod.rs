@@ -75,7 +75,7 @@ pub use self::csmat::CompressedStorage;
 /// [`vstack`]: fn.vstack.html
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
 where
     I: SpIndex,
