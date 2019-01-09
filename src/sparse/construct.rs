@@ -1,19 +1,19 @@
 //! High level construction of sparse matrices by stacking, by block, ...
 
-use ndarray::ArrayView;
-use num_traits::{Num, Signed};
-use sparse::csmat::CompressedStorage;
+use indexing::SpIndex;
 use sparse::prelude::*;
 use std::cmp;
 use std::default::Default;
-use Ix2;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
-pub fn same_storage_fast_stack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
+pub fn same_storage_fast_stack<'a, N, I, MatArray>(
+    mats: &MatArray,
+) -> CsMatI<N, I>
 where
     N: 'a + Clone,
-    MatArray: AsRef<[CsMatView<'a, N>]>,
+    I: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
     if mats.len() == 0 {
@@ -31,7 +31,7 @@ where
     let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
     let nnz = mats.iter().map(|x| x.nnz()).fold(0, |x, y| x + y);
 
-    let mut res = CsMat::empty(storage_type, inner_dim);
+    let mut res = CsMatI::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);
     res.reserve_nnz_exact(nnz);
     for mat in mats {
@@ -44,10 +44,11 @@ where
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
+pub fn vstack<'a, N, I, MatArray>(mats: &MatArray) -> CsMatI<N, I>
 where
     N: 'a + Clone + Default,
-    MatArray: AsRef<[CsMatView<'a, N>]>,
+    I: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csr()) {
@@ -60,10 +61,11 @@ where
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<'a, N, MatArray>(mats: &MatArray) -> CsMat<N>
+pub fn hstack<'a, N, MatArray, I>(mats: &MatArray) -> CsMatI<N, I>
 where
     N: 'a + Clone + Default,
-    MatArray: AsRef<[CsMatView<'a, N>]>,
+    I: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csc()) {
@@ -86,11 +88,12 @@ where
 ///                      [None, Some(b.view())]]);
 /// assert_eq!(c.rows(), 7);
 /// ```
-pub fn bmat<'a, N, OuterArray, InnerArray>(mats: &OuterArray) -> CsMat<N>
+pub fn bmat<'a, N, I, OuterArray, InnerArray>(mats: &OuterArray) -> CsMatI<N, I>
 where
     N: 'a + Clone + Default,
+    I: 'a + SpIndex,
     OuterArray: 'a + AsRef<[InnerArray]>,
-    InnerArray: 'a + AsRef<[Option<CsMatView<'a, N>>]>,
+    InnerArray: 'a + AsRef<[Option<CsMatViewI<'a, N, I>>]>,
 {
     let mats = mats.as_ref();
     let super_rows = mats.len();
@@ -141,7 +144,7 @@ where
             .enumerate()
             .map(|(j, m)| {
                 let shape = (rows_per_row[i], cols_per_col[j]);
-                m.as_ref().map_or(CsMat::zero(shape), |x| x.to_owned())
+                m.as_ref().map_or(CsMatI::zero(shape), |x| x.to_owned())
             })
             .collect();
         let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
@@ -152,63 +155,8 @@ where
     vstack(&borrows)
 }
 
-/// Create a CSR matrix from a dense matrix, ignoring elements
-/// lower than `epsilon`.
-///
-/// If epsilon is negative, it will be clamped to zero.
-pub fn csr_from_dense<N>(m: ArrayView<N, Ix2>, epsilon: N) -> CsMat<N>
-where
-    N: Num + Clone + cmp::PartialOrd + Signed,
-{
-    let epsilon = if epsilon > N::zero() {
-        epsilon
-    } else {
-        N::zero()
-    };
-    let rows = m.shape()[0];
-    let cols = m.shape()[1];
-
-    let mut indptr = vec![0; rows + 1];
-    let mut nnz = 0;
-    for (row, row_count) in m.outer_iter().zip(&mut indptr[1..]) {
-        nnz += row.iter().filter(|&x| x.abs() > epsilon).count();
-        *row_count = nnz;
-    }
-
-    let mut indices = Vec::with_capacity(nnz);
-    let mut data = Vec::with_capacity(nnz);
-    for row in m.outer_iter() {
-        for (col_ind, x) in row.iter().enumerate() {
-            if x.abs() > epsilon {
-                indices.push(col_ind);
-                data.push(x.clone());
-            }
-        }
-    }
-    CsMat {
-        storage: CompressedStorage::CSR,
-        nrows: rows,
-        ncols: cols,
-        indptr: indptr,
-        indices: indices,
-        data: data,
-    }
-}
-
-/// Create a CSC matrix from a dense matrix, ignoring elements
-/// lower than `epsilon`.
-///
-/// If epsilon is negative, it will be clamped to zero.
-pub fn csc_from_dense<N>(m: ArrayView<N, Ix2>, epsilon: N) -> CsMat<N>
-where
-    N: Num + Clone + cmp::PartialOrd + Signed,
-{
-    csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
-}
-
 #[cfg(test)]
 mod test {
-    use ndarray::{arr2, Array};
     use sparse::CsMat;
     use test_data::{mat1, mat2, mat3, mat4};
 
@@ -364,53 +312,5 @@ mod test {
             ],
         );
         assert_eq!(f, expected);
-    }
-
-    #[test]
-    fn csr_from_dense() {
-        let m = Array::eye(3);
-        let m_sparse = super::csr_from_dense(m.view(), 0.);
-
-        assert_eq!(m_sparse, CsMat::eye(3));
-
-        let m = arr2(&[
-            [1., 0., 2., 1e-7, 1.],
-            [0., 0., 0., 1., 0.],
-            [3., 0., 1., 0., 0.],
-        ]);
-        let m_sparse = super::csr_from_dense(m.view(), 1e-5);
-
-        let expected_output = CsMat::new(
-            (3, 5),
-            vec![0, 3, 4, 6],
-            vec![0, 2, 4, 3, 0, 2],
-            vec![1., 2., 1., 1., 3., 1.],
-        );
-
-        assert_eq!(m_sparse, expected_output);
-    }
-
-    #[test]
-    fn csc_from_dense() {
-        let m = Array::eye(3);
-        let m_sparse = super::csc_from_dense(m.view(), 0.);
-
-        assert_eq!(m_sparse, CsMat::eye_csc(3));
-
-        let m = arr2(&[
-            [1., 0., 2., 1e-7, 1.],
-            [0., 0., 0., 1., 0.],
-            [3., 0., 1., 0., 0.],
-        ]);
-        let m_sparse = super::csc_from_dense(m.view(), 1e-5);
-
-        let expected_output = CsMat::new_csc(
-            (3, 5),
-            vec![0, 2, 2, 4, 5, 6],
-            vec![0, 2, 0, 2, 1, 0],
-            vec![1., 3., 2., 1., 1., 1.],
-        );
-
-        assert_eq!(m_sparse, expected_output);
     }
 }

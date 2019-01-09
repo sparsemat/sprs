@@ -1,4 +1,6 @@
-use num_traits::{Num, Zero};
+use ndarray::ArrayView;
+use num_traits::{Num, Signed, Zero};
+use std::cmp;
 ///! A sparse matrix in the Compressed Sparse Row/Column format
 ///
 /// In the CSR format, a matrix is a structure containing three vectors:
@@ -300,15 +302,15 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye(dim: usize) -> CsMat<N>
+    pub fn eye(dim: usize) -> CsMatI<N, I>
     where
         N: Num + Clone,
     {
         let n = dim;
-        let indptr = (0..n + 1).collect();
-        let indices = (0..n).collect();
+        let indptr = (0..n + 1).map(I::from_usize).collect();
+        let indices = (0..n).map(I::from_usize).collect();
         let data = vec![N::one(); n];
-        CsMat {
+        CsMatI {
             storage: CSR,
             nrows: n,
             ncols: n,
@@ -328,15 +330,15 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye_csc(dim: usize) -> CsMat<N>
+    pub fn eye_csc(dim: usize) -> CsMatI<N, I>
     where
         N: Num + Clone,
     {
         let n = dim;
-        let indptr = (0..n + 1).collect();
-        let indices = (0..n).collect();
+        let indptr = (0..n + 1).map(I::from_usize).collect();
+        let indices = (0..n).map(I::from_usize).collect();
         let data = vec![N::one(); n];
-        CsMat {
+        CsMatI {
             storage: CSC,
             nrows: n,
             ncols: n,
@@ -366,13 +368,13 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(shape: Shape) -> CsMat<N> {
+    pub fn zero(shape: Shape) -> CsMatI<N, I> {
         let (rows, cols) = shape;
-        CsMat {
+        CsMatI {
             storage: CSR,
             nrows: rows,
             ncols: cols,
-            indptr: vec![0; rows + 1],
+            indptr: vec![I::zero(); rows + 1],
             indices: Vec::new(),
             data: Vec::new(),
         }
@@ -482,6 +484,58 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
         };
         m.sort_indices();
         m.check_compressed_structure().and(Ok(m))
+    }
+
+    /// Create a CSR matrix from a dense matrix, ignoring elements lower than `epsilon`.
+    ///
+    /// If epsilon is negative, it will be clamped to zero.
+    pub fn csr_from_dense(m: ArrayView<N, Ix2>, epsilon: N) -> CsMatI<N, I>
+    where
+        N: Num + Clone + cmp::PartialOrd + Signed,
+    {
+        let epsilon = if epsilon > N::zero() {
+            epsilon
+        } else {
+            N::zero()
+        };
+        let rows = m.shape()[0];
+        let cols = m.shape()[1];
+
+        let mut indptr = vec![I::zero(); rows + 1];
+        let mut nnz = 0;
+        for (row, row_count) in m.outer_iter().zip(&mut indptr[1..]) {
+            nnz += row.iter().filter(|&x| x.abs() > epsilon).count();
+            *row_count = I::from_usize(nnz);
+        }
+
+        let mut indices = Vec::with_capacity(nnz);
+        let mut data = Vec::with_capacity(nnz);
+        for row in m.outer_iter() {
+            for (col_ind, x) in row.iter().enumerate() {
+                if x.abs() > epsilon {
+                    indices.push(I::from_usize(col_ind));
+                    data.push(x.clone());
+                }
+            }
+        }
+        CsMatI {
+            storage: CompressedStorage::CSR,
+            nrows: rows,
+            ncols: cols,
+            indptr: indptr,
+            indices: indices,
+            data: data,
+        }
+    }
+
+    /// Create a CSC matrix from a dense matrix, ignoring elements lower than `epsilon`.
+    ///
+    /// If epsilon is negative, it will be clamped to zero.
+    pub fn csc_from_dense(m: ArrayView<N, Ix2>, epsilon: N) -> CsMatI<N, I>
+    where
+        N: Num + Clone + cmp::PartialOrd + Signed,
+    {
+        Self::csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
     }
 
     fn sort_indices(&mut self)
@@ -1958,6 +2012,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for ChunkOuterBlocks<'a, N, I> {
 mod test {
     use super::CompressedStorage::{CSC, CSR};
     use errors::SprsError;
+    use ndarray::{arr2, Array};
     use sparse::{CsMat, CsMatI, CsMatView};
     use test_data::{mat1, mat1_csc, mat1_times_2};
 
@@ -2126,6 +2181,54 @@ mod test {
         assert!(
             CsMat::new_(CSR, (3, 3), indptr_ok, indices_ok, data_ok).is_ok()
         );
+    }
+
+    #[test]
+    fn test_csr_from_dense() {
+        let m = Array::eye(3);
+        let m_sparse = CsMat::csr_from_dense(m.view(), 0.);
+
+        assert_eq!(m_sparse, CsMat::eye(3));
+
+        let m = arr2(&[
+            [1., 0., 2., 1e-7, 1.],
+            [0., 0., 0., 1., 0.],
+            [3., 0., 1., 0., 0.],
+        ]);
+        let m_sparse = CsMat::csr_from_dense(m.view(), 1e-5);
+
+        let expected_output = CsMat::new(
+            (3, 5),
+            vec![0, 3, 4, 6],
+            vec![0, 2, 4, 3, 0, 2],
+            vec![1., 2., 1., 1., 3., 1.],
+        );
+
+        assert_eq!(m_sparse, expected_output);
+    }
+
+    #[test]
+    fn test_csc_from_dense() {
+        let m = Array::eye(3);
+        let m_sparse = CsMat::csc_from_dense(m.view(), 0.);
+
+        assert_eq!(m_sparse, CsMat::eye_csc(3));
+
+        let m = arr2(&[
+            [1., 0., 2., 1e-7, 1.],
+            [0., 0., 0., 1., 0.],
+            [3., 0., 1., 0., 0.],
+        ]);
+        let m_sparse = CsMat::csc_from_dense(m.view(), 1e-5);
+
+        let expected_output = CsMat::new_csc(
+            (3, 5),
+            vec![0, 2, 2, 4, 5, 6],
+            vec![0, 2, 0, 2, 1, 0],
+            vec![1., 3., 2., 1., 1., 1.],
+        );
+
+        assert_eq!(m_sparse, expected_output);
     }
 
     #[test]
