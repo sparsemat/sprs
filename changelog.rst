@@ -2,9 +2,17 @@
 Changelog
 =========
 
+- 0.6.3
+    - enforce rustfmt style checking
+    - more explicit error messages when checking the structure of a ``CsMat``
+    - ``into_raw_storage`` allows recylcling the storage of a ``CsMat``
+    - support more ndarray versions
+    - initial ``serde`` support
+    - add more genericity over index type for ``CsMat`` construction functions.
+    - ``CsMatBase`` now derives ``Clone``.
 - 0.6.2
-  - add support for symmetric matrices in Matrix Market IO
-  - fix bug with adjacent empty columns in CSR matrix iteration.
+    - add support for symmetric matrices in Matrix Market IO
+    - fix bug with adjacent empty columns in CSR matrix iteration.
 - 0.6.1
     - fix ``to_dense`` for non-square matrices
     - improve performance of sparse-dense dot products and matrix vector
