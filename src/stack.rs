@@ -120,7 +120,7 @@ where
     }
 
     /// Iterates along the right stack without removing items
-    pub fn iter_right<'a>(&'a self) -> slice::Iter<'a, I> {
+    pub fn iter_right(&self) -> slice::Iter<I> {
         self.stacks[self.right_head..].iter()
     }
 
@@ -141,8 +141,8 @@ where
 
 /// Enable extraction of stack val from iterators
 pub fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
-    match stack_val {
-        &StackVal::Enter(ref i) => &i,
-        &StackVal::Exit(ref i) => &i,
+    match *stack_val {
+        StackVal::Enter(ref i) => &i,
+        StackVal::Exit(ref i) => &i,
     }
 }

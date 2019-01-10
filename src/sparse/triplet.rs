@@ -120,16 +120,19 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
         col_inds: Vec<I>,
         data: Vec<N>,
     ) -> TriMatI<N, I> {
-        assert!(
-            row_inds.len() == col_inds.len(),
+        assert_eq!(
+            row_inds.len(),
+            col_inds.len(),
             "all inputs should have the same length"
         );
-        assert!(
-            data.len() == col_inds.len(),
+        assert_eq!(
+            data.len(),
+            col_inds.len(),
             "all inputs should have the same length"
         );
-        assert!(
-            row_inds.len() == data.len(),
+        assert_eq!(
+            row_inds.len(),
+            data.len(),
             "all inputs should have the same length"
         );
         assert!(
@@ -143,9 +146,9 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
         TriMatI {
             rows: shape.0,
             cols: shape.1,
-            row_inds: row_inds,
-            col_inds: col_inds,
-            data: data,
+            row_inds,
+            col_inds,
+            data,
         }
     }
 

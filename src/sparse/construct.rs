@@ -16,7 +16,7 @@ where
     MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
 {
     let mats = mats.as_ref();
-    if mats.len() == 0 {
+    if mats.is_empty() {
         panic!("Empty stacking list");
     }
     let inner_dim = mats[0].inner_dims();
@@ -28,8 +28,8 @@ where
         panic!("Storage mismatch");
     }
 
-    let outer_dim = mats.iter().map(|x| x.outer_dims()).fold(0, |x, y| x + y);
-    let nnz = mats.iter().map(|x| x.nnz()).fold(0, |x, y| x + y);
+    let outer_dim = mats.iter().map(|x| x.outer_dims()).sum::<usize>();
+    let nnz = mats.iter().map(|x| x.nnz()).sum::<usize>();
 
     let mut res = CsMatI::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);

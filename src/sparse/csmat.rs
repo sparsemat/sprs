@@ -43,8 +43,8 @@ pub enum CompressedStorage {
 
 impl CompressedStorage {
     /// Get the other storage, ie return CSC if we were CSR, and vice versa
-    pub fn other_storage(&self) -> CompressedStorage {
-        match *self {
+    pub fn other_storage(self) -> CompressedStorage {
+        match self {
             CSR => CSC,
             CSC => CSR,
         }
@@ -130,8 +130,8 @@ impl<'iter, N: 'iter, I: 'iter + SpIndex> Iterator
                 // CsMat invariants imply CsVec invariants
                 Some(CsVecBase {
                     dim: self.inner_len,
-                    indices: indices,
-                    data: data,
+                    indices,
+                    data,
                 })
             }
         }
@@ -162,8 +162,8 @@ impl<'iter, 'perm: 'iter, N: 'iter, I: 'iter + SpIndex> Iterator
                 // CsMat invariants imply CsVec invariants
                 let vec = CsVecBase {
                     dim: self.inner_len,
-                    indices: indices,
-                    data: data,
+                    indices,
+                    data,
                 };
                 Some((outer_ind_perm, vec))
             }
@@ -198,8 +198,8 @@ impl<'iter, N: 'iter, I: 'iter + SpIndex> Iterator
                 // CsMat invariants imply CsVec invariants
                 Some(CsVecBase {
                     dim: self.inner_len,
-                    indices: indices,
-                    data: data,
+                    indices,
+                    data,
                 })
             }
         }
@@ -232,8 +232,8 @@ impl<'iter, N: 'iter, I: 'iter + SpIndex> DoubleEndedIterator
                 // CsMat invariants imply CsVec invariants
                 Some(CsVecBase {
                     dim: self.inner_len,
-                    indices: indices,
-                    data: data,
+                    indices,
+                    data,
                 })
             }
         }
@@ -307,16 +307,16 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
         N: Num + Clone,
     {
         let n = dim;
-        let indptr = (0..n + 1).map(I::from_usize).collect();
+        let indptr = (0..=n).map(I::from_usize).collect();
         let indices = (0..n).map(I::from_usize).collect();
         let data = vec![N::one(); n];
         CsMatI {
             storage: CSR,
             nrows: n,
             ncols: n,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            indptr,
+            indices,
+            data,
         }
     }
 
@@ -335,16 +335,16 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
         N: Num + Clone,
     {
         let n = dim;
-        let indptr = (0..n + 1).map(I::from_usize).collect();
+        let indptr = (0..=n).map(I::from_usize).collect();
         let indices = (0..n).map(I::from_usize).collect();
         let data = vec![N::one(); n];
         CsMatI {
             storage: CSC,
             nrows: n,
             ncols: n,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            indptr,
+            indices,
+            data,
         }
     }
     /// Create an empty CsMat for building purposes
@@ -357,9 +357,9 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
             CSC => (inner_size, 0),
         };
         CsMatI {
-            storage: storage,
-            nrows: nrows,
-            ncols: ncols,
+            storage,
+            nrows,
+            ncols,
             indptr: vec![I::zero(); 1],
             indices: Vec::new(),
             data: Vec::new(),
@@ -369,12 +369,12 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
     pub fn zero(shape: Shape) -> CsMatI<N, I> {
-        let (rows, cols) = shape;
+        let (nrows, ncols) = shape;
         CsMatI {
             storage: CSR,
-            nrows: rows,
-            ncols: cols,
-            indptr: vec![I::zero(); rows + 1],
+            nrows,
+            ncols,
+            indptr: vec![I::zero(); nrows + 1],
             indices: Vec::new(),
             data: Vec::new(),
         }
@@ -475,12 +475,12 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
         N: Copy,
     {
         let mut m = CsMatI {
-            storage: storage,
+            storage,
             nrows: shape.0,
             ncols: shape.1,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            indptr,
+            indices,
+            data,
         };
         m.sort_indices();
         m.check_compressed_structure().and(Ok(m))
@@ -498,10 +498,10 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
         } else {
             N::zero()
         };
-        let rows = m.shape()[0];
-        let cols = m.shape()[1];
+        let nrows = m.shape()[0];
+        let ncols = m.shape()[1];
 
-        let mut indptr = vec![I::zero(); rows + 1];
+        let mut indptr = vec![I::zero(); nrows + 1];
         let mut nnz = 0;
         for (row, row_count) in m.outer_iter().zip(&mut indptr[1..]) {
             nnz += row.iter().filter(|&x| x.abs() > epsilon).count();
@@ -520,11 +520,11 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
         }
         CsMatI {
             storage: CompressedStorage::CSR,
-            nrows: rows,
-            ncols: cols,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            nrows,
+            ncols,
+            indptr,
+            indices,
+            data,
         }
     }
 
@@ -646,7 +646,7 @@ impl<N, I: SpIndex> CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>> {
                     let ind = start + ind.index();
                     self.indices.insert(ind, inner_ind_idx);
                     self.data.insert(ind, val);
-                    for k in (outer_ind + 1)..(outer_dims + 1) {
+                    for k in (outer_ind + 1)..=outer_dims {
                         self.indptr[k] += I::one();
                     }
                 }
@@ -688,12 +688,12 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
         data: &'a [N],
     ) -> Result<CsMatViewI<'a, N, I>, SprsError> {
         let m = CsMatViewI {
-            storage: storage,
+            storage,
             nrows: shape.0,
             ncols: shape.1,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            indptr,
+            indices,
+            data,
         };
         m.check_compressed_structure().and(Ok(m))
     }
@@ -720,10 +720,10 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
         let indptr = slice::from_raw_parts(indptr, outer + 1);
         let nnz = (*indptr.get_unchecked(outer)).index();
         CsMatViewI {
-            storage: storage,
-            nrows: nrows,
-            ncols: ncols,
-            indptr: indptr,
+            storage,
+            nrows,
+            ncols,
+            indptr,
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts(data, nnz),
         }
@@ -748,7 +748,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsMatBase<N, I, &'a [I], &'a [I], &'a [N]> {
             storage: self.storage,
             nrows: count,
             ncols: self.cols(),
-            indptr: &self.indptr[i..(iend + 1)],
+            indptr: &self.indptr[i..=iend],
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -970,9 +970,9 @@ where
             storage: self.storage,
             nrows: self.nrows,
             ncols: self.ncols,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            indptr,
+            indices,
+            data,
         }
     }
 
@@ -1011,13 +1011,13 @@ where
     ///     assert_eq!(val, 1.);
     /// }
     /// ```
-    pub fn outer_iterator<'a>(&'a self) -> OuterIterator<'a, N, I> {
+    pub fn outer_iterator(&self) -> OuterIterator<N, I> {
         let inner_len = match self.storage {
             CSR => self.ncols,
             CSC => self.nrows,
         };
         OuterIterator {
-            inner_len: inner_len,
+            inner_len,
             indptr_iter: self.indptr.windows(2),
             indices: &self.indices[..],
             data: &self.data[..],
@@ -1037,7 +1037,7 @@ where
         };
         let n = self.indptr.len() - 1;
         OuterIteratorPerm {
-            inner_len: inner_len,
+            inner_len,
             outer_ind_iter: (0..n),
             indptr: &self.indptr[..],
             indices: &self.indices[..],
@@ -1200,7 +1200,7 @@ where
 
         // check that the indices are sorted for each row
         for vec in self.outer_iterator() {
-            try!(vec.check_structure());
+            vec.check_structure()?;
         }
 
         Ok(())
@@ -1247,9 +1247,9 @@ where
             storage: self.storage().other_storage(),
             nrows: self.nrows,
             ncols: self.ncols,
-            indptr: indptr,
-            indices: indices,
-            data: data,
+            indptr,
+            indices,
+            data,
         }
     }
 
@@ -1389,13 +1389,13 @@ where
     /// This iterator yields mutable sparse vector views for each outer
     /// dimension. Only the non-zero values can be modified, the
     /// structure is kept immutable.
-    pub fn outer_iterator_mut<'a>(&'a mut self) -> OuterIteratorMut<'a, N, I> {
+    pub fn outer_iterator_mut(&mut self) -> OuterIteratorMut<N, I> {
         let inner_len = match self.storage {
             CSR => self.ncols,
             CSC => self.nrows,
         };
         OuterIteratorMut {
-            inner_len: inner_len,
+            inner_len,
             indptr_iter: self.indptr.windows(2),
             indices: &self.indices[..],
             data: &mut self.data[..],
@@ -1580,9 +1580,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsMatBase<N, I, Vec<I>, &'a [I], &'a [N]> {
         let indptr = slice::from_raw_parts(indptr, 2);
         let nnz = indptr[1].index();
         CsMatVecView_ {
-            storage: storage,
-            nrows: nrows,
-            ncols: ncols,
+            storage,
+            nrows,
+            ncols,
             indptr: Array2 {
                 data: [indptr[0], indptr[1]],
             },
