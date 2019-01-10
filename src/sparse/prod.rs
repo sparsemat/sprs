@@ -4,6 +4,7 @@ use num_traits::Num;
 use sparse::compressed::SpMatView;
 ///! Sparse matrix product
 use sparse::prelude::*;
+use sparse::vec::DenseVector;
 use std::iter::Sum;
 use Ix2;
 
@@ -46,17 +47,18 @@ where
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csc<N, I, Iptr>(
+pub fn mul_acc_mat_vec_csc<N, I, Iptr, V>(
     mat: CsMatViewI<N, I, Iptr>,
-    in_vec: &[N],
+    in_vec: V,
     res_vec: &mut [N],
 ) where
     N: Num + Copy,
     I: SpIndex,
     Iptr: SpIndex,
+    V: DenseVector<N>,
 {
     let mat = mat.view();
-    if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
+    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.len() {
         panic!("Dimension mismatch");
     }
     if !mat.is_csc() {
@@ -64,7 +66,7 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr>(
     }
 
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
-        let multiplier = &in_vec[col_ind];
+        let multiplier = in_vec.index(col_ind);
         for (row_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
             res_vec[row_ind] = res_vec[row_ind] + *multiplier * value;
@@ -74,16 +76,17 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr>(
 
 /// Multiply a sparse CSR matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csr<N, I, Iptr>(
+pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
     mat: CsMatViewI<N, I, Iptr>,
-    in_vec: &[N],
+    in_vec: V,
     res_vec: &mut [N],
 ) where
     N: Num + Copy,
     I: SpIndex,
     Iptr: SpIndex,
+    V: DenseVector<N>,
 {
-    if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
+    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.len() {
         panic!("Dimension mismatch");
     }
     if !mat.is_csr() {
@@ -93,7 +96,8 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr>(
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
         for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            res_vec[row_ind] = res_vec[row_ind] + in_vec[col_ind] * value;
+            res_vec[row_ind] =
+                res_vec[row_ind] + *in_vec.index(col_ind) * value;
         }
     }
 }
