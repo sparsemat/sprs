@@ -48,10 +48,10 @@ where
         Self {
             rows: shape.0,
             cols: shape.1,
-            nnz: nnz,
-            row_inds: row_inds,
-            col_inds: col_inds,
-            data: data,
+            nnz,
+            row_inds,
+            col_inds,
+            data,
         }
     }
 
@@ -118,7 +118,7 @@ where
         }
         let mut indptr = row_counts.clone();
         // cum sum
-        for i in 1..(self.rows() + 1) {
+        for i in 1..=self.rows() {
             indptr[i] += indptr[i - 1];
         }
         let nnz_max = indptr[self.rows()].index();

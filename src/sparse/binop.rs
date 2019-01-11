@@ -89,11 +89,11 @@ where
 {
     let nrows = lhs.rows();
     let ncols = lhs.cols();
-    let storage_type = lhs.storage();
+    let storage = lhs.storage();
     if nrows != rhs.rows() || ncols != rhs.cols() {
         panic!("Dimension mismatch");
     }
-    if storage_type != rhs.storage() {
+    if storage != rhs.storage() {
         panic!("Storage mismatch");
     }
 
@@ -120,9 +120,9 @@ where
     out_indices.truncate(nnz);
     out_data.truncate(nnz);
     CsMatI {
-        storage: storage_type,
-        nrows: nrows,
-        ncols: ncols,
+        storage,
+        nrows,
+        ncols,
         indptr: out_indptr,
         indices: out_indices,
         data: out_data,
@@ -189,9 +189,10 @@ where
     D: ndarray::Data<Elem = N>,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
-    let mut res = match rhs.is_standard_layout() {
-        true => Array::zeros(shape),
-        false => Array::zeros(shape.f()),
+    let mut res = if rhs.is_standard_layout() {
+        Array::zeros(shape)
+    } else {
+        Array::zeros(shape.f())
     };
     csmat_binop_dense_raw(
         lhs.view(),
@@ -216,9 +217,10 @@ where
     D: ndarray::Data<Elem = N>,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
-    let mut res = match rhs.is_standard_layout() {
-        true => Array::zeros(shape),
-        false => Array::zeros(shape.f()),
+    let mut res = if rhs.is_standard_layout() {
+        Array::zeros(shape)
+    } else {
+        Array::zeros(shape.f())
     };
     csmat_binop_dense_raw(
         lhs.view(),

@@ -41,22 +41,19 @@ impl<I: SpIndex> Permutation<I, Vec<I>> {
         }
         PermOwnedI {
             dim: perm.len(),
-            storage: FinitePerm {
-                perm: perm,
-                perm_inv: perm_inv,
-            },
+            storage: FinitePerm { perm, perm_inv },
         }
     }
 }
 
 impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
     pub fn reborrow(&self) -> PermViewI<'a, I> {
-        match &self.storage {
-            &Identity => PermViewI {
+        match self.storage {
+            Identity => PermViewI {
                 dim: self.dim,
                 storage: Identity,
             },
-            &FinitePerm {
+            FinitePerm {
                 perm: ref p,
                 perm_inv: ref p_,
             } => PermViewI {
@@ -70,12 +67,12 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
     }
 
     pub fn reborrow_inv(&self) -> PermViewI<'a, I> {
-        match &self.storage {
-            &Identity => PermViewI {
+        match self.storage {
+            Identity => PermViewI {
                 dim: self.dim,
                 storage: Identity,
             },
-            &FinitePerm {
+            FinitePerm {
                 perm: ref p,
                 perm_inv: ref p_,
             } => PermViewI {
@@ -95,18 +92,18 @@ where
 {
     pub fn identity(dim: usize) -> Permutation<I, IndStorage> {
         Permutation {
-            dim: dim,
+            dim,
             storage: Identity,
         }
     }
 
     pub fn inv(&self) -> PermViewI<I> {
-        match &self.storage {
-            &Identity => PermViewI {
+        match self.storage {
+            Identity => PermViewI {
                 dim: self.dim,
                 storage: Identity,
             },
-            &FinitePerm {
+            FinitePerm {
                 perm: ref p,
                 perm_inv: ref p_,
             } => PermViewI {
@@ -120,12 +117,12 @@ where
     }
 
     pub fn view(&self) -> PermViewI<I> {
-        match &self.storage {
-            &Identity => PermViewI {
+        match self.storage {
+            Identity => PermViewI {
                 dim: self.dim,
                 storage: Identity,
             },
-            &FinitePerm {
+            FinitePerm {
                 perm: ref p,
                 perm_inv: ref p_,
             } => PermViewI {
@@ -139,12 +136,12 @@ where
     }
 
     pub fn owned_clone(&self) -> PermOwnedI<I> {
-        match &self.storage {
-            &Identity => PermOwnedI {
+        match self.storage {
+            Identity => PermOwnedI {
                 dim: self.dim,
                 storage: Identity,
             },
-            &FinitePerm {
+            FinitePerm {
                 perm: ref p,
                 perm_inv: ref p_,
             } => PermOwnedI {
@@ -159,44 +156,36 @@ where
 
     pub fn at(&self, index: usize) -> usize {
         assert!(index < self.dim);
-        match &self.storage {
-            &Identity => index,
-            &FinitePerm {
-                perm: ref p,
-                perm_inv: _,
-            } => p[index].index(),
+        match self.storage {
+            Identity => index,
+            FinitePerm { perm: ref p, .. } => p[index].index(),
         }
     }
 
     pub fn at_inv(&self, index: usize) -> usize {
         assert!(index < self.dim);
-        match &self.storage {
-            &Identity => index,
-            &FinitePerm {
-                perm: _,
-                perm_inv: ref p_,
+        match self.storage {
+            Identity => index,
+            FinitePerm {
+                perm_inv: ref p_, ..
             } => p_[index].index(),
         }
     }
 
     /// Get a vector representing this permutation
     pub fn vec(&self) -> Vec<I> {
-        match &self.storage {
-            &Identity => (0..self.dim).map(I::from_usize).collect(),
-            &FinitePerm {
-                perm: ref p,
-                perm_inv: _,
-            } => p.to_vec(),
+        match self.storage {
+            Identity => (0..self.dim).map(I::from_usize).collect(),
+            FinitePerm { perm: ref p, .. } => p.to_vec(),
         }
     }
 
     /// Get a vector representing the inverse of this permutation
     pub fn inv_vec(&self) -> Vec<I> {
-        match &self.storage {
-            &Identity => (0..self.dim).map(I::from_usize).collect(),
-            &FinitePerm {
-                perm: _,
-                perm_inv: ref p_,
+        match self.storage {
+            Identity => (0..self.dim).map(I::from_usize).collect(),
+            FinitePerm {
+                perm_inv: ref p_, ..
             } => p_.to_vec(),
         }
     }
@@ -205,9 +194,9 @@ where
     where
         I2: SpIndex,
     {
-        match &self.storage {
-            &Identity => PermOwnedI::identity(self.dim),
-            &FinitePerm {
+        match self.storage {
+            Identity => PermOwnedI::identity(self.dim),
+            FinitePerm {
                 perm: ref p,
                 perm_inv: ref p_,
             } => {
@@ -217,10 +206,7 @@ where
                     p_.iter().map(|i| I2::from_usize(i.index())).collect();
                 PermOwnedI {
                     dim: self.dim,
-                    storage: FinitePerm {
-                        perm: perm,
-                        perm_inv: perm_inv,
-                    },
+                    storage: FinitePerm { perm, perm_inv },
                 }
             }
         }
@@ -237,12 +223,9 @@ where
     fn mul(self, rhs: &'a [N]) -> Vec<N> {
         assert_eq!(self.dim, rhs.len());
         let mut res = rhs.to_vec();
-        match &self.storage {
-            &Identity => res,
-            &FinitePerm {
-                perm: ref p,
-                perm_inv: _,
-            } => {
+        match self.storage {
+            Identity => res,
+            FinitePerm { perm: ref p, .. } => {
                 for (pi, r) in p.iter().zip(res.iter_mut()) {
                     *r = rhs[pi.index()];
                 }

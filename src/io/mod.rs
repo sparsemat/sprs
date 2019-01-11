@@ -83,7 +83,7 @@ enum DataType {
     Complex,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SymmetryMode {
     General,
     Hermitian,
@@ -151,7 +151,7 @@ where
     loop {
         line.clear();
         let len = reader.read_line(&mut line)?;
-        if len == 0 || line.starts_with("%") {
+        if len == 0 || line.starts_with('%') {
             continue;
         } else {
             break;
@@ -291,19 +291,19 @@ where
         NumKind::Float => "real",
         NumKind::Complex => "complex",
     };
-    write!(
+    writeln!(
         writer,
-        "%%MatrixMarket matrix coordinate {} general\n",
+        "%%MatrixMarket matrix coordinate {} general",
         data_type
     )?;
-    write!(writer, "% written by sprs\n")?;
+    writeln!(writer, "% written by sprs")?;
 
     // dimensions and nnz
-    write!(writer, "{} {} {}\n", rows, cols, nnz)?;
+    writeln!(writer, "{} {} {}", rows, cols, nnz)?;
 
     // entries
     for (val, (row, col)) in mat.into_iter() {
-        write!(writer, "{} {} {}\n", row.index() + 1, col.index() + 1, val)?;
+        writeln!(writer, "{} {} {}", row.index() + 1, col.index() + 1, val)?;
     }
     Ok(())
 }
@@ -346,12 +346,12 @@ where
         SymmetryMode::SkewSymmetric => "skew-symmetric",
         SymmetryMode::Hermitian => "hermitian",
     };
-    write!(
+    writeln!(
         writer,
-        "%%MatrixMarket matrix coordinate {} {}\n",
+        "%%MatrixMarket matrix coordinate {} {}",
         data_type, mode
     )?;
-    write!(writer, "% written by sprs\n")?;
+    writeln!(writer, "% written by sprs")?;
 
     // We cannot know in advance how many entries will be written since
     // this is affected by the symmetry mode. However, we do know that it
@@ -361,16 +361,16 @@ where
     // replacing possible extra digits by spaces.
     let dim_header_pos = writer.seek(SeekFrom::Current(0))?;
     // dimensions and nnz
-    write!(writer, "{} {} {}\n", rows, cols, nnz)?;
+    writeln!(writer, "{} {} {}", rows, cols, nnz)?;
 
     // entries
     let mut entries = 0;
     match sym {
         SymmetryMode::General => {
             for (val, (row, col)) in mat.into_iter() {
-                write!(
+                writeln!(
                     writer,
-                    "{} {} {}\n",
+                    "{} {} {}",
                     row.index() + 1,
                     col.index() + 1,
                     val
@@ -382,9 +382,9 @@ where
             for (val, (row, col)) in
                 mat.into_iter().filter(|&(_, (r, c))| r < c)
             {
-                write!(
+                writeln!(
                     writer,
-                    "{} {} {}\n",
+                    "{} {} {}",
                     row.index() + 1,
                     col.index() + 1,
                     val
@@ -396,9 +396,9 @@ where
             for (val, (row, col)) in
                 mat.into_iter().filter(|&(_, (r, c))| r <= c)
             {
-                write!(
+                writeln!(
                     writer,
-                    "{} {} {}\n",
+                    "{} {} {}",
                     row.index() + 1,
                     col.index() + 1,
                     val
@@ -415,7 +415,7 @@ where
     if new_size < dim_header_size {
         let nb_spaces = dim_header_size - new_size;
         for _ in 0..nb_spaces {
-            writer.write(b" ")?;
+            writer.write_all(b" ")?;
         }
     }
     Ok(())

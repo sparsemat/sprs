@@ -490,8 +490,8 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
         );
         let v = CsVecI {
             dim: n,
-            indices: indices,
-            data: data,
+            indices,
+            data,
         };
         v.check_structure().and(Ok(v)).unwrap()
     }
@@ -499,7 +499,7 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     /// Create an empty CsVec, which can be used for incremental construction
     pub fn empty(dim: usize) -> CsVecI<N, I> {
         CsVecI {
-            dim: dim,
+            dim,
             indices: Vec::new(),
             data: Vec::new(),
         }
@@ -592,7 +592,7 @@ where
     {
         VectorIteratorPerm {
             ind_data: self.indices.iter().zip(self.data.iter()),
-            perm: perm,
+            perm,
         }
     }
 
@@ -669,11 +669,11 @@ where
             .iter()
             .map(|i| I2::from_usize(i.index()))
             .collect();
-        let data = self.data.iter().map(|x| x.clone().into()).collect();
+        let data = self.data.iter().cloned().collect();
         CsVecI {
             dim: self.dim,
-            indices: indices,
-            data: data,
+            indices,
+            data,
         }
     }
 
@@ -688,7 +688,7 @@ where
             storage: CSR,
             nrows: 1,
             ncols: self.dim,
-            indptr: indptr,
+            indptr,
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -705,7 +705,7 @@ where
             storage: CSC,
             nrows: self.dim,
             ncols: 1,
-            indptr: indptr,
+            indptr,
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -807,7 +807,7 @@ where
     }
 
     /// Transform this vector into a set of (index, value) tuples
-    pub fn to_set(self) -> HashSet<(usize, N)>
+    pub fn to_set(&self) -> HashSet<(usize, N)>
     where
         N: Hash + Eq + Clone,
     {
@@ -891,8 +891,8 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
     ) -> Result<CsVecViewI<'a, N, I>, SprsError> {
         let v = CsVecViewI {
             dim: n,
-            indices: indices,
-            data: data,
+            indices,
+            data,
         };
         v.check_structure().and(Ok(v))
     }
