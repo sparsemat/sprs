@@ -7,6 +7,43 @@ use sparse::prelude::*;
 use std::iter::Sum;
 use Ix2;
 
+/// Compute the dot product of two sparse vectors, using binary search to find matching indices.
+///
+/// Runs in O(MlogN) time, where M and N are the number of non-zero entries in each vector.
+pub fn csvec_dot_by_binary_search<N, I>(
+    vec1: CsVecViewI<N, I>,
+    vec2: CsVecViewI<N, I>,
+) -> N
+where
+    I: SpIndex,
+    N: Num + Copy,
+{
+    let (mut idx1, mut val1, mut idx2, mut val2) = if vec1.nnz() < vec2.nnz() {
+        (vec1.indices(), vec1.data(), vec2.indices(), vec2.data())
+    } else {
+        (vec2.indices(), vec2.data(), vec1.indices(), vec1.data())
+    };
+
+    let mut sum = N::zero();
+    while !idx1.is_empty() && !idx2.is_empty() {
+        debug_assert_eq!(idx1.len(), val1.len());
+        debug_assert_eq!(idx2.len(), val2.len());
+
+        let (found, i) = match idx2.binary_search(&idx1[0]) {
+            Ok(i) => (true, i),
+            Err(i) => (false, i),
+        };
+        if found {
+            sum = sum + val1[0] * val2[i];
+        }
+        idx1 = &idx1[1..];
+        val1 = &val1[1..];
+        idx2 = &idx2[i..];
+        val2 = &val2[i..];
+    }
+    sum
+}
+
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
 pub fn mul_acc_mat_vec_csc<N, I>(
@@ -353,7 +390,7 @@ pub fn csr_mulacc_dense_colmaj<'a, N, I>(
 
 #[cfg(test)]
 mod test {
-    use super::{csr_mul_csr, mul_acc_mat_vec_csc, mul_acc_mat_vec_csr};
+    use super::*;
     use ndarray::{arr2, Array, ShapeBuilder};
     use sparse::csmat::CompressedStorage::{CSC, CSR};
     use sparse::{CsMat, CsMatView, CsVec};
@@ -362,6 +399,19 @@ mod test {
         mat1_self_matprod, mat2, mat4, mat5, mat_dense1, mat_dense1_colmaj,
         mat_dense2,
     };
+
+    #[test]
+    fn test_csvec_dot_by_binary_search() {
+        let vec1 = CsVecI::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
+        let vec2 = CsVecI::new(8, vec![1, 3, 5, 7], vec![2.; 4]);
+        let vec3 = CsVecI::new(8, vec![1, 2, 5, 6], vec![3.; 4]);
+
+        assert_eq!(0., csvec_dot_by_binary_search(vec1.view(), vec2.view()));
+        assert_eq!(4., csvec_dot_by_binary_search(vec1.view(), vec1.view()));
+        assert_eq!(16., csvec_dot_by_binary_search(vec2.view(), vec2.view()));
+        assert_eq!(6., csvec_dot_by_binary_search(vec1.view(), vec3.view()));
+        assert_eq!(12., csvec_dot_by_binary_search(vec2.view(), vec3.view()));
+    }
 
     #[test]
     fn mul_csc_vec() {
