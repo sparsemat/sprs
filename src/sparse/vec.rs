@@ -767,10 +767,25 @@ where
                 .map(|(idx, val)| *val * *rhs.index(idx.index()))
                 .sum()
         } else {
-            self.iter()
-                .nnz_zip(rhs.into_sparse_vec_iter())
-                .map(|(_, &lval, &rval)| lval * rval)
-                .fold(N::zero(), |x, y| x + y)
+            let mut lhs_iter = self.iter();
+            let mut rhs_iter = rhs.into_sparse_vec_iter().into_iter();
+            let mut sum = N::zero();
+            let mut left_nnz = lhs_iter.next();
+            let mut right_nnz = rhs_iter.next();
+            while left_nnz.is_some() && right_nnz.is_some() {
+                let (left_ind, left_val) = left_nnz.unwrap();
+                let (right_ind, right_val) = right_nnz.unwrap();
+                if left_ind == right_ind {
+                    sum = sum + *left_val * *right_val;
+                }
+                if left_ind <= right_ind {
+                    left_nnz = lhs_iter.next();
+                }
+                if left_ind >= right_ind {
+                    right_nnz = rhs_iter.next();
+                }
+            }
+            sum
         }
     }
 
