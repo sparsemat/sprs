@@ -2,6 +2,10 @@
 Changelog
 =========
 
+- 0.6.4
+  - add specialized sparse/sparse vector dot product using binary search
+    for vectors where the number of non-zeros is very different.
+  - enhance performance of sparse/sparse vector dot product
 - 0.6.3
     - enforce rustfmt style checking
     - more explicit error messages when checking the structure of a ``CsMat``
