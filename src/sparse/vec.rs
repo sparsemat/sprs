@@ -26,7 +26,7 @@ use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::{self, Iter, IterMut};
 use Ix1;
 
-use num_traits::{Num, Zero};
+use num_traits::{Float, Num, Signed, Zero};
 
 use array_backend::Array2;
 use errors::SprsError;
@@ -811,6 +811,58 @@ where
             .sum()
     }
 
+    /// Compute the squared L2-norm.
+    pub fn squared_l2_norm(&self) -> N
+    where
+        N: Num + Copy + Sum,
+    {
+        self.data.iter().map(|x| *x * *x).sum()
+    }
+
+    /// Compute the L2-norm.
+    pub fn l2_norm(&self) -> N
+    where
+        N: Float + Sum,
+    {
+        self.squared_l2_norm().sqrt()
+    }
+
+    /// Compute the L1-norm.
+    pub fn l1_norm(&self) -> N
+    where
+        N: Signed + Sum,
+    {
+        self.data.iter().map(|x| x.abs()).sum()
+    }
+
+    /// Compute the vector norm for the given order p.
+    ///
+    /// The norm for vector v is defined as:
+    /// - If p = ∞: maxᵢ |vᵢ|
+    /// - If p = -∞: minᵢ |vᵢ|
+    /// - If p = 0: ∑ᵢ[vᵢ≠0]
+    /// - Otherwise: ᵖ√(∑ᵢ|vᵢ|ᵖ)
+    pub fn norm(&self, p: N) -> N
+    where
+        N: Float + Sum,
+    {
+        let abs_val_iter = self.data.iter().map(|x| x.abs());
+        if p.is_infinite() {
+            if self.data.is_empty() {
+                N::zero()
+            } else if p.is_sign_positive() {
+                abs_val_iter.fold(N::neg_infinity(), N::max)
+            } else {
+                abs_val_iter.fold(N::infinity(), N::min)
+            }
+        } else if p.is_zero() {
+            N::from(abs_val_iter.filter(|x| !x.is_zero()).count())
+                .expect("Conversion from usize to a Float type should not fail")
+        } else {
+            abs_val_iter.map(|x| x.powf(p)).sum::<N>().powf(p.powi(-1))
+        }
+    }
+
     /// Fill a dense vector with our values
     pub fn scatter(&self, out: &mut [N])
     where
@@ -892,6 +944,20 @@ where
     pub fn iter_mut(&mut self) -> VectorIteratorMut<N, I> {
         VectorIteratorMut {
             ind_data: self.indices.iter().zip(self.data.iter_mut()),
+        }
+    }
+
+    /// Divides the vector by its own L2-norm.
+    ///
+    /// Zero vector is left unchanged.
+    pub fn unit_normalize(&mut self)
+    where
+        N: Float + Sum,
+    {
+        let norm_sq = self.squared_l2_norm();
+        if norm_sq > N::zero() {
+            let norm = norm_sq.sqrt();
+            self.map_inplace(|x| *x / norm);
         }
     }
 }
@@ -1337,6 +1403,80 @@ mod test {
         let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
         let dense_vec = vec![0., 1., 2., 3., 4., 5., 6., 7., 8.];
         vec1.dot(&dense_vec);
+    }
+
+    #[test]
+    fn squared_l2_norm() {
+        // Should work with both float and integer data
+
+        let v = CsVec::new(0, Vec::<usize>::new(), Vec::<i32>::new());
+        assert_eq!(0, v.squared_l2_norm());
+
+        let v = CsVec::new(0, Vec::<usize>::new(), Vec::<f32>::new());
+        assert_eq!(0., v.squared_l2_norm());
+
+        let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0, 1, 4, 5, 7]);
+        assert_eq!(v.dot(&v), v.squared_l2_norm());
+
+        let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0., 1., 4., 5., 7.]);
+        assert_eq!(v.dot(&v), v.squared_l2_norm());
+    }
+
+    #[test]
+    fn l2_norm() {
+        let v = CsVec::new(0, Vec::<usize>::new(), Vec::<f32>::new());
+        assert_eq!(0., v.l2_norm());
+
+        let v = test_vec1();
+        assert_eq!(v.dot(&v).sqrt(), v.l2_norm());
+    }
+
+    #[test]
+    fn unit_normalize() {
+        let mut v = CsVec::new(0, Vec::<usize>::new(), Vec::<f32>::new());
+        v.unit_normalize();
+        assert_eq!(0, v.nnz());
+        assert!(v.indices.is_empty());
+        assert!(v.data.is_empty());
+
+        let mut v = CsVec::new(8, vec![1, 3, 5], vec![0., 0., 0.]);
+        v.unit_normalize();
+        assert_eq!(3, v.nnz());
+        assert!(v.data.iter().all(|x| x.is_zero()));
+
+        let mut v =
+            CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0., 1., 4., 5., 7.]);
+        v.unit_normalize();
+        let norm = (1f32 + 4. * 4. + 5. * 5. + 7. * 7.).sqrt();
+        assert_eq!(
+            vec![0., 1. / norm, 4. / norm, 5. / norm, 7. / norm],
+            v.data
+        );
+        assert!((v.l2_norm() - 1.).abs() < 1e-5);
+    }
+
+    #[test]
+    fn l1_norm() {
+        let v = CsVec::new(0, Vec::<usize>::new(), Vec::<f32>::new());
+        assert_eq!(0., v.l1_norm());
+
+        let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0, -1, 4, -5, 7]);
+        assert_eq!(1 + 4 + 5 + 7, v.l1_norm());
+    }
+
+    #[test]
+    fn norm() {
+        let v = CsVec::new(0, Vec::<usize>::new(), Vec::<f32>::new());
+        assert_eq!(0., v.norm(std::f32::INFINITY)); // Here we choose the same behavior as Eigen
+        assert_eq!(0., v.norm(0.));
+        assert_eq!(0., v.norm(5.));
+
+        let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0., 1., -4., 5., -7.]);
+        assert_eq!(7., v.norm(std::f32::INFINITY));
+        assert_eq!(0., v.norm(std::f32::NEG_INFINITY));
+        assert_eq!(4., v.norm(0.));
+        assert_eq!(v.l1_norm(), v.norm(1.));
+        assert_eq!(v.l2_norm(), v.norm(2.));
     }
 
     #[test]
