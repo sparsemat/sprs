@@ -5,6 +5,7 @@ extern crate suitesparse_ldl_sys;
 use std::ops::Deref;
 
 use num_traits::Num;
+use sprs::errors::SprsError;
 use sprs::{CsMatI, CsMatViewI, PermOwnedI, SpIndex};
 use suitesparse_ldl_sys::*;
 
@@ -143,7 +144,10 @@ macro_rules! ldl_impl {
             /// # Panics
             ///
             /// If the matrix is not symmetric.
-            pub fn factor<N, I>(self, mat: CsMatViewI<N, I>) -> $Numeric
+            pub fn factor<N, I>(
+                self,
+                mat: CsMatViewI<N, I>,
+            ) -> Result<$Numeric, SprsError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -163,8 +167,7 @@ macro_rules! ldl_impl {
                     y: y,
                     pattern: pattern,
                 };
-                ldl_numeric.update(mat);
-                ldl_numeric
+                ldl_numeric.update(mat).map(|_| ldl_numeric)
             }
         }
 
@@ -174,7 +177,7 @@ macro_rules! ldl_impl {
             /// # Panics
             ///
             /// * if mat is not symmetric
-            pub fn new<N, I>(mat: CsMatViewI<N, I>) -> Self
+            pub fn new<N, I>(mat: CsMatViewI<N, I>) -> Result<Self, SprsError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -195,7 +198,7 @@ macro_rules! ldl_impl {
             pub fn new_perm<N, I>(
                 mat: CsMatViewI<N, I>,
                 perm: PermOwnedI<I>,
-            ) -> Self
+            ) -> Result<Self, SprsError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -210,7 +213,10 @@ macro_rules! ldl_impl {
             /// # Panics
             ///
             /// If the matrix is not symmetric.
-            pub fn update<N, I>(&mut self, mat: CsMatViewI<N, I>)
+            pub fn update<N, I>(
+                &mut self,
+                mat: CsMatViewI<N, I>,
+            ) -> Result<(), SprsError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -220,9 +226,10 @@ macro_rules! ldl_impl {
                 let ai = mat.indices().as_ptr();
                 let ax = mat.data().as_ptr();
                 assert!(unsafe { $valid_matrix(self.symbolic.n, ap, ai) } != 0);
-                unsafe {
+                let n = self.symbolic.n;
+                let ldl_retcode = unsafe {
                     $numeric(
-                        self.symbolic.n,
+                        n,
                         ap,
                         ai,
                         ax,
@@ -237,8 +244,14 @@ macro_rules! ldl_impl {
                         self.symbolic.flag.as_mut_ptr(),
                         self.symbolic.p.as_ptr(),
                         self.symbolic.pinv.as_ptr(),
-                    );
+                    )
+                };
+                if ldl_retcode != n {
+                    // FIXME should return the value of ldl_retcode
+                    // but this would need breaking change in sprs error type
+                    return Err(SprsError::SingularMatrix);
                 }
+                Ok(())
             }
 
             /// Solve the system A x = rhs
@@ -342,7 +355,9 @@ mod tests {
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
         );
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let ldlt = LdlSymbolic::new_perm(mat.view(), perm).factor(mat.view());
+        let ldlt = LdlSymbolic::new_perm(mat.view(), perm)
+            .factor(mat.view())
+            .unwrap();
         let b = vec![9., 60., 18., 34.];
         let x0 = vec![1., 2., 3., 4.];
         let x = ldlt.solve(&b);
@@ -358,8 +373,9 @@ mod tests {
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
         );
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let ldlt =
-            LdlLongSymbolic::new_perm(mat.view(), perm).factor(mat.view());
+        let ldlt = LdlLongSymbolic::new_perm(mat.view(), perm)
+            .factor(mat.view())
+            .unwrap();
         let b = vec![9., 60., 18., 34.];
         let x0 = vec![1., 2., 3., 4.];
         let x = ldlt.solve(&b);
