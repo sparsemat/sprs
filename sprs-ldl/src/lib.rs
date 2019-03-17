@@ -59,6 +59,7 @@ use std::ops::IndexMut;
 
 use num_traits::Num;
 
+use sprs::errors::SprsError;
 use sprs::indexing::SpIndex;
 use sprs::linalg;
 use sprs::stack::DStack;
@@ -161,7 +162,10 @@ impl<I: SpIndex> LdlSymbolic<I> {
     }
 
     /// Compute the numerical decomposition of the given matrix.
-    pub fn factor<N>(self, mat: CsMatViewI<N, I>) -> LdlNumeric<N, I>
+    pub fn factor<N>(
+        self,
+        mat: CsMatViewI<N, I>,
+    ) -> Result<LdlNumeric<N, I>, SprsError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -180,8 +184,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
             y_workspace: y_workspace,
             pattern_workspace: pattern_workspace,
         };
-        ldl_numeric.update(mat);
-        ldl_numeric
+        ldl_numeric.update(mat).map(|_| ldl_numeric)
     }
 }
 
@@ -191,7 +194,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new(mat: CsMatViewI<N, I>) -> Self
+    pub fn new(mat: CsMatViewI<N, I>) -> Result<Self, SprsError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -208,7 +211,10 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new_perm(mat: CsMatViewI<N, I>, perm: PermOwnedI<I>) -> Self
+    pub fn new_perm(
+        mat: CsMatViewI<N, I>,
+        perm: PermOwnedI<I>,
+    ) -> Result<Self, SprsError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -219,7 +225,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// Update the decomposition with the given matrix. The matrix must
     /// have the same non-zero pattern as the original matrix, otherwise
     /// the result is unspecified.
-    pub fn update(&mut self, mat: CsMatViewI<N, I>)
+    pub fn update(&mut self, mat: CsMatViewI<N, I>) -> Result<(), SprsError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -235,7 +241,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
             &mut self.y_workspace,
             &mut self.pattern_workspace,
             &mut self.symbolic.flag_workspace,
-        );
+        )
     }
 
     /// Solve the system A x = rhs
@@ -349,7 +355,8 @@ pub fn ldl_numeric<N, I, PStorage>(
     y_workspace: &mut [N],
     pattern_workspace: &mut DStack<I>,
     flag_workspace: &mut [I],
-) where
+) -> Result<(), SprsError>
+where
     N: Clone + Copy + PartialEq + Num + PartialOrd,
     I: SpIndex,
     PStorage: Deref<Target = [I]>,
@@ -404,9 +411,12 @@ pub fn ldl_numeric<N, I, PStorage>(
             l_nz[i] += I::one();
         }
         if diag[k] == N::zero() {
-            panic!("Matrix is singular");
+            // FIXME should return info on k
+            // but this would need breaking change in sprs error type
+            return Err(SprsError::SingularMatrix);
         }
     }
+    Ok(())
 }
 
 /// Triangular solve specialized on lower triangular matrices
@@ -582,7 +592,8 @@ mod test {
             &mut y_workspace,
             &mut pattern_workspace,
             &mut flag_workspace,
-        );
+        )
+        .unwrap();
 
         let (expected_lp, expected_li, expected_lx, expected_d) =
             expected_factors1();
@@ -622,7 +633,7 @@ mod test {
     fn test_factor_solve1() {
         let mat = test_mat1();
         let b = test_vec1();
-        let ldlt = super::LdlNumeric::new(mat.view());
+        let ldlt = super::LdlNumeric::new(mat.view()).unwrap();
         let x = ldlt.solve(&b);
         let x0 = expected_res1();
         assert_eq!(x, x0);
@@ -650,7 +661,7 @@ mod test {
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 
-        let ldlt = super::LdlNumeric::new_perm(mat.view(), perm);
+        let ldlt = super::LdlNumeric::new_perm(mat.view(), perm).unwrap();
         let b = vec![9, 60, 18, 34];
         let x0 = vec![1, 2, 3, 4];
         let x = ldlt.solve(&b);

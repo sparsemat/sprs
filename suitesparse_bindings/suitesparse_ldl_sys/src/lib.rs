@@ -41,7 +41,7 @@ extern "C" {
         flag: *mut ldl_int,
         p: *const ldl_int,
         pinv: *const ldl_int,
-    );
+    ) -> ldl_int;
 
     pub fn ldl_lsolve(
         n: ldl_int,
@@ -118,7 +118,7 @@ extern "C" {
         flag: *mut ldl_long,
         p: *const ldl_long,
         pinv: *const ldl_long,
-    );
+    ) -> ldl_long;
 
     pub fn ldl_l_lsolve(
         n: ldl_long,
