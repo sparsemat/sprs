@@ -279,7 +279,7 @@ impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a [N] {
     }
 
     fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
-        self.into_iter().enumerate()
+        self.iter().enumerate()
     }
 
     fn is_dense(&self) -> bool {
@@ -299,7 +299,7 @@ impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a Vec<N> {
     }
 
     fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
-        self.into_iter().enumerate()
+        self.iter().enumerate()
     }
 
     fn is_dense(&self) -> bool {
@@ -768,7 +768,7 @@ where
                 .sum()
         } else {
             let mut lhs_iter = self.iter();
-            let mut rhs_iter = rhs.into_sparse_vec_iter().into_iter();
+            let mut rhs_iter = rhs.into_sparse_vec_iter();
             let mut sum = N::zero();
             let mut left_nnz = lhs_iter.next();
             let mut right_nnz = rhs_iter.next();
