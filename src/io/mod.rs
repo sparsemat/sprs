@@ -136,11 +136,13 @@ where
 }
 
 /// Read a sparse matrix in the Matrix Market format from an `io::BufRead` and return a
-/// corresponding triplet matrix. 
+/// corresponding triplet matrix.
 ///
 /// Presently, only general matrices are supported, but symmetric and hermitian
 /// matrices should be supported in the future.
-pub fn read_matrix_market_from_bufread<N, I, R>(reader: &mut R) -> Result<TriMatI<N, I>, IoError>
+pub fn read_matrix_market_from_bufread<N, I, R>(
+    reader: &mut R,
+) -> Result<TriMatI<N, I>, IoError>
 where
     I: SpIndex,
     N: NumCast + Clone,
@@ -438,8 +440,8 @@ where
 #[cfg(test)]
 mod test {
     use super::{
-        read_matrix_market, read_matrix_market_from_bufread, write_matrix_market, write_matrix_market_sym,
-        IoError, SymmetryMode,
+        read_matrix_market, read_matrix_market_from_bufread,
+        write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
     use tempdir::TempDir;
     use CsMat;
@@ -464,7 +466,8 @@ mod test {
         let f = std::fs::File::open(path).unwrap();
         let mut reader = std::io::BufReader::new(f);
 
-        let mat = read_matrix_market_from_bufread::<f64, usize, _>(&mut reader).unwrap();
+        let mat = read_matrix_market_from_bufread::<f64, usize, _>(&mut reader)
+            .unwrap();
         assert_eq!(mat.rows(), 5);
         assert_eq!(mat.cols(), 5);
         assert_eq!(mat.nnz(), 8);
@@ -475,7 +478,6 @@ mod test {
             &[1., 10.5, 1.5e-02, 6., 2.505e2, -2.8e2, 3.332e1, 1.2e+1]
         );
     }
-
 
     #[test]
     fn int_matrix_market_read() {
