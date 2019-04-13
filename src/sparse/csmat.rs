@@ -16,8 +16,8 @@ use std::mem;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Range, Sub};
 use std::slice::{self, Iter, Windows};
 
-use ndarray::{self, Array, ArrayBase, ShapeBuilder};
 use ndarray::linalg::Dot;
+use ndarray::{self, Array, ArrayBase, ShapeBuilder};
 use {Ix1, Ix2, Shape};
 
 use array_backend::Array2;
@@ -1830,7 +1830,6 @@ where
     fn dot(&self, rhs: &ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         Mul::mul(self, rhs)
     }
-
 }
 
 impl<'a, 'b, N, I, IpS, IS, DS, DS2> Mul<&'b ArrayBase<DS2, Ix1>>
@@ -1889,7 +1888,6 @@ where
         Mul::mul(self, rhs)
     }
 }
-
 
 impl<N, I, IpS, IS, DS> Index<[usize; 2]> for CsMatBase<N, I, IpS, IS, DS>
 where
