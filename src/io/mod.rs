@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 use std::path::Path;
 
 use num_traits::cast::NumCast;
@@ -132,6 +132,22 @@ where
     let mm_file = mm_file.as_ref();
     let f = File::open(mm_file)?;
     let mut reader = io::BufReader::new(f);
+    read_matrix_market_from_bufread(&mut reader)
+}
+
+/// Read a sparse matrix in the Matrix Market format from an `io::BufRead` and return a
+/// corresponding triplet matrix.
+///
+/// Presently, only general matrices are supported, but symmetric and hermitian
+/// matrices should be supported in the future.
+pub fn read_matrix_market_from_bufread<N, I, R>(
+    reader: &mut R,
+) -> Result<TriMatI<N, I>, IoError>
+where
+    I: SpIndex,
+    N: NumCast + Clone,
+    R: io::BufRead,
+{
     // MatrixMarket format specifies lines of at most 1024 chars
     let mut line = String::with_capacity(1024);
 
@@ -424,8 +440,8 @@ where
 #[cfg(test)]
 mod test {
     use super::{
-        read_matrix_market, write_matrix_market, write_matrix_market_sym,
-        IoError, SymmetryMode,
+        read_matrix_market, read_matrix_market_from_bufread,
+        write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
     use tempdir::TempDir;
     use CsMat;
@@ -433,6 +449,25 @@ mod test {
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
+        assert_eq!(mat.rows(), 5);
+        assert_eq!(mat.cols(), 5);
+        assert_eq!(mat.nnz(), 8);
+        assert_eq!(mat.row_inds(), &[0, 1, 2, 0, 3, 3, 3, 4]);
+        assert_eq!(mat.col_inds(), &[0, 1, 2, 3, 1, 3, 4, 4]);
+        assert_eq!(
+            mat.data(),
+            &[1., 10.5, 1.5e-02, 6., 2.505e2, -2.8e2, 3.332e1, 1.2e+1]
+        );
+    }
+
+    #[test]
+    fn simple_matrix_market_read_from_bufread() {
+        let path = "data/matrix_market/simple.mm";
+        let f = std::fs::File::open(path).unwrap();
+        let mut reader = std::io::BufReader::new(f);
+
+        let mat = read_matrix_market_from_bufread::<f64, usize, _>(&mut reader)
+            .unwrap();
         assert_eq!(mat.rows(), 5);
         assert_eq!(mat.cols(), 5);
         assert_eq!(mat.nnz(), 8);
