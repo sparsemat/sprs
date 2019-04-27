@@ -1815,6 +1815,57 @@ where
     }
 }
 
+impl<'a, 'b, N, I, IpS, IS, DS, DS2> Dot<CsMatBase<N, I, IpS, IS, DS>>
+    for ArrayBase<DS2, Ix2>
+where
+    N: 'a + Copy + Num + Default + std::fmt::Debug,
+    I: 'a + SpIndex,
+    IpS: 'a + Deref<Target = [I]>,
+    IS: 'a + Deref<Target = [I]>,
+    DS: 'a + Deref<Target = [N]>,
+    DS2: 'b + ndarray::Data<Elem = N>,
+{
+    type Output = Array<N, Ix2>;
+
+    fn dot(&self, rhs: &CsMatBase<N, I, IpS, IS, DS>) -> Array<N, Ix2> {
+        let rhs_t = rhs.transpose_view();
+        let lhs_t = self.t();
+
+        let rows = rhs_t.rows();
+        let cols = lhs_t.cols();
+        // when the number of colums is small, it is more efficient
+        // to perform the product by iterating over the columns of
+        // the rhs, otherwise iterating by rows can take advantage of
+        // vectorized axpy.
+        let rres = match (rhs_t.storage(), cols >= 8) {
+            (CSR, true) => {
+                let mut res = Array::zeros((rows, cols));
+                prod::csr_mulacc_dense_rowmaj(rhs_t, lhs_t, res.view_mut());
+                res.reversed_axes()
+            }
+            (CSR, false) => {
+                let mut res = Array::zeros((rows, cols).f());
+                prod::csr_mulacc_dense_colmaj(rhs_t, lhs_t, res.view_mut());
+                res.reversed_axes()
+            }
+            (CSC, true) => {
+                let mut res = Array::zeros((rows, cols));
+                prod::csc_mulacc_dense_rowmaj(rhs_t, lhs_t, res.view_mut());
+                res.reversed_axes()
+            }
+            (CSC, false) => {
+                let mut res = Array::zeros((rows, cols).f());
+                prod::csc_mulacc_dense_colmaj(rhs_t, lhs_t, res.view_mut());
+                res.reversed_axes()
+            }
+        };
+
+        assert_eq!(self.shape()[0], rres.shape()[0]);
+        assert_eq!(rhs.cols(), rres.shape()[1]);
+        rres
+    }
+}
+
 impl<'a, 'b, N, I, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix2>>
     for CsMatBase<N, I, IpS, IS, DS>
 where

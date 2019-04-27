@@ -58,6 +58,7 @@ assert_eq!(a, b.to_csc());
 
 */
 
+#![feature(re_rebalance_coherence)]
 #![deny(warnings)]
 
 #[cfg(feature = "alga")]
