@@ -1082,14 +1082,21 @@ where
         }
     }
 
-    pub fn map<F>(&self, f: F) -> CsMatI<N, I>
+    /// Return a new sparse matrix with the same sparsity pattern, with all non-zero values mapped by the function `f`.
+    pub fn map<F, N2>(&self, f: F) -> CsMatI<N2, I>
     where
-        F: FnMut(&N) -> N,
-        N: Clone,
+        F: FnMut(&N) -> N2,
     {
-        let mut res = self.to_owned();
-        res.map_inplace(f);
-        res
+        let data: Vec<N2> = self.data.iter().map(f).collect();
+
+        CsMatI {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: self.indptr.to_vec(),
+            indices: self.indices.to_vec(),
+            data,
+        }
     }
 
     /// Access an element given its outer_ind and inner_ind.
