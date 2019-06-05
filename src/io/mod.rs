@@ -45,7 +45,7 @@ impl Error for IoError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             IoError::Io(ref err) => Some(err),
             IoError::BadMatrixMarketFile => None,
