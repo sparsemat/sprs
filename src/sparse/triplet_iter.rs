@@ -131,11 +131,11 @@ where
     {
 
         // (i,j, input position, output position)
-        let mut rc: Vec<(I, I, usize, usize)> = Vec::new();
+        let mut rc: Vec<(I, I, N)> = Vec::new();
 
         let mut nnz_max = 0;
-        for (_, (i, j)) in self.clone() {
-            rc.push((i,j, nnz_max, 0));
+        for (v, (i, j)) in self.clone() {
+            rc.push((i,j, v.clone()));
             nnz_max += 1;
         }
 
@@ -148,7 +148,7 @@ where
             },
         }
 
-        let outer_idx = |idx: &(I,I, usize, usize)| {
+        let outer_idx = |idx: &(I,I, _)| {
             match storage {
                 CompressedStorage::CSR => idx.0,
                 CompressedStorage::CSC => idx.1,
@@ -162,13 +162,15 @@ where
         for rec in 0 .. nnz_max {
             if rec > 0 {
                 if rc[rec - 1].0 == rc[rec].0 && rc[rec - 1].1 == rc[rec].1 {
-                    // got a duplicate
+                    // got a duplicate - add the value in the current slot.
+                    rc[slot].2 = rc[slot].2.clone() + rc[rec].2.clone()
                 } else {
+                    // new cell -- fill it out
                     slot += 1;
+                    rc[slot] = rc[rec].clone();
+                    
                 }
             }
-
-            rc[rec].3 = slot;
 
             let new_outer = outer_idx(&rc[rec]);
             while new_outer > cur_outer {
@@ -179,27 +181,23 @@ where
 
         slot += 1;
         indptr.push(I::from_usize(slot));
-
-        rc.sort_by_key(|i| i.2);
+        rc.truncate(slot);
 
         let mut data: Vec<N> = vec![N::zero(); slot];
         let mut indices: Vec<I> = vec![I::zero(); slot];
 
-        for ((v, (i, j)), (i2, j2, pos, slot)) in self.clone().into_iter().zip(rc.into_iter()) {
-
-            assert_eq!(i, i2);
-            assert_eq!(j, j2);
+        for (n, (i, j, v)) in rc.into_iter().enumerate() {
 
             assert!({
-                let outer = outer_idx(&(i2,j2, pos, slot));
-                slot >= indptr[outer.index()].index() && slot < indptr[outer.index() + 1].index()
+                let outer = outer_idx(&(i, j, N::zero()));
+                n >= indptr[outer.index()].index() && n < indptr[outer.index() + 1].index()
             });
 
-            data[slot] = data[slot].clone() + v.clone();
+            data[n] = v;
 
             match storage {
-                CompressedStorage::CSR => { indices[slot] = j },
-                CompressedStorage::CSC => { indices[slot] = i },
+                CompressedStorage::CSR => { indices[n] = j },
+                CompressedStorage::CSC => { indices[n] = i },
             }
         }
 
