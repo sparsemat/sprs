@@ -264,8 +264,7 @@ where
     where
         N: Clone + Num,
     {
-        let res = self.transpose_view().to_csc();
-        res.transpose_into()
+        self.triplet_iter().into_csr()
     }
 
     pub fn view(&self) -> TriMatViewI<N, I> {
@@ -375,14 +374,18 @@ mod test {
         triplet_mat.add_triplet(3, 3, 6.);
         triplet_mat.add_triplet(3, 2, 5.);
 
-        let csc = triplet_mat.to_csc();
         let expected = CsMat::new_csc(
             (4, 4),
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
         );
+
+        let csc = triplet_mat.to_csc();
         assert_eq!(csc, expected);
+
+        let csr_to_csc = triplet_mat.to_csr().to_csc();
+        assert_eq!(csr_to_csc, expected);
     }
 
     #[test]
@@ -404,6 +407,7 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csc = triplet_mat.to_csc();
+        let csr = triplet_mat.to_csr();
         let expected = CsMat::new_csc(
             (4, 4),
             vec![0, 2, 3, 4, 6],
@@ -411,6 +415,7 @@ mod test {
             vec![1., 3., 2., 5., 4., 6.],
         );
         assert_eq!(csc, expected);
+        assert_eq!(csr, expected.to_csr());
     }
 
     #[test]
@@ -428,6 +433,7 @@ mod test {
             super::TriMat::from_triplets((5, 4), row_inds, col_inds, data);
 
         let csc = triplet_mat.to_csc();
+        let csr = triplet_mat.to_csr();
         let expected = CsMat::new_csc(
             (5, 4),
             vec![0, 2, 4, 5, 8],
@@ -436,6 +442,7 @@ mod test {
         );
 
         assert_eq!(csc, expected);
+        assert_eq!(csr, expected.to_csr());
     }
 
     #[test]
@@ -453,6 +460,7 @@ mod test {
         triplet_mat.set_triplet(locations[0], 2, 3, 0.);
 
         let csc = triplet_mat.to_csc();
+        let csr = triplet_mat.to_csr();
         let expected = CsMat::new_csc(
             (4, 4),
             vec![0, 2, 3, 4, 6],
@@ -460,6 +468,7 @@ mod test {
             vec![1., 3., 2., 5., 0., 6.],
         );
         assert_eq!(csc, expected);
+        assert_eq!(csr, expected.to_csr());
     }
 
     #[test]
@@ -481,14 +490,17 @@ mod test {
         triplet_mat.add_triplet(3, 2, 2.);
 
         let csr = triplet_mat.to_csr();
+        let csc = triplet_mat.to_csc();
+
         let expected = CsMat::new_csc(
             (4, 4),
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
-        )
-        .to_csr();
-        assert_eq!(csr, expected);
+        );
+
+        assert_eq!(csc, expected);
+        assert_eq!(csr, expected.to_csr());
     }
 
     #[test]
@@ -546,7 +558,6 @@ mod test {
         assert_eq!(csc, expected);
 
         let csr = triplet_mat.to_csr();
-
         assert_eq!(csr, expected.to_csr());
     }
 }
