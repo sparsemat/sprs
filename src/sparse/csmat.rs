@@ -1470,8 +1470,8 @@ pub mod raw {
     use indexing::SpIndex;
     use sparse::prelude::*;
     use std::mem::swap;
-    use Shape;
 
+/*
     /// Copy-convert a compressed matrix into the oppposite storage.
     ///
     /// The input compressed matrix does not need to have its indices sorted,
@@ -1513,6 +1513,7 @@ pub mod raw {
 
         convert_mat_storage(mat, indptr, indices, data);
     }
+*/
 
     /// Copy-convert a csmat into the oppposite storage.
     ///

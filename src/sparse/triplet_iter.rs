@@ -4,8 +4,8 @@
 use num_traits::Num;
 
 use indexing::SpIndex;
-use sparse::csmat;
 use sparse::{CsMatI, TriMatIter};
+use crate::CompressedStorage;
 
 impl<'a, N, I, RI, CI, DI> Iterator for TriMatIter<RI, CI, DI>
 where
@@ -107,94 +107,109 @@ where
     CI: Clone + Iterator<Item = &'a I>,
     DI: Clone + Iterator<Item = &'a N>,
 {
-    /// Consume this matrix to create a CSC matrix
-    pub fn into_csc(self) -> CsMatI<N, I>
+
+    /// Consume TriMatIter and produce a CSC matrix
+    pub fn into_csc(self) -> CsMatI<N, I> 
     where
-        N: Num,
+        N: Num
     {
-        let mut row_counts = vec![I::zero(); self.rows() + 1];
-        for i in self.clone().into_row_inds() {
-            row_counts[i.index() + 1] += I::one();
-        }
-        let mut indptr = row_counts.clone();
-        // cum sum
-        for i in 1..=self.rows() {
-            indptr[i] = indptr[i] + indptr[i - 1];
-        }
-        let nnz_max = indptr[self.rows()].index();
-        let mut indices = vec![I::zero(); nnz_max];
-        let mut data = vec![N::zero(); nnz_max];
+        self.into_cs(CompressedStorage::CSC)
+    }
 
-        // reset row counts to 0
-        for count in row_counts.iter_mut() {
-            *count = I::zero();
+    /// Consume TriMatIter and produce a CSR matrix
+    pub fn into_csr(self) -> CsMatI<N, I> 
+    where
+        N: Num
+    {
+        self.into_cs(CompressedStorage::CSR)
+    }
+
+    /// Consume TriMatIter and produce a CsMat matrix with the chosen storage
+    pub fn into_cs(self, storage: crate::CompressedStorage) -> CsMatI<N, I>
+    where
+        N: Num
+    {
+
+        // (i,j, input position, output position)
+        let mut rc: Vec<(I, I, usize, usize)> = Vec::new();
+
+        let mut nnz_max = 0;
+        for (_, (i, j)) in self.clone() {
+            rc.push((i,j, nnz_max, 0));
+            nnz_max += 1;
         }
 
-        for (val, (i, j)) in self.clone() {
-            let i = i.index();
-            let j = j.index();
-            let start = indptr[i].index();
-            let stop = start + row_counts[i].index();
-            let col_exists = {
-                let mut col_exists = false;
-                let iter = indices[start..stop]
-                    .iter()
-                    .zip(data[start..stop].iter_mut());
-                for (&col_cell, data_cell) in iter {
-                    if col_cell.index() == j {
-                        *data_cell = data_cell.clone() + val.clone();
-                        col_exists = true;
-                        break;
-                    }
+        match storage {
+            CompressedStorage::CSR => {
+                rc.sort_by_key(|i| (i.0, i.1));
+            },
+            CompressedStorage::CSC => {
+                rc.sort_by_key(|i| (i.1, i.0));
+            },
+        }
+
+        let outer_idx = |idx: &(I,I, usize, usize)| {
+            match storage {
+                CompressedStorage::CSR => idx.0,
+                CompressedStorage::CSC => idx.1,
+            }
+        };
+
+        let mut slot = 0;
+        let mut indptr = vec![I::zero()];
+        let mut cur_outer = I::zero();
+
+        for rec in 0 .. nnz_max {
+            if rec > 0 {
+                if rc[rec - 1].0 == rc[rec].0 && rc[rec - 1].1 == rc[rec].1 {
+                    // got a duplicate
+                } else {
+                    slot += 1;
                 }
-                col_exists
-            };
-            if !col_exists {
-                indices[stop] = I::from_usize(j);
-                data[stop] = val.clone();
-                row_counts[i] += I::one();
+            }
+
+            rc[rec].3 = slot;
+
+            let new_outer = outer_idx(&rc[rec]);
+            while new_outer > cur_outer {
+                indptr.push(I::from_usize(slot));
+                cur_outer += I::one();
             }
         }
 
-        // compress the nonzero entries
-        let mut dst_start = indptr[0].index();
-        for i in 0..self.rows() {
-            let start = indptr[i].index();
-            let col_nnz = row_counts[i].index();
-            if start != dst_start {
-                for k in 0..col_nnz {
-                    indices[dst_start + k] = indices[start + k];
-                    data[dst_start + k] = data[start + k].clone();
-                }
-            }
-            indptr[i] = I::from_usize(dst_start);
-            dst_start += col_nnz;
-        }
-        indptr[self.rows()] = I::from_usize(dst_start);
+        slot += 1;
+        indptr.push(I::from_usize(slot));
 
-        // at this point we have a CSR matrix with unsorted columns
-        // transposing it will yield the desired CSC matrix with sorted rows
-        let nnz = indptr[self.rows()].index();
-        let mut out_indptr = vec![I::zero(); self.cols() + 1];
-        let mut out_indices = vec![I::zero(); nnz];
-        let mut out_data = vec![N::zero(); nnz];
-        csmat::raw::convert_storage(
-            csmat::CompressedStorage::CSR,
-            self.shape(),
-            &indptr,
-            &indices[..nnz],
-            &data[..nnz],
-            &mut out_indptr,
-            &mut out_indices,
-            &mut out_data,
-        );
+        rc.sort_by_key(|i| i.2);
+
+        let mut data: Vec<N> = vec![N::zero(); slot];
+        let mut indices: Vec<I> = vec![I::zero(); slot];
+
+        for ((v, (i, j)), (i2, j2, pos, slot)) in self.clone().into_iter().zip(rc.into_iter()) {
+
+            assert_eq!(i, i2);
+            assert_eq!(j, j2);
+
+            assert!({
+                let outer = outer_idx(&(i2,j2, pos, slot));
+                slot >= indptr[outer.index()].index() && slot < indptr[outer.index() + 1].index()
+            });
+
+            data[slot] = data[slot].clone() + v.clone();
+
+            match storage {
+                CompressedStorage::CSR => { indices[slot] = j },
+                CompressedStorage::CSC => { indices[slot] = i },
+            }
+        }
+
         CsMatI {
-            storage: csmat::CompressedStorage::CSC,
+            storage,
             nrows: self.rows,
             ncols: self.cols,
-            indptr: out_indptr,
-            indices: out_indices,
-            data: out_data,
+            indptr,
+            indices,
+            data,
         }
     }
 }
