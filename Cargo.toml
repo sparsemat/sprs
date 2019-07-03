@@ -21,8 +21,8 @@ default = ["alga"]
 [dependencies]
 num-traits = "0.1.32"
 ndarray = ">=0.11, <0.13"
-alga = { version = "0.5", optional = true }
-num-complex = "0.1.36"
+alga = { version = "0.9", optional = true }
+num-complex = "0.2.1"
 serde = "1.0"
 serde_derive = "1.0"
 
