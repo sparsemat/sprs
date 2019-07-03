@@ -1291,12 +1291,12 @@ mod alga_impls {
 
     impl<N: Copy + Num, I: SpIndex> AbstractMonoid<Additive> for CsVecI<N, I> {}
 
-    impl<N, I> Inverse<Additive> for CsVecI<N, I>
+    impl<N, I> TwoSidedInverse<Additive> for CsVecI<N, I>
     where
         N: Clone + Neg<Output = N> + Copy + Num,
         I: SpIndex,
     {
-        fn inverse(&self) -> CsVecI<N, I> {
+        fn two_sided_inverse(&self) -> CsVecI<N, I> {
             CsVecBase {
                 data: self.data.iter().map(|x| -*x).collect(),
                 indices: self.indices.clone(),
@@ -1344,7 +1344,7 @@ mod alga_impls {
         #[test]
         fn additive_inverse_is_negated() {
             let vector = CsVec::new(2, vec![0], vec![2.]);
-            assert_eq!(-vector.clone(), Inverse::<Additive>::inverse(&vector));
+            assert_eq!(-vector.clone(), TwoSidedInverse::<Additive>::two_sided_inverse(&vector));
         }
     }
 }
