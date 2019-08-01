@@ -3,9 +3,9 @@
 
 use num_traits::Num;
 
+use crate::CompressedStorage;
 use indexing::SpIndex;
 use sparse::{CsMatI, TriMatIter};
-use crate::CompressedStorage;
 
 impl<'a, N, I, RI, CI, DI> Iterator for TriMatIter<RI, CI, DI>
 where
@@ -107,19 +107,18 @@ where
     CI: Clone + Iterator<Item = &'a I>,
     DI: Clone + Iterator<Item = &'a N>,
 {
-
     /// Consume TriMatIter and produce a CSC matrix
-    pub fn into_csc(self) -> CsMatI<N, I> 
+    pub fn into_csc(self) -> CsMatI<N, I>
     where
-        N: Num
+        N: Num,
     {
         self.into_cs(CompressedStorage::CSC)
     }
 
     /// Consume TriMatIter and produce a CSR matrix
-    pub fn into_csr(self) -> CsMatI<N, I> 
+    pub fn into_csr(self) -> CsMatI<N, I>
     where
-        N: Num
+        N: Num,
     {
         self.into_cs(CompressedStorage::CSR)
     }
@@ -127,39 +126,36 @@ where
     /// Consume TriMatIter and produce a CsMat matrix with the chosen storage
     pub fn into_cs(self, storage: crate::CompressedStorage) -> CsMatI<N, I>
     where
-        N: Num
+        N: Num,
     {
-
         // (i,j, input position, output position)
         let mut rc: Vec<(I, I, N)> = Vec::new();
 
         let mut nnz_max = 0;
         for (v, (i, j)) in self.clone() {
-            rc.push((i,j, v.clone()));
+            rc.push((i, j, v.clone()));
             nnz_max += 1;
         }
 
         match storage {
             CompressedStorage::CSR => {
                 rc.sort_by_key(|i| (i.0, i.1));
-            },
+            }
             CompressedStorage::CSC => {
                 rc.sort_by_key(|i| (i.1, i.0));
-            },
+            }
         }
 
-        let outer_idx = |idx: &(I,I, _)| {
-            match storage {
-                CompressedStorage::CSR => idx.0,
-                CompressedStorage::CSC => idx.1,
-            }
+        let outer_idx = |idx: &(I, I, _)| match storage {
+            CompressedStorage::CSR => idx.0,
+            CompressedStorage::CSC => idx.1,
         };
 
         let mut slot = 0;
         let mut indptr = vec![I::zero()];
         let mut cur_outer = I::zero();
 
-        for rec in 0 .. nnz_max {
+        for rec in 0..nnz_max {
             if rec > 0 {
                 if rc[rec - 1].0 == rc[rec].0 && rc[rec - 1].1 == rc[rec].1 {
                     // got a duplicate - add the value in the current slot.
@@ -168,7 +164,6 @@ where
                     // new cell -- fill it out
                     slot += 1;
                     rc[slot] = rc[rec].clone();
-                    
                 }
             }
 
@@ -187,17 +182,17 @@ where
         let mut indices: Vec<I> = vec![I::zero(); slot];
 
         for (n, (i, j, v)) in rc.into_iter().enumerate() {
-
             assert!({
                 let outer = outer_idx(&(i, j, N::zero()));
-                n >= indptr[outer.index()].index() && n < indptr[outer.index() + 1].index()
+                n >= indptr[outer.index()].index()
+                    && n < indptr[outer.index() + 1].index()
             });
 
             data[n] = v;
 
             match storage {
-                CompressedStorage::CSR => { indices[n] = j },
-                CompressedStorage::CSC => { indices[n] = i },
+                CompressedStorage::CSR => indices[n] = j,
+                CompressedStorage::CSC => indices[n] = i,
             }
         }
 
