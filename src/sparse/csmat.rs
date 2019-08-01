@@ -1471,49 +1471,49 @@ pub mod raw {
     use sparse::prelude::*;
     use std::mem::swap;
 
-/*
-    /// Copy-convert a compressed matrix into the oppposite storage.
-    ///
-    /// The input compressed matrix does not need to have its indices sorted,
-    /// but the output compressed matrix will have its indices sorted.
-    ///
-    /// Can be used to implement CSC <-> CSR conversions, or to implement
-    /// same-storage (copy) transposition.
-    ///
-    /// # Panics
-    ///
-    /// Panics if indptr contains non-zero values
-    ///
-    /// Panics if the output slices don't match the input matrices'
-    /// corresponding slices.
-    pub fn convert_storage<N, I>(
-        in_storage: super::CompressedStorage,
-        shape: Shape,
-        in_indtpr: &[I],
-        in_indices: &[I],
-        in_data: &[N],
-        indptr: &mut [I],
-        indices: &mut [I],
-        data: &mut [N],
-    ) where
-        N: Clone,
-        I: SpIndex,
-    {
-        // we're building a csmat even though the indices are not sorted,
-        // but it's not a problem since we don't rely on this property.
-        // FIXME: this would be better with an explicit unsorted matrix type
-        let mat = CsMatBase {
-            storage: in_storage,
-            nrows: shape.0,
-            ncols: shape.1,
-            indptr: in_indtpr,
-            indices: in_indices,
-            data: in_data,
-        };
+    /*
+        /// Copy-convert a compressed matrix into the oppposite storage.
+        ///
+        /// The input compressed matrix does not need to have its indices sorted,
+        /// but the output compressed matrix will have its indices sorted.
+        ///
+        /// Can be used to implement CSC <-> CSR conversions, or to implement
+        /// same-storage (copy) transposition.
+        ///
+        /// # Panics
+        ///
+        /// Panics if indptr contains non-zero values
+        ///
+        /// Panics if the output slices don't match the input matrices'
+        /// corresponding slices.
+        pub fn convert_storage<N, I>(
+            in_storage: super::CompressedStorage,
+            shape: Shape,
+            in_indtpr: &[I],
+            in_indices: &[I],
+            in_data: &[N],
+            indptr: &mut [I],
+            indices: &mut [I],
+            data: &mut [N],
+        ) where
+            N: Clone,
+            I: SpIndex,
+        {
+            // we're building a csmat even though the indices are not sorted,
+            // but it's not a problem since we don't rely on this property.
+            // FIXME: this would be better with an explicit unsorted matrix type
+            let mat = CsMatBase {
+                storage: in_storage,
+                nrows: shape.0,
+                ncols: shape.1,
+                indptr: in_indtpr,
+                indices: in_indices,
+                data: in_data,
+            };
 
-        convert_mat_storage(mat, indptr, indices, data);
-    }
-*/
+            convert_mat_storage(mat, indptr, indices, data);
+        }
+    */
 
     /// Copy-convert a csmat into the oppposite storage.
     ///
