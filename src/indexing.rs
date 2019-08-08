@@ -16,21 +16,25 @@ use num_traits::int::PrimInt;
 /// This is a convenience trait to enable using various integer sizes for sparse
 /// matrix indices.
 pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default {
-    /// Convert to usize
+    /// Convert to usize.
     ///
     /// # Panics
     ///
     /// If the integer cannot be represented as an `usize`, eg negative numbers.
-    /// The panic happens in debug builds only.
     fn index(self) -> usize;
 
-    /// Convert from usize
+    /// Convert to usize without checking for overflows.
+    fn index_unchecked(self) -> usize;
+
+    /// Convert from usize.
     ///
     /// # Panics
     ///
-    /// If the input overflows the index type. The panic happens in debug builds
-    /// only.
+    /// If the input overflows the index type.
     fn from_usize(ind: usize) -> Self;
+
+    /// Convert from usize without checking for overflows.
+    fn from_usize_unchecked(ind: usize) -> Self;
 }
 
 impl SpIndex for usize {
@@ -40,56 +44,58 @@ impl SpIndex for usize {
     }
 
     #[inline(always)]
+    fn index_unchecked(self) -> usize {
+        self
+    }
+
+    #[inline(always)]
     fn from_usize(ind: usize) -> Self {
+        ind
+    }
+
+    #[inline(always)]
+    fn from_usize_unchecked(ind: usize) -> Self {
         ind
     }
 }
 
-macro_rules! sp_index_signed_impl {
+macro_rules! sp_index_impl {
     ($int: ident) => {
         impl SpIndex for $int {
             #[inline(always)]
             fn index(self) -> usize {
-                debug_assert!(self >= 0);
+                num_traits::cast(self).unwrap_or_else(|| {
+                    panic!("Failed to convert {} to usize", self)
+                })
+            }
+
+            #[inline(always)]
+            fn index_unchecked(self) -> usize {
                 self as usize
             }
 
             #[inline(always)]
             fn from_usize(ind: usize) -> Self {
-                let max = $int::max_value() as usize;
-                debug_assert!(ind <= max);
+                num_traits::cast(ind).unwrap_or_else(|| {
+                    panic!("Failed to convert {} to index type", ind)
+                })
+            }
+
+            #[inline(always)]
+            fn from_usize_unchecked(ind: usize) -> Self {
                 ind as $int
             }
         }
     };
 }
 
-sp_index_signed_impl!(isize);
-sp_index_signed_impl!(i64);
-sp_index_signed_impl!(i32);
-sp_index_signed_impl!(i16);
-
-macro_rules! sp_index_unsigned_impl {
-    ($int: ident) => {
-        impl SpIndex for $int {
-            #[inline(always)]
-            fn index(self) -> usize {
-                self as usize
-            }
-
-            #[inline(always)]
-            fn from_usize(ind: usize) -> Self {
-                let max = $int::max_value() as usize;
-                debug_assert!(ind <= max);
-                ind as $int
-            }
-        }
-    };
-}
-
-sp_index_unsigned_impl!(u64);
-sp_index_unsigned_impl!(u32);
-sp_index_unsigned_impl!(u16);
+sp_index_impl!(isize);
+sp_index_impl!(i64);
+sp_index_impl!(i32);
+sp_index_impl!(i16);
+sp_index_impl!(u64);
+sp_index_impl!(u32);
+sp_index_impl!(u16);
 
 #[cfg(test)]
 mod test {
