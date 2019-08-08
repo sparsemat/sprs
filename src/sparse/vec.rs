@@ -678,11 +678,11 @@ where
     }
 
     /// View this vector as a matrix with only one row.
-    pub fn row_view(&self) -> CsMatVecView_<N, I> {
+    pub fn row_view<Iptr: SpIndex>(&self) -> CsMatVecView_<N, I, Iptr> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [I::zero(), I::from_usize(self.indices.len())],
+            data: [Iptr::zero(), Iptr::from_usize(self.indices.len())],
         };
         CsMatBase {
             storage: CSR,
@@ -695,11 +695,11 @@ where
     }
 
     /// View this vector as a matrix with only one column.
-    pub fn col_view(&self) -> CsMatVecView_<N, I> {
+    pub fn col_view<Iptr: SpIndex>(&self) -> CsMatVecView_<N, I, Iptr> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [I::zero(), I::from_usize(self.indices.len())],
+            data: [Iptr::zero(), Iptr::from_usize(self.indices.len())],
         };
         CsMatBase {
             storage: CSC,
@@ -1042,30 +1042,32 @@ where
     }
 }
 
-impl<'a, 'b, N, I, IS1, DS1, IpS2, IS2, DS2>
-    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>> for &'a CsVecBase<IS1, DS1>
+impl<'a, 'b, N, I, Iptr, IS1, DS1, IpS2, IS2, DS2>
+    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>> for &'a CsVecBase<IS1, DS1>
 where
     N: 'a + Copy + Num + Default,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
     IS1: 'a + Deref<Target = [I]>,
     DS1: 'a + Deref<Target = [N]>,
-    IpS2: 'b + Deref<Target = [I]>,
+    IpS2: 'b + Deref<Target = [Iptr]>,
     IS2: 'b + Deref<Target = [I]>,
     DS2: 'b + Deref<Target = [N]>,
 {
     type Output = CsVecI<N, I>;
 
-    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2>) -> CsVecI<N, I> {
+    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2, Iptr>) -> CsVecI<N, I> {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
 
-impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
-    for &'a CsMatBase<N, I, IpS1, IS1, DS1>
+impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
+    for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
     N: Copy + Num + Default + Sum,
     I: SpIndex,
-    IpS1: Deref<Target = [I]>,
+    Iptr: SpIndex,
+    IpS1: Deref<Target = [Iptr]>,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
     IS2: Deref<Target = [I]>,
