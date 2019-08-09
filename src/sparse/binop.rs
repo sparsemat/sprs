@@ -164,7 +164,7 @@ where
                 Both((ind, lval, rval)) => (ind, binop(lval, rval)),
             };
             if binop_val != N::zero() {
-                out_indices[nnz] = I::from_usize(ind);
+                out_indices[nnz] = I::from_usize_unchecked(ind);
                 out_data[nnz] = binop_val;
                 nnz += 1;
             }
