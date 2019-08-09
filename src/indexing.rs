@@ -71,6 +71,7 @@ macro_rules! sp_index_impl {
 
             #[inline(always)]
             fn index_unchecked(self) -> usize {
+                debug_assert!(num_traits::cast::<Self, usize>(self).is_some());
                 self as usize
             }
 
@@ -83,6 +84,7 @@ macro_rules! sp_index_impl {
 
             #[inline(always)]
             fn from_usize_unchecked(ind: usize) -> Self {
+                debug_assert!(num_traits::cast::<usize, Self>(ind).is_some());
                 ind as $int
             }
         }
