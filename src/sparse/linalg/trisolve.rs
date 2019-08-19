@@ -110,7 +110,7 @@ where
     // L_1_1 x1 = b_1 - x0*l_1_0
 
     for (col_ind, col) in lower_tri_mat.outer_iterator().enumerate() {
-        try!(lspsolve_csc_process_col(col, col_ind, rhs));
+        lspsolve_csc_process_col(col, col_ind, rhs)?;
     }
     Ok(())
 }
@@ -339,7 +339,7 @@ where
     for &ind in dstack.iter_right().map(stack::extract_stack_val) {
         println!("ind: {}", ind);
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
-        try!(lspsolve_csc_process_col(col, ind, x_workspace));
+        lspsolve_csc_process_col(col, ind, x_workspace)?;
     }
     Ok(())
 }
