@@ -130,8 +130,8 @@ impl<'iter, N: 'iter, I: 'iter + SpIndex, Iptr: 'iter + SpIndex> Iterator
         match self.indptr_iter.next() {
             None => None,
             Some(window) => {
-                let inner_start = window[0].index();
-                let inner_end = window[1].index();
+                let inner_start = window[0].index_unchecked();
+                let inner_end = window[1].index_unchecked();
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
@@ -167,8 +167,9 @@ impl<
             None => None,
             Some(outer_ind) => {
                 let outer_ind_perm = self.perm.at(outer_ind);
-                let inner_start = self.indptr[outer_ind_perm].index();
-                let inner_end = self.indptr[outer_ind_perm + 1].index();
+                let inner_start = self.indptr[outer_ind_perm].index_unchecked();
+                let inner_end =
+                    self.indptr[outer_ind_perm + 1].index_unchecked();
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
@@ -199,8 +200,8 @@ impl<'iter, N: 'iter, I: 'iter + SpIndex, Iptr: 'iter + SpIndex> Iterator
         match self.indptr_iter.next() {
             None => None,
             Some(window) => {
-                let inner_start = window[0].index();
-                let inner_end = window[1].index();
+                let inner_start = window[0].index_unchecked();
+                let inner_end = window[1].index_unchecked();
                 let indices = &self.indices[inner_start..inner_end];
 
                 let tmp = mem::replace(&mut self.data, &mut []);
@@ -237,8 +238,8 @@ impl<'iter, N: 'iter, I: 'iter + SpIndex, Iptr: 'iter + SpIndex>
         match self.indptr_iter.next_back() {
             None => None,
             Some(window) => {
-                let inner_start = window[0].index();
-                let inner_end = window[1].index();
+                let inner_start = window[0].index_unchecked();
+                let inner_end = window[1].index_unchecked();
                 let indices = &self.indices[inner_start..inner_end];
                 let data = &self.data[inner_start..inner_end];
                 // CsMat invariants imply CsVec invariants
@@ -282,9 +283,10 @@ where
                 // is necessary because there can be several adjacent
                 // empty outer dimensions.
                 loop {
-                    let nnz_end = self.indptr[self.cur_outer.index() + 1];
-                    if nnz_index == nnz_end.index() {
-                        self.cur_outer += I::from_usize(1);
+                    let nnz_end =
+                        self.indptr[self.cur_outer.index_unchecked() + 1];
+                    if nnz_index == nnz_end.index_unchecked() {
+                        self.cur_outer += I::one();
                     } else {
                         break;
                     }
@@ -321,9 +323,10 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     where
         N: Num + Clone,
     {
+        let _ = (I::from_usize(dim), Iptr::from_usize(dim)); // Make sure dim fits in type I & Iptr
         let n = dim;
-        let indptr = (0..=n).map(Iptr::from_usize).collect();
-        let indices = (0..n).map(I::from_usize).collect();
+        let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
+        let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
         CsMatI {
             storage: CSR,
@@ -349,9 +352,10 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     where
         N: Num + Clone,
     {
+        let _ = (I::from_usize(dim), Iptr::from_usize(dim)); // Make sure dim fits in type I & Iptr
         let n = dim;
-        let indptr = (0..=n).map(Iptr::from_usize).collect();
-        let indices = (0..n).map(I::from_usize).collect();
+        let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
+        let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
         CsMatI {
             storage: CSC,
@@ -565,8 +569,8 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     {
         let mut buf = Vec::new();
         for start_stop in self.indptr.windows(2) {
-            let start = start_stop[0].index();
-            let stop = start_stop[1].index();
+            let start = start_stop[0].index_unchecked();
+            let stop = start_stop[1].index_unchecked();
             let indices = &mut self.indices[start..stop];
             let data = &mut self.data[start..stop];
             let len = stop - start;
@@ -611,7 +615,9 @@ impl<N, I: SpIndex, Iptr: SpIndex>
             CSR => self.nrows += 1,
             CSC => self.ncols += 1,
         }
-        let nnz = *self.indptr.last().unwrap() + Iptr::from_usize(vec.nnz());
+        let nnz = Iptr::from_usize(
+            self.indptr.last().unwrap().index_unchecked() + vec.nnz(),
+        );
         self.indptr.push(nnz);
         self
     }
@@ -653,18 +659,18 @@ impl<N, I: SpIndex, Iptr: SpIndex>
             self.data.push(val);
         } else {
             // we need to search for an insertion spot
-            let start = self.indptr[outer_ind].index();
-            let stop = self.indptr[outer_ind + 1].index();
+            let start = self.indptr[outer_ind].index_unchecked();
+            let stop = self.indptr[outer_ind + 1].index_unchecked();
             let location =
                 self.indices[start..stop].binary_search(&inner_ind_idx);
             match location {
                 Ok(ind) => {
-                    let ind = start + ind.index();
+                    let ind = start + ind.index_unchecked();
                     self.data[ind] = val;
                     return;
                 }
                 Err(ind) => {
-                    let ind = start + ind.index();
+                    let ind = start + ind.index_unchecked();
                     self.indices.insert(ind, inner_ind_idx);
                     self.data.insert(ind, val);
                     for k in (outer_ind + 1)..=outer_dims {
@@ -741,7 +747,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
             CSC => ncols,
         };
         let indptr = slice::from_raw_parts(indptr, outer + 1);
-        let nnz = (*indptr.get_unchecked(outer)).index();
+        let nnz = (*indptr.get_unchecked(outer)).index_unchecked();
         CsMatViewI {
             storage,
             nrows,
@@ -785,7 +791,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     pub fn iter_rbr(&self) -> CsIter<'a, N, I, Iptr> {
         CsIter {
             storage: self.storage,
-            cur_outer: I::from_usize(0),
+            cur_outer: I::zero(),
             indptr: &self.indptr[..],
             inner_iter: self.indices.iter().zip(self.data.iter()).enumerate(),
         }
@@ -827,7 +833,7 @@ where
     /// This is often relevant for the complexity of most sparse matrix
     /// algorithms, which are often linear in the number of non-zeros.
     pub fn nnz(&self) -> usize {
-        self.indptr.last().unwrap().index()
+        self.indptr.last().unwrap().index_unchecked()
     }
 
     /// Number of outer dimensions, that ie equal to self.rows() for a CSR
@@ -983,12 +989,12 @@ where
         let indptr = self
             .indptr
             .iter()
-            .map(|i| Iptr2::from_usize(i.index()))
+            .map(|i| Iptr2::from_usize(i.index_unchecked()))
             .collect();
         let indices = self
             .indices
             .iter()
-            .map(|i| I2::from_usize(i.index()))
+            .map(|i| I2::from_usize(i.index_unchecked()))
             .collect();
         let data = self.data.iter().map(|x| x.clone().into()).collect();
         CsMatI {
@@ -1076,8 +1082,8 @@ where
         if i >= self.outer_dims() {
             return None;
         }
-        let start = self.indptr[i].index();
-        let stop = self.indptr[i + 1].index();
+        let start = self.indptr[i].index_unchecked();
+        let stop = self.indptr[i + 1].index_unchecked();
         // CsMat invariants imply CsVec invariants
         Some(CsVecBase {
             dim: self.inner_dims(),
@@ -1165,7 +1171,7 @@ where
         if outer_ind >= self.outer_dims() {
             return None;
         }
-        let offset = self.indptr[outer_ind].index();
+        let offset = self.indptr[outer_ind].index_unchecked();
         self.outer_view(outer_ind)
             .and_then(|vec| vec.nnz_index(inner_ind))
             .map(|vec::NnzIndex(ind)| NnzIndex(ind + offset))
@@ -1225,7 +1231,7 @@ where
             .indptr
             .deref()
             .windows(2)
-            .all(|x| x[0].index() <= x[1].index())
+            .all(|x| x[0].index_unchecked() <= x[1].index_unchecked())
         {
             return Err(SprsError::UnsortedIndptr);
         }
@@ -1243,7 +1249,7 @@ where
     pub fn iter(&self) -> CsIter<N, I, Iptr> {
         CsIter {
             storage: self.storage,
-            cur_outer: I::from_usize(0),
+            cur_outer: I::zero(),
             indptr: &self.indptr[..],
             inner_iter: self.indices.iter().zip(self.data.iter()).enumerate(),
         }
@@ -1346,8 +1352,8 @@ where
         if i >= self.outer_dims() {
             return None;
         }
-        let start = self.indptr[i].index();
-        let stop = self.indptr[i + 1].index();
+        let start = self.indptr[i].index_unchecked();
+        let stop = self.indptr[i + 1].index_unchecked();
         // CsMat invariants imply CsVec invariants
         Some(CsVecBase {
             dim: self.inner_dims(),
@@ -1585,7 +1591,7 @@ pub mod raw {
             for (inner_dim, val) in vec.iter() {
                 let dest = indptr[inner_dim].index();
                 data[dest] = val.clone();
-                indices[dest] = I::from_usize(outer_dim);
+                indices[dest] = I::from_usize_unchecked(outer_dim);
                 indptr[inner_dim] += Iptr::one();
             }
         }
@@ -1616,7 +1622,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         data: *const N,
     ) -> CsMatVecView_<'a, N, I, Iptr> {
         let indptr = slice::from_raw_parts(indptr, 2);
-        let nnz = indptr[1].index();
+        let nnz = indptr[1].index_unchecked();
         CsMatVecView_ {
             storage,
             nrows,

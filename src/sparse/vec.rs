@@ -87,7 +87,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIterator<'a, N, I> {
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((inner_ind.index(), data)),
+            Some((inner_ind, data)) => {
+                Some((inner_ind.index_unchecked(), data))
+            }
         }
     }
 
@@ -103,7 +105,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorPerm<'a, N, I> {
         match self.ind_data.next() {
             None => None,
             Some((inner_ind, data)) => {
-                Some((self.perm.at(inner_ind.index()), data))
+                Some((self.perm.at(inner_ind.index_unchecked()), data))
             }
         }
     }
@@ -119,7 +121,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorMut<'a, N, I> {
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((inner_ind.index(), data)),
+            Some((inner_ind, data)) => {
+                Some((inner_ind.index_unchecked(), data))
+            }
         }
     }
 
@@ -519,7 +523,7 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
         match self.indices.last() {
             None => (),
             Some(&last_ind) => {
-                assert!(ind > last_ind.index(), "unsorted append")
+                assert!(ind > last_ind.index_unchecked(), "unsorted append")
             }
         }
         assert!(ind <= self.dim, "out of bounds index");
@@ -667,7 +671,7 @@ where
         let indices = self
             .indices
             .iter()
-            .map(|i| I2::from_usize(i.index()))
+            .map(|i| I2::from_usize(i.index_unchecked()))
             .collect();
         let data = self.data.iter().cloned().collect();
         CsVecI {
@@ -682,7 +686,10 @@ where
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [Iptr::zero(), Iptr::from_usize(self.indices.len())],
+            data: [
+                Iptr::zero(),
+                Iptr::from_usize_unchecked(self.indices.len()),
+            ],
         };
         CsMatBase {
             storage: CSR,
@@ -699,7 +706,10 @@ where
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [Iptr::zero(), Iptr::from_usize(self.indices.len())],
+            data: [
+                Iptr::zero(),
+                Iptr::from_usize_unchecked(self.indices.len()),
+            ],
         };
         CsMatBase {
             storage: CSC,
@@ -728,7 +738,7 @@ where
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
         self.indices
             .binary_search(&I::from_usize(index))
-            .map(|i| NnzIndex(i.index()))
+            .map(|i| NnzIndex(i.index_unchecked()))
             .ok()
     }
 
@@ -764,7 +774,7 @@ where
         assert_eq!(self.dim(), rhs.dim());
         if rhs.is_dense() {
             self.iter()
-                .map(|(idx, val)| *val * *rhs.index(idx.index()))
+                .map(|(idx, val)| *val * *rhs.index(idx.index_unchecked()))
                 .sum()
         } else {
             let mut lhs_iter = self.iter();
@@ -807,7 +817,7 @@ where
     {
         assert_eq!(self.dim(), rhs.dim());
         self.iter()
-            .map(|(idx, val)| *val * *rhs.index(idx.index()))
+            .map(|(idx, val)| *val * *rhs.index(idx.index_unchecked()))
             .sum()
     }
 
@@ -880,7 +890,7 @@ where
     {
         self.indices()
             .iter()
-            .map(|i| i.index())
+            .map(|i| i.index_unchecked())
             .zip(self.data.iter().cloned())
             .collect()
     }

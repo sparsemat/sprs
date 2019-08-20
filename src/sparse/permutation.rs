@@ -158,7 +158,7 @@ where
         assert!(index < self.dim);
         match self.storage {
             Identity => index,
-            FinitePerm { perm: ref p, .. } => p[index].index(),
+            FinitePerm { perm: ref p, .. } => p[index].index_unchecked(),
         }
     }
 
@@ -168,7 +168,7 @@ where
             Identity => index,
             FinitePerm {
                 perm_inv: ref p_, ..
-            } => p_[index].index(),
+            } => p_[index].index_unchecked(),
         }
     }
 
@@ -200,10 +200,14 @@ where
                 perm: ref p,
                 perm_inv: ref p_,
             } => {
-                let perm =
-                    p.iter().map(|i| I2::from_usize(i.index())).collect();
-                let perm_inv =
-                    p_.iter().map(|i| I2::from_usize(i.index())).collect();
+                let perm = p
+                    .iter()
+                    .map(|i| I2::from_usize(i.index_unchecked()))
+                    .collect();
+                let perm_inv = p_
+                    .iter()
+                    .map(|i| I2::from_usize(i.index_unchecked()))
+                    .collect();
                 PermOwnedI {
                     dim: self.dim,
                     storage: FinitePerm { perm, perm_inv },
@@ -227,7 +231,7 @@ where
             Identity => res,
             FinitePerm { perm: ref p, .. } => {
                 for (pi, r) in p.iter().zip(res.iter_mut()) {
-                    *r = rhs[pi.index()];
+                    *r = rhs[pi.index_unchecked()];
                 }
                 res
             }
