@@ -7,13 +7,14 @@ use std::default::Default;
 
 /// Stack the given matrices into a new one, using the most efficient stacking
 /// direction (ie vertical stack for CSR matrices, horizontal stack for CSC)
-pub fn same_storage_fast_stack<'a, N, I, MatArray>(
+pub fn same_storage_fast_stack<'a, N, I, Iptr, MatArray>(
     mats: &MatArray,
-) -> CsMatI<N, I>
+) -> CsMatI<N, I, Iptr>
 where
     N: 'a + Clone,
     I: 'a + SpIndex,
-    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
+    Iptr: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I, Iptr>]>,
 {
     let mats = mats.as_ref();
     if mats.is_empty() {
@@ -44,11 +45,12 @@ where
 }
 
 /// Construct a sparse matrix by vertically stacking other matrices
-pub fn vstack<'a, N, I, MatArray>(mats: &MatArray) -> CsMatI<N, I>
+pub fn vstack<'a, N, I, Iptr, MatArray>(mats: &MatArray) -> CsMatI<N, I, Iptr>
 where
     N: 'a + Clone + Default,
     I: 'a + SpIndex,
-    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
+    Iptr: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I, Iptr>]>,
 {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csr()) {
@@ -61,11 +63,12 @@ where
 }
 
 /// Construct a sparse matrix by horizontally stacking other matrices
-pub fn hstack<'a, N, MatArray, I>(mats: &MatArray) -> CsMatI<N, I>
+pub fn hstack<'a, N, I, Iptr, MatArray>(mats: &MatArray) -> CsMatI<N, I, Iptr>
 where
     N: 'a + Clone + Default,
     I: 'a + SpIndex,
-    MatArray: AsRef<[CsMatViewI<'a, N, I>]>,
+    Iptr: 'a + SpIndex,
+    MatArray: AsRef<[CsMatViewI<'a, N, I, Iptr>]>,
 {
     let mats = mats.as_ref();
     if mats.iter().all(|x| x.is_csc()) {
@@ -88,12 +91,15 @@ where
 ///                      [None, Some(b.view())]]);
 /// assert_eq!(c.rows(), 7);
 /// ```
-pub fn bmat<'a, N, I, OuterArray, InnerArray>(mats: &OuterArray) -> CsMatI<N, I>
+pub fn bmat<'a, N, I, Iptr, OuterArray, InnerArray>(
+    mats: &OuterArray,
+) -> CsMatI<N, I, Iptr>
 where
     N: 'a + Clone + Default,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
     OuterArray: 'a + AsRef<[InnerArray]>,
-    InnerArray: 'a + AsRef<[Option<CsMatViewI<'a, N, I>>]>,
+    InnerArray: 'a + AsRef<[Option<CsMatViewI<'a, N, I, Iptr>>]>,
 {
     let mats = mats.as_ref();
     let super_rows = mats.len();

@@ -8,12 +8,13 @@ use Ix2;
 ///
 /// The dense matrix will not be zeroed prior to assignment,
 /// so existing values not corresponding to non-zeroes will be preserved.
-pub fn assign_to_dense<N, I>(
+pub fn assign_to_dense<N, I, Iptr>(
     mut array: ArrayViewMut<N, Ix2>,
-    spmat: CsMatViewI<N, I>,
+    spmat: CsMatViewI<N, I, Iptr>,
 ) where
     N: Clone,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     if spmat.cols() != array.shape()[1] {
         panic!("Dimension mismatch");
