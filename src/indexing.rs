@@ -130,14 +130,14 @@ mod test {
     use super::SpIndex;
 
     #[test]
-    #[cfg_attr(debug_assertions, should_panic)]
+    #[should_panic]
     fn overflow_u16() {
         let b: u16 = u16::from_usize(131072); // 2^17
         println!("{}", b);
     }
 
     #[test]
-    #[cfg_attr(debug_assertions, should_panic)]
+    #[should_panic]
     fn negative_i16() {
         let b: i16 = -1;
         let a = b.index();
