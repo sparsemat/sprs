@@ -632,6 +632,11 @@ where
     /// - indices is sorted
     /// - indices are lower than dims()
     pub fn check_structure(&self) -> Result<(), SprsError> {
+        // Make sure indices can be converted to usize
+        for i in self.indices.iter() {
+            i.index();
+        }
+
         if !self.indices.windows(2).all(|x| x[0] < x[1]) {
             return Err(SprsError::NonSortedIndices);
         }
@@ -640,7 +645,12 @@ where
             return Ok(());
         }
 
-        let max_ind = self.indices.iter().max().unwrap_or(&I::zero()).index();
+        let max_ind = self
+            .indices
+            .iter()
+            .max()
+            .unwrap_or(&I::zero())
+            .index_unchecked();
         if max_ind >= self.dim {
             panic!("Out of bounds index");
         }

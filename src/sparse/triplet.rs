@@ -136,11 +136,11 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
             "all inputs should have the same length"
         );
         assert!(
-            row_inds.iter().all(|&i| i.index_unchecked() < shape.0),
+            row_inds.iter().all(|&i| i.index() < shape.0),
             "row indices should be within shape"
         );
         assert!(
-            col_inds.iter().all(|&j| j.index_unchecked() < shape.1),
+            col_inds.iter().all(|&j| j.index() < shape.1),
             "col indices should be within shape"
         );
         TriMatI {

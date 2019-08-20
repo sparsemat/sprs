@@ -1199,6 +1199,14 @@ where
     /// * indices is sorted for each outer slice
     /// * indices are lower than inner_dims()
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
+        // Make sure both indptr and indices can be converted to usize
+        for i in self.indptr.iter() {
+            i.index();
+        }
+        for i in self.indices.iter() {
+            i.index();
+        }
+
         let outer = self.outer_dims();
 
         if self.indptr.len() != outer + 1 {
@@ -1224,10 +1232,10 @@ where
             );
         }
         if let Some(&max_indptr) = self.indptr.iter().max() {
-            if max_indptr.index() > nnz {
+            if max_indptr.index_unchecked() > nnz {
                 panic!("An indptr value is out of bounds");
             }
-            if max_indptr.index() > usize::max_value() / 2 {
+            if max_indptr.index_unchecked() > usize::max_value() / 2 {
                 // We do not allow indptr values to be larger than half
                 // the maximum value of an usize, as that would clearly exhaust
                 // all available memory
