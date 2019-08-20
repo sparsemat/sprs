@@ -23,6 +23,9 @@ pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default {
     /// If the integer cannot be represented as an `usize`, eg negative numbers.
     fn index(self) -> usize;
 
+    /// Try convert to usize.
+    fn try_index(self) -> Option<usize>;
+
     /// Convert to usize without checking for overflows.
     fn index_unchecked(self) -> usize;
 
@@ -33,6 +36,9 @@ pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default {
     /// If the input overflows the index type.
     fn from_usize(ind: usize) -> Self;
 
+    /// Try convert from usize.
+    fn try_from_usize(ind: usize) -> Option<Self>;
+
     /// Convert from usize without checking for overflows.
     fn from_usize_unchecked(ind: usize) -> Self;
 }
@@ -41,6 +47,11 @@ impl SpIndex for usize {
     #[inline(always)]
     fn index(self) -> usize {
         self
+    }
+
+    #[inline(always)]
+    fn try_index(self) -> Option<usize> {
+        Some(self)
     }
 
     #[inline(always)]
@@ -54,6 +65,11 @@ impl SpIndex for usize {
     }
 
     #[inline(always)]
+    fn try_from_usize(ind: usize) -> Option<Self> {
+        Some(ind)
+    }
+
+    #[inline(always)]
     fn from_usize_unchecked(ind: usize) -> Self {
         ind
     }
@@ -64,27 +80,37 @@ macro_rules! sp_index_impl {
         impl SpIndex for $int {
             #[inline(always)]
             fn index(self) -> usize {
-                num_traits::cast(self).unwrap_or_else(|| {
+                self.try_index().unwrap_or_else(|| {
                     panic!("Failed to convert {} to usize", self)
                 })
             }
 
             #[inline(always)]
+            fn try_index(self) -> Option<usize> {
+                num_traits::cast(self)
+            }
+
+            #[inline(always)]
             fn index_unchecked(self) -> usize {
-                debug_assert!(num_traits::cast::<Self, usize>(self).is_some());
+                debug_assert!(self.try_index().is_some());
                 self as usize
             }
 
             #[inline(always)]
             fn from_usize(ind: usize) -> Self {
-                num_traits::cast(ind).unwrap_or_else(|| {
+                Self::try_from_usize(ind).unwrap_or_else(|| {
                     panic!("Failed to convert {} to index type", ind)
                 })
             }
 
             #[inline(always)]
+            fn try_from_usize(ind: usize) -> Option<Self> {
+                num_traits::cast(ind)
+            }
+
+            #[inline(always)]
             fn from_usize_unchecked(ind: usize) -> Self {
-                debug_assert!(num_traits::cast::<usize, Self>(ind).is_some());
+                debug_assert!(Self::try_from_usize(ind).is_some());
                 ind as $int
             }
         }
