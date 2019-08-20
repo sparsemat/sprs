@@ -433,18 +433,28 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         self.data.reserve_exact(nnz_lim);
     }
 
+    /// Try create an owned CSR matrix from moved data.
+    ///
+    /// An owned CSC matrix can be created with `try_new_csc()`.
+    ///
+    /// If necessary, the indices will be sorted in place.
+    pub fn try_new(
+        shape: Shape,
+        indptr: Vec<Iptr>,
+        indices: Vec<I>,
+        data: Vec<N>,
+    ) -> Result<CsMatI<N, I, Iptr>, SprsError>
+    where
+        N: Copy,
+    {
+        CsMatI::new_(CSR, shape, indptr, indices, data)
+    }
+
     /// Create an owned CSR matrix from moved data.
     ///
     /// An owned CSC matrix can be created with `new_csc()`.
     ///
     /// If necessary, the indices will be sorted in place.
-    ///
-    /// Contrary to the other `CsMat` constructors, this method will not return
-    /// an `Err` when receiving malformed data. This is because the caller can
-    /// take any measure to provide correct data since he owns it. Therefore,
-    /// passing in malformed data is a programming error. However, passing in
-    /// unsorted indices is not seen as a programming error, so this method can
-    /// take advantage of ownership to sort them.
     ///
     /// # Panics
     ///
@@ -461,7 +471,24 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     where
         N: Copy,
     {
-        CsMatI::new_(CSR, shape, indptr, indices, data).unwrap()
+        CsMatI::try_new(shape, indptr, indices, data).unwrap()
+    }
+
+    /// Try create an owned CSC matrix from moved data.
+    ///
+    /// An owned CSC matrix can be created with `new_csc()`.
+    ///
+    /// If necessary, the indices will be sorted in place.
+    pub fn try_new_csc(
+        shape: Shape,
+        indptr: Vec<Iptr>,
+        indices: Vec<I>,
+        data: Vec<N>,
+    ) -> Result<CsMatI<N, I, Iptr>, SprsError>
+    where
+        N: Copy,
+    {
+        CsMatI::new_(CSC, shape, indptr, indices, data)
     }
 
     /// Create an owned CSC matrix from moved data.
@@ -469,13 +496,6 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     /// An owned CSC matrix can be created with `new_csc()`.
     ///
     /// If necessary, the indices will be sorted in place.
-    ///
-    /// Contrary to the other `CsMat` constructors, this method will not return
-    /// an `Err` when receiving malformed data. This is because the caller can
-    /// take any measure to provide correct data since he owns it. Therefore,
-    /// passing in malformed data is a programming error. However, passing in
-    /// unsorted indices is not seen as a programming error, so this method can
-    /// take advantage of ownership to sort them.
     ///
     /// # Panics
     ///
@@ -492,7 +512,7 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     where
         N: Copy,
     {
-        CsMatI::new_(CSC, shape, indptr, indices, data).unwrap()
+        CsMatI::try_new_csc(shape, indptr, indices, data).unwrap()
     }
 
     fn new_(
@@ -1201,39 +1221,43 @@ where
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
         // Make sure both indptr and indices can be converted to usize
         for i in self.indptr.iter() {
-            i.index();
+            if i.try_index().is_none() {
+                return Err(SprsError::IllegalArguments(
+                    "Indptr value out of range of usize",
+                ));
+            }
         }
         for i in self.indices.iter() {
-            i.index();
+            if i.try_index().is_none() {
+                return Err(SprsError::IllegalArguments(
+                    "Indices value out of range of usize",
+                ));
+            }
         }
 
         let outer = self.outer_dims();
 
         if self.indptr.len() != outer + 1 {
-            panic!(
-                "Indptr length does not match dimension: {} != {}",
-                self.indptr.len(),
-                outer + 1
-            );
+            return Err(SprsError::IllegalArguments(
+                "Indptr length does not match dimension",
+            ));
         }
         if self.indices.len() != self.data.len() {
-            panic!(
-                "Indices and data lengths do not match: {} != {}",
-                self.indices.len(),
-                self.data.len()
-            );
+            return Err(SprsError::IllegalArguments(
+                "Indices and data lengths do not match",
+            ));
         }
         let nnz = self.indices.len();
         if nnz != self.nnz() {
-            panic!(
-                "Indices length and inpdtr's nnz do not match: {} != {}",
-                nnz,
-                self.nnz()
-            );
+            return Err(SprsError::IllegalArguments(
+                "Indices length and inpdtr's nnz do not match",
+            ));
         }
         if let Some(&max_indptr) = self.indptr.iter().max() {
             if max_indptr.index_unchecked() > nnz {
-                panic!("An indptr value is out of bounds");
+                return Err(SprsError::IllegalArguments(
+                    "An indptr value is out of bounds",
+                ));
             }
             if max_indptr.index_unchecked() > usize::max_value() / 2 {
                 // We do not allow indptr values to be larger than half
@@ -1241,7 +1265,9 @@ where
                 // all available memory
                 // This means we could have an isize, but in practice it's
                 // easier to work with usize for indexing.
-                panic!("An indptr value is larger than allowed");
+                return Err(SprsError::IllegalArguments(
+                    "An indptr value is larger than allowed",
+                ));
             }
         } else {
             unreachable!();

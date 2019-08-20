@@ -484,7 +484,19 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     ///
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
-    pub fn new(n: usize, mut indices: Vec<I>, mut data: Vec<N>) -> CsVecI<N, I>
+    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> CsVecI<N, I>
+    where
+        N: Copy,
+    {
+        Self::try_new(n, indices, data).unwrap()
+    }
+
+    /// Try create an owning CsVec from vector data.
+    pub fn try_new(
+        n: usize,
+        mut indices: Vec<I>,
+        mut data: Vec<N>,
+    ) -> Result<CsVecI<N, I>, SprsError>
     where
         N: Copy,
     {
@@ -499,7 +511,7 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
             indices,
             data,
         };
-        v.check_structure().and(Ok(v)).unwrap()
+        v.check_structure().and(Ok(v))
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
@@ -652,7 +664,7 @@ where
             .unwrap_or(&I::zero())
             .index_unchecked();
         if max_ind >= self.dim {
-            panic!("Out of bounds index");
+            return Err(SprsError::IllegalArguments("Out of bounds index"));
         }
 
         Ok(())
