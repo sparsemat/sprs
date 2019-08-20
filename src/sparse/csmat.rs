@@ -33,6 +33,18 @@ use sparse::to_dense::assign_to_dense;
 use sparse::utils;
 use sparse::vec;
 
+impl<N, I, IptrStorage, IndStorage, DataStorage, Iptr> Copy
+    for CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr>
+where
+    I: SpIndex,
+    N: Copy,
+    Iptr: SpIndex,
+    IptrStorage: Deref<Target = [Iptr]> + Copy,
+    IndStorage: Deref<Target = [I]> + Copy,
+    DataStorage: Deref<Target = [N]> + Copy,
+{
+}
+
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum CompressedStorage {
@@ -2125,6 +2137,14 @@ mod test {
     use ndarray::{arr2, Array};
     use sparse::{CsMat, CsMatI, CsMatView};
     use test_data::{mat1, mat1_csc, mat1_times_2};
+
+    #[test]
+    fn test_copy() {
+        let m = mat1();
+        let view1 = m.view();
+        let view2 = view1; // this shouldn't move
+        assert_eq!(view1, view2);
+    }
 
     #[test]
     fn test_new_csr_success() {

@@ -37,6 +37,8 @@ use sparse::prelude::*;
 use sparse::utils;
 use sparse::{binop, prod};
 
+impl<IS: Copy, DS: Copy> Copy for CsVecBase<IS, DS> {}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
@@ -1346,6 +1348,14 @@ mod test {
         let data = vec![0.5, 2.5, 4.5, 6.5, 7.5];
 
         return CsVecI::new(n, indices, data);
+    }
+
+    #[test]
+    fn test_copy() {
+        let v = test_vec1();
+        let view1 = v.view();
+        let view2 = view1; // this shouldn't move
+        assert_eq!(view1, view2);
     }
 
     #[test]
