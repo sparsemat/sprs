@@ -686,7 +686,10 @@ where
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [Iptr::zero(), Iptr::from_usize_unchecked(self.indices.len())],
+            data: [
+                Iptr::zero(),
+                Iptr::from_usize_unchecked(self.indices.len()),
+            ],
         };
         CsMatBase {
             storage: CSR,
@@ -703,7 +706,10 @@ where
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [Iptr::zero(), Iptr::from_usize_unchecked(self.indices.len())],
+            data: [
+                Iptr::zero(),
+                Iptr::from_usize_unchecked(self.indices.len()),
+            ],
         };
         CsMatBase {
             storage: CSC,

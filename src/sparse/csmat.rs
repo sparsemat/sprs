@@ -615,7 +615,9 @@ impl<N, I: SpIndex, Iptr: SpIndex>
             CSR => self.nrows += 1,
             CSC => self.ncols += 1,
         }
-        let nnz = Iptr::from_usize(self.indptr.last().unwrap().index_unchecked() + vec.nnz());
+        let nnz = Iptr::from_usize(
+            self.indptr.last().unwrap().index_unchecked() + vec.nnz(),
+        );
         self.indptr.push(nnz);
         self
     }
