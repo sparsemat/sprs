@@ -174,7 +174,10 @@ where
             }
         }
 
-        slot += 1;
+        // Ensure that slot == nnz
+        if nnz_max > 0 {
+            slot += 1;
+        }
         indptr.push(I::from_usize(slot));
         rc.truncate(slot);
 

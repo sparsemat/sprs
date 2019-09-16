@@ -562,4 +562,14 @@ mod test {
         let csr = triplet_mat.to_csr();
         assert_eq!(csr, expected.to_csr());
     }
+
+    #[test]
+    fn triplet_empy_lines() {
+        // regression test for https://github.com/vbarrielle/sprs/issues/170
+        let tri_mat = TriMatI::new((2, 4));
+        let m: CsMat<u64> = tri_mat.to_csr();
+        assert_eq!(m.indptr(), &[0, 0]);
+        assert_eq!(m.indices(), &[]);
+        assert_eq!(m.data(), &[]);
+    }
 }
