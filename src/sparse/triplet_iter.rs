@@ -151,8 +151,13 @@ where
             CompressedStorage::CSC => idx.1,
         };
 
+        let outer_dims = match storage {
+            CompressedStorage::CSR => self.rows(),
+            CompressedStorage::CSC => self.cols(),
+        };
+
         let mut slot = 0;
-        let mut indptr = vec![I::zero()];
+        let mut indptr = vec![I::zero(); outer_dims + 1];
         let mut cur_outer = I::zero();
 
         for rec in 0..nnz_max {
@@ -169,7 +174,7 @@ where
 
             let new_outer = outer_idx(&rc[rec]);
             while new_outer > cur_outer {
-                indptr.push(I::from_usize(slot));
+                indptr[cur_outer.index() + 1] = I::from_usize(slot);
                 cur_outer += I::one();
             }
         }
@@ -178,7 +183,7 @@ where
         if nnz_max > 0 {
             slot += 1;
         }
-        indptr.push(I::from_usize(slot));
+        indptr[outer_dims] = I::from_usize(slot);
         rc.truncate(slot);
 
         let mut data: Vec<N> = vec![N::zero(); slot];
