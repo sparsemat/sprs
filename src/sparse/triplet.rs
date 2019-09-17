@@ -632,7 +632,7 @@ mod test {
 
         let m = triplet_mat.to_csc();
         assert_eq!(m.indptr(), &[0, 0, 1, 1, 2, 2, 2]);
-        assert_eq!(m.indices(), &[1, 3]);
+        assert_eq!(m.indices(), &[1, 0]);
         assert_eq!(m.data(), &[1, 2]);
     }
 }

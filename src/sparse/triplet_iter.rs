@@ -172,12 +172,7 @@ where
                 }
             }
 
-            let new_outer = if rec < nnz_max {
-                outer_idx(&rc[rec])
-            } else {
-                // on last iteration: fill indptr to the end
-                I::from_usize(outer_dims)
-            };
+            let new_outer = outer_idx(&rc[rec]);
 
             while new_outer > cur_outer {
                 indptr[cur_outer.index() + 1] = I::from_usize(slot);
@@ -188,6 +183,11 @@ where
         // Ensure that slot == nnz
         if nnz_max > 0 {
             slot += 1;
+        }
+        // fill indptr up to the end
+        while I::from_usize(outer_dims) > cur_outer {
+            indptr[cur_outer.index() + 1] = I::from_usize(slot);
+            cur_outer += I::one();
         }
 
         rc.truncate(slot);
