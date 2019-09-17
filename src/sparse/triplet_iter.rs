@@ -172,7 +172,13 @@ where
                 }
             }
 
-            let new_outer = outer_idx(&rc[rec]);
+            let new_outer = if rec < nnz_max {
+                outer_idx(&rc[rec])
+            } else {
+                // on last iteration: fill indptr to the end
+                I::from_usize(outer_dims)
+            };
+
             while new_outer > cur_outer {
                 indptr[cur_outer.index() + 1] = I::from_usize(slot);
                 cur_outer += I::one();
@@ -183,7 +189,7 @@ where
         if nnz_max > 0 {
             slot += 1;
         }
-        indptr[outer_dims] = I::from_usize(slot);
+
         rc.truncate(slot);
 
         let mut data: Vec<N> = vec![N::zero(); slot];

@@ -564,7 +564,7 @@ mod test {
     }
 
     #[test]
-    fn triplet_empy_lines() {
+    fn triplet_empty_lines() {
         // regression test for https://github.com/vbarrielle/sprs/issues/170
         let tri_mat = TriMatI::new((2, 4));
         let m: CsMat<u64> = tri_mat.to_csr();
@@ -619,5 +619,20 @@ mod test {
 
         let csr = triplet_mat.to_csr();
         assert_eq!(csr, expected.to_csr());
+
+        // Matrix ending with several empty lines/columns
+        // |. . . 2 . . |
+        // |. 1 . . . . |
+        // |. . . . . . |
+        // |. . . . . . |
+        let mut triplet_mat = TriMat::with_capacity((4, 6), 2);
+
+        triplet_mat.add_triplet(1, 1, 1);
+        triplet_mat.add_triplet(0, 3, 2);
+
+        let m = triplet_mat.to_csc();
+        assert_eq!(m.indptr(), &[0, 0, 1, 1, 2, 2, 2]);
+        assert_eq!(m.indices(), &[1, 3]);
+        assert_eq!(m.data(), &[1, 2]);
     }
 }
