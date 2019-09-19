@@ -564,12 +564,75 @@ mod test {
     }
 
     #[test]
-    fn triplet_empy_lines() {
+    fn triplet_empty_lines() {
         // regression test for https://github.com/vbarrielle/sprs/issues/170
         let tri_mat = TriMatI::new((2, 4));
         let m: CsMat<u64> = tri_mat.to_csr();
-        assert_eq!(m.indptr(), &[0, 0]);
+        assert_eq!(m.indptr(), &[0, 0, 0]);
         assert_eq!(m.indices(), &[]);
         assert_eq!(m.data(), &[]);
+
+        let m: CsMat<u64> = tri_mat.to_csc();
+        assert_eq!(m.indptr(), &[0, 0, 0, 0, 0]);
+        assert_eq!(m.indices(), &[]);
+        assert_eq!(m.data(), &[]);
+
+        // More complex matrix with empty lines/cols inside
+        // |1 . . . 6 . . . 2|
+        // |. . . . . . . . .|
+        // |1 2 . 3 . . . . 2|
+        // |1 . . . . 4 . . 2|
+        // |1 . . 5 . . . . 2|
+        // |1 . . . . 7 . . 2|
+        let mut triplet_mat = TriMat::with_capacity((6, 9), 22);
+
+        triplet_mat.add_triplet(5, 8, 1); // (a) push 1 later
+        triplet_mat.add_triplet(0, 0, 1);
+        triplet_mat.add_triplet(0, 8, 2);
+        triplet_mat.add_triplet(0, 4, 2); // (b) push 4 later
+        triplet_mat.add_triplet(2, 0, 1);
+        triplet_mat.add_triplet(2, 1, 2);
+        triplet_mat.add_triplet(2, 3, 2); // (c) push 1 later
+        triplet_mat.add_triplet(2, 8, 2);
+        triplet_mat.add_triplet(0, 4, 4); // push the missing 4 (b)
+        triplet_mat.add_triplet(3, 8, 2);
+        triplet_mat.add_triplet(3, 5, 4);
+        triplet_mat.add_triplet(5, 8, 1); // push the missing 1 (a)
+        triplet_mat.add_triplet(3, 0, 1);
+        triplet_mat.add_triplet(4, 0, 1);
+        triplet_mat.add_triplet(4, 8, 2);
+        triplet_mat.add_triplet(4, 3, 5);
+        triplet_mat.add_triplet(5, 0, 1);
+        triplet_mat.add_triplet(5, 5, 7);
+        triplet_mat.add_triplet(2, 3, 1); // push the missing 1 (c)
+
+        let csc = triplet_mat.to_csc();
+
+        let expected = CsMat::new_csc(
+            (6, 9),
+            vec![0, 5, 6, 6, 8, 9, 11, 11, 11, 16],
+            vec![0, 2, 3, 4, 5, 2, 2, 4, 0, 3, 5, 0, 2, 3, 4, 5],
+            vec![1, 1, 1, 1, 1, 2, 3, 5, 6, 4, 7, 2, 2, 2, 2, 2],
+        );
+
+        assert_eq!(csc, expected);
+
+        let csr = triplet_mat.to_csr();
+        assert_eq!(csr, expected.to_csr());
+
+        // Matrix ending with several empty lines/columns
+        // |. . . 2 . . |
+        // |. 1 . . . . |
+        // |. . . . . . |
+        // |. . . . . . |
+        let mut triplet_mat = TriMat::with_capacity((4, 6), 2);
+
+        triplet_mat.add_triplet(1, 1, 1);
+        triplet_mat.add_triplet(0, 3, 2);
+
+        let m = triplet_mat.to_csc();
+        assert_eq!(m.indptr(), &[0, 0, 1, 1, 2, 2, 2]);
+        assert_eq!(m.indices(), &[1, 0]);
+        assert_eq!(m.data(), &[1, 2]);
     }
 }
