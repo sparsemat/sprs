@@ -507,5 +507,4 @@ mod test {
 
         assert_eq!(c, expected_output);
     }
-
 }
