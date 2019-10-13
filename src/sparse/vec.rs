@@ -1344,7 +1344,10 @@ mod alga_impls {
         #[test]
         fn additive_inverse_is_negated() {
             let vector = CsVec::new(2, vec![0], vec![2.]);
-            assert_eq!(-vector.clone(), TwoSidedInverse::<Additive>::two_sided_inverse(&vector));
+            assert_eq!(
+                -vector.clone(),
+                TwoSidedInverse::<Additive>::two_sided_inverse(&vector)
+            );
         }
     }
 }
