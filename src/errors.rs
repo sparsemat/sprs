@@ -8,6 +8,7 @@ pub enum SprsError {
     NonSortedIndices,
     UnsortedIndptr,
     SingularMatrix,
+    IllegalArguments(&'static str),
 }
 
 use self::SprsError::*;
@@ -18,6 +19,7 @@ impl SprsError {
             NonSortedIndices => "a vector's indices are not sorted",
             UnsortedIndptr => "indptr is not sorted",
             SingularMatrix => "matrix is singular",
+            IllegalArguments(s) => s,
         }
     }
 }

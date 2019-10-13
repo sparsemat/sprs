@@ -2,6 +2,11 @@
 Changelog
 =========
 
+- 0.6.5
+  - faster triplet format to compressed storage conversion
+  - fix borrow checker issue flagged by new NLL
+  - can read Matrix Market files from an ``io::BufRead``
+  - improve ``CsMat::map`` to enable changing the storage type
 - 0.6.4
   - add specialized sparse/sparse vector dot product using binary search
     for vectors where the number of non-zeros is very different.

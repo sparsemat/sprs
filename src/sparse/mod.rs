@@ -76,10 +76,11 @@ pub use self::csmat::CompressedStorage;
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
-pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage>
+pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
 where
     I: SpIndex,
-    IptrStorage: Deref<Target = [I]>,
+    Iptr: SpIndex,
+    IptrStorage: Deref<Target = [Iptr]>,
     IndStorage: Deref<Target = [I]>,
     DataStorage: Deref<Target = [N]>,
 {
@@ -91,11 +92,14 @@ where
     data: DataStorage,
 }
 
-pub type CsMatI<N, I> = CsMatBase<N, I, Vec<I>, Vec<I>, Vec<N>>;
-pub type CsMatViewI<'a, N, I> = CsMatBase<N, I, &'a [I], &'a [I], &'a [N]>;
-pub type CsMatViewMutI<'a, N, I> =
-    CsMatBase<N, I, &'a [I], &'a [I], &'a mut [N]>;
-pub type CsMatVecView_<'a, N, I> = CsMatBase<N, I, Array2<I>, &'a [I], &'a [N]>;
+pub type CsMatI<N, I, Iptr = I> =
+    CsMatBase<N, I, Vec<Iptr>, Vec<I>, Vec<N>, Iptr>;
+pub type CsMatViewI<'a, N, I, Iptr = I> =
+    CsMatBase<N, I, &'a [Iptr], &'a [I], &'a [N], Iptr>;
+pub type CsMatViewMutI<'a, N, I, Iptr = I> =
+    CsMatBase<N, I, &'a [Iptr], &'a [I], &'a mut [N], Iptr>;
+pub type CsMatVecView_<'a, N, I, Iptr = I> =
+    CsMatBase<N, I, Array2<Iptr>, &'a [I], &'a [N], Iptr>;
 
 pub type CsMat<N> = CsMatI<N, usize>;
 pub type CsMatView<'a, N> = CsMatViewI<'a, N, usize>;
@@ -144,8 +148,6 @@ pub type CsVecViewMutI<'a, N, I> = CsVecBase<&'a [I], &'a mut [N]>;
 pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
 pub type CsVecViewMut<'a, N> = CsVecViewMutI<'a, N, usize>;
 pub type CsVec<N> = CsVecI<N, usize>;
-
-impl<'a, N, I> Copy for CsVecViewI<'a, N, I> {}
 
 /// Sparse matrix in the triplet format.
 ///
