@@ -65,7 +65,9 @@ extern crate alga;
 extern crate ndarray;
 extern crate num_complex;
 extern crate num_traits;
+#[cfg(feature = "serde")]
 extern crate serde;
+#[cfg(feature = "serde_derive")]
 #[macro_use]
 extern crate serde_derive;
 #[cfg(test)]

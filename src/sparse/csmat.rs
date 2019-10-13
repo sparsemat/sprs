@@ -46,7 +46,8 @@ where
 }
 
 /// Describe the storage of a CsMat
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(all(feature = "serde", feature = "serde_derive"), derive(Serialize, Deserialize))]
 pub enum CompressedStorage {
     /// Compressed row storage
     CSR,
