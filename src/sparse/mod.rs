@@ -76,7 +76,10 @@ pub use self::csmat::CompressedStorage;
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
 #[derive(Eq, PartialEq, Debug, Clone)]
-#[cfg_attr(all(feature = "serde", feature = "serde_derive"), derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", feature = "serde_derive"),
+    derive(Serialize, Deserialize)
+)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
 where
     I: SpIndex,
@@ -136,7 +139,10 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
 #[derive(PartialEq, Debug, Clone)]
-#[cfg_attr(all(feature = "serde", feature = "serde_derive"), derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", feature = "serde_derive"),
+    derive(Serialize, Deserialize)
+)]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
     indices: IStorage,

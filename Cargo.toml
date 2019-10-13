@@ -16,7 +16,7 @@ exclude = [
 ]
 
 [features]
-default = ["alga", "serde", "serde_derive"]
+default = ["alga"]
 
 [dependencies]
 num-traits = "0.1.32"

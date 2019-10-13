@@ -1,7 +1,6 @@
 extern crate bincode;
 extern crate sprs;
 
-
 #[cfg(all(feature = "serde", feature = "serde_derive"))]
 fn main() {
     use sprs::CsMat;
