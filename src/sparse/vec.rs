@@ -435,7 +435,7 @@ where
 {
     type Item = NnzEither<'a, N1, N2>;
 
-    fn next(&mut self) -> Option<(NnzEither<'a, N1, N2>)> {
+    fn next(&mut self) -> Option<NnzEither<'a, N1, N2>> {
         match (self.left.peek(), self.right.peek()) {
             (None, Some(&(_, _))) => {
                 let (rind, rval) = self.right.next().unwrap();
