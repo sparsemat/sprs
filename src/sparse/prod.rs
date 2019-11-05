@@ -466,9 +466,9 @@ mod test {
 
         let mat =
             CsMatView::new_view(CSR, (5, 5), indptr, indices, data).unwrap();
-        let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
+        let slice: &[f64] = &[0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec);
+        mul_acc_mat_vec_csr(mat, slice, &mut res_vec);
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
