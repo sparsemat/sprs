@@ -1,7 +1,7 @@
 [package]
 name = "sprs_suitesparse_ldl"
 description = "sprs bindings to the suitesparse ldl solver"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/vbarrielle/sprs"
@@ -16,5 +16,5 @@ path = "../suitesparse_ldl_sys/"
 version = "0.2.0"
 
 [dependencies.sprs]
-version = "0.6.0"
+version = "0.7.0"
 path = "../.."

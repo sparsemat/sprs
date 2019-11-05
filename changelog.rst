@@ -2,6 +2,12 @@
 Changelog
 =========
 
+- 0.7.0
+  - make serde optional **breaking change**
+  - make mul_acc_mat_vec_cs{r|c} more generic **breaking change**
+  - support having different types for indptr & indices in CsMatBase **breaking change**
+  - more careful overflow checking
+  - upgrade dependencies
 - 0.6.5
   - faster triplet format to compressed storage conversion
   - fix borrow checker issue flagged by new NLL
