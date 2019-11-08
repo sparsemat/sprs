@@ -107,6 +107,7 @@ pub use sparse::CompressedStorage::{self, CSC, CSR};
 pub use sparse::binop;
 pub use sparse::linalg;
 pub use sparse::prod;
+pub use sparse::visu;
 
 pub mod vec {
     pub use sparse::{CsVec, CsVecBase, CsVecView, CsVecViewMut};

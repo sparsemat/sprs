@@ -296,3 +296,4 @@ pub mod to_dense;
 pub mod triplet;
 pub mod triplet_iter;
 pub mod vec;
+pub mod visu;
