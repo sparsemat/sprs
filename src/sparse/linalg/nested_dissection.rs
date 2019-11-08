@@ -247,6 +247,27 @@ mod test {
         assert_eq!(&expected_perm, &perm.vec()[..]);
 
         // let's try with a second level of dissection now
-        // TODO
+        // We'll dissect with a block size of 4 so that only the first component
+        // gets dissected again
+        // Unrolled BFS:
+        // queue is [0]
+        // visit 0
+        // queue is [1, 4]
+        // visit 1
+        // queue is [4, 2, 5]
+        // visit 4
+        // queue is [2, 5, 8]
+        // Stop BFS here since we have visited 3 vertices
+        // Final permutation is thus
+        #[rustfmt::skip]
+        let expected_perm2 = [
+            0, 1, 4, // first-first component
+            // empty first-second component
+            2, 5, 8, // first-border
+            7, 10, 11, // second component
+            3, 6, 9, // border
+        ];
+        let perm2 = nested_dissection(lap_mat.view(), 7);
+        assert_eq!(&expected_perm2, &perm2.vec()[..]);
     }
 }
