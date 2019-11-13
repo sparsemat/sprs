@@ -117,19 +117,15 @@ fn nested_dissection_rec<N, I, Iptr>(
                 && in_region[neighbor.index()]
             {
                 deque.push_back(neighbor);
+                status[neighbor.index()] = Border;
             }
         }
-        if new_perm.len() >= perm.len() / 2 {
+        if perm.len() - new_perm.len() - deque.len() <= new_perm.len() {
             break;
         }
     }
     // The vertices left in the queue are the border vertices,
     // the rest are the second connected component.
-    for vert in deque.iter() {
-        if status[vert.index()] == Unvisited && in_region[vert.index()] {
-            status[vert.index()] = Border;
-        }
-    }
     let second_start = new_perm.len();
     for vert in perm.iter() {
         if status[vert.index()] == Unvisited && in_region[vert.index()] {
@@ -137,14 +133,13 @@ fn nested_dissection_rec<N, I, Iptr>(
             new_perm.push(*vert);
         }
     }
-    // Need to use the status as we can have duplicates in the deque
+    let second_stop = new_perm.len();
     for (vert, stat) in status.iter().enumerate() {
         if *stat == Border {
             // can't overflow here, would have overflown creating the perm
             new_perm.push(I::from_usize_unchecked(vert));
         }
     }
-    let second_stop = new_perm.len();
     // Update the perm and recurse on both parts.
     perm.copy_from_slice(new_perm);
     nested_dissection_rec(
@@ -305,37 +300,31 @@ mod test {
         // Final permutation is thus
         #[rustfmt::skip]
         let expected_perm = [
-            0, 1, 4, 2, 5, 8, // first component
-            7, 10, 11,        // second component
-            3, 6, 9,          // border
+            0, 1, 4, 2,   // first component
+            7, 9, 10, 11, // second component
+            3, 5, 6, 8,   // border
         ];
         let perm = nested_dissection(lap_mat.view(), 7);
         assert_eq!(&expected_perm, &perm.vec()[..]);
 
         // let's try with a second level of dissection now
-        // We'll dissect with a block size of 4 so that only the first component
-        // gets dissected again
-        // Unrolled BFS:
-        // queue is [0]
-        // visit 0
-        // queue is [1, 4]
-        // visit 1
-        // queue is [4, 2, 5]
-        // visit 4
-        // queue is [2, 5, 8]
-        // Stop BFS here since we have visited 3 vertices
-        // Final permutation is thus
         #[rustfmt::skip]
         let expected_perm2 = [
-            0, 1, 4, // first-first component
-            // empty first-second component
-            2, 5, 8, // first-border
-            7, 10, 11, // second component
-            3, 6, 9, // border
+            // first component after first pass
+            0, // first component after second pass
+            2, // second component after second pass
+            1, 4, // border after second pass
+            // second component after first pass
+            7, 11, // first component after second pass
+            9, // second component after second pass
+            10, // border after second pass
+            // border after first pass
+            3, 5, 6, 8,
         ];
-        let perm2 = nested_dissection(lap_mat.view(), 7);
+        let perm2 = nested_dissection(lap_mat.view(), 4);
         assert_eq!(&expected_perm2, &perm2.vec()[..]);
     }
+
     // Laplacian matrix on a grid is already blocky by design,
     // better to build on an "irregular" mesh (eg by permuting vertices
     // on a grid that has been triangulated).
