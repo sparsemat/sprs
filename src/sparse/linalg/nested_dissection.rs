@@ -37,6 +37,13 @@ where
     let mut status = vec![VertStatus::Unvisited; nb_vertices];
     // need to prevent BFS from going outside the current region
     let mut in_region = vec![false; nb_vertices];
+    split_connected_components_rec(
+        &mat,
+        &mut perm[..],
+        &mut deque,
+        &mut new_perm,
+        &mut status[..],
+    );
     nested_dissection_rec(
         &mat,
         &mut perm[..],
@@ -95,10 +102,10 @@ fn nested_dissection_rec<N, I, Iptr>(
     deque.clear();
     deque.push_back(perm[0]);
     loop {
-        let cur_vert = deque.pop_front().expect(
-            "Having no more neighbors means we should have stopped earlier?\n\
-             Or maybe we have a non-connex graph, FIXME need to figure it out",
-        );
+        // Should never panic as we should always be given a connex region
+        // meaning split_connected_components_rec should have been called
+        // before this function
+        let cur_vert = deque.pop_front().unwrap();
         if status[cur_vert.index()] == FirstPart {
             continue; // already visited
         }
@@ -158,6 +165,65 @@ fn nested_dissection_rec<N, I, Iptr>(
         status,
         in_region,
     );
+}
+
+fn split_connected_components_rec<N, I, Iptr>(
+    mat: &CsMatViewI<N, I, Iptr>,
+    perm: &mut [I],
+    deque: &mut VecDeque<I>,
+    new_perm: &mut Vec<I>,
+    status: &mut [VertStatus],
+) where
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    let nb_vertices = mat.cols();
+    assert_eq!(nb_vertices, mat.rows());
+    assert_eq!(nb_vertices, new_perm.capacity());
+    assert_eq!(nb_vertices, status.len());
+    use self::VertStatus::*;
+    new_perm.clear();
+    for st in status.iter_mut() {
+        *st = Unvisited;
+    }
+    deque.clear();
+    deque.push_back(perm[0]);
+    loop {
+        let cur_vert = match deque.pop_front() {
+            None => break,
+            Some(cur_vert) => cur_vert,
+        };
+        if status[cur_vert.index()] == FirstPart {
+            continue; // already visited
+        }
+        new_perm.push(cur_vert);
+        status[cur_vert.index()] = FirstPart;
+        let outer = mat.outer_view(cur_vert.index()).unwrap();
+        for &neighbor in outer.indices() {
+            if status[neighbor.index()] == Unvisited {
+                deque.push_back(neighbor);
+            }
+        }
+    }
+    if new_perm.len() != perm.len() {
+        let rest_start = new_perm.len();
+        for vert in perm.iter() {
+            if status[vert.index()] == Unvisited {
+                status[vert.index()] = SecondPart;
+                new_perm.push(*vert);
+            }
+        }
+        perm.copy_from_slice(new_perm);
+        split_connected_components_rec(
+            mat,
+            &mut perm[rest_start..],
+            deque,
+            new_perm,
+            status,
+        );
+    }
+    // nothing to do if the component is connex, we keep the perm ordering
+    // as is
 }
 
 #[cfg(test)]
@@ -269,5 +335,67 @@ mod test {
         ];
         let perm2 = nested_dissection(lap_mat.view(), 7);
         assert_eq!(&expected_perm2, &perm2.vec()[..]);
+    }
+    // Laplacian matrix on a grid is already blocky by design,
+    // better to build on an "irregular" mesh (eg by permuting vertices
+    // on a grid that has been triangulated).
+    // Also test with a non-connex graph.
+    #[test]
+    fn nested_dissection_non_connex_irregular_grid() {
+        // Take the laplacian matrix of the following graph
+        // (no border conditions):
+        //
+        // 0 - 4 - 2   6
+        // | \ | / |   |
+        // 8 - 5 - 3   9
+        // | / | \ |   |
+        // 1 - A - B   7
+        //
+        // The laplacian matrix structure is (with x = -1)
+        //       0 1 2 3 4 5 6 7 8 9 A B
+        //     | 3       x x     x       | 0
+        //     |   3       x     x   x   | 1
+        //     |     3 x x x             | 2
+        // L = |     x 3   x           x | 3
+        //     | x   x   3 x             | 4
+        //     | x x x x x 8     x   x x | 5
+        //     |             1     x     | 6
+        //     |               1   x     | 7
+        //     | x x       x     3       | 8
+        //     |             x x   2     | 9
+        //     |   x       x         3 x | A
+        //     |       x   x         x 3 | B
+        let x = -1.;
+        #[rustfmt::skip]
+        let lap_mat = CsMat::new(
+            (12, 12),
+            vec![0, 4, 8, 12, 16, 20, 29, 31, 33, 37, 40, 44, 48],
+            vec![0, 4, 5, 8,
+                 1, 5, 8, 10,
+                 2, 3, 4, 5,
+                 2, 3, 5, 11,
+                 0, 2, 4, 5,
+                 0, 1, 2, 3, 4, 5, 8, 10, 11,
+                 6, 9,
+                 7, 9,
+                 0, 1, 5, 8,
+                 6, 7, 9,
+                 1, 5, 10, 11,
+                 3, 5, 10, 11],
+            vec![3., x, x, x,
+                 3., x, x, x,
+                 3., x, x, x,
+                 x, 3., x, x,
+                 x, x, 3., x,
+                 x, x, x, x, x, 8., x, x, x,
+                 1., x,
+                 1., x,
+                 x, x, x, 3.,
+                 x, x, 2.,
+                 x, x, 3., x,
+                 x, x, x, 3.],
+        );
+        // test we have no panic due to non-connexity
+        let _perm = nested_dissection(lap_mat.view(), 5);
     }
 }
