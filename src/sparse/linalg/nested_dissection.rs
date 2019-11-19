@@ -40,13 +40,6 @@ where
     split_connected_components_rec(
         &mat,
         &mut perm[..],
-        &mut deque,
-        &mut new_perm,
-        &mut status[..],
-    );
-    nested_dissection_rec(
-        &mat,
-        &mut perm[..],
         block_size,
         &mut deque,
         &mut new_perm,
@@ -165,9 +158,11 @@ fn nested_dissection_rec<N, I, Iptr>(
 fn split_connected_components_rec<N, I, Iptr>(
     mat: &CsMatViewI<N, I, Iptr>,
     perm: &mut [I],
+    block_size: usize,
     deque: &mut VecDeque<I>,
     new_perm: &mut Vec<I>,
     status: &mut [VertStatus],
+    in_region: &mut [bool],
 ) where
     I: SpIndex,
     Iptr: SpIndex,
@@ -209,16 +204,35 @@ fn split_connected_components_rec<N, I, Iptr>(
             }
         }
         perm.copy_from_slice(new_perm);
+        nested_dissection_rec(
+            &mat,
+            &mut perm[..rest_start],
+            block_size,
+            deque,
+            new_perm,
+            &mut status[..],
+            &mut in_region[..],
+        );
         split_connected_components_rec(
             mat,
             &mut perm[rest_start..],
+            block_size,
             deque,
             new_perm,
             status,
+            in_region,
+        );
+    } else {
+        nested_dissection_rec(
+            &mat,
+            &mut perm[..],
+            block_size,
+            deque,
+            new_perm,
+            &mut status[..],
+            &mut in_region[..],
         );
     }
-    // nothing to do if the component is connex, we keep the perm ordering
-    // as is
 }
 
 #[cfg(test)]
