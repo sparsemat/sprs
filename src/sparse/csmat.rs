@@ -903,7 +903,7 @@ where
 
     /// The array of offsets in the indices() and data() slices.
     /// The elements of the slice at outer dimension i
-    /// are available between the elements indptr[i] and indptr[i+1]
+    /// are available between the elements indptr\[i\] and indptr\[i+1\]
     /// in the indices() and data() slices.
     ///
     /// # Example
@@ -1216,7 +1216,7 @@ where
     /// Check the structure of CsMat components
     /// This will ensure that:
     /// * indptr is of length outer_dim() + 1
-    /// * indices and data have the same length, nnz == indptr[outer_dims()]
+    /// * indices and data have the same length, nnz == indptr\[outer_dims()\]
     /// * indptr is sorted
     /// * indptr values do not exceed usize::MAX / 2, as that would mean
     ///   indices and indptr would take more space than the addressable memory

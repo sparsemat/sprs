@@ -2,6 +2,8 @@
 Changelog
 =========
 
+- 0.7.1
+  - fix issue when building docs on nightly, which broke on docs.sprs
 - 0.7.0
   - make serde optional **breaking change**
   - make mul_acc_mat_vec_cs{r|c} more generic **breaking change**
