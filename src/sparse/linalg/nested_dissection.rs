@@ -3,6 +3,7 @@ use std::collections::vec_deque::VecDeque;
 use indexing::SpIndex;
 
 use sparse::permutation::PermOwnedI;
+use sparse::symmetric::is_symmetric;
 use sparse::CsMatViewI;
 
 /// Compute the nested dissection of a sparse matrix.
@@ -20,9 +21,11 @@ pub fn nested_dissection<N, I, Iptr>(
     block_size: usize,
 ) -> PermOwnedI<I>
 where
+    N: PartialEq,
     I: SpIndex,
     Iptr: SpIndex,
 {
+    debug_assert!(is_symmetric(&mat));
     assert_eq!(mat.cols(), mat.rows());
     let nb_vertices = mat.cols();
     let mut perm: Vec<_> = (0..nb_vertices).map(SpIndex::from_usize).collect();
@@ -235,9 +238,82 @@ fn split_connected_components_rec<N, I, Iptr>(
     }
 }
 
+pub struct Ordering<I> {
+    /// The computed permutation
+    pub perm: PermOwnedI<I>,
+    /// Indices inside the permutation delimiting connected components
+    pub connected_parts: Vec<usize>,
+}
+
+pub fn cuthill_mckee<N, I, Iptr>(mat: CsMatViewI<N, I, Iptr>) -> Ordering<I>
+where
+    N: PartialEq,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    use self::VertStatus::{FirstPart, Unvisited};
+    debug_assert!(is_symmetric(&mat));
+    assert_eq!(mat.cols(), mat.rows());
+    let nb_vertices = mat.cols();
+    let mut deque = VecDeque::with_capacity(nb_vertices);
+    let max_neighbors = mat
+        .indptr()
+        .windows(2)
+        .map(|w| w[1] - w[0])
+        .max()
+        .unwrap_or(Iptr::zero());
+    let mut neighbors = Vec::with_capacity(max_neighbors.index());
+    let mut perm = Vec::with_capacity(nb_vertices);
+    let mut status = vec![VertStatus::Unvisited; nb_vertices];
+    let mut connected_parts = Vec::with_capacity(4);
+    connected_parts.push(0);
+
+    let degrees = mat.degrees();
+
+    while perm.len() < nb_vertices {
+        // find the non-visited vertex with the lowest degree
+        let mut min_deg = nb_vertices;
+        let mut min_deg_vert = 0;
+        for (vert, st) in status.iter().enumerate() {
+            let vert_deg = degrees[vert];
+            if *st == Unvisited && vert_deg <= min_deg {
+                min_deg = vert_deg;
+                min_deg_vert = vert;
+            }
+        }
+        deque.clear();
+        deque.push_back(min_deg_vert);
+
+        while let Some(cur_vert) = deque.pop_front() {
+            if status[cur_vert] != Unvisited {
+                continue;
+            }
+            perm.push(I::from_usize(cur_vert));
+            status[cur_vert.index()] = FirstPart;
+            let outer = mat.outer_view(cur_vert.index()).unwrap();
+            neighbors.clear();
+            for &neighbor in outer.indices() {
+                if status[neighbor.index()] == Unvisited {
+                    neighbors.push((degrees[neighbor.index()], neighbor));
+                }
+            }
+            neighbors.sort_by_key(|&(deg, _)| deg);
+            for (_deg, neighbor) in &neighbors {
+                deque.push_back(neighbor.index());
+            }
+        }
+        connected_parts.push(perm.len());
+    }
+
+    Ordering {
+        perm: PermOwnedI::new(perm),
+        connected_parts,
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use super::nested_dissection;
+    use super::{cuthill_mckee, nested_dissection};
     use sparse::CsMat;
 
     #[test]
@@ -405,5 +481,12 @@ mod test {
         let lap_mat = unconnected_graph_lap();
         // test we have no panic due to non-connexity
         let _perm = nested_dissection(lap_mat.view(), 5);
+    }
+
+    #[test]
+    fn cuthill_mckee_unconnected_graph_lap() {
+        let lap_mat = unconnected_graph_lap();
+        let ordering = cuthill_mckee(lap_mat.view());
+        assert_eq!(&ordering.connected_parts, &[0, 3, 12],);
     }
 }

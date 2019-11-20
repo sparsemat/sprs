@@ -9,6 +9,7 @@ pub mod etree;
 mod nested_dissection;
 pub mod trisolve;
 
+pub use self::nested_dissection::cuthill_mckee;
 pub use self::nested_dissection::nested_dissection;
 
 /// Diagonal solve
