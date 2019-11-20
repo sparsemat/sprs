@@ -1113,6 +1113,29 @@ where
         }
     }
 
+    /// Get the degrees of each vertex on a symmetric matrix
+    ///
+    /// The nonzero pattern of a symmetric matrix can be interpreted as
+    /// an undirected graph. In such a graph, a vertex i is connected to another
+    /// vertex j if there is a corresponding nonzero entry in the matrix at
+    /// location (i, j).
+    ///
+    /// This function returns a vector containing the degree of each vertex,
+    /// that is to say the number of neighbor of each vertex. We do not
+    /// count diagonal entries as a neighbor.
+    pub fn degrees(&self) -> Vec<usize> {
+        self.outer_iterator()
+            .enumerate()
+            .map(|(outer_dim, outer)| {
+                outer
+                    .indices()
+                    .iter()
+                    .filter(|ind| ind.index() != outer_dim)
+                    .count()
+            })
+            .collect()
+    }
+
     /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
     pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
         if i >= self.outer_dims() {
@@ -2690,5 +2713,23 @@ mod test {
         assert_eq!(iter.next(), Some((&1., (2, 1))));
         assert_eq!(iter.next(), Some((&1., (2, 2))));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn degrees() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let degrees = mat.degrees();
+        assert_eq!(&degrees, &[2, 0, 1, 2, 1],);
     }
 }
