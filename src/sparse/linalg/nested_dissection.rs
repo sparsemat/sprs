@@ -339,12 +339,7 @@ mod test {
         assert_eq!(&expected_perm2, &perm2.vec()[..]);
     }
 
-    // Laplacian matrix on a grid is already blocky by design,
-    // better to build on an "irregular" mesh (eg by permuting vertices
-    // on a grid that has been triangulated).
-    // Also test with a non-connex graph.
-    #[test]
-    fn nested_dissection_non_connex_irregular_grid() {
+    fn unconnected_graph_lap() -> CsMat<f64> {
         // Take the laplacian matrix of the following graph
         // (no border conditions):
         //
@@ -398,6 +393,16 @@ mod test {
                  x, x, 3., x,
                  x, x, x, 3.],
         );
+        lap_mat
+    }
+
+    // Laplacian matrix on a grid is already blocky by design,
+    // better to build on an "irregular" mesh (eg by permuting vertices
+    // on a grid that has been triangulated).
+    // Also test with a non-connex graph.
+    #[test]
+    fn nested_dissection_non_connex_irregular_grid() {
+        let lap_mat = unconnected_graph_lap();
         // test we have no panic due to non-connexity
         let _perm = nested_dissection(lap_mat.view(), 5);
     }
