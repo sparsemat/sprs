@@ -99,7 +99,7 @@ pub use sparse::{
 pub use sparse::symmetric::is_symmetric;
 
 pub use sparse::permutation::{
-    PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
+    transform_mat_papt, PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
 };
 
 pub use sparse::CompressedStorage::{self, CSC, CSR};

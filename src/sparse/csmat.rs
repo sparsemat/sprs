@@ -1113,6 +1113,14 @@ where
         }
     }
 
+    /// Get the max number of nnz for each outer dim
+    pub fn max_outer_nnz(&self) -> usize {
+        self.outer_iterator()
+            .map(|outer| outer.indices().len())
+            .max()
+            .unwrap_or(0)
+    }
+
     /// Get the degrees of each vertex on a symmetric matrix
     ///
     /// The nonzero pattern of a symmetric matrix can be interpreted as
