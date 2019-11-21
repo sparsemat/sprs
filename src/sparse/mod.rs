@@ -291,6 +291,7 @@ pub mod csmat;
 pub mod linalg;
 pub mod permutation;
 pub mod prod;
+pub mod special_mats;
 pub mod symmetric;
 pub mod to_dense;
 pub mod triplet;
