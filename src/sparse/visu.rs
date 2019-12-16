@@ -1,5 +1,7 @@
 use std::fmt;
 
+use ndarray::Array2;
+
 use indexing::SpIndex;
 use sparse::CsMatViewI;
 
@@ -62,9 +64,35 @@ where
     NnzPatternFormatter { mat }
 }
 
+/// Create an array holding a black and white image representing the
+/// non-zero pattern of the sparse matrix.
+///
+/// Since this is aimed at display, zeros will be mapped to 0xFF white pixels
+/// while non-zeros will be mapped to 0x00 black pixels.
+pub fn nnz_image<N, I, Iptr>(mat: CsMatViewI<N, I, Iptr>) -> Array2<u8>
+where
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    let (rows, cols) = (mat.rows(), mat.cols());
+    let mut res = Array2::from_elem((rows, cols), 255);
+    for (outer, outer_vec) in mat.outer_iterator().enumerate() {
+        for (inner, _) in outer_vec.iter() {
+            let (i, j) = if mat.is_csr() {
+                (outer, inner)
+            } else {
+                (inner, outer)
+            };
+            res[[i, j]] = 0;
+        }
+    }
+    res
+}
+
 #[cfg(test)]
 mod test {
-    use super::nnz_pattern_formatter;
+    use super::{nnz_image, nnz_pattern_formatter};
+    use ndarray::arr2;
     use sparse::CsMat;
 
     #[test]
@@ -80,5 +108,18 @@ mod test {
                             | xx|\n";
         let pattern_str = format!("{}", nnz_pattern_formatter(mat.view()));
         assert_eq!(expected_str, pattern_str);
+    }
+
+    #[test]
+    fn test_nnz_image() {
+        let mat = CsMat::new_csc(
+            (3, 3),
+            vec![0, 1, 3, 4],
+            vec![1, 0, 2, 2],
+            vec![1.; 4],
+        );
+        let expected_arr = arr2(&[[255, 0, 255], [0, 255, 255], [255, 0, 0]]);
+        let nnz_arr = nnz_image(mat.view());
+        assert_eq!(expected_arr, nnz_arr);
     }
 }
