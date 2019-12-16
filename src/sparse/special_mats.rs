@@ -1,4 +1,4 @@
-use ndarray::Array2;
+use ndarray::ArrayView2;
 ///! Common sparse matrices
 use smallvec::SmallVec;
 
@@ -8,7 +8,7 @@ use sparse::CsMatI;
 /// Compute the graph laplacian of a triangle mesh
 pub fn tri_mesh_graph_laplacian<I>(
     nb_vertices: usize,
-    triangles: Array2<I>,
+    triangles: ArrayView2<I>,
 ) -> CsMatI<f64, I>
 // TODO generic scalar type
 where
@@ -107,7 +107,7 @@ mod test {
                  x, x, x, 4., x,
                  x, x, x, 3.,],
         );
-        let lap_mat = super::tri_mesh_graph_laplacian(6, triangles);
+        let lap_mat = super::tri_mesh_graph_laplacian(6, triangles.view());
         assert_eq!(lap_mat, expected);
     }
 }
