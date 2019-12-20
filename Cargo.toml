@@ -32,6 +32,7 @@ bencher = "0.1"
 tempdir = "0.3.5"
 bincode = "1.0.1"
 tobj = "0.1.11"
+image = "0.22.3"
 
 [[bench]]
 name = "suite"
