@@ -10,7 +10,6 @@ mod nested_dissection;
 pub mod trisolve;
 
 pub use self::nested_dissection::cuthill_mckee;
-pub use self::nested_dissection::nested_dissection;
 
 /// Diagonal solve
 pub fn diag_solve<'a, N, I1, I2>(diag: I1, x: I2)
