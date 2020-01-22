@@ -67,6 +67,7 @@ extern crate num_complex;
 extern crate num_traits;
 #[cfg(feature = "serde")]
 extern crate serde;
+extern crate smallvec;
 #[cfg(feature = "serde_derive")]
 #[macro_use]
 extern crate serde_derive;
@@ -99,7 +100,7 @@ pub use sparse::{
 pub use sparse::symmetric::is_symmetric;
 
 pub use sparse::permutation::{
-    PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
+    transform_mat_papt, PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
 };
 
 pub use sparse::CompressedStorage::{self, CSC, CSR};
@@ -107,6 +108,8 @@ pub use sparse::CompressedStorage::{self, CSC, CSR};
 pub use sparse::binop;
 pub use sparse::linalg;
 pub use sparse::prod;
+pub use sparse::special_mats;
+pub use sparse::visu;
 
 pub mod vec {
     pub use sparse::{CsVec, CsVecBase, CsVecView, CsVecViewMut};
