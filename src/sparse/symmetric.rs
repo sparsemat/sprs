@@ -4,13 +4,14 @@ use std::ops::Deref;
 use indexing::SpIndex;
 use sparse::prelude::*;
 
-pub fn is_symmetric<N, I, IpStorage, IStorage, DStorage>(
-    mat: &CsMatBase<N, I, IpStorage, IStorage, DStorage>,
+pub fn is_symmetric<N, I, Iptr, IpStorage, IStorage, DStorage>(
+    mat: &CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>,
 ) -> bool
 where
-    N: Copy + PartialEq,
+    N: PartialEq,
     I: SpIndex,
-    IpStorage: Deref<Target = [I]>,
+    Iptr: SpIndex,
+    IpStorage: Deref<Target = [Iptr]>,
     IStorage: Deref<Target = [I]>,
     DStorage: Deref<Target = [N]>,
 {
@@ -18,10 +19,10 @@ where
         return false;
     }
     for (outer_ind, vec) in mat.outer_iterator().enumerate() {
-        for (inner_ind, &value) in vec.iter() {
+        for (inner_ind, value) in vec.iter() {
             match mat.get_outer_inner(inner_ind, outer_ind) {
                 None => return false,
-                Some(&transposed_val) => {
+                Some(transposed_val) => {
                     if transposed_val != value {
                         return false;
                     }

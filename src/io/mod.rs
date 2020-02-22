@@ -36,23 +36,7 @@ impl fmt::Display for IoError {
     }
 }
 
-impl Error for IoError {
-    fn description(&self) -> &str {
-        match *self {
-            IoError::Io(ref err) => err.description(),
-            IoError::BadMatrixMarketFile => "bad matrix market file",
-            IoError::UnsupportedMatrixMarketFormat => "unsupported format",
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        match *self {
-            IoError::Io(ref err) => Some(err),
-            IoError::BadMatrixMarketFile => None,
-            IoError::UnsupportedMatrixMarketFormat => None,
-        }
-    }
-}
+impl Error for IoError {}
 
 impl From<io::Error> for IoError {
     fn from(err: io::Error) -> IoError {

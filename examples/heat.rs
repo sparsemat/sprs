@@ -143,6 +143,10 @@ fn gauss_seidel(
 fn main() {
     let (rows, cols) = (10, 10);
     let lap = grid_laplacian((rows, cols));
+    println!(
+        "grid laplacian nnz structure:\n{}",
+        sprs::visu::nnz_pattern_formatter(lap.view()),
+    );
     let mut rhs = OwnedVec::zeros(rows * cols);
     set_boundary_condition(rhs.view_mut(), (rows, cols), |row, col| {
         (row + col) as f64

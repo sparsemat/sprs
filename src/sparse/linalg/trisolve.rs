@@ -8,13 +8,14 @@ use stack::{self, DStack, StackVal};
 /// Sparse triangular solves
 use std::ops::IndexMut;
 
-fn check_solver_dimensions<N, I, V: ?Sized>(
-    lower_tri_mat: &CsMatViewI<N, I>,
+fn check_solver_dimensions<N, I, Iptr, V: ?Sized>(
+    lower_tri_mat: &CsMatViewI<N, I, Iptr>,
     rhs: &V,
 ) where
     N: Copy + Num,
     V: vec::VecDim<N>,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     let (cols, rows) = (lower_tri_mat.cols(), lower_tri_mat.rows());
     if cols != rows {
@@ -32,14 +33,15 @@ fn check_solver_dimensions<N, I, V: ?Sized>(
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn lsolve_csr_dense_rhs<N, I, V: ?Sized>(
-    lower_tri_mat: CsMatViewI<N, I>,
+pub fn lsolve_csr_dense_rhs<N, I, Iptr, V: ?Sized>(
+    lower_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
 ) -> Result<(), SprsError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csr() {
@@ -84,14 +86,15 @@ where
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn lsolve_csc_dense_rhs<N, I, V: ?Sized>(
-    lower_tri_mat: CsMatViewI<N, I>,
+pub fn lsolve_csc_dense_rhs<N, I, Iptr, V: ?Sized>(
+    lower_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
 ) -> Result<(), SprsError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, rhs);
     if !lower_tri_mat.is_csc() {
@@ -107,7 +110,7 @@ where
     // L_1_1 x1 = b_1 - x0*l_1_0
 
     for (col_ind, col) in lower_tri_mat.outer_iterator().enumerate() {
-        try!(lspsolve_csc_process_col(col, col_ind, rhs));
+        lspsolve_csc_process_col(col, col_ind, rhs)?;
     }
     Ok(())
 }
@@ -151,14 +154,15 @@ where
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn usolve_csc_dense_rhs<N, I, V: ?Sized>(
-    upper_tri_mat: CsMatViewI<N, I>,
+pub fn usolve_csc_dense_rhs<N, I, Iptr, V: ?Sized>(
+    upper_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
 ) -> Result<(), SprsError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csc() {
@@ -203,14 +207,15 @@ where
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn usolve_csr_dense_rhs<N, I, V: ?Sized>(
-    upper_tri_mat: CsMatViewI<N, I>,
+pub fn usolve_csr_dense_rhs<N, I, Iptr, V: ?Sized>(
+    upper_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
 ) -> Result<(), SprsError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, rhs);
     if !upper_tri_mat.is_csr() {
@@ -266,8 +271,8 @@ where
 /// * if dstack is not empty
 /// * if w_workspace is not of length n
 ///
-pub fn lsolve_csc_sparse_rhs<N, I>(
-    lower_tri_mat: CsMatViewI<N, I>,
+pub fn lsolve_csc_sparse_rhs<N, I, Iptr>(
+    lower_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: CsVecViewI<N, I>,
     dstack: &mut DStack<StackVal<usize>>,
     x_workspace: &mut [N],
@@ -276,6 +281,7 @@ pub fn lsolve_csc_sparse_rhs<N, I>(
 where
     N: Copy + Num,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     if !lower_tri_mat.is_csc() {
         panic!("Storage mismatch");
@@ -333,7 +339,7 @@ where
     for &ind in dstack.iter_right().map(stack::extract_stack_val) {
         println!("ind: {}", ind);
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
-        try!(lspsolve_csc_process_col(col, ind, x_workspace));
+        lspsolve_csc_process_col(col, ind, x_workspace)?;
     }
     Ok(())
 }

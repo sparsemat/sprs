@@ -2,10 +2,23 @@
 Changelog
 =========
 
+- 0.7.1
+    - fix issue when building docs on nightly, which broke on docs.sprs
+- 0.7.0
+    - make serde optional **breaking change**
+    - make mul_acc_mat_vec_cs{r|c} more generic **breaking change**
+    - support having different types for indptr & indices in CsMatBase **breaking change**
+    - more careful overflow checking
+    - upgrade dependencies
+- 0.6.5
+    - faster triplet format to compressed storage conversion
+    - fix borrow checker issue flagged by new NLL
+    - can read Matrix Market files from an ``io::BufRead``
+    - improve ``CsMat::map`` to enable changing the storage type
 - 0.6.4
-  - add specialized sparse/sparse vector dot product using binary search
-    for vectors where the number of non-zeros is very different.
-  - enhance performance of sparse/sparse vector dot product
+    - add specialized sparse/sparse vector dot product using binary search
+      for vectors where the number of non-zeros is very different.
+    - enhance performance of sparse/sparse vector dot product
 - 0.6.3
     - enforce rustfmt style checking
     - more explicit error messages when checking the structure of a ``CsMat``

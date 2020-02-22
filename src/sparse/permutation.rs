@@ -1,8 +1,10 @@
-use indexing::SpIndex;
 /// Representation of permutation matrices
 ///
 /// Both the permutation matrices and its inverse are stored
 use std::ops::{Deref, Mul};
+
+use indexing::SpIndex;
+use sparse::{CompressedStorage, CsMatI, CsMatViewI};
 
 #[derive(Debug, Clone)]
 enum PermStorage<I, IndStorage>
@@ -116,6 +118,21 @@ where
         }
     }
 
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
+
+    /// Check whether the permutation is the identity.
+    pub fn is_identity(&self) -> bool {
+        match self.storage {
+            Identity => true,
+            FinitePerm {
+                perm: ref p,
+                perm_inv: ref _p_,
+            } => p.iter().enumerate().all(|(ind, x)| ind == x.index()),
+        }
+    }
+
     pub fn view(&self) -> PermViewI<I> {
         match self.storage {
             Identity => PermViewI {
@@ -158,7 +175,7 @@ where
         assert!(index < self.dim);
         match self.storage {
             Identity => index,
-            FinitePerm { perm: ref p, .. } => p[index].index(),
+            FinitePerm { perm: ref p, .. } => p[index].index_unchecked(),
         }
     }
 
@@ -168,7 +185,7 @@ where
             Identity => index,
             FinitePerm {
                 perm_inv: ref p_, ..
-            } => p_[index].index(),
+            } => p_[index].index_unchecked(),
         }
     }
 
@@ -200,10 +217,14 @@ where
                 perm: ref p,
                 perm_inv: ref p_,
             } => {
-                let perm =
-                    p.iter().map(|i| I2::from_usize(i.index())).collect();
-                let perm_inv =
-                    p_.iter().map(|i| I2::from_usize(i.index())).collect();
+                let perm = p
+                    .iter()
+                    .map(|i| I2::from_usize(i.index_unchecked()))
+                    .collect();
+                let perm_inv = p_
+                    .iter()
+                    .map(|i| I2::from_usize(i.index_unchecked()))
+                    .collect();
                 PermOwnedI {
                     dim: self.dim,
                     storage: FinitePerm { perm, perm_inv },
@@ -227,7 +248,7 @@ where
             Identity => res,
             FinitePerm { perm: ref p, .. } => {
                 for (pi, r) in p.iter().zip(res.iter_mut()) {
-                    *r = rhs[pi.index()];
+                    *r = rhs[pi.index_unchecked()];
                 }
                 res
             }
@@ -235,7 +256,66 @@ where
     }
 }
 
+/// Compute the square matrix resulting from the product P * A * P^T
+pub fn transform_mat_papt<N, I, Iptr>(
+    mat: CsMatViewI<N, I, Iptr>,
+    perm: PermViewI<I>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Copy + ::std::fmt::Debug,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    assert!(mat.rows() == mat.cols());
+    assert!(mat.rows() == perm.dim());
+    if perm.is_identity() || mat.rows() == 0 {
+        return mat.to_owned();
+    }
+    // We can apply the CSR algorithm even if A is CSC:
+    // indeed, (PAP^T)^T = PA^TP^T, and transposing means going from CSC to CSR
+    let mut indptr = Vec::with_capacity(mat.indptr().len());
+    let mut indices = Vec::with_capacity(mat.indices().len());
+    let mut data = Vec::with_capacity(mat.data().len());
+    let (p, p_) = match perm.storage {
+        Identity => unreachable!(),
+        FinitePerm {
+            perm: p,
+            perm_inv: p_,
+        } => (p, p_),
+    };
+    let mut nnz = Iptr::zero();
+    indptr.push(nnz);
+    let mut tmp = Vec::with_capacity(mat.max_outer_nnz());
+    for in_outer in p {
+        let nnz_in_outer =
+            mat.indptr()[in_outer.index() + 1] - mat.indptr()[in_outer.index()];
+        nnz += nnz_in_outer;
+        indptr.push(nnz);
+        tmp.clear();
+        let outer = mat.outer_view(in_outer.index()).unwrap();
+        for (ind, val) in outer.indices().iter().zip(outer.data()) {
+            tmp.push((p_[ind.index()], *val))
+        }
+        tmp.sort_by_key(|(ind, _)| *ind);
+        for (ind, val) in &tmp {
+            indices.push(*ind);
+            data.push(*val);
+        }
+    }
+
+    match mat.storage() {
+        CompressedStorage::CSR => {
+            CsMatI::new(mat.shape(), indptr, indices, data)
+        }
+        CompressedStorage::CSC => {
+            CsMatI::new_csc(mat.shape(), indptr, indices, data)
+        }
+    }
+}
+
+#[cfg(test)]
 mod test {
+    use sparse::CsMat;
 
     #[test]
     fn perm_mul() {
@@ -249,5 +329,42 @@ mod test {
 
         let y = &p * &x;
         assert_eq!(&y, &[2, 1, 3, 5, 4]);
+    }
+
+    #[test]
+    fn transform_mat_papt() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let perm = super::PermOwned::new(vec![2, 1, 3, 0, 4]);
+        // expected matrix PA
+        // | 0 0 0 1 0 |
+        // | 0 2 0 0 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 3 1 |
+        // | 1 0 0 0 1 |
+        // expected matrix PAP^T
+        // | 0 0 1 0 0 |
+        // | 0 2 0 0 0 |
+        // | 1 0 1 3 0 |
+        // | 0 0 3 1 1 |
+        // | 0 0 0 1 1 |
+        let expected_papt = CsMat::new_csc(
+            (5, 5),
+            vec![0, 1, 2, 5, 8, 10],
+            vec![2, 1, 0, 2, 3, 2, 3, 4, 3, 4],
+            vec![1, 2, 1, 1, 3, 3, 1, 1, 1, 1],
+        );
+        let papt = super::transform_mat_papt(mat.view(), perm.view());
+        assert_eq!(expected_papt, papt);
     }
 }

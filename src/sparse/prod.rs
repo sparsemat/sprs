@@ -4,6 +4,7 @@ use num_traits::Num;
 use sparse::compressed::SpMatView;
 ///! Sparse matrix product
 use sparse::prelude::*;
+use sparse::vec::DenseVector;
 use std::iter::Sum;
 use Ix2;
 
@@ -46,16 +47,18 @@ where
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csc<N, I>(
-    mat: CsMatViewI<N, I>,
-    in_vec: &[N],
+pub fn mul_acc_mat_vec_csc<N, I, Iptr, V>(
+    mat: CsMatViewI<N, I, Iptr>,
+    in_vec: V,
     res_vec: &mut [N],
 ) where
     N: Num + Copy,
     I: SpIndex,
+    Iptr: SpIndex,
+    V: DenseVector<N>,
 {
     let mat = mat.view();
-    if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
+    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.len() {
         panic!("Dimension mismatch");
     }
     if !mat.is_csc() {
@@ -63,7 +66,7 @@ pub fn mul_acc_mat_vec_csc<N, I>(
     }
 
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
-        let multiplier = &in_vec[col_ind];
+        let multiplier = in_vec.index(col_ind);
         for (row_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
             res_vec[row_ind] = res_vec[row_ind] + *multiplier * value;
@@ -73,15 +76,17 @@ pub fn mul_acc_mat_vec_csc<N, I>(
 
 /// Multiply a sparse CSR matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csr<N, I>(
-    mat: CsMatViewI<N, I>,
-    in_vec: &[N],
+pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
+    mat: CsMatViewI<N, I, Iptr>,
+    in_vec: V,
     res_vec: &mut [N],
 ) where
     N: Num + Copy,
     I: SpIndex,
+    Iptr: SpIndex,
+    V: DenseVector<N>,
 {
-    if mat.cols() != in_vec.len() || mat.rows() != res_vec.len() {
+    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.len() {
         panic!("Dimension mismatch");
     }
     if !mat.is_csr() {
@@ -91,7 +96,8 @@ pub fn mul_acc_mat_vec_csr<N, I>(
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
         for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            res_vec[row_ind] = res_vec[row_ind] + in_vec[col_ind] * value;
+            res_vec[row_ind] =
+                res_vec[row_ind] + *in_vec.index(col_ind) * value;
         }
     }
 }
@@ -106,16 +112,17 @@ pub fn mul_acc_mat_vec_csr<N, I>(
 /// rhs: right hand size matrix
 /// workspace: used to accumulate the line values. Should be of length
 ///            rhs.cols()
-pub fn csr_mul_csr<N, I, Mat1, Mat2>(
+pub fn csr_mul_csr<N, I, Iptr, Mat1, Mat2>(
     lhs: &Mat1,
     rhs: &Mat2,
     workspace: &mut [N],
-) -> CsMatI<N, I>
+) -> CsMatI<N, I, Iptr>
 where
     N: Num + Copy,
     I: SpIndex,
-    Mat1: SpMatView<N, I>,
-    Mat2: SpMatView<N, I>,
+    Iptr: SpIndex,
+    Mat1: SpMatView<N, I, Iptr>,
+    Mat2: SpMatView<N, I, Iptr>,
 {
     csr_mul_csr_impl(lhs.view(), rhs.view(), workspace)
 }
@@ -129,40 +136,43 @@ where
 /// rhs: right hand size matrix
 /// workspace: used to accumulate the line values. Should be of length
 ///            lhs.lines()
-pub fn csc_mul_csc<N, I, Mat1, Mat2>(
+pub fn csc_mul_csc<N, I, Iptr, Mat1, Mat2>(
     lhs: &Mat1,
     rhs: &Mat2,
     workspace: &mut [N],
-) -> CsMatI<N, I>
+) -> CsMatI<N, I, Iptr>
 where
     N: Num + Copy,
     I: SpIndex,
-    Mat1: SpMatView<N, I>,
-    Mat2: SpMatView<N, I>,
+    Iptr: SpIndex,
+    Mat1: SpMatView<N, I, Iptr>,
+    Mat2: SpMatView<N, I, Iptr>,
 {
     csr_mul_csr_impl(rhs.transpose_view(), lhs.transpose_view(), workspace)
         .transpose_into()
 }
 
 /// Allocate the appropriate workspace for a CSR-CSR product
-pub fn workspace_csr<N, I, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
+pub fn workspace_csr<N, I, Iptr, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
 where
     N: Copy + Num,
     I: SpIndex,
-    Mat1: SpMatView<N, I>,
-    Mat2: SpMatView<N, I>,
+    Iptr: SpIndex,
+    Mat1: SpMatView<N, I, Iptr>,
+    Mat2: SpMatView<N, I, Iptr>,
 {
     let len = rhs.view().cols();
     vec![N::zero(); len]
 }
 
 /// Allocate the appropriate workspace for a CSC-CSC product
-pub fn workspace_csc<N, I, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<N>
+pub fn workspace_csc<N, I, Iptr, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<N>
 where
     N: Copy + Num,
     I: SpIndex,
-    Mat1: SpMatView<N, I>,
-    Mat2: SpMatView<N, I>,
+    Iptr: SpIndex,
+    Mat1: SpMatView<N, I, Iptr>,
+    Mat2: SpMatView<N, I, Iptr>,
 {
     let len = lhs.view().rows();
     vec![N::zero(); len]
@@ -170,14 +180,15 @@ where
 
 /// Actual implementation of CSR-CSR multiplication
 /// All other matrix products are implemented in terms of this one.
-pub fn csr_mul_csr_impl<N, I>(
-    lhs: CsMatViewI<N, I>,
-    rhs: CsMatViewI<N, I>,
+pub fn csr_mul_csr_impl<N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: CsMatViewI<N, I, Iptr>,
     workspace: &mut [N],
-) -> CsMatI<N, I>
+) -> CsMatI<N, I, Iptr>
 where
     N: Num + Copy,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     let res_rows = lhs.rows();
     let res_cols = rhs.cols();
@@ -219,13 +230,14 @@ where
 }
 
 /// CSR-vector multiplication
-pub fn csr_mul_csvec<N, I>(
-    lhs: CsMatViewI<N, I>,
+pub fn csr_mul_csvec<N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
     rhs: CsVecViewI<N, I>,
 ) -> CsVecI<N, I>
 where
     N: Copy + Num + Sum,
     I: SpIndex,
+    Iptr: SpIndex,
 {
     if rhs.dim == 0 {
         return rhs.to_owned();
@@ -246,8 +258,8 @@ where
 /// CSR-dense rowmaj multiplication
 ///
 /// Performs better if rhs has a decent number of colums.
-pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, NOut, I>(
-    lhs: CsMatViewI<N1, I>,
+pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, I, Iptr, NOut>(
+    lhs: CsMatViewI<N1, I, Iptr>,
     rhs: ArrayView<N2, Ix2>,
     mut out: ArrayViewMut<'a, NOut, Ix2>,
 ) where
@@ -256,6 +268,7 @@ pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, NOut, I>(
     NOut: 'a + Num + Copy,
     N1: std::ops::Mul<N2, Output = NOut>,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
 {
     if lhs.cols() != rhs.shape()[0] {
         panic!("Dimension mismatch");
@@ -287,8 +300,8 @@ pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, NOut, I>(
 /// CSC-dense rowmaj multiplication
 ///
 /// Performs better if rhs has a decent number of colums.
-pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, NOut, I>(
-    lhs: CsMatViewI<N1, I>,
+pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, I, Iptr, NOut>(
+    lhs: CsMatViewI<N1, I, Iptr>,
     rhs: ArrayView<N2, Ix2>,
     mut out: ArrayViewMut<'a, NOut, Ix2>,
 ) where
@@ -297,6 +310,7 @@ pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, NOut, I>(
     NOut: 'a + Num + Copy,
     N1: std::ops::Mul<N2, Output = NOut>,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
 {
     if lhs.cols() != rhs.shape()[0] {
         panic!("Dimension mismatch");
@@ -325,8 +339,8 @@ pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, NOut, I>(
 /// CSC-dense colmaj multiplication
 ///
 /// Performs better if rhs has few columns.
-pub fn csc_mulacc_dense_colmaj<'a, N1, N2, NOut, I>(
-    lhs: CsMatViewI<N1, I>,
+pub fn csc_mulacc_dense_colmaj<'a, N1, N2, I, Iptr, NOut>(
+    lhs: CsMatViewI<N1, I, Iptr>,
     rhs: ArrayView<N2, Ix2>,
     mut out: ArrayViewMut<'a, NOut, Ix2>,
 ) where
@@ -335,6 +349,7 @@ pub fn csc_mulacc_dense_colmaj<'a, N1, N2, NOut, I>(
     NOut: 'a + Num + Copy,
     N1: std::ops::Mul<N2, Output = NOut>,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
 {
     if lhs.cols() != rhs.shape()[0] {
         panic!("Dimension mismatch");
@@ -364,8 +379,8 @@ pub fn csc_mulacc_dense_colmaj<'a, N1, N2, NOut, I>(
 /// CSR-dense colmaj multiplication
 ///
 /// Performs better if rhs has few columns.
-pub fn csr_mulacc_dense_colmaj<'a, N1, N2, NOut, I>(
-    lhs: CsMatViewI<N1, I>,
+pub fn csr_mulacc_dense_colmaj<'a, N1, N2, I, Iptr, NOut>(
+    lhs: CsMatViewI<N1, I, Iptr>,
     rhs: ArrayView<N2, Ix2>,
     mut out: ArrayViewMut<'a, NOut, Ix2>,
 ) where
@@ -374,6 +389,7 @@ pub fn csr_mulacc_dense_colmaj<'a, N1, N2, NOut, I>(
     NOut: 'a + Num + Copy,
     N1: std::ops::Mul<N2, Output = NOut>,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
 {
     if lhs.cols() != rhs.shape()[0] {
         panic!("Dimension mismatch");
@@ -463,9 +479,9 @@ mod test {
 
         let mat =
             CsMatView::new_view(CSR, (5, 5), indptr, indices, data).unwrap();
-        let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
+        let slice: &[f64] = &[0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
-        mul_acc_mat_vec_csr(mat, &vector, &mut res_vec);
+        mul_acc_mat_vec_csr(mat, slice, &mut res_vec);
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];

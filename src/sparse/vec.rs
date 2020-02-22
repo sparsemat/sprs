@@ -37,6 +37,8 @@ use sparse::prelude::*;
 use sparse::utils;
 use sparse::{binop, prod};
 
+impl<IS: Copy, DS: Copy> Copy for CsVecBase<IS, DS> {}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
@@ -87,7 +89,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIterator<'a, N, I> {
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((inner_ind.index(), data)),
+            Some((inner_ind, data)) => {
+                Some((inner_ind.index_unchecked(), data))
+            }
         }
     }
 
@@ -103,7 +107,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorPerm<'a, N, I> {
         match self.ind_data.next() {
             None => None,
             Some((inner_ind, data)) => {
-                Some((self.perm.at(inner_ind.index()), data))
+                Some((self.perm.at(inner_ind.index_unchecked()), data))
             }
         }
     }
@@ -119,7 +123,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorMut<'a, N, I> {
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.ind_data.next() {
             None => None,
-            Some((inner_ind, data)) => Some((inner_ind.index(), data)),
+            Some((inner_ind, data)) => {
+                Some((inner_ind.index_unchecked(), data))
+            }
         }
     }
 
@@ -429,7 +435,7 @@ where
 {
     type Item = NnzEither<'a, N1, N2>;
 
-    fn next(&mut self) -> Option<(NnzEither<'a, N1, N2>)> {
+    fn next(&mut self) -> Option<NnzEither<'a, N1, N2>> {
         match (self.left.peek(), self.right.peek()) {
             (None, Some(&(_, _))) => {
                 let (rind, rval) = self.right.next().unwrap();
@@ -478,7 +484,19 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     ///
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
-    pub fn new(n: usize, mut indices: Vec<I>, mut data: Vec<N>) -> CsVecI<N, I>
+    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> CsVecI<N, I>
+    where
+        N: Copy,
+    {
+        Self::try_new(n, indices, data).unwrap()
+    }
+
+    /// Try create an owning CsVec from vector data.
+    pub fn try_new(
+        n: usize,
+        mut indices: Vec<I>,
+        mut data: Vec<N>,
+    ) -> Result<CsVecI<N, I>, SprsError>
     where
         N: Copy,
     {
@@ -493,7 +511,7 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
             indices,
             data,
         };
-        v.check_structure().and(Ok(v)).unwrap()
+        v.check_structure().and(Ok(v))
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
@@ -519,7 +537,7 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
         match self.indices.last() {
             None => (),
             Some(&last_ind) => {
-                assert!(ind > last_ind.index(), "unsorted append")
+                assert!(ind > last_ind.index_unchecked(), "unsorted append")
             }
         }
         assert!(ind <= self.dim, "out of bounds index");
@@ -626,6 +644,11 @@ where
     /// - indices is sorted
     /// - indices are lower than dims()
     pub fn check_structure(&self) -> Result<(), SprsError> {
+        // Make sure indices can be converted to usize
+        for i in self.indices.iter() {
+            i.index();
+        }
+
         if !self.indices.windows(2).all(|x| x[0] < x[1]) {
             return Err(SprsError::NonSortedIndices);
         }
@@ -634,9 +657,14 @@ where
             return Ok(());
         }
 
-        let max_ind = self.indices.iter().max().unwrap_or(&I::zero()).index();
+        let max_ind = self
+            .indices
+            .iter()
+            .max()
+            .unwrap_or(&I::zero())
+            .index_unchecked();
         if max_ind >= self.dim {
-            panic!("Out of bounds index");
+            return Err(SprsError::IllegalArguments("Out of bounds index"));
         }
 
         Ok(())
@@ -667,7 +695,7 @@ where
         let indices = self
             .indices
             .iter()
-            .map(|i| I2::from_usize(i.index()))
+            .map(|i| I2::from_usize(i.index_unchecked()))
             .collect();
         let data = self.data.iter().cloned().collect();
         CsVecI {
@@ -678,11 +706,14 @@ where
     }
 
     /// View this vector as a matrix with only one row.
-    pub fn row_view(&self) -> CsMatVecView_<N, I> {
+    pub fn row_view<Iptr: SpIndex>(&self) -> CsMatVecView_<N, I, Iptr> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [I::zero(), I::from_usize(self.indices.len())],
+            data: [
+                Iptr::zero(),
+                Iptr::from_usize_unchecked(self.indices.len()),
+            ],
         };
         CsMatBase {
             storage: CSR,
@@ -695,11 +726,14 @@ where
     }
 
     /// View this vector as a matrix with only one column.
-    pub fn col_view(&self) -> CsMatVecView_<N, I> {
+    pub fn col_view<Iptr: SpIndex>(&self) -> CsMatVecView_<N, I, Iptr> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
-            data: [I::zero(), I::from_usize(self.indices.len())],
+            data: [
+                Iptr::zero(),
+                Iptr::from_usize_unchecked(self.indices.len()),
+            ],
         };
         CsMatBase {
             storage: CSC,
@@ -728,7 +762,7 @@ where
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
         self.indices
             .binary_search(&I::from_usize(index))
-            .map(|i| NnzIndex(i.index()))
+            .map(|i| NnzIndex(i.index_unchecked()))
             .ok()
     }
 
@@ -764,7 +798,7 @@ where
         assert_eq!(self.dim(), rhs.dim());
         if rhs.is_dense() {
             self.iter()
-                .map(|(idx, val)| *val * *rhs.index(idx.index()))
+                .map(|(idx, val)| *val * *rhs.index(idx.index_unchecked()))
                 .sum()
         } else {
             let mut lhs_iter = self.iter();
@@ -807,7 +841,7 @@ where
     {
         assert_eq!(self.dim(), rhs.dim());
         self.iter()
-            .map(|(idx, val)| *val * *rhs.index(idx.index()))
+            .map(|(idx, val)| *val * *rhs.index(idx.index_unchecked()))
             .sum()
     }
 
@@ -880,7 +914,7 @@ where
     {
         self.indices()
             .iter()
-            .map(|i| i.index())
+            .map(|i| i.index_unchecked())
             .zip(self.data.iter().cloned())
             .collect()
     }
@@ -1042,30 +1076,32 @@ where
     }
 }
 
-impl<'a, 'b, N, I, IS1, DS1, IpS2, IS2, DS2>
-    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2>> for &'a CsVecBase<IS1, DS1>
+impl<'a, 'b, N, I, Iptr, IS1, DS1, IpS2, IS2, DS2>
+    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>> for &'a CsVecBase<IS1, DS1>
 where
     N: 'a + Copy + Num + Default,
     I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
     IS1: 'a + Deref<Target = [I]>,
     DS1: 'a + Deref<Target = [N]>,
-    IpS2: 'b + Deref<Target = [I]>,
+    IpS2: 'b + Deref<Target = [Iptr]>,
     IS2: 'b + Deref<Target = [I]>,
     DS2: 'b + Deref<Target = [N]>,
 {
     type Output = CsVecI<N, I>;
 
-    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2>) -> CsVecI<N, I> {
+    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2, Iptr>) -> CsVecI<N, I> {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
 
-impl<'a, 'b, N, I, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
-    for &'a CsMatBase<N, I, IpS1, IS1, DS1>
+impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
+    for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
     N: Copy + Num + Default + Sum,
     I: SpIndex,
-    IpS1: Deref<Target = [I]>,
+    Iptr: SpIndex,
+    IpS1: Deref<Target = [Iptr]>,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
     IS2: Deref<Target = [I]>,
@@ -1149,18 +1185,19 @@ where
     }
 }
 
-impl<'a, 'b, N, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2>>
+impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2>>
     for &'a CsVecBase<IS1, DS1>
 where
     N: Copy + Num,
-    IS1: Deref<Target = [usize]>,
+    I: SpIndex,
+    IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
-    IS2: Deref<Target = [usize]>,
+    IS2: Deref<Target = [I]>,
     DS2: Deref<Target = [N]>,
 {
-    type Output = CsVec<N>;
+    type Output = CsVecI<N, I>;
 
-    fn sub(self, rhs: &CsVecBase<IS2, DS2>) -> CsVec<N> {
+    fn sub(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
         binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x - y).unwrap()
     }
 }
@@ -1255,12 +1292,12 @@ mod alga_impls {
 
     impl<N: Copy + Num, I: SpIndex> AbstractMonoid<Additive> for CsVecI<N, I> {}
 
-    impl<N, I> Inverse<Additive> for CsVecI<N, I>
+    impl<N, I> TwoSidedInverse<Additive> for CsVecI<N, I>
     where
         N: Clone + Neg<Output = N> + Copy + Num,
         I: SpIndex,
     {
-        fn inverse(&self) -> CsVecI<N, I> {
+        fn two_sided_inverse(&self) -> CsVecI<N, I> {
             CsVecBase {
                 data: self.data.iter().map(|x| -*x).collect(),
                 indices: self.indices.clone(),
@@ -1308,7 +1345,10 @@ mod alga_impls {
         #[test]
         fn additive_inverse_is_negated() {
             let vector = CsVec::new(2, vec![0], vec![2.]);
-            assert_eq!(-vector.clone(), Inverse::<Additive>::inverse(&vector));
+            assert_eq!(
+                -vector.clone(),
+                TwoSidedInverse::<Additive>::two_sided_inverse(&vector)
+            );
         }
     }
 }
@@ -1334,6 +1374,14 @@ mod test {
         let data = vec![0.5, 2.5, 4.5, 6.5, 7.5];
 
         return CsVecI::new(n, indices, data);
+    }
+
+    #[test]
+    fn test_copy() {
+        let v = test_vec1();
+        let view1 = v.view();
+        let view2 = view1; // this shouldn't move
+        assert_eq!(view1, view2);
     }
 
     #[test]
