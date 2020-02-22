@@ -1968,6 +1968,7 @@ where
         let lhs_t = self.t();
 
         let rows = rhs_t.rows();
+        #[allow(deprecated)]
         let cols = lhs_t.cols();
         // when the number of colums is small, it is more efficient
         // to perform the product by iterating over the columns of
