@@ -61,7 +61,7 @@ fn save_gray_image(
 ) -> ImageResult<()> {
     let height = image.shape()[0];
     let width = image.shape()[1];
-    let im: Option<ImageBuffer<Luma<u8>, _>> = image.to_slice().map(|slice| {
+    let im: Option<ImageBuffer<Luma<u8>, _>> = image.as_slice().map(|slice| {
         ImageBuffer::from_raw(width as u32, height as u32, slice)
             .expect("failed to create image from slice")
     });
