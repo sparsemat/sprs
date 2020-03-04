@@ -108,6 +108,7 @@ pub use sparse::CompressedStorage::{self, CSC, CSR};
 pub use sparse::binop;
 pub use sparse::linalg;
 pub use sparse::prod;
+pub use sparse::smmp;
 pub use sparse::special_mats;
 pub use sparse::visu;
 
