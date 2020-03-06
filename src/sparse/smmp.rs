@@ -3,14 +3,27 @@
 
 use indexing::SpIndex;
 
-/// Compute the symbolic structure of the
-/// matrix product C = A * B
+/// Compute the symbolic structure of the matrix product C = A * B, with
+/// A, B and C stored in the CSR matrix format.
+///
+/// This algorithm has a complexity of O(n * k * log(k)), where k is the
+/// average number of nonzeros in the rows of the result.
+///
+/// # Panics
 ///
 /// `index.len()` should be equal to the maximum dimension among the input
 /// matrices.
 ///
-/// This algorithm has a complexity of O(n * k * log(k)), where k is the
-/// average number of nonzeros in the rows of the result.
+/// The matrices should be in proper CSR structure, and their dimensions
+/// should be compatible. Failures to do so may result in out of bounds errors
+/// (though some cases might go unnoticed).
+///
+/// # Minimizing allocations
+///
+/// This function will reserve
+/// `a_indptr.last().unwrap() + b_indptr.last.unwrap()` in `c_indices`.
+/// Therefore, to prevent this function from allocating, it is required
+/// to have reserved at least this amount of memory.
 pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     a_indptr: &[Iptr],
     a_indices: &[I],
@@ -27,6 +40,7 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     let b_rows = b_indptr.len() - 1;
     let a_nnz = a_indptr[a_rows].index();
     let b_nnz = b_indptr[b_rows].index();
+    c_indices.clear();
     c_indices.reserve_exact(a_nnz + b_nnz);
 
     // `index` is used as a set to remember which columns of a row of C are
