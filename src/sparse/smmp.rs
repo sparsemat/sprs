@@ -2,6 +2,7 @@
 //! Bank and Douglas, 2001, Sparse Matrix Multiplication Package (SMPP)
 
 use indexing::SpIndex;
+use num_traits::Num;
 
 /// Compute the symbolic structure of the matrix product C = A * B, with
 /// A, B and C stored in the CSR matrix format.
@@ -96,12 +97,79 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     }
 }
 
+/// Numeric part of the matrix product C = A * B with A, B and C stored in the
+/// CSR matrix format.
+///
+/// # Panics
+///
+/// `tmp.len()` should be equal to the maximum dimension of the inputs.
+///
+/// The matrices should be in proper CSR structure, and their dimensions
+/// should be compatible. Failures to do so may result in out of bounds errors
+/// (though some cases might go unnoticed).
+///
+/// The parts for the C matrix should come from the `symbolic` function.
+pub fn numeric<
+    Iptr: SpIndex,
+    I: SpIndex,
+    N: Num + Copy + std::ops::AddAssign,
+>(
+    a_indptr: &[Iptr],
+    a_indices: &[I],
+    a_data: &[N],
+    b_indptr: &[Iptr],
+    b_indices: &[I],
+    b_data: &[N],
+    c_indptr: &[Iptr],
+    c_indices: &[I],
+    c_data: &mut [N],
+    tmp: &mut [N],
+) {
+    assert!(a_indptr.len() == c_indptr.len());
+    let a_rows = a_indptr.len() - 1;
+    let b_rows = b_indptr.len() - 1;
+    assert!(a_indices.len() == a_indptr[a_rows].index());
+    assert!(a_data.len() == a_indptr[a_rows].index());
+    assert!(b_indices.len() == b_indptr[b_rows].index());
+    assert!(b_data.len() == b_indptr[b_rows].index());
+    assert!(c_indices.len() == c_indptr[b_rows].index());
+    assert!(c_data.len() == c_indptr[b_rows].index());
+
+    for elt in tmp.iter_mut() {
+        *elt = N::zero();
+    }
+    for a_row in 0..a_rows {
+        let a_start = a_indptr[a_row].index();
+        let a_stop = a_indptr[a_row + 1].index();
+        for a_cur in a_start..a_stop {
+            let a_col = a_indices[a_cur].index();
+            let a_val = a_data[a_cur];
+            let b_row = a_col;
+            let b_start = b_indptr[b_row].index();
+            let b_stop = b_indptr[b_row + 1].index();
+            for b_cur in b_start..b_stop {
+                let b_col = b_indices[b_cur].index();
+                let b_val = b_data[b_cur];
+                tmp[b_col] += a_val * b_val;
+            }
+        }
+        let c_row = a_row;
+        let c_start = c_indptr[c_row].index();
+        let c_stop = c_indptr[c_row + 1].index();
+        for c_cur in c_start..c_stop {
+            let c_col = c_indices[c_cur].index();
+            c_data[c_cur] = tmp[c_col];
+            tmp[c_col] = N::zero();
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use test_data;
 
     #[test]
-    fn symbolic() {
+    fn symbolic_and_numeric() {
         let a = test_data::mat1();
         let b = test_data::mat2();
         // a * b 's structure:
@@ -133,7 +201,22 @@ mod test {
             &mut index,
         );
 
+        let mut c_data = vec![0.; c_indices.len()];
+        let mut tmp = [0.; 5];
+        super::numeric(
+            a.indptr(),
+            a.indices(),
+            a.data(),
+            b.indptr(),
+            b.indices(),
+            b.data(),
+            &c_indptr,
+            &c_indices,
+            &mut c_data,
+            &mut tmp,
+        );
         assert_eq!(exp.indptr(), c_indptr);
         assert_eq!(exp.indices(), &c_indices[..]);
+        assert_eq!(exp.data(), &c_data[..]);
     }
 }
