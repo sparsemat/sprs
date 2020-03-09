@@ -133,8 +133,8 @@ pub fn numeric<
     assert!(a_data.len() == a_indptr[a_rows].index());
     assert!(b_indices.len() == b_indptr[b_rows].index());
     assert!(b_data.len() == b_indptr[b_rows].index());
-    assert!(c_indices.len() == c_indptr[b_rows].index());
-    assert!(c_data.len() == c_indptr[b_rows].index());
+    assert!(c_indices.len() == c_indptr[a_rows].index());
+    assert!(c_data.len() == c_indptr[a_rows].index());
 
     for elt in tmp.iter_mut() {
         *elt = N::zero();
