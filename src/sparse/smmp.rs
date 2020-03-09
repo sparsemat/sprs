@@ -1,6 +1,7 @@
 //! Implementation of the paper
 //! Bank and Douglas, 2001, Sparse Matrix Multiplication Package (SMPP)
 
+use sparse::prelude::*;
 use indexing::SpIndex;
 use num_traits::Num;
 
@@ -164,6 +165,88 @@ pub fn numeric<
     }
 }
 
+/// Compute a sparse matrix product using the SMMP routines
+///
+/// # Panics
+///
+/// - if `lhs.cols() != rhs.rows()`.
+pub fn mul_csr_csr<N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: CsMatViewI<N, I, Iptr>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Num + Copy + std::ops::AddAssign,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    let l_rows = lhs.rows();
+    let l_cols = lhs.cols();
+    let r_rows = rhs.rows();
+    let r_cols = rhs.cols();
+    assert_eq!(l_cols, r_rows);
+    let mut index = vec![0; l_rows.max(l_cols).max(r_cols)];
+    let mut tmp = vec![N::zero(); index.len()];
+    mul_csr_csr_with_workspace(lhs, rhs, &mut index, &mut tmp)
+}
+
+/// Compute a sparse matrix product using the SMMP routines, using temporary
+/// storage that was already allocated
+///
+/// `index` and `tmp` are temporary storage vectors used to accumulate non
+/// zero locations and values. Their values need not be specified on input.
+/// They will be zero on output.
+///
+/// # Panics
+///
+/// - if `lhs.cols() != rhs.rows()`.
+/// - if `index.len() != lhs.cols().max(lhs.rows()).max(rhs.cols())`
+/// - if `tmp.len() != lhs.cols().max(lhs.rows()).max(rhs.cols())`
+pub fn mul_csr_csr_with_workspace<N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: CsMatViewI<N, I, Iptr>,
+    index: &mut [usize],
+    tmp: &mut [N],
+) -> CsMatI<N, I, Iptr>
+where
+    N: Num + Copy + std::ops::AddAssign,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    let l_rows = lhs.rows();
+    let l_cols = lhs.cols();
+    let r_rows = rhs.rows();
+    let r_cols = rhs.cols();
+    assert_eq!(l_cols, r_rows);
+    assert_eq!(index.len(), l_rows.max(l_cols).max(r_cols));
+    assert_eq!(tmp.len(), l_rows.max(l_cols).max(r_cols));
+    let mut res_indptr = vec![Iptr::zero(); l_rows + 1];
+    let mut res_indices = Vec::new();
+    symbolic(
+        lhs.indptr(),
+        lhs.indices(),
+        r_cols,
+        rhs.indptr(),
+        rhs.indices(),
+        &mut res_indptr,
+        &mut res_indices,
+        index,
+    );
+    let mut res_data = vec![N::zero(); res_indices.len()];
+    numeric(
+        lhs.indptr(),
+        lhs.indices(),
+        lhs.data(),
+        rhs.indptr(),
+        rhs.indices(),
+        rhs.data(),
+        &res_indptr,
+        &res_indices,
+        &mut res_data,
+        tmp,
+    );
+    CsMatI::new((l_rows, r_cols), res_indptr, res_indices, res_data)
+}
+
 #[cfg(test)]
 mod test {
     use test_data;
@@ -218,5 +301,13 @@ mod test {
         assert_eq!(exp.indptr(), c_indptr);
         assert_eq!(exp.indices(), &c_indices[..]);
         assert_eq!(exp.data(), &c_data[..]);
+    }
+
+    #[test]
+    fn mul_csr_csr() {
+        let a = test_data::mat1();
+        let exp = test_data::mat1_self_matprod();
+        let res = super::mul_csr_csr(a.view(), a.view());
+        assert_eq!(exp, res);
     }
 }
