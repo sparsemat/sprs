@@ -1,9 +1,10 @@
 //! Implementation of the paper
 //! Bank and Douglas, 2001, Sparse Matrix Multiplication Package (SMPP)
 
-use sparse::prelude::*;
 use indexing::SpIndex;
 use num_traits::Num;
+use sparse::prelude::*;
+use sparse::CompressedStorage::CSR;
 
 /// Compute the symbolic structure of the matrix product C = A * B, with
 /// A, B and C stored in the CSR matrix format.
@@ -244,7 +245,16 @@ where
         &mut res_data,
         tmp,
     );
-    CsMatI::new((l_rows, r_cols), res_indptr, res_indices, res_data)
+    // Correctness: The invariants of the output come from the invariants of
+    // the inputs when in-bounds indices are concerned, and we are sorting
+    // indices.
+    CsMatI::new_trusted(
+        CSR,
+        (l_rows, r_cols),
+        res_indptr,
+        res_indices,
+        res_data,
+    )
 }
 
 #[cfg(test)]

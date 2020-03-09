@@ -520,6 +520,23 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         CsMatI::try_new_csc(shape, indptr, indices, data).unwrap()
     }
 
+    pub(crate) fn new_trusted(
+        storage: CompressedStorage,
+        shape: Shape,
+        indptr: Vec<Iptr>,
+        indices: Vec<I>,
+        data: Vec<N>,
+    ) -> CsMatI<N, I, Iptr> {
+        CsMatI {
+            storage,
+            nrows: shape.0,
+            ncols: shape.1,
+            indptr,
+            indices,
+            data,
+        }
+    }
+
     fn new_(
         storage: CompressedStorage,
         shape: Shape,
@@ -1822,9 +1839,7 @@ where
         rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>,
     ) -> CsMatI<N, I, Iptr> {
         match (self.storage(), rhs.storage()) {
-            (CSR, CSR) => {
-                smmp::mul_csr_csr(self.view(), rhs.view())
-            }
+            (CSR, CSR) => smmp::mul_csr_csr(self.view(), rhs.view()),
             (CSR, CSC) => {
                 let rhs_csr = rhs.to_other_storage();
                 smmp::mul_csr_csr(self.view(), rhs_csr.view())
