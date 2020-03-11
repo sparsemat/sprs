@@ -115,7 +115,7 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
             }
             let c_start = c_indptr[a_row].index();
             let c_end = c_indptr[a_row + 1].index();
-            c_indices[c_start..c_end].sort();
+            c_indices[c_start..c_end].sort_unstable();
         }
         index[a_row] = sentinel0;
     }
