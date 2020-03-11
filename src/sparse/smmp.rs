@@ -69,6 +69,9 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     for a_row in 0..a_rows {
         let mut istart = sentinel1;
         let mut length = 0;
+        let mut max_bcol = 0;
+        let mut min_bcol = index.len();
+
         let a_start = a_indptr[a_row].index();
         let a_stop = a_indptr[a_row + 1].index();
         for &a_col in &a_indices[a_start..a_stop] {
@@ -81,22 +84,49 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
                     index[b_col] = istart;
                     istart = b_col;
                     length += 1;
+                    max_bcol = max_bcol.max(b_col);
+                    min_bcol = min_bcol.min(b_col);
                 }
             }
         }
         c_indptr[a_row + 1] = c_indptr[a_row] + Iptr::from_usize(length);
-        for _ in 0..length {
-            debug_assert!(istart < sentinel1);
-            c_indices.push(I::from_usize(istart));
-            let new_start = index[istart];
-            index[istart] = sentinel0;
-            istart = new_start;
+        // We dynamically change our strategy to recover the nonzero indices
+        // sorted. We try and determine if it's cheaper to scan
+        // `index[min_col..=max_col]` or to use the linked list embedded in
+        // the array and sort the indices afterwards. In essence, we're
+        // choosing between `max_col - min_col` comparisons vs
+        // `length * log(length)` comparisons.
+        // TODO: the linear scan could be implemented faster using SIMD
+        if max_bcol > min_bcol && max_bcol - min_bcol < length * log2(length) {
+            for b_col in min_bcol..=max_bcol {
+                if index[b_col] != sentinel0 {
+                    c_indices.push(I::from_usize(b_col));
+                    index[b_col] = sentinel0;
+                }
+            }
+            debug_assert_eq!(c_indices.len(), c_indptr[a_row + 1].index());
+        } else {
+            for _ in 0..length {
+                debug_assert!(istart < sentinel1);
+                c_indices.push(I::from_usize(istart));
+                let new_start = index[istart];
+                index[istart] = sentinel0;
+                istart = new_start;
+            }
+            let c_start = c_indptr[a_row].index();
+            let c_end = c_indptr[a_row + 1].index();
+            c_indices[c_start..c_end].sort();
         }
-        let c_start = c_indptr[a_row].index();
-        let c_end = c_indptr[a_row + 1].index();
-        c_indices[c_start..c_end].sort();
         index[a_row] = sentinel0;
     }
+}
+
+/// Compute the approximate base 2 logarithm of an integer, using its
+/// number of "used" bits.
+fn log2(num: usize) -> usize {
+    let num_bits = std::mem::size_of::<usize>() * 8;
+    assert!(num > 0);
+    num_bits - (num.leading_zeros() as usize) - 1
 }
 
 /// Numeric part of the matrix product C = A * B with A, B and C stored in the
