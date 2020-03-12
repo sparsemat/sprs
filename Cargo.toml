@@ -49,4 +49,5 @@ members = [
     "suitesparse_bindings/sprs_suitesparse_ldl",
     "sprs-rand",
     "sprs-benches",
+    "btbs",
 ]

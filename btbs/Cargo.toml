@@ -1,0 +1,10 @@
+[package]
+name = "btbs"
+description = "BTree Bit Set: an efficient integer set for sparse linear algebra"
+version = "0.1.0"
+authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
