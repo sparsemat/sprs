@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         small_lap_mat()
     };
 
-    let ordering = sprs::linalg::cuthill_mckee(lap_mat.view());
+    let ordering = sprs::linalg::reverse_cuthill_mckee(lap_mat.view());
     let perm_lap =
         sprs::transform_mat_papt(lap_mat.view(), ordering.perm.view());
 
