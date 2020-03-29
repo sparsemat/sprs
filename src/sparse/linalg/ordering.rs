@@ -52,6 +52,7 @@ where
             // We found a new connected component. This number will be reverse-inverted later.
             connected_parts.push(perm_index);
             // Employ the George-Liu pseudoperipheral vertex finder to find a new starting vertex.
+            // This will only fail if no unvisited nodes are left, which can not be the case at this point.
             find_pseudoperipheral_vertex(&visited, &degrees, &mat).unwrap()
         });
 
@@ -80,15 +81,14 @@ where
         }
     }
 
+    // Revert-Invert the connected parts, to fit with the reverted order.
     connected_parts.push(nb_vertices);
+    connected_parts.iter_mut().for_each(|i| *i = nb_vertices - *i);
+    connected_parts.reverse();
 
     Ordering {
         perm: PermOwnedI::new(perm),
-        connected_parts: connected_parts
-            .into_iter()
-            .map(|i| nb_vertices - i)
-            .rev()
-            .collect(),
+        connected_parts
     }
 }
 
@@ -117,6 +117,9 @@ where
     let (mut contender, mut current_height) =
         rls_contender_and_height(current, degrees, mat);
 
+    // This loop always terminates, typically within very few iterations.
+    // This essentially comes from the fact that no same vertex can be choosen as `current` twice,
+    // as the height of the rls of `current` must always strictly increase for the loop to continue.
     loop {
         let (contender_contender, contender_height) =
             rls_contender_and_height(contender, degrees, mat);
