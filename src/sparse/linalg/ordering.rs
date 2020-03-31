@@ -1,9 +1,8 @@
-use std::collections::vec_deque::VecDeque;
 use indexing::SpIndex;
-use sparse::linalg::ordering::order::DirectedOrdering;
 use sparse::permutation::PermOwnedI;
 use sparse::symmetric::is_symmetric;
 use sparse::CsMatViewI;
+use std::collections::vec_deque::VecDeque;
 
 pub struct Ordering<I> {
     /// The computed permutation
@@ -31,6 +30,81 @@ pub mod start {
             degrees: &[usize],
             mat: &CsMatViewI<N, I, Iptr>,
         ) -> usize;
+    }
+
+    /// This strategy chooses predetermined starting vertices.
+    pub struct Predetermined<I: Iterator<Item = usize>>(I);
+
+    impl<Iter, N, I, Iptr> Strategy<N, I, Iptr> for Predetermined<Iter>
+    where
+        Iter: Iterator<Item = usize>,
+        N: PartialEq,
+        I: SpIndex,
+        Iptr: SpIndex,
+    {
+        fn find_start_vertex(
+            &mut self,
+            visited: &[bool],
+            degrees: &[usize],
+            _mat: &CsMatViewI<N, I, Iptr>,
+        ) -> usize {
+            self.0
+                .next()
+                .expect("Not enough predetermined starting vertices supplied")
+        }
+    }
+
+    /// This strategy chooses some next available vertex as starting vertex.
+    pub struct Next();
+
+    impl<N, I, Iptr> Strategy<N, I, Iptr> for Next
+    where
+        N: PartialEq,
+        I: SpIndex,
+        Iptr: SpIndex,
+    {
+        fn find_start_vertex(
+            &mut self,
+            visited: &[bool],
+            degrees: &[usize],
+            _mat: &CsMatViewI<N, I, Iptr>,
+        ) -> usize {
+            visited
+                .iter()
+                .enumerate()
+                .find(|(_i, &a)| !a)
+                .map(|(i, _a)| i)
+                .expect(
+                    "There should always be a unvisited vertex left to choose",
+                )
+        }
+    }
+
+    /// This strategy chooses a vertex of minimum degree as starting vertex.
+    pub struct MinimumDegree();
+
+    impl<N, I, Iptr> Strategy<N, I, Iptr> for MinimumDegree
+    where
+        N: PartialEq,
+        I: SpIndex,
+        Iptr: SpIndex,
+    {
+        fn find_start_vertex(
+            &mut self,
+            visited: &[bool],
+            degrees: &[usize],
+            _mat: &CsMatViewI<N, I, Iptr>,
+        ) -> usize {
+            visited
+                .iter()
+                .enumerate()
+                .filter(|(_i, &a)| !a)
+                .min_by_key(|(i, _a)| degrees[*i])
+                .map(|(i, _a)| i)
+                .expect(
+                    "There should always be a unvisited vertex left to choose",
+                )
+        }
     }
 
     /// This strategy employs an pseudoperipheral vertex finder as described by George and Liu.
@@ -203,7 +277,6 @@ pub mod order {
     // This is a trait, not an enum, because monomorphization is absolutely critical for performance.
     // Also having the directions manage their state themselves enables some optimizations.
     pub trait DirectedOrdering<I: SpIndex> {
-
         /// Prepares this directed ordering for working with the specified number of vertices.
         // Seperated from `fn new, as it requires `nb_vertices` as parameter,
         // which the consumer would have to supply otherwise, which he can't be trusted to do corretly.
@@ -220,6 +293,50 @@ pub mod order {
         fn into_ordering(self) -> Ordering<I>;
     }
 
+    ///
+    pub struct Forward<I: SpIndex> {
+        /// The final permutation reducing the bandwidth of the given sparse matrix.
+        perm: Vec<I>,
+        /// Delimeting connected components inside the permutation.
+        connected_parts: Vec<usize>,
+    }
+
+    impl<I: SpIndex> Forward<I> {
+        #[inline]
+        pub fn new() -> Self {
+            Self {
+                perm: Vec::with_capacity(0),
+                connected_parts: Vec::with_capacity(0),
+            }
+        }
+    }
+
+    impl<I: SpIndex> DirectedOrdering<I> for Forward<I> {
+        #[inline]
+        fn prepare(&mut self, nb_vertices: usize) {
+            self.perm.reserve(nb_vertices);
+            self.connected_parts.reserve(nb_vertices / 16 + 1);
+        }
+
+        #[inline]
+        fn add_transposition(&mut self, vertex_index: usize) {
+            self.perm.push(I::from_usize(vertex_index));
+        }
+
+        #[inline]
+        fn add_component_delimeter(&mut self, index: usize) {
+            self.connected_parts.push(index);
+        }
+
+        #[inline]
+        fn into_ordering(self) -> Ordering<I> {
+            Ordering {
+                perm: PermOwnedI::new(self.perm),
+                connected_parts: self.connected_parts,
+            }
+        }
+    }
+
     pub struct Reversed<I: SpIndex> {
         perm: Vec<I>,
         connected_parts: Vec<usize>,
@@ -227,7 +344,7 @@ pub mod order {
         count: usize,
     }
 
-    impl<I : SpIndex> Reversed<I>{
+    impl<I: SpIndex> Reversed<I> {
         // This is not optimal, as it leads to close-to-invalid states if not used correctly.
         // A solution using some kind of "uninitialized" wrapper type however seems to be overkill,
         // especially since all the uglieness is under the hood and not triggerable unless explicitly asked for.
@@ -243,7 +360,6 @@ pub mod order {
     }
 
     impl<I: SpIndex> DirectedOrdering<I> for Reversed<I> {
-
         #[inline]
         fn prepare(&mut self, nb_vertices: usize) {
             // Missed optimization: Work with MaybeUninit here.
@@ -399,7 +515,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::reverse_cuthill_mckee;
+    use super::{cuthill_mckee_custom, order, reverse_cuthill_mckee, start};
     use sparse::permutation::Permutation;
     use sparse::CsMat;
 
@@ -482,6 +598,18 @@ mod test {
         let mat = CsMat::<f64>::eye(3);
         let ordering = reverse_cuthill_mckee(mat.view());
         let correct_perm = Permutation::new(vec![2, 1, 0]);
+        assert_eq!(&ordering.perm.vec(), &correct_perm.vec());
+    }
+
+    #[test]
+    fn cuthill_mckee_eye() {
+        let mat = CsMat::<f64>::eye(3);
+        let ordering = cuthill_mckee_custom(
+            mat.view(),
+            start::PseudoPeripheral::new(),
+            order::Forward::new(),
+        );
+        let correct_perm = Permutation::new(vec![0, 1, 2]);
         assert_eq!(&ordering.perm.vec(), &correct_perm.vec());
     }
 }
