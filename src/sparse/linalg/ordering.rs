@@ -50,7 +50,7 @@ pub mod start {
         fn find_start_vertex(
             &mut self,
             visited: &[bool],
-            degrees: &[usize],
+            _degrees: &[usize],
             _mat: &CsMatViewI<N, I, Iptr>,
         ) -> usize {
             visited
