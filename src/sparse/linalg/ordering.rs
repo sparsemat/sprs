@@ -17,6 +17,12 @@ pub mod start {
 
     /// This trait abstracts over possible strategies to choose a starting vertex for the Cutihll-McKee algorithm.
     /// Common strategies are provided.
+    /// 
+    /// You can implement this trait yourself to enable custom strategies,
+    /// e.g. for predetermined starting vertices.
+    /// If you do that, please let us now by filing an issue in the repo, 
+    /// since we would like to know which strategies are common in the wild,
+    /// so we can consider implementing them in the library.
     pub trait Strategy<N, I, Iptr>
     where
         N: PartialEq,
@@ -30,28 +36,6 @@ pub mod start {
             degrees: &[usize],
             mat: &CsMatViewI<N, I, Iptr>,
         ) -> usize;
-    }
-
-    /// This strategy chooses predetermined starting vertices.
-    pub struct Predetermined<I: Iterator<Item = usize>>(I);
-
-    impl<Iter, N, I, Iptr> Strategy<N, I, Iptr> for Predetermined<Iter>
-    where
-        Iter: Iterator<Item = usize>,
-        N: PartialEq,
-        I: SpIndex,
-        Iptr: SpIndex,
-    {
-        fn find_start_vertex(
-            &mut self,
-            visited: &[bool],
-            degrees: &[usize],
-            _mat: &CsMatViewI<N, I, Iptr>,
-        ) -> usize {
-            self.0
-                .next()
-                .expect("Not enough predetermined starting vertices supplied")
-        }
     }
 
     /// This strategy chooses some next available vertex as starting vertex.
@@ -457,7 +441,7 @@ where
             new_start_vertex
         });
 
-        // Write the next permutation in reverse order.
+        // Add the next transposition to the ordering.
         directed_ordering.add_transposition(current_vertex);
         visited[current_vertex.index()] = true;
 

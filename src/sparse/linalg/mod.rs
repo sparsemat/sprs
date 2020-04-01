@@ -6,11 +6,10 @@ use num_traits::Num;
 use std::iter::IntoIterator;
 
 pub mod etree;
-mod ordering;
+pub mod ordering;
 pub mod trisolve;
 
 pub use self::ordering::reverse_cuthill_mckee;
-pub use self::ordering::cuthill_mckee_custom;
 
 /// Diagonal solve
 pub fn diag_solve<'a, N, I1, I2>(diag: I1, x: I2)
