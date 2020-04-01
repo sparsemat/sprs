@@ -29,7 +29,7 @@ pub mod start {
         I: SpIndex,
         Iptr: SpIndex,
     {
-        /// Contract: This function must always be called with at least one unvisited vertex left.
+        /// **Contract:** This function must always be called with at least one unvisited vertex left.
         fn find_start_vertex(
             &mut self,
             visited: &[bool],
@@ -256,17 +256,17 @@ pub mod order {
     /// This trait is very deeply integrated with the inner workings of the Cuthill-McKee algorithm implemented here.
     /// It is conceptually only an enum, specifying if the Cuthill-McKee ordering should be built in reverse order.
     ///
-    /// No method on this trait shuld ever be called by the consumer.
+    /// No method on this trait should ever be called by the consumer.
     //
     // This is a trait, not an enum, because monomorphization is absolutely critical for performance.
     // Also having the directions manage their state themselves enables some optimizations.
     pub trait DirectedOrdering<I: SpIndex> {
         /// Prepares this directed ordering for working with the specified number of vertices.
-        // Seperated from `fn new, as it requires `nb_vertices` as parameter,
+        // Seperated from `fn new`, as it requires `nb_vertices` as parameter,
         // which the consumer would have to supply otherwise, which he can't be trusted to do corretly.
         fn prepare(&mut self, nb_vertices: usize);
 
-        /// Adds a new vertex_index as computed in the algorithms main loop.
+        /// Adds a new `vertex_index` as computed in the algorithms main loop.
         fn add_transposition(&mut self, vertex_index: usize);
 
         /// Adds an index indicating the start of a new connected component.
@@ -277,15 +277,16 @@ pub mod order {
         fn into_ordering(self) -> Ordering<I>;
     }
 
-    ///
+    /// Indicates the Cuthill-McKee ordering should be built in forward order.
     pub struct Forward<I: SpIndex> {
-        /// The final permutation reducing the bandwidth of the given sparse matrix.
+        /// The permutation computed by the algorithm.
         perm: Vec<I>,
-        /// Delimeting connected components inside the permutation.
+        /// Delimeting connected components inside `perm`.
         connected_parts: Vec<usize>,
     }
 
     impl<I: SpIndex> Forward<I> {
+        /// Creates a new instance of this conceptual enum variant.
         #[inline]
         pub fn new() -> Self {
             Self {
@@ -321,14 +322,21 @@ pub mod order {
         }
     }
 
+    /// Indicates the Cuthill-McKee ordering should be built in reverse order.
     pub struct Reversed<I: SpIndex> {
+        /// The permutation computed by the algorithm, written in reverse order.
         perm: Vec<I>,
+        /// Will be transformed to contain indices delimeting componenets in `perm`.
         connected_parts: Vec<usize>,
+        /// The total number of vertices in the matrix.
         nb_vertices: usize,
+        /// Counting with the algorithms main loop, should always be in sync with `perm_index`.
+        // Is a seperate variable to reduce unnecessary argument passing.
         count: usize,
     }
 
     impl<I: SpIndex> Reversed<I> {
+        /// Creates a new instance of this conceptual enum variant.
         // This is not optimal, as it leads to close-to-invalid states if not used correctly.
         // A solution using some kind of "uninitialized" wrapper type however seems to be overkill,
         // especially since all the uglieness is under the hood and not triggerable unless explicitly asked for.
@@ -383,15 +391,17 @@ pub mod order {
     }
 }
 
-/// Runs a customized Cuthill-McKee algorithm on the given matrix, returning a permutation to reduce its bandwidth.
+/// A customized Cuthill-McKee algorithm.
+/// 
+/// Runs a customized Cuthill-McKee algorithm on the given matrix, returning a permutation reducing its bandwidth.
+/// 
+/// The strategy employed to find starting vertices is critical for the quallity of the reordering computed.
+/// This library implements several common strategies, like `PseudoPeripheral` and `MinimumDegree`, 
+/// but also allows users to implement custom strategies if needed.
 ///
-/// Use this function to customize the parameters of the algorithm.
-///
-///  specifically you can decide,
-/// if you want the usual order, or that of the reverse Cuthill-McKee algorithm,
-/// as well as what strategy to use to find a starting vertex.
-///
-/// When calling this function, all generic parameters need to specified.
+/// * `mat` - The matrix to compute a permutation for.
+/// * `starting_strategy` - The strategy to use for choosing a starting vertex. 
+/// * `directed_ordering` - The order of the computed ordering, should either be `Forward` or `Reverse`.
 pub fn cuthill_mckee_custom<N, I, Iptr, S, D>(
     mat: CsMatViewI<N, I, Iptr>,
     mut starting_strategy: S,
@@ -471,10 +481,12 @@ where
     directed_ordering.into_ordering()
 }
 
-/// Runs the reverse Cuthill-McKee algorithm on the given matrix, returning a permutation to reduce its bandwidth.
+/// The reverse Cuthill-McKee algorithm.
+/// 
+/// Runs the reverse Cuthill-McKee algorithm on the given matrix, returning a permutation reducing its bandwidth.
 ///
 /// This version of the algorithm chooses pseudoperipheral vertices as starting vertices,
-/// and builds the reversed ordering. This is the most common configuration of the algorithm.
+/// and builds a reversed ordering. This is the most common configuration of the algorithm.
 ///
 /// This library also exposes a costomizable version of the algorithm, [cuthill_mckee_custom](fn.cuthill_mckee_custom.html).
 ///
