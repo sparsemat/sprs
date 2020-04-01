@@ -15,12 +15,12 @@ pub mod start {
     use indexing::SpIndex;
     use sparse::CsMatViewI;
 
-    /// This trait abstracts over possible strategies to choose a starting vertex for the Cutihll-McKee algorithm.
-    /// Common strategies are provided.
-    /// 
+    /// This trait abstracts over possible strategies to choose a starting
+    /// vertex for the Cutihll-McKee algorithm. Common strategies are provided.
+    ///
     /// You can implement this trait yourself to enable custom strategies,
     /// e.g. for predetermined starting vertices.
-    /// If you do that, please let us now by filing an issue in the repo, 
+    /// If you do that, please let us now by filing an issue in the repo,
     /// since we would like to know which strategies are common in the wild,
     /// so we can consider implementing them in the library.
     pub trait Strategy<N, I, Iptr>
@@ -29,7 +29,8 @@ pub mod start {
         I: SpIndex,
         Iptr: SpIndex,
     {
-        /// **Contract:** This function must always be called with at least one unvisited vertex left.
+        /// **Contract:** This function must always be called with at least one
+        /// unvisited vertex left.
         fn find_start_vertex(
             &mut self,
             visited: &[bool],
@@ -91,8 +92,9 @@ pub mod start {
         }
     }
 
-    /// This strategy employs an pseudoperipheral vertex finder as described by George and Liu.
-    /// It is the most expensive strategy to compute, but typically results in the narrowest bandwidth.
+    /// This strategy employs an pseudoperipheral vertex finder as described by
+    /// George and Liu.  It is the most expensive strategy to compute, but
+    /// typically results in the narrowest bandwidth.
     pub struct PseudoPeripheral();
 
     impl PseudoPeripheral {
@@ -101,8 +103,9 @@ pub mod start {
             PseudoPeripheral {}
         }
 
-        /// Computes the rooted level structure rooted at `root`,
-        /// returning the index of vertex of the last level with minimum degree, called "contender", and the height of the rls.
+        /// Computes the rooted level structure rooted at `root`, returning the
+        /// index of vertex of the last level with minimum degree, called
+        /// "contender", and the height of the rls.
         fn rls_contender_and_height<N, I, Iptr>(
             &mut self,
             root: usize,
@@ -114,32 +117,46 @@ pub mod start {
             I: SpIndex,
             Iptr: SpIndex,
         {
-            // One might wonder: "Why are we not reusing the rooted level structure (rls) we build here,
-            // isn't it basically the same thing we build in the rcm again, afterwards?""
+            // One might wonder: "Why are we not reusing the rooted level
+            // structure (rls) we build here, isn't it basically the same thing
+            // we build in the rcm again, afterwards?""
             // The answer: Yes, but, No.
             //
-            // The rooted level structure here differs from the one built afterwards by its order.
-            // The required order is very nasty indeed: the position of a vertex in its level depends primarily on the position of
-            // its neighboring vertex in the previous level, and secondarily on its degree.
+            // The rooted level structure here differs from the one built
+            // afterwards by its order.  The required order is very nasty
+            // indeed: the position of a vertex in its level depends primarily
+            // on the position of its neighboring vertex in the previous level,
+            // and secondarily on its degree.
             //
-            // Still, one may think: "Well, then just keep the rls around, and sort it if its root is choosen as starting vertex".
-            // This is easier said than done, let's consider some strategies to do that:
-            // 1. Sort it without any additionally stored information. That would require going through the entire vec again, one by one.
-            //    This would erase the overhead of allocating and then deallocating the rls, but making this pass performant
-            //    requires non-trivial, error-prone code. Overall, this strategies perfomance gains can at most be minimal.
-            // 2. Store additional information, like the delimeters of levels, neighbouring vertex delimeters, etc.
-            //    That would require doing additional work (computing and storing the information) while building the rls,
-            //    and does not speed up sorting afterwards significantly, as the levels still need to be sorted serially.
-            //    Overall, this strategy comes at a significant cost in memory, and it's performance improvements are debatable at best.
-            // 3. Maybe just build any rls in a way that makes it a valid rcm odering?
-            //    That would be optimal if we always find a pseudoperipheral vertex on first try. Unfortunately, we rarely do,
-            //    typical are a few swaps, meaning this strategy, overall, comes with a loss of performance.
+            // Still, one may think: "Well, then just keep the rls around, and
+            // sort it if its root is choosen as starting vertex".  This is
+            // easier said than done, let's consider some strategies to do that:
+            // 1. Sort it without any additionally stored information. That
+            //    would require going through the entire vec again, one by one.
+            //    This would erase the overhead of allocating and then
+            //    deallocating the rls, but making this pass performant requires
+            //    non-trivial, error-prone code. Overall, this strategies
+            //    perfomance gains can at most be minimal.
+            // 2. Store additional information, like the delimeters of levels,
+            //    neighbouring vertex delimeters, etc.  That would require doing
+            //    additional work (computing and storing the information) while
+            //    building the rls, and does not speed up sorting afterwards
+            //    significantly, as the levels still need to be sorted serially.
+            //    Overall, this strategy comes at a significant cost in memory,
+            //    and it's performance improvements are debatable at best.
+            // 3. Maybe just build any rls in a way that makes it a valid rcm
+            //    odering?  That would be optimal if we always find a
+            //    pseudoperipheral vertex on first try. Unfortunately, we rarely
+            //    do, typical are a few swaps, meaning this strategy, overall,
+            //    comes with a loss of performance.
             //
-            // So, thats why we discard the rls. One may feel free to try on his own.
+            // So, thats why we discard the rls. One may feel free to try on his
+            // own.
 
             let nb_vertices = degrees.len();
 
-            // This is ok, if we are given a valid root we can never reach an invalid vertex.
+            // This is ok, if we are given a valid root we can never reach an
+            // invalid vertex.
             let mut visited = vec![false; nb_vertices];
 
             let mut rls = Vec::with_capacity(nb_vertices);
@@ -193,7 +210,8 @@ pub mod start {
                 .cloned()
                 .unwrap();
 
-            // Return the node of the last level with minimal degree along with the rls's height.
+            // Return the node of the last level with minimal degree along with
+            // the rls's height.
             (contender, height)
         }
     }
@@ -228,9 +246,11 @@ pub mod start {
             let (mut contender, mut current_height) =
                 self.rls_contender_and_height(current, degrees, mat);
 
-            // This loop always terminates, typically within very few iterations.
-            // This essentially comes from the fact that no same vertex can be choosen as `current` twice,
-            // as the height of the rls of `current` must always strictly increase for the loop to continue.
+            // This loop always terminates, typically within very few
+            // iterations.
+            // This essentially comes from the fact that no same vertex can be
+            // choosen as `current` twice, as the height of the rls of `current`
+            // must always strictly increase for the loop to continue.
             loop {
                 let (contender_contender, contender_height) =
                     self.rls_contender_and_height(contender, degrees, mat);
@@ -253,17 +273,22 @@ pub mod order {
     use indexing::SpIndex;
     use sparse::permutation::PermOwnedI;
 
-    /// This trait is very deeply integrated with the inner workings of the Cuthill-McKee algorithm implemented here.
-    /// It is conceptually only an enum, specifying if the Cuthill-McKee ordering should be built in reverse order.
+    /// This trait is very deeply integrated with the inner workings of the
+    /// Cuthill-McKee algorithm implemented here.  It is conceptually only an
+    /// enum, specifying if the Cuthill-McKee ordering should be built in
+    /// reverse order.
     ///
     /// No method on this trait should ever be called by the consumer.
     //
-    // This is a trait, not an enum, because monomorphization is absolutely critical for performance.
-    // Also having the directions manage their state themselves enables some optimizations.
+    // This is a trait, not an enum, because monomorphization is absolutely
+    // critical for performance.  Also having the directions manage their state
+    // themselves enables some optimizations.
     pub trait DirectedOrdering<I: SpIndex> {
-        /// Prepares this directed ordering for working with the specified number of vertices.
+        /// Prepares this directed ordering for working with the specified
+        /// number of vertices.
         // Seperated from `fn new`, as it requires `nb_vertices` as parameter,
-        // which the consumer would have to supply otherwise, which he can't be trusted to do corretly.
+        // which the consumer would have to supply otherwise, which he can't be
+        // trusted to do corretly.
         fn prepare(&mut self, nb_vertices: usize);
 
         /// Adds a new `vertex_index` as computed in the algorithms main loop.
@@ -272,7 +297,8 @@ pub mod order {
         /// Adds an index indicating the start of a new connected component.
         fn add_component_delimeter(&mut self, index: usize);
 
-        /// Transforms this directed ordering into an ordering to return from the algorithm.
+        /// Transforms this directed ordering into an ordering to return from
+        /// the algorithm.
         // Actually implementing `From` or `Into` results in coherence errors.
         fn into_ordering(self) -> Ordering<I>;
     }
@@ -326,20 +352,24 @@ pub mod order {
     pub struct Reversed<I: SpIndex> {
         /// The permutation computed by the algorithm, written in reverse order.
         perm: Vec<I>,
-        /// Will be transformed to contain indices delimeting componenets in `perm`.
+        /// Will be transformed to contain indices delimeting componenets in
+        /// `perm`.
         connected_parts: Vec<usize>,
         /// The total number of vertices in the matrix.
         nb_vertices: usize,
-        /// Counting with the algorithms main loop, should always be in sync with `perm_index`.
+        /// Counting with the algorithms main loop, should always be in sync
+        /// with `perm_index`.
         // Is a seperate variable to reduce unnecessary argument passing.
         count: usize,
     }
 
     impl<I: SpIndex> Reversed<I> {
         /// Creates a new instance of this conceptual enum variant.
-        // This is not optimal, as it leads to close-to-invalid states if not used correctly.
-        // A solution using some kind of "uninitialized" wrapper type however seems to be overkill,
-        // especially since all the uglieness is under the hood and not triggerable unless explicitly asked for.
+        // This is not optimal, as it leads to close-to-invalid states if not
+        // used correctly.  A solution using some kind of "uninitialized"
+        // wrapper type however seems to be overkill, especially since all the
+        // uglieness is under the hood and not triggerable unless explicitly
+        // asked for.
         #[inline]
         pub fn new() -> Self {
             Self {
@@ -377,7 +407,8 @@ pub mod order {
             let nb_vertices = self.nb_vertices;
             let mut connected_parts = self.connected_parts;
 
-            // Reverse-Inverse the connected parts, to fit with the reversed order.
+            // Reverse-Inverse the connected parts, to fit with the reversed
+            // order.
             connected_parts
                 .iter_mut()
                 .for_each(|i| *i = nb_vertices - *i);
@@ -392,16 +423,23 @@ pub mod order {
 }
 
 /// A customized Cuthill-McKee algorithm.
-/// 
-/// Runs a customized Cuthill-McKee algorithm on the given matrix, returning a permutation reducing its bandwidth.
-/// 
-/// The strategy employed to find starting vertices is critical for the quallity of the reordering computed.
-/// This library implements several common strategies, like `PseudoPeripheral` and `MinimumDegree`, 
-/// but also allows users to implement custom strategies if needed.
 ///
-/// * `mat` - The matrix to compute a permutation for.
-/// * `starting_strategy` - The strategy to use for choosing a starting vertex. 
-/// * `directed_ordering` - The order of the computed ordering, should either be `Forward` or `Reverse`.
+/// Runs a customized Cuthill-McKee algorithm on the given matrix, returning a
+/// permutation reducing its bandwidth.
+///
+/// The strategy employed to find starting vertices is critical for the quallity
+/// of the reordering computed.  This library implements several common
+/// strategies, like `PseudoPeripheral` and `MinimumDegree`, but also allows
+/// users to implement custom strategies if needed.
+///
+/// # Arguments
+///
+/// - `mat` - The matrix to compute a permutation for.
+///
+/// - `starting_strategy` - The strategy to use for choosing a starting vertex.
+///
+/// - `directed_ordering` - The order of the computed ordering, should either be
+/// `Forward` or `Reverse`.
 pub fn cuthill_mckee_custom<N, I, Iptr, S, D>(
     mat: CsMatViewI<N, I, Iptr>,
     mut starting_strategy: S,
@@ -425,28 +463,35 @@ where
     // contains the permuntation and component delimeters.
     directed_ordering.prepare(nb_vertices);
 
-    // This is the 'working data', into which new neighboring, sorted vertices are inserted,
-    // the next vertex to process is popped from here.
+    // This is the 'working data', into which new neighboring, sorted vertices
+    // are inserted, the next vertex to process is popped from here.
     let mut deque = VecDeque::with_capacity(nb_vertices);
 
-    // This are all new neighbors of the currently processed vertex, they are collected here
-    // to be sorted prior to being appended to 'deque'.
-    // The alternative of immediately pushing to deque and sorting there surprisingly performs worse.
+    // This are all new neighbors of the currently processed vertex, they are
+    // collected here to be sorted prior to being appended to 'deque'.
+    // The alternative of immediately pushing to deque and sorting there
+    // surprisingly performs worse.
     let mut neighbors = Vec::with_capacity(max_neighbors);
 
     // Storing which vertices have already been visited.
     let mut visited = vec![false; nb_vertices];
 
     for perm_index in 0..nb_vertices {
-        // Find the next index to process, choosing a new starting vertex if necessary.
+        // Find the next index to process, choosing a new starting vertex if
+        // necessary.
         let current_vertex = deque.pop_front().unwrap_or_else(|| {
 
             // We found a new connected component, starting at this iteration.
             directed_ordering.add_component_delimeter(perm_index);
 
             // Find a new starting vertex, using the given strategy.
-            let new_start_vertex = starting_strategy.find_start_vertex(&visited, &degrees, &mat);
-            assert!(!visited[new_start_vertex], "Vertex returned by starting strategy should always be unvisited");
+            let new_start_vertex = starting_strategy.find_start_vertex(
+                &visited, &degrees, &mat
+            );
+            assert!(
+                !visited[new_start_vertex],
+                "Vertex returned by starting strategy should always be unvisited"
+            );
 
             new_start_vertex
         });
@@ -465,10 +510,12 @@ where
             }
         }
 
-        // Missed optimization: match small sizes explicitly, sort using sorting networks.
-        // This especially makes sense if swaps are predictably compiled into cmov instructions,
-        // which they aren't currently, see https://github.com/rust-lang/rust/issues/53823.
-        // For more information on how to do sorting networks efficiently see https://arxiv.org/pdf/1505.01962.pdf.
+        // Missed optimization: match small sizes explicitly, sort using sorting
+        // networks.  This especially makes sense if swaps are predictably
+        // compiled into cmov instructions, which they aren't currently, see
+        // https://github.com/rust-lang/rust/issues/53823.  For more information
+        // on how to do sorting networks efficiently see
+        // https://arxiv.org/pdf/1505.01962.pdf.
         neighbors.sort_unstable_by_key(|&(deg, _)| deg);
 
         for (_deg, neighbor) in &neighbors {
@@ -482,17 +529,22 @@ where
 }
 
 /// The reverse Cuthill-McKee algorithm.
-/// 
-/// Runs the reverse Cuthill-McKee algorithm on the given matrix, returning a permutation reducing its bandwidth.
 ///
-/// This version of the algorithm chooses pseudoperipheral vertices as starting vertices,
-/// and builds a reversed ordering. This is the most common configuration of the algorithm.
+/// Runs the reverse Cuthill-McKee algorithm on the given matrix, returning a
+/// permutation reducing its bandwidth.
 ///
-/// This library also exposes a costomizable version of the algorithm, [cuthill_mckee_custom](fn.cuthill_mckee_custom.html).
+/// This version of the algorithm chooses pseudoperipheral vertices as starting
+/// vertices, and builds a reversed ordering. This is the most common
+/// configuration of the algorithm.
+///
+/// This library also exposes a costomizable version of the algorithm,
+/// [cuthill_mckee_custom](fn.cuthill_mckee_custom.html).
 ///
 /// Implemented as:
 /// ```text
-/// cuthill_mckee_custom(mat, start::PseudoPeripheral::new(), order::Reversed::new())
+/// cuthill_mckee_custom(
+///     mat, start::PseudoPeripheral::new(), order::Reversed::new()
+/// )
 /// ```
 pub fn reverse_cuthill_mckee<N, I, Iptr>(
     mat: CsMatViewI<N, I, Iptr>,
@@ -583,7 +635,8 @@ mod test {
     fn reverse_cuthill_mckee_unconnected_graph_lap_perm() {
         let lap_mat = unconnected_graph_lap();
         let ordering = reverse_cuthill_mckee(lap_mat.view());
-        // This is just one posible permutation. Might be silently broken, e. g. through changes in unstable sorting.
+        // This is just one posible permutation. Might be silently broken, e. g.
+        // through changes in unstable sorting.
         let correct_perm =
             Permutation::new(vec![7, 9, 6, 11, 10, 3, 1, 2, 5, 8, 4, 0]);
         assert_eq!(&ordering.perm.vec(), &correct_perm.vec());
