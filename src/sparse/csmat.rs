@@ -29,6 +29,7 @@ use sparse::compressed::SpMatView;
 use sparse::permutation::PermViewI;
 use sparse::prelude::*;
 use sparse::prod;
+use sparse::smmp;
 use sparse::to_dense::assign_to_dense;
 use sparse::utils;
 use sparse::vec;
@@ -517,6 +518,23 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         N: Copy,
     {
         CsMatI::try_new_csc(shape, indptr, indices, data).unwrap()
+    }
+
+    pub(crate) fn new_trusted(
+        storage: CompressedStorage,
+        shape: Shape,
+        indptr: Vec<Iptr>,
+        indices: Vec<I>,
+        data: Vec<N>,
+    ) -> CsMatI<N, I, Iptr> {
+        CsMatI {
+            storage,
+            nrows: shape.0,
+            ncols: shape.1,
+            indptr,
+            indices,
+            data,
+        }
     }
 
     fn new_(
@@ -1804,7 +1822,7 @@ impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IpS2, IS2, DS2>
     Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
-    N: 'a + Copy + Num + Default,
+    N: 'a + Copy + Num + Default + std::ops::AddAssign,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS1: 'a + Deref<Target = [Iptr]>,
@@ -1821,21 +1839,19 @@ where
         rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>,
     ) -> CsMatI<N, I, Iptr> {
         match (self.storage(), rhs.storage()) {
-            (CSR, CSR) => {
-                let mut workspace = prod::workspace_csr(self, rhs);
-                prod::csr_mul_csr(self, rhs, &mut workspace)
-            }
+            (CSR, CSR) => smmp::mul_csr_csr(self.view(), rhs.view()),
             (CSR, CSC) => {
-                let mut workspace = prod::workspace_csr(self, rhs);
-                prod::csr_mul_csr(self, &rhs.to_other_storage(), &mut workspace)
+                let rhs_csr = rhs.to_other_storage();
+                smmp::mul_csr_csr(self.view(), rhs_csr.view())
             }
             (CSC, CSR) => {
-                let mut workspace = prod::workspace_csc(self, rhs);
-                prod::csc_mul_csc(self, &rhs.to_other_storage(), &mut workspace)
+                let rhs_csr = rhs.to_other_storage();
+                smmp::mul_csr_csr(rhs_csr.view(), self.transpose_view())
+                    .transpose_into()
             }
             (CSC, CSC) => {
-                let mut workspace = prod::workspace_csc(self, rhs);
-                prod::csc_mul_csc(self, rhs, &mut workspace)
+                smmp::mul_csr_csr(rhs.transpose_view(), self.transpose_view())
+                    .transpose_into()
             }
         }
     }

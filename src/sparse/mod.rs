@@ -275,7 +275,7 @@ mod utils {
             buf.push((indices[i], data[i]));
         }
 
-        buf.sort_by_key(|x| x.0);
+        buf.sort_unstable_by_key(|x| x.0);
 
         for (i, &(ind, x)) in buf.iter().enumerate() {
             indices[i] = ind;
@@ -291,6 +291,7 @@ pub mod csmat;
 pub mod linalg;
 pub mod permutation;
 pub mod prod;
+pub mod smmp;
 pub mod special_mats;
 pub mod symmetric;
 pub mod to_dense;

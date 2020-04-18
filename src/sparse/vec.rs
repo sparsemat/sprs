@@ -1079,7 +1079,7 @@ where
 impl<'a, 'b, N, I, Iptr, IS1, DS1, IpS2, IS2, DS2>
     Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>> for &'a CsVecBase<IS1, DS1>
 where
-    N: 'a + Copy + Num + Default,
+    N: 'a + Copy + Num + Default + std::ops::AddAssign,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IS1: 'a + Deref<Target = [I]>,
@@ -1098,7 +1098,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
-    N: Copy + Num + Default + Sum,
+    N: Copy + Num + Default + Sum + std::ops::AddAssign,
     I: SpIndex,
     Iptr: SpIndex,
     IpS1: Deref<Target = [Iptr]>,

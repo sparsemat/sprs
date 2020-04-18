@@ -139,10 +139,10 @@ where
 
         match storage {
             CompressedStorage::CSR => {
-                rc.sort_by_key(|i| (i.0, i.1));
+                rc.sort_unstable_by_key(|i| (i.0, i.1));
             }
             CompressedStorage::CSC => {
-                rc.sort_by_key(|i| (i.1, i.0));
+                rc.sort_unstable_by_key(|i| (i.1, i.0));
             }
         }
 
