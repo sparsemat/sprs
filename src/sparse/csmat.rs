@@ -890,6 +890,15 @@ where
         self.indptr.last().unwrap().index_unchecked()
     }
 
+    /// The density of the sparse matrix, defined as the number of non-zero
+    /// elements divided by the maximum number of elements
+    pub fn density(&self) -> f64 {
+        let rows = self.nrows as f64;
+        let cols = self.ncols as f64;
+        let nnz = self.nnz() as f64;
+        nnz / (rows * cols)
+    }
+
     /// Number of outer dimensions, that ie equal to self.rows() for a CSR
     /// matrix, and equal to self.cols() for a CSC matrix
     pub fn outer_dims(&self) -> usize {
