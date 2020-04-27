@@ -1,7 +1,8 @@
 //! Random sparse matrix generation
 
-use crate::rand::distributions::{Bernoulli, Distribution};
+use crate::rand::distributions::Distribution;
 use crate::rand::Rng;
+use crate::rand::SeedableRng;
 use sprs::indexing::SpIndex;
 use sprs::{CsMat, CsMatI};
 
@@ -37,27 +38,56 @@ where
     let mut indptr = Vec::with_capacity(shape.0 + 1);
     let mut indices = Vec::with_capacity(exp_nnz);
     let mut data = Vec::with_capacity(exp_nnz);
-    let mut nnz = 0;
-    let struct_dist = Bernoulli::new(density).unwrap();
-    indptr.push(I::from_usize(nnz));
-    for _row in 0..shape.0 {
-        for col in 0..shape.1 {
-            if struct_dist.sample(rng) {
-                nnz += 1;
-                indices.push(I::from_usize(col));
-                data.push(dist.sample(rng));
+    // sample row indices
+    for _ in 0..exp_nnz {
+        indices.push(I::from_usize(rng.gen_range(0, shape.0)));
+        // Note: there won't be any correspondence between the data
+        // sampled here and the row sampled before, but this does not matter
+        // as we are sampling.
+        data.push(dist.sample(rng));
+    }
+    indices.sort_unstable();
+    indptr.push(I::from_usize(0));
+    let mut count = 0;
+    for &row in &indices {
+        while indptr.len() != row.index() + 1 {
+            indptr.push(I::from_usize(count));
+        }
+        count += 1;
+    }
+    while indptr.len() != shape.0 + 1 {
+        indptr.push(I::from_usize(count));
+    }
+    assert_eq!(indptr.last().unwrap().index(), exp_nnz);
+    indices.clear();
+    for row in 0..shape.0 {
+        let start = indptr[row].index();
+        let end = indptr[row + 1].index();
+        for _ in start..end {
+            loop {
+                let col = I::from_usize(rng.gen_range(0, shape.1));
+                let loc = indices[start..].binary_search(&col);
+                match loc {
+                    Ok(_) => {
+                        continue;
+                    }
+                    Err(loc) => {
+                        indices.insert(start + loc, col);
+                        break;
+                    }
+                }
             }
         }
-        indptr.push(I::from_usize(nnz));
+        indices[start..end].sort_unstable();
     }
 
     CsMatI::new(shape, indptr, indices, data)
 }
 
 /// Convenient wrapper for the common case of sampling a matrix with standard
-/// normal distribution of the nnz values, using the thread rng for convenience.
+/// normal distribution of the nnz values, using a lightweight rng.
 pub fn rand_csr_std(shape: (usize, usize), density: f64) -> CsMat<f64> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand_pcg::Pcg64Mcg::from_entropy();
     rand_csr(&mut rng, crate::rand_distr::StandardNormal, shape, density)
 }
 

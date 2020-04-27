@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 rand = "0.7.3"
 rand_distr = "0.2.2"
+rand_pcg = "0.2.1"
 
 [dependencies.sprs]
 version = "0.7.1"
