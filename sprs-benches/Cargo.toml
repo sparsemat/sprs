@@ -1,0 +1,19 @@
+[package]
+name = "sprs-benches"
+version = "0.1.0"
+authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.sprs]
+version = "0.7.1"
+path = ".."
+
+[dependencies.sprs-rand]
+version = "0.1.0"
+path = "../sprs-rand"
+
+[dependencies.plotters]
+version = "0.2.12"
+
