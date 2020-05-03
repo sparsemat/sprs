@@ -1,7 +1,11 @@
-use pyo3::prelude::*;
-use pyo3::types::{IntoPyDict, PyModule};
+#[cfg(feature = "nightly")]
+use pyo3::{
+    prelude::*,
+    types::{IntoPyDict, PyModule},
+};
 use sprs_rand::rand_csr_std;
 
+#[cfg(feature = "nightly")]
 fn scipy_mat<'a>(
     scipy_sparse: &'a PyModule,
     py: &Python,
@@ -39,8 +43,11 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         ((150000, 250000), vec![1e-7, 1e-6, 1e-5, 1e-4]),
     ];
 
+    #[cfg(feature = "nightly")]
     let gil = Python::acquire_gil();
+    #[cfg(feature = "nightly")]
     let py = gil.python();
+    #[cfg(feature = "nightly")]
     let scipy_sparse = PyModule::import(py, "scipy.sparse").map_err(|e| {
         let res = format!("Python error: {:?}", e);
         e.print_and_set_sys_last_vars(py);
@@ -50,6 +57,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
     for (shape, densities) in &shapes_and_densities {
         let mut times = Vec::with_capacity(densities.len());
         let mut times_old = Vec::with_capacity(densities.len());
+        #[cfg(feature = "nightly")]
         let mut times_py = Vec::with_capacity(densities.len());
         let mut nnzs = Vec::with_capacity(densities.len());
         let mut res_densities = Vec::with_capacity(densities.len());
@@ -83,32 +91,36 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             res_densities.push(prod.density());
 
             // bench scipy as well
-            let m1_py = scipy_mat(scipy_sparse, &py, &m1)?;
-            let m2_py = scipy_mat(scipy_sparse, &py, &m2)?;
-            let now = std::time::Instant::now();
-            let _prod_py = py
-                .eval(
-                    "m1 * m2",
-                    Some([("m1", m1_py), ("m2", m2_py)].into_py_dict(py)),
-                    None,
-                )
-                .map_err(|e| {
-                    let res = format!("Python error: {:?}", e);
-                    e.print_and_set_sys_last_vars(py);
-                    res
-                })?;
-            let elapsed = now.elapsed().as_millis();
-            println!(
-                "Scipy product of shape ({}, {}) and density {} done in {}ms",
-                shape.0, shape.1, density, elapsed,
-            );
-            times_py.push(elapsed);
+            #[cfg(feature = "nightly")]
+            {
+                let m1_py = scipy_mat(scipy_sparse, &py, &m1)?;
+                let m2_py = scipy_mat(scipy_sparse, &py, &m2)?;
+                let now = std::time::Instant::now();
+                let _prod_py = py
+                    .eval(
+                        "m1 * m2",
+                        Some([("m1", m1_py), ("m2", m2_py)].into_py_dict(py)),
+                        None,
+                    )
+                    .map_err(|e| {
+                        let res = format!("Python error: {:?}", e);
+                        e.print_and_set_sys_last_vars(py);
+                        res
+                    })?;
+                let elapsed = now.elapsed().as_millis();
+                println!(
+                    "Scipy product of shape ({}, {}) and density {} done in {}ms",
+                    shape.0, shape.1, density, elapsed,
+                );
+                times_py.push(elapsed);
+            }
         }
         println!("Results for shape: ({}, {})", shape.0, shape.1);
         println!("Product nnzs: {:?}", nnzs);
         println!("Product densities: {:?}", res_densities);
         println!("Product times: {:?}", times);
         println!("Product times (old): {:?}", times_old);
+        #[cfg(feature = "nightly")]
         println!("Product times (scipy): {:?}", times_py);
 
         // plot
@@ -157,6 +169,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                     PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
                 });
 
+            #[cfg(feature = "nightly")]
             chart
                 .draw_series(LineSeries::new(
                     res_densities
