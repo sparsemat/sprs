@@ -48,23 +48,30 @@ fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
     let (a_rows, a_cols) = a.shape();
     let (b_rows, b_cols) = b.shape();
     assert_eq!(a_cols, b_rows);
+    assert!(a.is_csr());
+    assert!(a.rows() <= isize::MAX as usize);
+    assert!(a.indptr()[a.rows()] <= isize::MAX as usize);
+    assert!(b.is_csr());
+    assert!(b.rows() <= isize::MAX as usize);
+    assert!(b.indptr()[b.rows()] <= isize::MAX as usize);
     let a_indptr = a.indptr().as_ptr() as *const isize;
     let a_indices = a.indices().as_ptr() as *const isize;
     let a_data = a.data().as_ptr();
     let b_indptr = b.indptr().as_ptr() as *const isize;
     let b_indices = b.indices().as_ptr() as *const isize;
     let b_data = b.data().as_ptr();
+    // Safety: sprs guarantees the validity of these pointers, and our wrapping
+    // around Eigen respects the CSR format invariants. The safety thus relies
+    // on the correctness of Eigen, which is well tested. The reinterpretation
+    // of the index data is safe as the two types have the same size and accept
+    // all bit patterns.
+    // Correctness: relying on sprs guarantees on the CSR structure, we can
+    // guarantee that no index data is greater than `isize::MAX`, thus the
+    // reinterpretation of the data will not produce negative values.
     unsafe {
         prod_nnz(
-            a_rows,
-            a_cols,
-            b_cols,
-            a_indptr,
-            a_indices,
-            a_data,
-            b_indptr,
-            b_indices,
-            b_data,
+            a_rows, a_cols, b_cols, a_indptr, a_indices, a_data, b_indptr,
+            b_indices, b_data,
         )
     }
 }
