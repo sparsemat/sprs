@@ -28,6 +28,47 @@ fn scipy_mat<'a>(
         })
 }
 
+extern "C" {
+
+    fn prod_nnz(
+        a_rows: usize,
+        a_cols: usize,
+        b_cols: usize,
+        a_indptr: *const isize,
+        a_indices: *const isize,
+        a_data: *const f64,
+        b_indptr: *const isize,
+        b_indices: *const isize,
+        b_data: *const f64,
+    ) -> usize;
+
+}
+
+fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
+    let (a_rows, a_cols) = a.shape();
+    let (b_rows, b_cols) = b.shape();
+    assert_eq!(a_cols, b_rows);
+    let a_indptr = a.indptr().as_ptr() as *const isize;
+    let a_indices = a.indices().as_ptr() as *const isize;
+    let a_data = a.data().as_ptr();
+    let b_indptr = b.indptr().as_ptr() as *const isize;
+    let b_indices = b.indices().as_ptr() as *const isize;
+    let b_data = b.data().as_ptr();
+    unsafe {
+        prod_nnz(
+            a_rows,
+            a_cols,
+            b_cols,
+            a_indptr,
+            a_indices,
+            a_data,
+            b_indptr,
+            b_indices,
+            b_data,
+        )
+    }
+}
+
 fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
     let shapes_and_densities = [
         ((15, 25), vec![0.1]),
@@ -59,6 +100,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         let mut times_old = Vec::with_capacity(densities.len());
         #[cfg(feature = "nightly")]
         let mut times_py = Vec::with_capacity(densities.len());
+        let mut times_eigen = Vec::with_capacity(densities.len());
         let mut nnzs = Vec::with_capacity(densities.len());
         let mut res_densities = Vec::with_capacity(densities.len());
         let mut workspace = vec![0.; shape.0];
@@ -114,6 +156,16 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 );
                 times_py.push(elapsed);
             }
+
+            // bench eigen
+            let now = std::time::Instant::now();
+            let _nnz = eigen_prod(m1.view(), m2.view());
+            let elapsed = now.elapsed().as_millis();
+            println!(
+                "Eigen product of shape ({}, {}) and density {} done in {}ms",
+                shape.0, shape.1, density, elapsed,
+            );
+            times_eigen.push(elapsed);
         }
         println!("Results for shape: ({}, {})", shape.0, shape.1);
         println!("Product nnzs: {:?}", nnzs);
@@ -122,6 +174,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         println!("Product times (old): {:?}", times_old);
         #[cfg(feature = "nightly")]
         println!("Product times (scipy): {:?}", times_py);
+        println!("Product times (eigen): {:?}", times_eigen);
 
         // plot
         {
@@ -181,6 +234,19 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 .label("Scipy")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + 20, y)], &GREEN)
+                });
+
+            chart
+                .draw_series(LineSeries::new(
+                    res_densities
+                        .iter()
+                        .map(|d| *d as f32)
+                        .zip(times_eigen.iter().map(|t| *t as f32)),
+                    &CYAN,
+                ))?
+                .label("Eigen")
+                .legend(|(x, y)| {
+                    PathElement::new(vec![(x, y), (x + 20, y)], &CYAN)
                 });
 
             chart

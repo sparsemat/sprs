@@ -20,6 +20,9 @@ version = "0.2.12"
 [dependencies]
 pyo3 = { version="0.9.2", optional=true }
 
+[build-dependencies]
+cc = "1.0.52"
+
 [features]
 
 default = []
