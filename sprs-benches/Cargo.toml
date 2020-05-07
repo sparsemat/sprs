@@ -31,3 +31,4 @@ libflate = {version="1.0.0", optional=true }
 default = []
 nightly = ["pyo3"]
 dl_eigen = ["reqwest", "tar", "libflate"]
+eigen = []

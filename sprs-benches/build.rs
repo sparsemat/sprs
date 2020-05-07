@@ -43,10 +43,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let eigen_include_path = "/usr/include/eigen3";
     #[cfg(feature = "dl_eigen")]
     let eigen_include_path = "eigen-3.3.7";
-    cc::Build::new()
+    let res = cc::Build::new()
         .cpp(true)
         .include(eigen_include_path)
         .file("src/eigen.cpp")
-        .compile("eigen");
+        .try_compile("eigen");
+    if res.is_ok() {
+        println!("cargo:rustc-cfg=feature=\"eigen\"");
+    } else {
+        println!(
+            "cargo:warning=Could not find and compile eigen, it will not \
+             be benchmarked against. You can enable it by activating the \
+            'dl_eigen' feature which will download and compile it."
+        );
+    }
     Ok(())
 }
