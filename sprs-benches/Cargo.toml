@@ -22,8 +22,12 @@ pyo3 = { version="0.9.2", optional=true }
 
 [build-dependencies]
 cc = "1.0.52"
+reqwest = { version="0.10.4", features=["blocking"], optional=true }
+tar = { version="0.4.26", optional=true }
+libflate = {version="1.0.0", optional=true }
 
 [features]
 
 default = []
 nightly = ["pyo3"]
+dl_eigen = ["reqwest", "tar", "libflate"]
