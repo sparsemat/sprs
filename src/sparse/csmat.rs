@@ -1,5 +1,5 @@
 use ndarray::ArrayView;
-use num_traits::{Num, Signed, Zero};
+use num_traits::{Float, Num, Signed, Zero};
 use std::cmp;
 ///! A sparse matrix in the Compressed Sparse Row/Column format
 ///
@@ -1037,6 +1037,54 @@ where
         }
     }
 
+    /// Generate a one-hot matrix, compressing the inner dimension.
+    ///
+    /// Returns a matrix with the same size, the same CSR/CSC type,
+    /// and a single value of 1.0 within each populated inner vector.
+    ///
+    /// See [into_csc] and [into_csr] if you need to prepare a matrix
+    /// for one-hot compression.
+    pub fn to_inner_onehot(&self) -> CsMatI<N, I, Iptr>
+    where
+        N: Copy + Clone + Float + PartialOrd,
+    {
+        let mut indptr_counter = 0usize;
+        let mut indptr: Vec<Iptr> = Vec::with_capacity(self.indptr.len());
+
+        let max_data_len = self.indptr.len().min(self.data.len());
+        let mut indices: Vec<I> = Vec::with_capacity(max_data_len);
+        let mut data = Vec::with_capacity(max_data_len);
+
+        for (_, inner_vec) in self.outer_iterator().enumerate() {
+            let hot_element = inner_vec
+                .iter()
+                .filter(|e| !e.1.is_nan())
+                .max_by(|a, b| {
+                    a.1.partial_cmp(b.1)
+                        .expect("Unexpected NaN value was found")
+                })
+                .map(|a| a.0);
+
+            indptr.push(Iptr::from_usize(indptr_counter));
+
+            if let Some(inner_id) = hot_element {
+                indices.push(I::from_usize(inner_id));
+                data.push(N::one());
+                indptr_counter += 1;
+            }
+        }
+
+        indptr.push(Iptr::from_usize(indptr_counter));
+        CsMatBase {
+            storage: self.storage,
+            nrows: self.rows(),
+            ncols: self.cols(),
+            indptr,
+            indices,
+            data,
+        }
+    }
+
     /// Clone the matrix with another integer type for indptr and indices
     ///
     /// # Panics
@@ -1420,6 +1468,40 @@ where
     {
         match self.storage {
             CSR => self.to_owned(),
+            CSC => self.to_other_storage(),
+        }
+    }
+}
+
+impl<N, I, Iptr> CsMatI<N, I, Iptr>
+where
+    N: Default,
+
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    /// Create a new CSC matrix equivalent to this one.
+    /// If this matrix is CSR, it is converted to CSC
+    /// If this matrix is CSC, it is returned by value
+    pub fn into_csc(self) -> CsMatI<N, I, Iptr>
+    where
+        N: Clone,
+    {
+        match self.storage {
+            CSR => self.to_other_storage(),
+            CSC => self,
+        }
+    }
+
+    /// Create a new CSR matrix equivalent to this one.
+    /// If this matrix is CSC, it is converted to CSR
+    /// If this matrix is CSR, it is returned by value
+    pub fn into_csr(self) -> CsMatI<N, I, Iptr>
+    where
+        N: Clone,
+    {
+        match self.storage {
+            CSR => self,
             CSC => self.to_other_storage(),
         }
     }
@@ -2764,5 +2846,56 @@ mod test {
 
         let degrees = mat.degrees();
         assert_eq!(&degrees, &[2, 0, 1, 2, 1],);
+    }
+
+    #[test]
+    fn onehot_zero() {
+        let onehot: CsMat<f32> = CsMat::zero((3, 3)).to_inner_onehot();
+
+        assert!(onehot.is_csr());
+        assert_eq!(CsMat::zero((3, 3)), onehot);
+    }
+
+    #[test]
+    fn onehot_eye() {
+        let mat = CsMat::new(
+            (2, 2),
+            vec![0, 2, 4],
+            vec![0, 1, 0, 1],
+            vec![2.0, 0.0, 0.0, 2.0],
+        );
+
+        let onehot = mat.to_inner_onehot();
+
+        assert!(onehot.is_csr());
+        assert_eq!(CsMat::eye(2), onehot);
+    }
+
+    #[test]
+    fn onehot_sparse_csc() {
+        let mat = CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![2.0]);
+
+        let onehot = mat.to_inner_onehot();
+
+        let expected =
+            CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![1.0]);
+
+        assert!(onehot.is_csc());
+        assert_eq!(expected, onehot);
+    }
+
+    #[test]
+    fn onehot_ignores_nan() {
+        let mat = CsMat::new(
+            (2, 2),
+            vec![0, 2, 3],
+            vec![0, 1, 1],
+            vec![2.0, f64::NAN, 2.0],
+        );
+
+        let onehot = mat.to_inner_onehot();
+
+        assert!(onehot.is_csr());
+        assert_eq!(CsMat::eye(2), onehot);
     }
 }
