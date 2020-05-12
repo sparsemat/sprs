@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -ev
+
+if [ -z ${WITH_NIGHTLY+x} ]; then
+    echo "Not on nightly channel: skipping nightly only parts."
+else
+    cd sprs-benches
+    cargo build --features nightly
+fi
