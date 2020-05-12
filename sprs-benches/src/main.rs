@@ -254,15 +254,17 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
 
             // bench eigen
             #[cfg(feature = "eigen")]
-            if !spec.forbid_eigen {
-                let now = std::time::Instant::now();
-                let _nnz = eigen_prod(m1.view(), m2.view());
-                let elapsed = now.elapsed().as_millis();
-                println!(
-                    "Eigen product of shape ({}, {}) and density {} done in {}ms",
-                    shape.0, shape.1, density, elapsed,
-                );
-                times_eigen.push(elapsed);
+            {
+                if !spec.forbid_eigen {
+                    let now = std::time::Instant::now();
+                    let _nnz = eigen_prod(m1.view(), m2.view());
+                    let elapsed = now.elapsed().as_millis();
+                    println!(
+                        "Eigen product of shape ({}, {}) and density {} done in {}ms",
+                        shape.0, shape.1, density, elapsed,
+                    );
+                    times_eigen.push(elapsed);
+                }
             }
         }
         println!("Results for shape: ({}, {})", shape.0, shape.1);
@@ -369,19 +371,21 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 });
 
             #[cfg(feature = "eigen")]
-            if !spec.forbid_eigen {
-                chart
-                    .draw_series(LineSeries::new(
-                        abscisses
-                            .iter()
-                            .map(|d| *d as f32)
-                            .zip(times_eigen.iter().map(|t| *t as f32)),
-                        &CYAN,
-                    ))?
-                    .label("Eigen")
-                    .legend(|(x, y)| {
-                        PathElement::new(vec![(x, y), (x + 20, y)], &CYAN)
-                    });
+            {
+                if !spec.forbid_eigen {
+                    chart
+                        .draw_series(LineSeries::new(
+                            abscisses
+                                .iter()
+                                .map(|d| *d as f32)
+                                .zip(times_eigen.iter().map(|t| *t as f32)),
+                            &CYAN,
+                        ))?
+                        .label("Eigen")
+                        .legend(|(x, y)| {
+                            PathElement::new(vec![(x, y), (x + 20, y)], &CYAN)
+                        });
+                }
             }
 
             chart
