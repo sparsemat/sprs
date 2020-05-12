@@ -84,6 +84,9 @@ struct BenchSpec {
     densities: Vec<f64>,
     forbid_old: bool,
     forbid_eigen: bool,
+    shapes: Vec<(usize, usize)>, // will trigger shape benchmark
+    nnz_over_rows: usize,        // used to compute density in shape benchmark
+    bench_filename: String,      // used to name in shape benchmark
 }
 
 fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
@@ -91,14 +94,14 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         BenchSpec {
             shape: (1500, 2500),
             densities: vec![
-                1e-4, 5e-4, 1e-3, 2e-3, 5e-3, 8e-3, 1e-2, 2e-2, 5e-2
+                1e-4, 5e-4, 1e-3, 2e-3, 5e-3, 8e-3, 1e-2, 2e-2, 5e-2,
             ],
             ..Default::default()
         },
         BenchSpec {
             shape: (15000, 25000),
             densities: vec![
-                1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 3e-3, 5e-3
+                1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 3e-3, 5e-3,
             ],
             ..Default::default()
         },
@@ -112,6 +115,40 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             shape: (150000, 250000),
             densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
             forbid_old: true,
+            ..Default::default()
+        },
+        BenchSpec {
+            shapes: vec![
+                (1500, 1500),
+                (2500, 2500),
+                (3500, 3500),
+                (15000, 15000),
+                (25000, 25000),
+                (35000, 35000),
+                (45000, 45000),
+                (55000, 55000),
+            ],
+            nnz_over_rows: 4,
+            bench_filename: "sparse_mult_perf_by_shape.png".to_string(),
+            ..Default::default()
+        },
+        BenchSpec {
+            shapes: vec![
+                (1500, 1500),
+                (3500, 3500),
+                (7500, 7500),
+                (15000, 15000),
+                (35000, 35000),
+                (75000, 75000),
+                (150000, 150000),
+                (350000, 350000),
+                (750000, 750000),
+                (1500000, 1500000),
+                (2500000, 2500000),
+            ],
+            forbid_old: true,
+            nnz_over_rows: 4,
+            bench_filename: "sparse_mult_perf_by_shape_no_old.png".to_string(),
             ..Default::default()
         },
     ];
@@ -128,8 +165,25 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     for spec in &bench_specs {
-        let densities = &spec.densities;
         let shape = spec.shape;
+
+        let is_shape_bench = spec.shapes.len() != 0;
+        let densities = if is_shape_bench {
+            spec.shapes
+                .iter()
+                .map(|(_rows, cols)| {
+                    (spec.nnz_over_rows as f64) / (*cols as f64)
+                })
+                .collect()
+        } else {
+            spec.densities.clone()
+        };
+        let shapes = if is_shape_bench {
+            spec.shapes.clone()
+        } else {
+            std::iter::repeat(shape).take(densities.len()).collect()
+        };
+
         let mut times = Vec::with_capacity(densities.len());
         let mut times_old = Vec::with_capacity(densities.len());
         #[cfg(feature = "nightly")]
@@ -138,8 +192,10 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         let mut times_eigen = Vec::with_capacity(densities.len());
         let mut nnzs = Vec::with_capacity(densities.len());
         let mut res_densities = Vec::with_capacity(densities.len());
-        let mut workspace = vec![0.; shape.0];
-        for &density in densities {
+        for (density, shape) in densities.iter().zip(shapes.iter()) {
+            let mut workspace = vec![0.; shape.0];
+            let density = *density;
+            let shape = *shape;
             println!("Generating matrices");
             let now = std::time::Instant::now();
             let m1 = rand_csr_std(shape, density);
@@ -222,11 +278,27 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         // plot
         {
             use plotters::prelude::*;
-            let title = format!("sparse_mult_perf_{}_{}.png", shape.0, shape.1);
+            let title = if is_shape_bench {
+                spec.bench_filename.clone()
+            } else {
+                format!("sparse_mult_perf_{}_{}.png", shape.0, shape.1)
+            };
             let res = (640, 480);
             let root = BitMapBackend::new(&title, res).into_drawing_area();
             root.fill(&WHITE)?;
             let max_density = *res_densities.last().unwrap_or(&1.) as f32;
+            let max_shape =
+                *shapes.iter().map(|(rows, _)| rows).max().unwrap_or(&1) as f32;
+            let max_absciss = if is_shape_bench {
+                max_shape
+            } else {
+                max_density
+            };
+            let caption = if is_shape_bench {
+                "Time vs shape"
+            } else {
+                "Time vs density"
+            };
             let max_time =
                 *std::cmp::max(times.iter().max(), times_old.iter().max())
                     .unwrap_or(&1);
@@ -236,23 +308,27 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 *times_eigen.iter().max().unwrap_or(&1),
             );
             #[cfg(feature = "nightly")]
-            let max_time = std::cmp::max(
-                max_time,
-                *times_py.iter().max().unwrap_or(&1),
-            );
+            let max_time =
+                std::cmp::max(max_time, *times_py.iter().max().unwrap_or(&1));
             let max_time = max_time as f32;
             let mut chart = ChartBuilder::on(&root)
-                .caption("Time vs density", ("sans-serif", 50).into_font())
+                .caption(caption, ("sans-serif", 50).into_font())
                 .margin(5)
                 .x_label_area_size(30)
                 .y_label_area_size(50)
-                .build_ranged(0f32..max_density, 0f32..max_time)?;
+                .build_ranged(0f32..max_absciss, 0f32..max_time)?;
+
+            let abscisses = if is_shape_bench {
+                shapes.iter().map(|(rows, _)| *rows as f64).collect()
+            } else {
+                res_densities
+            };
 
             chart.configure_mesh().draw()?;
 
             chart
                 .draw_series(LineSeries::new(
-                    res_densities
+                    abscisses
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times.iter().map(|t| *t as f32)),
@@ -266,7 +342,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             if !spec.forbid_old {
                 chart
                     .draw_series(LineSeries::new(
-                        res_densities
+                        abscisses
                             .iter()
                             .map(|d| *d as f32)
                             .zip(times_old.iter().map(|t| *t as f32)),
@@ -281,7 +357,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(feature = "nightly")]
             chart
                 .draw_series(LineSeries::new(
-                    res_densities
+                    abscisses
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times_py.iter().map(|t| *t as f32)),
@@ -296,7 +372,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             if !spec.forbid_eigen {
                 chart
                     .draw_series(LineSeries::new(
-                        res_densities
+                        abscisses
                             .iter()
                             .map(|d| *d as f32)
                             .zip(times_eigen.iter().map(|t| *t as f32)),
