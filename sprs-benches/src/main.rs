@@ -78,19 +78,42 @@ fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
     }
 }
 
+#[derive(Default)]
+struct BenchSpec {
+    shape: (usize, usize),
+    densities: Vec<f64>,
+    forbid_old: bool,
+    forbid_eigen: bool,
+}
+
 fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
-    let shapes_and_densities = [
-        ((15, 25), vec![0.1]),
-        (
-            (1500, 2500),
-            vec![1e-4, 5e-4, 1e-3, 2e-3, 5e-3, 8e-3, 1e-2, 2e-2, 5e-2],
-        ),
-        (
-            (15000, 25000),
-            vec![1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 3e-3, 5e-3],
-        ),
-        ((150000, 25000), vec![1e-7, 1e-6, 1e-5, 1e-4]),
-        ((150000, 250000), vec![1e-7, 1e-6, 1e-5, 1e-4]),
+    let bench_specs = [
+        BenchSpec {
+            shape: (1500, 2500),
+            densities: vec![
+                1e-4, 5e-4, 1e-3, 2e-3, 5e-3, 8e-3, 1e-2, 2e-2, 5e-2
+            ],
+            ..Default::default()
+        },
+        BenchSpec {
+            shape: (15000, 25000),
+            densities: vec![
+                1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 3e-3, 5e-3
+            ],
+            ..Default::default()
+        },
+        BenchSpec {
+            shape: (150000, 25000),
+            densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
+            forbid_old: true,
+            ..Default::default()
+        },
+        BenchSpec {
+            shape: (150000, 250000),
+            densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
+            forbid_old: true,
+            ..Default::default()
+        },
     ];
 
     #[cfg(feature = "nightly")]
@@ -104,7 +127,9 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         res
     })?;
 
-    for (shape, densities) in &shapes_and_densities {
+    for spec in &bench_specs {
+        let densities = &spec.densities;
+        let shape = spec.shape;
         let mut times = Vec::with_capacity(densities.len());
         let mut times_old = Vec::with_capacity(densities.len());
         #[cfg(feature = "nightly")]
@@ -117,7 +142,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         for &density in densities {
             println!("Generating matrices");
             let now = std::time::Instant::now();
-            let m1 = rand_csr_std(*shape, density);
+            let m1 = rand_csr_std(shape, density);
             let m2 = rand_csr_std((shape.1, shape.0), density);
             let elapsed = now.elapsed().as_millis();
             println!("Generating matrices took {}ms", elapsed);
@@ -130,15 +155,19 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 shape.0, shape.1, density, elapsed,
             );
             times.push(elapsed);
-            let now = std::time::Instant::now();
-            let old_res = sprs::prod::csr_mul_csr(&m1, &m2, &mut workspace);
-            let elapsed = now.elapsed().as_millis();
-            println!(
-                "Old product of shape ({}, {}) and density {} done in {}ms",
-                shape.0, shape.1, density, elapsed,
-            );
-            times_old.push(elapsed);
-            assert_eq!(prod, old_res);
+
+            if !spec.forbid_old {
+                let now = std::time::Instant::now();
+                let old_res = sprs::prod::csr_mul_csr(&m1, &m2, &mut workspace);
+                let elapsed = now.elapsed().as_millis();
+                println!(
+                    "Old product of shape ({}, {}) and density {} done in {}ms",
+                    shape.0, shape.1, density, elapsed,
+                );
+                times_old.push(elapsed);
+                assert_eq!(prod, old_res);
+            }
+
             nnzs.push(prod.nnz());
             res_densities.push(prod.density());
 
@@ -169,7 +198,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
 
             // bench eigen
             #[cfg(feature = "eigen")]
-            {
+            if !spec.forbid_eigen {
                 let now = std::time::Instant::now();
                 let _nnz = eigen_prod(m1.view(), m2.view());
                 let elapsed = now.elapsed().as_millis();
@@ -200,7 +229,18 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             let max_density = *res_densities.last().unwrap_or(&1.) as f32;
             let max_time =
                 *std::cmp::max(times.iter().max(), times_old.iter().max())
-                    .unwrap_or(&1) as f32;
+                    .unwrap_or(&1);
+            #[cfg(feature = "eigen")]
+            let max_time = std::cmp::max(
+                max_time,
+                *times_eigen.iter().max().unwrap_or(&1),
+            );
+            #[cfg(feature = "nightly")]
+            let max_time = std::cmp::max(
+                max_time,
+                *times_py.iter().max().unwrap_or(&1),
+            );
+            let max_time = max_time as f32;
             let mut chart = ChartBuilder::on(&root)
                 .caption("Time vs density", ("sans-serif", 50).into_font())
                 .margin(5)
@@ -218,23 +258,25 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .zip(times.iter().map(|t| *t as f32)),
                     &RED,
                 ))?
-                .label("SMMP")
+                .label("sprs (new)")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + 20, y)], &RED)
                 });
 
-            chart
-                .draw_series(LineSeries::new(
-                    res_densities
-                        .iter()
-                        .map(|d| *d as f32)
-                        .zip(times_old.iter().map(|t| *t as f32)),
-                    &BLUE,
-                ))?
-                .label("Old prod")
-                .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
-                });
+            if !spec.forbid_old {
+                chart
+                    .draw_series(LineSeries::new(
+                        res_densities
+                            .iter()
+                            .map(|d| *d as f32)
+                            .zip(times_old.iter().map(|t| *t as f32)),
+                        &BLUE,
+                    ))?
+                    .label("sprs (old)")
+                    .legend(|(x, y)| {
+                        PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
+                    });
+            }
 
             #[cfg(feature = "nightly")]
             chart
@@ -251,18 +293,20 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 });
 
             #[cfg(feature = "eigen")]
-            chart
-                .draw_series(LineSeries::new(
-                    res_densities
-                        .iter()
-                        .map(|d| *d as f32)
-                        .zip(times_eigen.iter().map(|t| *t as f32)),
-                    &CYAN,
-                ))?
-                .label("Eigen")
-                .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &CYAN)
-                });
+            if !spec.forbid_eigen {
+                chart
+                    .draw_series(LineSeries::new(
+                        res_densities
+                            .iter()
+                            .map(|d| *d as f32)
+                            .zip(times_eigen.iter().map(|t| *t as f32)),
+                        &CYAN,
+                    ))?
+                    .label("Eigen")
+                    .legend(|(x, y)| {
+                        PathElement::new(vec![(x, y), (x + 20, y)], &CYAN)
+                    });
+            }
 
             chart
                 .configure_series_labels()
