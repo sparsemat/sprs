@@ -78,9 +78,11 @@ impl BTreeBitSet {
 
     /// Extracts the elements in the set in sorted order,
     /// clearing the set in the process
-    pub fn drain_to_vec(&mut self) -> Vec<usize> {
+    pub fn drain_to_extend_vec(&mut self, vec: &mut Vec<usize>) {
         assert!(self.depth() > 0);
-        let mut res = Vec::with_capacity(self.len());
+        if vec.capacity() < vec.len() + self.len() {
+            vec.reserve(vec.len() + self.len() - vec.capacity());
+        }
         self.stack.clear();
         self.stack.push(Location { lvl: 0, start: 0, stop: 32 });
         while let Some(loc) = self.stack.pop() {
@@ -91,7 +93,7 @@ impl BTreeBitSet {
                     continue;
                 }
                 if loc.lvl + 1 == self.depth() {
-                    res.push(ind);
+                    vec.push(ind);
                     self.nb_inserted -= 1;
                 } else {
                     self.stack.push(Location {
@@ -106,7 +108,6 @@ impl BTreeBitSet {
             // ordering
             self.stack[start..].reverse();
         }
-        res
     }
 
     /// Return a draining iterator that will remove the elements from the
@@ -205,7 +206,8 @@ mod tests {
         set.insert(124);
         set.insert(1001);
         set.insert(1000);
-        let elems = set.drain_to_vec();
+        let mut elems = Vec::new();
+        set.drain_to_extend_vec(&mut elems);
         assert_eq!(&elems[..], &[1, 3, 80, 124, 512, 999, 1000, 1001, 2323]);
         assert_eq!(set.len(), 0);
 
