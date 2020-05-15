@@ -29,6 +29,7 @@ struct Location {
 }
 
 impl BTreeBitSet {
+    /// Create a set that can hold values in the range `0..max_entry`.
     pub fn new(max_entry: usize) -> Self {
         let mut bitvecs = Vec::with_capacity(5);
         let mut dividers = Vec::with_capacity(5);
@@ -77,7 +78,7 @@ impl BTreeBitSet {
 
     /// Extracts the elements in the set in sorted order,
     /// clearing the set in the process
-    pub fn drain(&mut self) -> Vec<usize> {
+    pub fn drain_to_vec(&mut self) -> Vec<usize> {
         assert!(self.depth() > 0);
         let mut res = Vec::with_capacity(self.len());
         self.stack.clear();
@@ -107,7 +108,70 @@ impl BTreeBitSet {
         }
         res
     }
+
+    /// Return a draining iterator that will remove the elements from the
+    /// sets, yielding them on sorted order.
+    pub fn drain(&mut self) -> impl Iterator<Item=usize> + '_ {
+        assert!(self.depth() > 0);
+        self.stack.clear();
+        self.stack.push(Location { lvl: 0, start: 0, stop: 32 });
+        let depth = self.depth();
+        Drain {
+            stack: &mut self.stack,
+            nb_inserted: &mut self.nb_inserted,
+            bitvecs: &mut self.bitvecs,
+            depth,
+        }
+    }
 }
+
+struct Drain<'a> {
+    stack: &'a mut Vec<Location>,
+    nb_inserted: &'a mut usize,
+    bitvecs: &'a mut [BitVec],
+    depth: usize,
+}
+
+impl<'a> Iterator for Drain<'a> {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<usize> {
+        while let Some(loc) = self.stack.pop() {
+            let start = self.stack.len();
+            for ind in loc.start..loc.stop {
+                let bit = self.bitvecs[loc.lvl].get(ind).unwrap();
+                if !bit {
+                    continue;
+                }
+                self.bitvecs[loc.lvl].set(ind, false);
+                if loc.lvl + 1 == self.depth {
+                    *self.nb_inserted -= 1;
+                    self.stack.push(Location {
+                        lvl: loc.lvl,
+                        start: ind + 1,
+                        stop: loc.stop,
+                    });
+                    return Some(ind);
+                } else {
+                    self.stack.push(Location {
+                        lvl: loc.lvl + 1,
+                        start: ind,
+                        stop: 32 * ind + 32,
+                    });
+                }
+            }
+            // need to reverse the inserted locations to produce the correct
+            // ordering
+            self.stack[start..].reverse();
+        }
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (*self.nb_inserted, Some(*self.nb_inserted))
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -141,8 +205,21 @@ mod tests {
         set.insert(124);
         set.insert(1001);
         set.insert(1000);
-        let elems = set.drain();
+        let elems = set.drain_to_vec();
         assert_eq!(&elems[..], &[1, 3, 80, 124, 512, 999, 1000, 1001, 2323]);
+        assert_eq!(set.len(), 0);
+
+        set.insert(2324);
+        set.insert(3);
+        set.insert(0);
+        set.insert(81);
+        set.insert(524);
+        set.insert(999);
+        set.insert(124);
+        set.insert(1001);
+        set.insert(1000);
+        let elems: Vec<_> = set.drain().collect();
+        assert_eq!(&elems[..], &[0, 3, 81, 124, 524, 999, 1000, 1001, 2324]);
         assert_eq!(set.len(), 0);
     }
 }
