@@ -16,7 +16,6 @@ use bit_vec::BitVec;
 pub struct BTreeBitSet {
     max_entry: usize,
     bitvecs: Vec<BitVec>,
-    dividers: Vec<usize>,
     nb_inserted: usize,
     stack: Vec<Location>,
 }
@@ -32,21 +31,17 @@ impl BTreeBitSet {
     /// Create a set that can hold values in the range `0..max_entry`.
     pub fn new(max_entry: usize) -> Self {
         let mut bitvecs = Vec::with_capacity(5);
-        let mut dividers = Vec::with_capacity(5);
         let mut nbits = 0;
         let mut lvl_bits = 1;
         while nbits < max_entry {
-            dividers.push(lvl_bits);
             lvl_bits *= 32;
             let bv = BitVec::from_elem(lvl_bits, false);
             nbits = bv.len();
             bitvecs.push(bv);
         }
-        dividers.reverse();
         BTreeBitSet {
             max_entry,
             bitvecs,
-            dividers,
             nb_inserted: 0,
             stack: Vec::with_capacity(32),
         }
@@ -67,8 +62,10 @@ impl BTreeBitSet {
         assert!(elem < self.max_entry);
         let already_present =
             self.bitvecs.last().map(|bv| bv[elem]).unwrap_or(false);
-        for (bv, div) in self.bitvecs.iter_mut().zip(&self.dividers) {
-            bv.set(elem / div, true);
+        let mut elem = elem;
+        for bv in self.bitvecs.iter_mut().rev() {
+            bv.set(elem, true);
+            elem /= 32;
         }
         if !already_present {
             self.nb_inserted += 1;
