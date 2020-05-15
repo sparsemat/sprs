@@ -1,3 +1,5 @@
+use bit_vec::BitVec;
+
 /// A set for unsigned integers backed by a flat array inspired by BTrees
 /// and bit sets.
 ///
@@ -9,52 +11,101 @@
 /// this issue, we adopt a tree-like structure as in a BTree, packed at the
 /// bit level.
 ///
-/// Concretely, the set entries are stored in a `Vec<u32>` as follows:
-/// - the first entry of the vector divides the range `0..max_entry` in 32
-/// equal parts, and each bit of the entry indicates if the corresponding part
-/// contains an entry
-/// - the next 32 entries further divides each first level part in 32 parts,
-/// using the same bit-flagging to indicate wich parts contain entries.
-/// - this schema is repeated recursively up to a maximum depth. At the
-/// end of the `Vec<u32>` comes a bitset representing the actual entries.
+/// Possible optim: take the useful parts from the bitvec library, make them
+/// work on slices, and have all our bitvecs inlined in a single vector
 pub struct BTreeBitSet {
-    depth: u32,
     max_entry: usize,
-    entries: Vec<u32>,
+    bitvecs: Vec<BitVec>,
+    dividers: Vec<usize>,
+    nb_inserted: usize,
+    stack: Vec<Location>,
+}
+
+#[derive(Debug)]
+struct Location {
+    lvl: usize,
+    start: usize,
+    stop: usize,
 }
 
 impl BTreeBitSet {
     pub fn new(max_entry: usize) -> Self {
-        // Each level addresses 2^5 entries more than the previous
-        // one.
-        let mut depth = 0;
-        let mut rem_entries = max_entry;
-        let mut vec_size = 1;
-        while rem_entries > 32 * 2 {
-            rem_entries = rem_entries / 32;
-            vec_size += 32 * (depth as usize);
-            depth += 1;
-            dbg!(depth);
-            dbg!(rem_entries);
+        let mut bitvecs = Vec::with_capacity(5);
+        let mut dividers = Vec::with_capacity(5);
+        let mut nbits = 0;
+        let mut lvl_bits = 1;
+        while nbits < max_entry {
+            dividers.push(lvl_bits);
+            lvl_bits *= 32;
+            let bv = BitVec::from_elem(lvl_bits, false);
+            nbits = bv.len();
+            bitvecs.push(bv);
         }
-        vec_size += max_entry / 32;
-        if max_entry % 32 > 0 {
-            vec_size += 1;
-        }
+        dividers.reverse();
         BTreeBitSet {
-            depth,
             max_entry,
-            entries: vec![0; vec_size],
+            bitvecs,
+            dividers,
+            nb_inserted: 0,
+            stack: Vec::with_capacity(32),
         }
     }
 
-    pub fn entries(&self) -> &[u32] {
-        &self.entries
+    /// The number of elements in the set
+    pub fn len(&self) -> usize {
+        self.nb_inserted
     }
 
+    pub fn depth(&self) -> usize {
+        self.bitvecs.len()
+    }
+
+    /// Insert a value in the set, returning true is the value was not
+    /// already present, false otherwise
     pub fn insert(&mut self, elem: usize) -> bool {
-        // TODO
-        false
+        assert!(elem < self.max_entry);
+        let already_present =
+            self.bitvecs.last().map(|bv| bv[elem]).unwrap_or(false);
+        for (bv, div) in self.bitvecs.iter_mut().zip(&self.dividers) {
+            bv.set(elem / div, true);
+        }
+        if !already_present {
+            self.nb_inserted += 1;
+        }
+        !already_present
+    }
+
+    /// Extracts the elements in the set in sorted order,
+    /// clearing the set in the process
+    pub fn drain(&mut self) -> Vec<usize> {
+        assert!(self.depth() > 0);
+        let mut res = Vec::with_capacity(self.len());
+        self.stack.clear();
+        self.stack.push(Location { lvl: 0, start: 0, stop: 32 });
+        while let Some(loc) = self.stack.pop() {
+            let start = self.stack.len();
+            for ind in loc.start..loc.stop {
+                let bit = self.bitvecs[loc.lvl].get(ind).unwrap();
+                if !bit {
+                    continue;
+                }
+                if loc.lvl + 1 == self.depth() {
+                    res.push(ind);
+                    self.nb_inserted -= 1;
+                } else {
+                    self.stack.push(Location {
+                        lvl: loc.lvl + 1,
+                        start: ind,
+                        stop: 32 * ind + 32,
+                    });
+                }
+                self.bitvecs[loc.lvl].set(ind, false);
+            }
+            // need to reverse the inserted locations to produce the correct
+            // ordering
+            self.stack[start..].reverse();
+        }
+        res
     }
 }
 
@@ -63,15 +114,35 @@ mod tests {
     #[test]
     fn construction() {
         let set = super::BTreeBitSet::new(1024);
-        assert_eq!(set.entries.len(), 33);
-
+        assert_eq!(set.depth(), 2);
         let set = super::BTreeBitSet::new(1025);
-        assert_eq!(set.entries.len(), 34);
-        let set = super::BTreeBitSet::new(1057);
-        assert_eq!(set.entries.len(), 35);
-        let set = super::BTreeBitSet::new(1089);
-        assert_eq!(set.entries.len(), 36);
-        let set = super::BTreeBitSet::new(8192);
-        assert_eq!(set.entries.len(), 33 + 256);
+        assert_eq!(set.depth(), 3);
+    }
+
+    #[test]
+    fn insertion() {
+        let mut set = super::BTreeBitSet::new(1024);
+        assert_eq!(set.insert(3), true);
+        assert_eq!(set.insert(5), true);
+        assert_eq!(set.len(), 2);
+        assert_eq!(set.insert(5), false);
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn drain() {
+        let mut set = super::BTreeBitSet::new(3217);
+        set.insert(2323);
+        set.insert(3);
+        set.insert(1);
+        set.insert(80);
+        set.insert(512);
+        set.insert(999);
+        set.insert(124);
+        set.insert(1001);
+        set.insert(1000);
+        let elems = set.drain();
+        assert_eq!(&elems[..], &[1, 3, 80, 124, 512, 999, 1000, 1001, 2323]);
+        assert_eq!(set.len(), 0);
     }
 }
