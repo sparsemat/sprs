@@ -56,6 +56,19 @@ impl BTreeBitSet {
         self.bitvecs.len()
     }
 
+    pub fn max_entry(&self) -> usize {
+        self.max_entry
+    }
+
+    /// Removes all elements in the set
+    pub fn clear(&mut self) {
+        for bv in self.bitvecs.iter_mut() {
+            bv.clear();
+        }
+        self.nb_inserted = 0;
+    }
+
+
     /// Insert a value in the set, returning true is the value was not
     /// already present, false otherwise
     pub fn insert(&mut self, elem: usize) -> bool {
