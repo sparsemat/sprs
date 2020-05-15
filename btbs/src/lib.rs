@@ -166,7 +166,7 @@ impl<'a> Iterator for Drain<'a> {
                 } else {
                     self.stack.push(Location {
                         lvl: loc.lvl + 1,
-                        start: ind,
+                        start: 32 * ind,
                         stop: 32 * ind + 32,
                     });
                 }
