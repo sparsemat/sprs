@@ -4,6 +4,7 @@ use pyo3::{
     types::{IntoPyDict, PyModule},
 };
 use sprs_rand::rand_csr_std;
+use sprs::smmp;
 
 #[cfg(feature = "nightly")]
 fn scipy_mat<'a>(
@@ -101,7 +102,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         BenchSpec {
             shape: (15000, 25000),
             densities: vec![
-                1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 3e-3, 5e-3,
+                1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4,//1e-3, 2e-3, 3e-3, 5e-3,
             ],
             ..Default::default()
         },
@@ -147,6 +148,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 (2500000, 2500000),
             ],
             forbid_old: true,
+            forbid_eigen: true,
             nnz_over_rows: 4,
             bench_filename: "sparse_mult_perf_by_shape_no_old.png".to_string(),
             ..Default::default()
@@ -185,6 +187,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         let mut times = Vec::with_capacity(densities.len());
+        let mut times_boolvec = Vec::with_capacity(densities.len());
         let mut times_old = Vec::with_capacity(densities.len());
         #[cfg(feature = "nightly")]
         let mut times_py = Vec::with_capacity(densities.len());
@@ -203,6 +206,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             let elapsed = now.elapsed().as_millis();
             println!("Generating matrices took {}ms", elapsed);
 
+            smmp::set_thread_symbolic_method(smmp::SymbMethod::LinkedList);
             let now = std::time::Instant::now();
             let prod = &m1 * &m2;
             let elapsed = now.elapsed().as_millis();
@@ -211,6 +215,17 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 shape.0, shape.1, density, elapsed,
             );
             times.push(elapsed);
+
+            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
+            let now = std::time::Instant::now();
+            let prod_b = &m1 * &m2;
+            let elapsed = now.elapsed().as_millis();
+            println!(
+                "New product (boolvec) of shape ({}, {}) and density {} done in {}ms",
+                shape.0, shape.1, density, elapsed,
+            );
+            assert_eq!(prod, prod_b);
+            times_boolvec.push(elapsed);
 
             if !spec.forbid_old {
                 let now = std::time::Instant::now();
@@ -271,6 +286,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         println!("Product nnzs: {:?}", nnzs);
         println!("Product densities: {:?}", res_densities);
         println!("Product times: {:?}", times);
+        println!("Product times (boolvec): {:?}", times_boolvec);
         println!("Product times (old): {:?}", times_old);
         #[cfg(feature = "nightly")]
         println!("Product times (scipy): {:?}", times_py);
@@ -304,6 +320,10 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             let max_time =
                 *std::cmp::max(times.iter().max(), times_old.iter().max())
                     .unwrap_or(&1);
+            let max_time = std::cmp::max(
+                max_time,
+                *times_boolvec.iter().max().unwrap_or(&1),
+            );
             #[cfg(feature = "eigen")]
             let max_time = std::cmp::max(
                 max_time,
@@ -339,6 +359,19 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 .label("sprs (new)")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + 20, y)], &RED)
+                });
+
+            chart
+                .draw_series(LineSeries::new(
+                    abscisses
+                        .iter()
+                        .map(|d| *d as f32)
+                        .zip(times_boolvec.iter().map(|t| *t as f32)),
+                    &MAGENTA,
+                ))?
+                .label("sprs (new)")
+                .legend(|(x, y)| {
+                    PathElement::new(vec![(x, y), (x + 20, y)], &MAGENTA)
                 });
 
             if !spec.forbid_old {

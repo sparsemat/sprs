@@ -6,6 +6,31 @@ use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
 use num_traits::Num;
 
+use std::cell::RefCell;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum SymbMethod {
+    LinkedList,
+    BoolVecAndSort,
+}
+
+thread_local!(static SYMBOLIC_METHOD: RefCell<SymbMethod> =
+    RefCell::new(SymbMethod::LinkedList)
+);
+
+pub fn set_thread_symbolic_method(method: SymbMethod) {
+    SYMBOLIC_METHOD.with(|m| {
+        *m.borrow_mut() = method;
+    });
+}
+
+pub fn thread_symbolic_method() -> SymbMethod {
+    SYMBOLIC_METHOD.with(|m| {
+        *m.borrow()
+    })
+}
+
+
 /// Compute the symbolic structure of the matrix product C = A * B, with
 /// A, B and C stored in the CSR matrix format.
 ///
@@ -121,6 +146,70 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     }
 }
 
+pub fn symbolic_boolvec<Iptr: SpIndex, I: SpIndex>(
+    a_indptr: &[Iptr],
+    a_indices: &[I],
+    b_cols: usize,
+    b_indptr: &[Iptr],
+    b_indices: &[I],
+    c_indptr: &mut [Iptr],
+    // TODO look for litterature on the nnz of C to be able to have a slice here
+    c_indices: &mut Vec<I>,
+    seen: &mut [bool],
+) {
+    assert!(a_indptr.len() == c_indptr.len());
+    let a_rows = a_indptr.len() - 1;
+    let b_rows = b_indptr.len() - 1;
+    let a_nnz = a_indptr[a_rows].index();
+    let b_nnz = b_indptr[b_rows].index();
+    c_indices.clear();
+    c_indices.reserve_exact(a_nnz + b_nnz);
+
+    // `index` is used as a set to remember which columns of a row of C are
+    // nonzero. At any point in the algorithm, if `index[col] == sentinel0`,
+    // then we know there is no nonzero value in the column. As the algorithm
+    // progresses, we discover nonzero elements. When a nonzero at `col` is
+    // discovered, we store in `index[col]` the column of the preceding
+    // nonzero (storing `sentinel1` for the first nonzero). Therefore,
+    // when we want to collect nonzeros and clear the set, we can simply
+    // follow the trail of column indices, putting back `sentinel0` along
+    // the way. This way, collecting the nonzero indices for a column
+    // has a complexity O(col_nnz).
+    let ind_len = a_rows.max(b_rows.max(b_cols));
+    assert!(seen.len() == ind_len);
+    for elt in seen.iter_mut() {
+        *elt = false;
+    }
+
+    c_indptr[0] = Iptr::from_usize(0);
+    for a_row in 0..a_rows {
+        let mut length = 0;
+
+        let a_start = a_indptr[a_row].index();
+        let a_stop = a_indptr[a_row + 1].index();
+        for &a_col in &a_indices[a_start..a_stop] {
+            let b_row = a_col.index();
+            let b_start = b_indptr[b_row].index();
+            let b_stop = b_indptr[b_row + 1].index();
+            for b_col in &b_indices[b_start..b_stop] {
+                let b_col = b_col.index();
+                if !seen[b_col] {
+                    seen[b_col] = true;
+                    c_indices.push(I::from_usize(b_col));
+                    length += 1;
+                }
+            }
+        }
+        c_indptr[a_row + 1] = c_indptr[a_row] + Iptr::from_usize(length);
+        let c_start = c_indptr[a_row].index();
+        let c_end = c_start + length;
+        c_indices[c_start..c_end].sort_unstable();
+        for c_col in &c_indices[c_start..c_end] {
+            seen[c_col.index()] = false;
+        }
+    }
+}
+
 /// Compute the approximate base 2 logarithm of an integer, using its
 /// number of "used" bits.
 fn log2(num: usize) -> usize {
@@ -215,9 +304,19 @@ where
     let r_rows = rhs.rows();
     let r_cols = rhs.cols();
     assert_eq!(l_cols, r_rows);
-    let mut index = vec![0; l_rows.max(l_cols).max(r_cols)];
-    let mut tmp = vec![N::zero(); index.len()];
-    mul_csr_csr_with_workspace(lhs, rhs, &mut index, &mut tmp)
+    let method = thread_symbolic_method();
+    let workspace_len = l_rows.max(l_cols).max(r_cols);
+    let mut tmp = vec![N::zero(); workspace_len];
+    match method {
+        SymbMethod::LinkedList => {
+            let mut index = vec![0; workspace_len];
+            mul_csr_csr_with_workspace(lhs, rhs, &mut index, &mut tmp)
+        }
+        SymbMethod::BoolVecAndSort => {
+            let mut seen = vec![false; workspace_len];
+            mul_csr_csr_with_workspace_boolvec(lhs, rhs, &mut seen, &mut tmp)
+        }
+    }
 }
 
 /// Compute a sparse matrix product using the SMMP routines, using temporary
@@ -261,6 +360,61 @@ where
         &mut res_indptr,
         &mut res_indices,
         index,
+    );
+    let mut res_data = vec![N::zero(); res_indices.len()];
+    numeric(
+        lhs.indptr(),
+        lhs.indices(),
+        lhs.data(),
+        rhs.indptr(),
+        rhs.indices(),
+        rhs.data(),
+        &res_indptr,
+        &res_indices,
+        &mut res_data,
+        tmp,
+    );
+    // Correctness: The invariants of the output come from the invariants of
+    // the inputs when in-bounds indices are concerned, and we are sorting
+    // indices.
+    CsMatI::new_trusted(
+        CSR,
+        (l_rows, r_cols),
+        res_indptr,
+        res_indices,
+        res_data,
+    )
+}
+
+pub fn mul_csr_csr_with_workspace_boolvec<N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: CsMatViewI<N, I, Iptr>,
+    seen: &mut [bool],
+    tmp: &mut [N],
+) -> CsMatI<N, I, Iptr>
+where
+    N: Num + Copy + std::ops::AddAssign,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    let l_rows = lhs.rows();
+    let l_cols = lhs.cols();
+    let r_rows = rhs.rows();
+    let r_cols = rhs.cols();
+    assert_eq!(l_cols, r_rows);
+    assert_eq!(seen.len(), l_rows.max(l_cols).max(r_cols));
+    assert_eq!(tmp.len(), l_rows.max(l_cols).max(r_cols));
+    let mut res_indptr = vec![Iptr::zero(); l_rows + 1];
+    let mut res_indices = Vec::new();
+    symbolic_boolvec(
+        lhs.indptr(),
+        lhs.indices(),
+        r_cols,
+        rhs.indptr(),
+        rhs.indices(),
+        &mut res_indptr,
+        &mut res_indices,
+        seen,
     );
     let mut res_data = vec![N::zero(); res_indices.len()];
     numeric(
