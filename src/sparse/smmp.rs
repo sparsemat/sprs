@@ -15,15 +15,21 @@ pub enum SymbMethod {
 }
 
 thread_local!(static SYMBOLIC_METHOD: RefCell<SymbMethod> =
-    RefCell::new(SymbMethod::LinkedList)
+    RefCell::new(SymbMethod::BoolVecAndSort)
 );
 
+/// Set the method used to compute the symbolic part of sparse matrix
+/// product, for the current thread. This will affect all subsequent calls
+/// to the `*` operator between sparse matrices for the current thread until
+/// it is changed again.
 pub fn set_thread_symbolic_method(method: SymbMethod) {
     SYMBOLIC_METHOD.with(|m| {
         *m.borrow_mut() = method;
     });
 }
 
+/// Get the current method for computing the symbolic part of sparse matrix
+/// product.
 pub fn thread_symbolic_method() -> SymbMethod {
     SYMBOLIC_METHOD.with(|m| {
         *m.borrow()
