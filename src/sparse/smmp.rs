@@ -171,16 +171,6 @@ pub fn symbolic_boolvec<Iptr: SpIndex, I: SpIndex>(
     c_indices.clear();
     c_indices.reserve_exact(a_nnz + b_nnz);
 
-    // `index` is used as a set to remember which columns of a row of C are
-    // nonzero. At any point in the algorithm, if `index[col] == sentinel0`,
-    // then we know there is no nonzero value in the column. As the algorithm
-    // progresses, we discover nonzero elements. When a nonzero at `col` is
-    // discovered, we store in `index[col]` the column of the preceding
-    // nonzero (storing `sentinel1` for the first nonzero). Therefore,
-    // when we want to collect nonzeros and clear the set, we can simply
-    // follow the trail of column indices, putting back `sentinel0` along
-    // the way. This way, collecting the nonzero indices for a column
-    // has a complexity O(col_nnz).
     let ind_len = a_rows.max(b_rows.max(b_cols));
     assert!(seen.len() == ind_len);
     for elt in seen.iter_mut() {
