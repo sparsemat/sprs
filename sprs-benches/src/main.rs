@@ -3,8 +3,8 @@ use pyo3::{
     prelude::*,
     types::{IntoPyDict, PyModule},
 };
-use sprs_rand::rand_csr_std;
 use sprs::smmp;
+use sprs_rand::rand_csr_std;
 
 #[cfg(feature = "nightly")]
 fn scipy_mat<'a>(
@@ -102,7 +102,8 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         BenchSpec {
             shape: (15000, 25000),
             densities: vec![
-                1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4,//1e-3, 2e-3, 3e-3, 5e-3,
+                1e-5, 2e-5, 5e-5, 1e-4, 2e-4,
+                5e-4, //1e-3, 2e-3, 3e-3, 5e-3,
             ],
             ..Default::default()
         },
