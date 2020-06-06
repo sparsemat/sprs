@@ -1,10 +1,7 @@
-sprs, sparse matrices for Rust
-==============================
+# sprs, sparse matrices for Rust
 
-.. image:: https://travis-ci.org/vbarrielle/sprs.svg?branch=master
-    :target: https://travis-ci.org/vbarrielle/sprs
-.. image:: https://img.shields.io/crates/v/sprs.svg
-    :target: https://crates.io/crates/sprs
+[![Build status](https://travis-ci.org/vbarrielle/sprs.svg?branch=master)](https://travis-ci.org/vbarrielle/sprs)
+[![crates.io](https://img.shields.io/crates/v/sprs.svg)](https://crates.io/crates/sprs)
 
 sprs implements some sparse matrix data structures and linear algebra
 algorithms in pure Rust.
@@ -12,18 +9,15 @@ algorithms in pure Rust.
 The API is a work in progress, and feedback on its rough edges is highly
 appreciated :)
 
-Features
---------
+## Features
 
-Structures
-..........
+### Structures
 
 - CSR/CSC matrix
 - triplet matrix
 - Sparse vector
 
-Operations
-..........
+### Operations
 
 - sparse matrix / sparse vector product
 - sparse matrix / sparse matrix product
@@ -31,8 +25,7 @@ Operations
 - sparse vector / sparse vector addition, subtraction, dot product
 - sparse/dense matrix operations
 
-Algorithms
-..........
+### Algorithms
 
 - Outer iterator on compressed sparse matrices
 - sparse vector iteration
@@ -41,35 +34,33 @@ Algorithms
 - sparse triangular solves with dense right-hand side
 
 
-Examples
---------
+## Examples
 
 Matrix construction
 
-.. code-block:: rust
-
+```rust
   use sprs::{CsMat, CsMatOwned, CsVec};
   let eye : CsMatOwned<f64> = CsMat::eye(3);
   let a = CsMat::new_csc((3, 3),
                          vec![0, 2, 4, 5],
                          vec![0, 1, 0, 2, 2],
                          vec![1., 2., 3., 4., 5.]);
+```
 
 Matrix vector multiplication
 
 
-.. code-block:: rust
-
+```rust
   use sprs::{CsMat, CsVec};
   let eye = CsMat::eye(5);
   let x = CsVec::new(5, vec![0, 2, 4], vec![1., 2., 3.]);
   let y = &eye * &x;
   assert_eq!(x, y);
+```
 
 Matrix matrix multiplication, addition
 
-.. code-block:: rust
-
+```rust
   use sprs::{CsMat, CsVec};
   let eye = CsMat::eye(3);
   let a = CsMat::new_csc((3, 3),
@@ -78,44 +69,34 @@ Matrix matrix multiplication, addition
                          vec![1., 2., 3., 4., 5.]);
   let b = &eye * &a;
   assert_eq!(a, b.to_csr());
+```
 
-For a more complete example, be sure to check out the `heat diffusion`_ example.
+For a more complete example, be sure to check out the [heat diffusion](examples/heat.rs) example.
 
-.. _`heat diffusion`: examples/heat.rs
 
-Documentation
--------------
+## Documentation
 
-Documentation is available at docs.rs_.
+Documentation is available at [docs.rs](https://docs.rs/sprs).
 
-.. _docs.rs: https://docs.rs/sprs
+## Changelog
 
-Changelog
----------
+See the [changelog](changelog.rst).
 
-See the changelog_.
-
-.. _changelog: changelog.rst
-
-License
--------
+## License
 
 Licensed under either of
 
-* Apache License, Version 2.0, (./LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
-* MIT license (./LICENSE-MIT or http://opensource.org/licenses/MIT)
+* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
 
 at your option.
 
-Contribution
-............
+### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the Apache-2.0
 license, shall be dual licensed as above, without any additional terms or
 conditions.
 
-Please see the `contribution guidelines`_ for additional information about
+Please see the [contribution guidelines](Guidelines.rst) for additional information about
 contributing.
-
-.. _`contribution guidelines`: Guidelines.rst
