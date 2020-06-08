@@ -5,7 +5,7 @@ extern crate ndarray;
 extern crate sprs;
 extern crate tobj;
 
-use image::{ImageBuffer, ImageError, ImageResult, Luma};
+use image::{ImageBuffer, ImageResult, Luma};
 use ndarray::{arr2, ArrayView2};
 use std::env;
 use std::error::Error;
@@ -38,7 +38,7 @@ fn small_lap_mat() -> sprs::CsMat<f64> {
 }
 
 fn lap_mat_from_obj(path: &str) -> Result<sprs::CsMat<f64>, tobj::LoadError> {
-    let (objects, _materials) = tobj::load_obj(&Path::new(path))?;
+    let (objects, _materials) = tobj::load_obj(&Path::new(path), false)?;
     for obj in objects {
         let nb_triangles = obj.mesh.indices.len() / 3;
         let nb_vertices = obj.mesh.positions.len() / 3;
@@ -65,9 +65,7 @@ fn save_gray_image(
         ImageBuffer::from_raw(width as u32, height as u32, slice)
             .expect("failed to create image from slice")
     });
-    let im = im.ok_or(ImageError::FormatError(
-        "non-contiguous ndarray Array".to_owned(),
-    ))?;
+    let im = im.expect("non-contiguous ndarray Array");
     im.save(path)?;
     Ok(())
 }

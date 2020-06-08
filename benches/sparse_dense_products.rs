@@ -32,7 +32,7 @@ fn sparse_dense_vec_matprod_default(bench: &mut Bencher) {
         vec![1., 2., 3., 4., 5.],
     );
     bench.iter(|| {
-        &a * &w;
+        let _ = &a * &w;
     });
 }
 
