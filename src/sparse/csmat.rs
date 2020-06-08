@@ -784,6 +784,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     /// Create a borrowed CsMat matrix from raw data,
     /// without checking their validity
     ///
+    /// # Safety
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
@@ -1799,6 +1800,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     /// Create a borrowed row or column CsMat matrix from raw data,
     /// without checking their validity
     ///
+    /// # Safety
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to

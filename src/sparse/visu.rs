@@ -41,7 +41,7 @@ where
                     write!(f, " ")?;
                     cur_col += 1;
                 }
-                write!(f, "|\n")?;
+                writeln!(f, "|")?;
             }
             Ok(())
         };
