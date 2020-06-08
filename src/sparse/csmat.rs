@@ -784,6 +784,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     /// Create a borrowed CsMat matrix from raw data,
     /// without checking their validity
     ///
+    /// # Safety
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
@@ -1042,7 +1043,7 @@ where
     /// Returns a matrix with the same size, the same CSR/CSC type,
     /// and a single value of 1.0 within each populated inner vector.
     ///
-    /// See [into_csc] and [into_csr] if you need to prepare a matrix
+    /// See [CsMatBase::into_csc] and [CsMatBase::into_csr] if you need to prepare a matrix
     /// for one-hot compression.
     pub fn to_inner_onehot(&self) -> CsMatI<N, I, Iptr>
     where
@@ -1799,6 +1800,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     /// Create a borrowed row or column CsMat matrix from raw data,
     /// without checking their validity
     ///
+    /// # Safety
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_compressed_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to

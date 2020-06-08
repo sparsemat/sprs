@@ -446,19 +446,21 @@ where
                 Some(NnzEither::Left((lind, lval)))
             }
             (None, None) => None,
-            (Some(&(lind, _)), Some(&(rind, _))) => {
-                if lind < rind {
+            (Some(&(lind, _)), Some(&(rind, _))) => match lind.cmp(&rind) {
+                std::cmp::Ordering::Less => {
                     let (lind, lval) = self.left.next().unwrap();
                     Some(NnzEither::Left((lind, lval)))
-                } else if rind < lind {
+                }
+                std::cmp::Ordering::Greater => {
                     let (rind, rval) = self.right.next().unwrap();
                     Some(NnzEither::Right((rind, rval)))
-                } else {
+                }
+                _ => {
                     let (lind, lval) = self.left.next().unwrap();
                     let (_, rval) = self.right.next().unwrap();
                     Some(NnzEither::Both((lind, lval, rval)))
                 }
-            }
+            },
         }
     }
 
@@ -1030,6 +1032,8 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
     }
 
     /// Create a borrowed CsVec over slice data without checking the structure
+    ///
+    /// # Safety
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_structure are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
@@ -1055,6 +1059,8 @@ where
     I: 'a + SpIndex,
 {
     /// Create a borrowed CsVec over slice data without checking the structure
+    ///
+    /// # Safety
     /// This is unsafe because algorithms are free to assume
     /// that properties guaranteed by check_structure are enforced, and
     /// because the lifetime of the pointers is unconstrained.

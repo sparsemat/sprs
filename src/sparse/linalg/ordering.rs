@@ -95,12 +95,13 @@ pub mod start {
     /// This strategy employs an pseudoperipheral vertex finder as described by
     /// George and Liu.  It is the most expensive strategy to compute, but
     /// typically results in the narrowest bandwidth.
+    #[derive(Default)]
     pub struct PseudoPeripheral();
 
     impl PseudoPeripheral {
         #[inline]
         pub fn new() -> Self {
-            PseudoPeripheral {}
+            PseudoPeripheral::default()
         }
 
         /// Computes the rooted level structure rooted at `root`, returning the
@@ -304,6 +305,7 @@ pub mod order {
     }
 
     /// Indicates the Cuthill-McKee ordering should be built in forward order.
+    #[derive(Default)]
     pub struct Forward<I: SpIndex> {
         /// The permutation computed by the algorithm.
         perm: Vec<I>,
@@ -315,10 +317,7 @@ pub mod order {
         /// Creates a new instance of this conceptual enum variant.
         #[inline]
         pub fn new() -> Self {
-            Self {
-                perm: Vec::with_capacity(0),
-                connected_parts: Vec::with_capacity(0),
-            }
+            Self::default()
         }
     }
 
@@ -349,6 +348,7 @@ pub mod order {
     }
 
     /// Indicates the Cuthill-McKee ordering should be built in reverse order.
+    #[derive(Default)]
     pub struct Reversed<I: SpIndex> {
         /// The permutation computed by the algorithm, written in reverse order.
         perm: Vec<I>,
@@ -372,12 +372,7 @@ pub mod order {
         // asked for.
         #[inline]
         pub fn new() -> Self {
-            Self {
-                perm: Vec::with_capacity(0),
-                connected_parts: Vec::with_capacity(0),
-                nb_vertices: 0,
-                count: 0,
-            }
+            Self::default()
         }
     }
 
@@ -556,7 +551,7 @@ where
 {
     cuthill_mckee_custom(
         mat,
-        start::PseudoPeripheral::new(),
+        start::PseudoPeripheral::default(),
         order::Reversed::new(),
     )
 }
