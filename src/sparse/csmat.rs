@@ -1042,7 +1042,7 @@ where
     /// Returns a matrix with the same size, the same CSR/CSC type,
     /// and a single value of 1.0 within each populated inner vector.
     ///
-    /// See [into_csc] and [into_csr] if you need to prepare a matrix
+    /// See [CsMatBase::into_csc] and [CsMatBase::into_csr] if you need to prepare a matrix
     /// for one-hot compression.
     pub fn to_inner_onehot(&self) -> CsMatI<N, I, Iptr>
     where
