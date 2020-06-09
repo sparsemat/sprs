@@ -106,6 +106,7 @@ pub type Ix2 = ndarray::Ix2;
 pub use indexing::SpIndex;
 
 pub use sparse::{
+    csmat::OuterIterator, csmat::OuterIteratorMut, csmat::OuterIteratorPerm,
     CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatView, CsMatViewI,
     CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase, CsVecI, CsVecView,
     CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat, TriMatBase,
