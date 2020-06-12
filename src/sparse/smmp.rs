@@ -5,6 +5,7 @@ use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
 use num_traits::Num;
+use rayon::prelude::*;
 
 use std::cell::RefCell;
 
@@ -217,6 +218,12 @@ fn log2(num: usize) -> usize {
 /// Numeric part of the matrix product C = A * B with A, B and C stored in the
 /// CSR matrix format.
 ///
+/// This function is low-level, and supports execution on chunks of the
+/// rows of C and A. To use the chunks, split the indptrs of A and C and split
+/// `c_indices` and `c_data` to only contain the elements referenced in
+/// `c_indptr`. This function will take care of using the correct offset
+/// inside the sliced indices and data.
+///
 /// # Panics
 ///
 /// `tmp.len()` should be equal to the maximum dimension of the inputs.
@@ -245,12 +252,8 @@ pub fn numeric<
     assert!(a_indptr.len() == c_indptr.len());
     let a_rows = a_indptr.len() - 1;
     let b_rows = b_indptr.len() - 1;
-    assert!(a_indices.len() == a_indptr[a_rows].index());
-    assert!(a_data.len() == a_indptr[a_rows].index());
     assert!(b_indices.len() == b_indptr[b_rows].index());
     assert!(b_data.len() == b_indptr[b_rows].index());
-    assert!(c_indices.len() == c_indptr[a_rows].index());
-    assert!(c_data.len() == c_indptr[a_rows].index());
 
     for elt in tmp.iter_mut() {
         *elt = N::zero();
@@ -274,6 +277,9 @@ pub fn numeric<
         let c_start = c_indptr[c_row].index();
         let c_stop = c_indptr[c_row + 1].index();
         for c_cur in c_start..c_stop {
+            // Handle split data. On non split data this is a no-op, but on
+            // split data this will compute the correct offset.
+            let c_cur = c_cur - c_indptr[0].index();
             let c_col = c_indices[c_cur].index();
             c_data[c_cur] = tmp[c_col];
             tmp[c_col] = N::zero();
@@ -291,7 +297,7 @@ pub fn mul_csr_csr<N, I, Iptr>(
     rhs: CsMatViewI<N, I, Iptr>,
 ) -> CsMatI<N, I, Iptr>
 where
-    N: Num + Copy + std::ops::AddAssign,
+    N: Num + Copy + std::ops::AddAssign + Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -389,7 +395,7 @@ pub fn mul_csr_csr_with_workspace_boolvec<N, I, Iptr>(
     tmp: &mut [N],
 ) -> CsMatI<N, I, Iptr>
 where
-    N: Num + Copy + std::ops::AddAssign,
+    N: Num + Copy + std::ops::AddAssign + Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -413,18 +419,70 @@ where
         seen,
     );
     let mut res_data = vec![N::zero(); res_indices.len()];
-    numeric(
-        lhs.indptr(),
-        lhs.indices(),
-        lhs.data(),
-        rhs.indptr(),
-        rhs.indices(),
-        rhs.data(),
-        &res_indptr,
-        &res_indices,
-        &mut res_data,
-        tmp,
-    );
+    let nb_threads = 2;
+    let mut tmps = Vec::with_capacity(nb_threads);
+    for _ in 0..nb_threads {
+        tmps.push(vec![N::zero(); tmp.len()]);
+    }
+    let chunk_size = res_indices.len() / nb_threads;
+    let mut lhs_indptr_rem = lhs.indptr();
+    let mut res_indptr_rem = &res_indptr[..];
+    let mut res_indices_rem = &res_indices[..];
+    let mut res_data_rem = &mut res_data[..];
+    let mut prev_nnz = 0;
+    let mut split_nnz = 0;
+    let mut split_row = 0;
+    let mut lhs_indptr_chunks = Vec::with_capacity(nb_threads);
+    let mut res_indptr_chunks = Vec::with_capacity(nb_threads);
+    let mut res_indices_chunks = Vec::with_capacity(nb_threads);
+    let mut res_data_chunks = Vec::with_capacity(nb_threads);
+    for (row, nnz) in res_indptr.iter().enumerate() {
+        let nnz = nnz.index();
+        if nnz - split_nnz > chunk_size && row > 0 {
+            lhs_indptr_chunks.push(&lhs_indptr_rem[split_row..row]);
+            lhs_indptr_rem = &lhs_indptr_rem[row - 1..];
+
+            res_indptr_chunks.push(&res_indptr_rem[split_row..row]);
+            res_indptr_rem = &res_indptr_rem[row - 1..];
+
+            let (left, right) = res_indices_rem.split_at(prev_nnz);
+            res_indices_chunks.push(left);
+            res_indices_rem = right;
+
+            let (left, right) = res_data_rem.split_at_mut(prev_nnz);
+            res_data_chunks.push(left);
+            res_data_rem = right;
+
+            split_nnz = nnz;
+            split_row = row;
+        }
+        prev_nnz = nnz;
+    }
+    lhs_indptr_chunks.push(lhs_indptr_rem);
+    res_indptr_chunks.push(res_indptr_rem);
+    res_indices_chunks.push(res_indices_rem);
+    res_data_chunks.push(res_data_rem);
+    lhs_indptr_chunks.par_iter()
+        .zip(res_indptr_chunks.par_iter())
+        .zip(res_indices_chunks.par_iter())
+        .zip(res_data_chunks.par_iter_mut())
+        .zip(tmps.par_iter_mut())
+        .for_each(|((((lhs_indptr_chunk, res_indptr_chunk),
+                       res_indices_chunk), res_data_chunk), tmp)| {
+            numeric(
+                lhs_indptr_chunk,
+                lhs.indices(),
+                lhs.data(),
+                rhs.indptr(),
+                rhs.indices(),
+                rhs.data(),
+                res_indptr_chunk,
+                res_indices_chunk,
+                res_data_chunk,
+                tmp,
+            );
+        });
+
     // Correctness: The invariants of the output come from the invariants of
     // the inputs when in-bounds indices are concerned, and we are sorting
     // indices.
