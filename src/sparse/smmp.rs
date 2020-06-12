@@ -37,6 +37,44 @@ pub fn thread_symbolic_method() -> SymbMethod {
     })
 }
 
+/// Control the strategy used to parallelize the matrix product workload.
+///
+/// The `Automatic` strategy will try to pick a good number of threads based
+/// on the number of physical cores and an estimation of the nnz of the product
+/// matrix.
+///
+/// The `Fixed` strategy leaves the control to the user. It is a programming
+/// error to request 0 threads.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ThreadingStrategy {
+    Automatic,
+    Fixed(usize),
+}
+
+thread_local!(static THREADING_STRAT: RefCell<ThreadingStrategy> =
+    RefCell::new(ThreadingStrategy::Automatic)
+);
+
+/// Set the threading strategy for matrix products in this thread.
+///
+/// # Panics
+///
+/// If a number of 0 threads is requested.
+pub fn set_thread_threading_strategy(strategy: ThreadingStrategy) {
+    if let ThreadingStrategy::Fixed(nb_threads) = strategy {
+        assert!(nb_threads > 0);
+    }
+    THREADING_STRAT.with(|s| {
+        *s.borrow_mut() = strategy;
+    });
+}
+
+pub fn thread_threading_strategy() -> ThreadingStrategy {
+    THREADING_STRAT.with(|s| {
+        *s.borrow()
+    })
+}
+
 
 /// Compute the symbolic structure of the matrix product C = A * B, with
 /// A, B and C stored in the CSR matrix format.
@@ -308,15 +346,27 @@ where
     assert_eq!(l_cols, r_rows);
     let method = thread_symbolic_method();
     let workspace_len = l_rows.max(l_cols).max(r_cols);
-    let mut tmp = vec![N::zero(); workspace_len];
+    let nb_threads = match thread_threading_strategy() {
+        ThreadingStrategy::Fixed(nb_threads) => nb_threads,
+        ThreadingStrategy::Automatic => {
+            let nb_cpus = num_cpus::get_physical();
+            let ideal_chunk_size = 8128;
+            let wanted_threads = (lhs.nnz() + rhs.nnz()) / ideal_chunk_size;
+            1.max(wanted_threads).min(nb_cpus)
+        }
+    };
+    let mut tmps = Vec::with_capacity(nb_threads);
+    for _ in 0..nb_threads {
+        tmps.push(vec![N::zero(); workspace_len].into_boxed_slice())
+    }
     match method {
         SymbMethod::LinkedList => {
             let mut index = vec![0; workspace_len];
-            mul_csr_csr_with_workspace(lhs, rhs, &mut index, &mut tmp)
+            mul_csr_csr_with_workspace(lhs, rhs, &mut index, &mut tmps[0])
         }
         SymbMethod::BoolVecAndSort => {
             let mut seen = vec![false; workspace_len];
-            mul_csr_csr_with_workspace_boolvec(lhs, rhs, &mut seen, &mut tmp)
+            mul_csr_csr_with_workspace_boolvec(lhs, rhs, &mut seen, &mut tmps)
         }
     }
 }
@@ -392,7 +442,7 @@ pub fn mul_csr_csr_with_workspace_boolvec<N, I, Iptr>(
     lhs: CsMatViewI<N, I, Iptr>,
     rhs: CsMatViewI<N, I, Iptr>,
     seen: &mut [bool],
-    tmp: &mut [N],
+    tmps: &mut [Box<[N]>],
 ) -> CsMatI<N, I, Iptr>
 where
     N: Num + Copy + std::ops::AddAssign + Send + Sync,
@@ -403,9 +453,10 @@ where
     let l_cols = lhs.cols();
     let r_rows = rhs.rows();
     let r_cols = rhs.cols();
+    let workspace_len = l_rows.max(l_cols).max(r_cols);
     assert_eq!(l_cols, r_rows);
-    assert_eq!(seen.len(), l_rows.max(l_cols).max(r_cols));
-    assert_eq!(tmp.len(), l_rows.max(l_cols).max(r_cols));
+    assert_eq!(seen.len(), workspace_len);
+    assert!(tmps.iter().all(|x| x.len() == workspace_len));
     let mut res_indptr = vec![Iptr::zero(); l_rows + 1];
     let mut res_indices = Vec::new();
     symbolic_boolvec(
@@ -419,11 +470,7 @@ where
         seen,
     );
     let mut res_data = vec![N::zero(); res_indices.len()];
-    let nb_threads = 2;
-    let mut tmps = Vec::with_capacity(nb_threads);
-    for _ in 0..nb_threads {
-        tmps.push(vec![N::zero(); tmp.len()]);
-    }
+    let nb_threads = tmps.len();
     let chunk_size = res_indices.len() / nb_threads;
     let mut lhs_indptr_rem = lhs.indptr();
     let mut res_indptr_rem = &res_indptr[..];
