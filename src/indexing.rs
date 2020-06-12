@@ -15,7 +15,7 @@ use num_traits::int::PrimInt;
 ///
 /// This is a convenience trait to enable using various integer sizes for sparse
 /// matrix indices.
-pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default {
+pub trait SpIndex: Debug + PrimInt + AddAssign<Self> + Default + Send + Sync {
     /// Convert to usize.
     ///
     /// # Panics

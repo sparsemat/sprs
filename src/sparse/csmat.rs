@@ -1913,7 +1913,7 @@ impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IpS2, IS2, DS2>
     Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
-    N: 'a + Copy + Num + Default + std::ops::AddAssign,
+    N: 'a + Copy + Num + Default + std::ops::AddAssign + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS1: 'a + Deref<Target = [Iptr]>,
