@@ -3,9 +3,9 @@
 
 use indexing::SpIndex;
 use num_traits::Num;
+use rayon::prelude::*;
 use sparse::prelude::*;
 use sparse::CompressedStorage::CSR;
-use rayon::prelude::*;
 
 use std::cell::RefCell;
 
@@ -32,9 +32,7 @@ pub fn set_thread_symbolic_method(method: SymbMethod) {
 /// Get the current method for computing the symbolic part of sparse matrix
 /// product.
 pub fn thread_symbolic_method() -> SymbMethod {
-    SYMBOLIC_METHOD.with(|m| {
-        *m.borrow()
-    })
+    SYMBOLIC_METHOD.with(|m| *m.borrow())
 }
 
 /// Control the strategy used to parallelize the matrix product workload.
@@ -70,11 +68,8 @@ pub fn set_thread_threading_strategy(strategy: ThreadingStrategy) {
 }
 
 pub fn thread_threading_strategy() -> ThreadingStrategy {
-    THREADING_STRAT.with(|s| {
-        *s.borrow()
-    })
+    THREADING_STRAT.with(|s| *s.borrow())
 }
-
 
 /// Compute the symbolic structure of the matrix product C = A * B, with
 /// A, B and C stored in the CSR matrix format.
@@ -509,26 +504,34 @@ where
     res_indptr_chunks.push(res_indptr_rem);
     res_indices_chunks.push(res_indices_rem);
     res_data_chunks.push(res_data_rem);
-    lhs_indptr_chunks.par_iter()
+    lhs_indptr_chunks
+        .par_iter()
         .zip(res_indptr_chunks.par_iter())
         .zip(res_indices_chunks.par_iter())
         .zip(res_data_chunks.par_iter_mut())
         .zip(tmps.par_iter_mut())
-        .for_each(|((((lhs_indptr_chunk, res_indptr_chunk),
-                       res_indices_chunk), res_data_chunk), tmp)| {
-            numeric(
-                lhs_indptr_chunk,
-                lhs.indices(),
-                lhs.data(),
-                rhs.indptr(),
-                rhs.indices(),
-                rhs.data(),
-                res_indptr_chunk,
-                res_indices_chunk,
-                res_data_chunk,
+        .for_each(
+            |(
+                (
+                    ((lhs_indptr_chunk, res_indptr_chunk), res_indices_chunk),
+                    res_data_chunk,
+                ),
                 tmp,
-            );
-        });
+            )| {
+                numeric(
+                    lhs_indptr_chunk,
+                    lhs.indices(),
+                    lhs.data(),
+                    rhs.indptr(),
+                    rhs.indices(),
+                    rhs.data(),
+                    res_indptr_chunk,
+                    res_indices_chunk,
+                    res_data_chunk,
+                    tmp,
+                );
+            },
+        );
 
     // Correctness: The invariants of the output come from the invariants of
     // the inputs when in-bounds indices are concerned, and we are sorting

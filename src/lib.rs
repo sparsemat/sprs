@@ -64,9 +64,9 @@ assert_eq!(a, b.to_csc());
 extern crate alga;
 extern crate ndarray;
 extern crate num_complex;
+extern crate num_cpus;
 extern crate num_traits;
 extern crate rayon;
-extern crate num_cpus;
 #[cfg(feature = "serde")]
 extern crate serde;
 extern crate smallvec;
