@@ -106,11 +106,12 @@ pub type Ix2 = ndarray::Ix2;
 pub use indexing::SpIndex;
 
 pub use sparse::{
-    CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatView, CsMatViewI,
-    CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase, CsVecI, CsVecView,
-    CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat, TriMatBase,
-    TriMatI, TriMatIter, TriMatView, TriMatViewI, TriMatViewMut,
-    TriMatViewMutI,
+    csmat::CsIter, csmat::OuterIterator, csmat::OuterIteratorMut,
+    csmat::OuterIteratorPerm, CsMat, CsMatBase, CsMatI, CsMatVecView,
+    CsMatView, CsMatViewI, CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase,
+    CsVecI, CsVecView, CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat,
+    TriMat, TriMatBase, TriMatI, TriMatIter, TriMatView, TriMatViewI,
+    TriMatViewMut, TriMatViewMutI,
 };
 
 pub use sparse::symmetric::is_symmetric;
