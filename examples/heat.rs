@@ -1,4 +1,3 @@
-extern crate ndarray;
 ///! This file demonstrates basic usage of the sprs library,
 ///! where a heat diffusion problem with Dirichlet boundary condition
 ///! is solved for equilibrium. For simplicity we omit any relevant
@@ -15,7 +14,6 @@ extern crate ndarray;
 ///! This shows how a laplacian matrix can be constructed by directly
 ///! constructing the compressed structure, and how the resulting linear
 ///! system can be solved using an iterative method.
-extern crate sprs;
 
 type VecView<'a, T> = ndarray::ArrayView<'a, T, ndarray::Ix1>;
 type VecViewMut<'a, T> = ndarray::ArrayViewMut<'a, T, ndarray::Ix1>;

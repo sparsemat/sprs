@@ -1,7 +1,3 @@
-extern crate num_traits;
-extern crate sprs;
-extern crate suitesparse_ldl_sys;
-
 use std::ops::Deref;
 
 use num_traits::Num;

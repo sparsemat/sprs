@@ -76,17 +76,6 @@ assert_eq!(a, b.to_csc());
 
 #![deny(warnings)]
 
-#[cfg(feature = "alga")]
-extern crate alga;
-extern crate ndarray;
-extern crate num_complex;
-extern crate num_traits;
-#[cfg(feature = "serde")]
-extern crate serde;
-extern crate smallvec;
-#[cfg(test)]
-extern crate tempdir;
-
 pub mod array_backend;
 pub mod errors;
 pub mod indexing;

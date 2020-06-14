@@ -1,10 +1,5 @@
-extern crate image;
-extern crate ndarray;
 ///! This file demonstrates how it is possible to reduce the fill-in of a
 ///! symmetric sparse matrix during Cholesky decomposition.
-extern crate sprs;
-extern crate tobj;
-
 use image::{ImageBuffer, ImageResult, Luma};
 use ndarray::{arr2, ArrayView2};
 use std::env;

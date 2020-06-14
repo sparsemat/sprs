@@ -7,6 +7,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/vbarrielle/sprs"
 keywords = ["sparse", "cholesky", "factorization", "suitesparse", "binding"]
+edition = "2018"
 
 [dependencies]
 libc = "0.2"

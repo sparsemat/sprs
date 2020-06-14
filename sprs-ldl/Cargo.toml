@@ -4,6 +4,7 @@ name = "sprs-ldl"
 description = "Sparse cholesky factorization"
 version = "0.5.0"
 authors = ["Vincent Barrielle"]
+edition = "2018"
 
 readme = "README.rst"
 license = "LGPL-2.1"

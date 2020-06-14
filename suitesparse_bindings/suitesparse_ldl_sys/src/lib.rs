@@ -1,5 +1,3 @@
-extern crate libc;
-
 #[allow(non_camel_case_types)]
 pub type ldl_int = libc::c_int;
 #[allow(non_camel_case_types)]
