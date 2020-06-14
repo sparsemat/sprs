@@ -1,7 +1,9 @@
 extern crate bincode;
+#[cfg(feature = "serde")]
+extern crate serde;
 extern crate sprs;
 
-#[cfg(all(feature = "serde", feature = "serde_derive"))]
+#[cfg(feature = "serde")]
 fn main() {
     use sprs::CsMat;
 

@@ -84,9 +84,6 @@ extern crate num_traits;
 #[cfg(feature = "serde")]
 extern crate serde;
 extern crate smallvec;
-#[cfg(feature = "serde_derive")]
-#[macro_use]
-extern crate serde_derive;
 #[cfg(test)]
 extern crate tempdir;
 

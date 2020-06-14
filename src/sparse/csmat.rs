@@ -1,5 +1,7 @@
 use ndarray::ArrayView;
 use num_traits::{Float, Num, Signed, Zero};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::cmp;
 ///! A sparse matrix in the Compressed Sparse Row/Column format
 ///
@@ -48,10 +50,7 @@ where
 
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[cfg_attr(
-    all(feature = "serde", feature = "serde_derive"),
-    derive(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CompressedStorage {
     /// Compressed row storage
     CSR,
