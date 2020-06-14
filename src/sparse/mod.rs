@@ -1,5 +1,5 @@
-use array_backend::Array2;
-use indexing::SpIndex;
+use crate::array_backend::Array2;
+use crate::indexing::SpIndex;
 use std::ops::Deref;
 
 #[cfg(feature = "serde")]
@@ -255,7 +255,7 @@ pub trait SparseMat {
 }
 
 mod utils {
-    use indexing::SpIndex;
+    use crate::indexing::SpIndex;
 
     pub fn sort_indices_data_slices<N: Copy, I: SpIndex>(
         indices: &mut [I],

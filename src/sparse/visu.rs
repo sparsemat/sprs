@@ -2,8 +2,8 @@ use std::fmt;
 
 use ndarray::Array2;
 
-use indexing::SpIndex;
-use sparse::CsMatViewI;
+use crate::indexing::SpIndex;
+use crate::sparse::CsMatViewI;
 
 pub fn print_nnz_pattern<N, I, Iptr>(mat: CsMatViewI<N, I, Iptr>)
 where
@@ -93,7 +93,7 @@ where
 mod test {
     use super::{nnz_image, nnz_pattern_formatter};
     use ndarray::arr2;
-    use sparse::CsMat;
+    use crate::sparse::CsMat;
 
     #[test]
     fn test_nnz_pattern_formatter() {

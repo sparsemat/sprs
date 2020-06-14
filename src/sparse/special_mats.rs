@@ -2,8 +2,8 @@ use ndarray::ArrayView2;
 ///! Common sparse matrices
 use smallvec::SmallVec;
 
-use indexing::SpIndex;
-use sparse::CsMatI;
+use crate::indexing::SpIndex;
+use crate::sparse::CsMatI;
 
 /// Compute the graph laplacian of a triangle mesh
 pub fn tri_mesh_graph_laplacian<I>(
@@ -68,7 +68,7 @@ where
 #[cfg(test)]
 mod test {
     use ndarray::arr2;
-    use sparse::CsMat;
+    use crate::sparse::CsMat;
 
     #[test]
     fn tri_mesh_graph_laplacian() {

@@ -20,21 +20,21 @@ use std::slice::{self, Iter, Windows};
 
 use ndarray::linalg::Dot;
 use ndarray::{self, Array, ArrayBase, ShapeBuilder};
-use {Ix1, Ix2, Shape};
+use crate::{Ix1, Ix2, Shape};
 
-use array_backend::Array2;
-use indexing::SpIndex;
+use crate::array_backend::Array2;
+use crate::indexing::SpIndex;
 
-use errors::SprsError;
-use sparse::binop;
-use sparse::compressed::SpMatView;
-use sparse::permutation::PermViewI;
-use sparse::prelude::*;
-use sparse::prod;
-use sparse::smmp;
-use sparse::to_dense::assign_to_dense;
-use sparse::utils;
-use sparse::vec;
+use crate::errors::SprsError;
+use crate::sparse::binop;
+use crate::sparse::compressed::SpMatView;
+use crate::sparse::permutation::PermViewI;
+use crate::sparse::prelude::*;
+use crate::sparse::prod;
+use crate::sparse::smmp;
+use crate::sparse::to_dense::assign_to_dense;
+use crate::sparse::utils;
+use crate::sparse::vec;
 
 impl<N, I, IptrStorage, IndStorage, DataStorage, Iptr> Copy
     for CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr>
@@ -1690,8 +1690,8 @@ where
 
 /// Raw functions acting directly on the compressed structure.
 pub mod raw {
-    use indexing::SpIndex;
-    use sparse::prelude::*;
+    use crate::indexing::SpIndex;
+    use crate::sparse::prelude::*;
     use std::mem::swap;
 
     /*
@@ -2310,10 +2310,10 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex> Iterator
 #[cfg(test)]
 mod test {
     use super::CompressedStorage::{CSC, CSR};
-    use errors::SprsError;
+    use crate::errors::SprsError;
     use ndarray::{arr2, Array};
-    use sparse::{CsMat, CsMatI, CsMatView};
-    use test_data::{mat1, mat1_csc, mat1_times_2};
+    use crate::sparse::{CsMat, CsMatI, CsMatView};
+    use crate::test_data::{mat1, mat1_csc, mat1_times_2};
 
     #[test]
     fn test_copy() {

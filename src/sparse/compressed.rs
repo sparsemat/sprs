@@ -1,6 +1,6 @@
-use indexing::SpIndex;
+use crate::indexing::SpIndex;
 ///! Traits to generalize over compressed sparse matrices storages
-use sparse::prelude::*;
+use crate::sparse::prelude::*;
 use std::ops::Deref;
 
 /// The SpMatView trait describes data that can be seen as a view

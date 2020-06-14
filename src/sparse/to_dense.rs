@@ -1,8 +1,8 @@
 use super::CsMatViewI;
-use indexing::SpIndex;
+use crate::indexing::SpIndex;
 ///! Utilities for sparse-to-dense conversion
 use ndarray::{ArrayViewMut, Axis};
-use Ix2;
+use crate::Ix2;
 
 /// Assign a sparse matrix into a dense matrix
 ///
@@ -35,8 +35,8 @@ pub fn assign_to_dense<N, I, Iptr>(
 #[cfg(test)]
 mod test {
     use ndarray::{arr2, Array};
-    use test_data::{mat1, mat3};
-    use CsMat;
+    use crate::test_data::{mat1, mat3};
+    use crate::CsMat;
 
     #[test]
     fn to_dense() {

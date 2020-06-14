@@ -24,18 +24,18 @@ use std::iter::{Enumerate, FilterMap, IntoIterator, Peekable, Sum, Zip};
 use std::marker::PhantomData;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::{self, Iter, IterMut};
-use Ix1;
+use crate::Ix1;
 
 use num_traits::{Float, Num, Signed, Zero};
 
-use array_backend::Array2;
-use errors::SprsError;
-use indexing::SpIndex;
-use sparse::csmat::CompressedStorage::{CSC, CSR};
-use sparse::permutation::PermViewI;
-use sparse::prelude::*;
-use sparse::utils;
-use sparse::{binop, prod};
+use crate::array_backend::Array2;
+use crate::errors::SprsError;
+use crate::indexing::SpIndex;
+use crate::sparse::csmat::CompressedStorage::{CSC, CSR};
+use crate::sparse::permutation::PermViewI;
+use crate::sparse::prelude::*;
+use crate::sparse::utils;
+use crate::sparse::{binop, prod};
 
 impl<IS: Copy, DS: Copy> Copy for CsVecBase<IS, DS> {}
 
@@ -1364,7 +1364,7 @@ mod test {
     use super::SparseIterTools;
     use ndarray::Array;
     use num_traits::Zero;
-    use sparse::{CsVec, CsVecI};
+    use crate::sparse::{CsVec, CsVecI};
 
     fn test_vec1() -> CsVec<f64> {
         let n = 8;

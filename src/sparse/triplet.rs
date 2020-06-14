@@ -1,6 +1,6 @@
-use indexing::SpIndex;
+use crate::indexing::SpIndex;
 use num_traits::Num;
-use sparse::prelude::*;
+use crate::sparse::prelude::*;
 ///! Triplet format matrix
 ///!
 ///! Useful for building a matrix, but not for computations. Therefore this
@@ -332,7 +332,7 @@ where
 mod test {
 
     use super::{TriMat, TriMatI};
-    use sparse::{CsMat, CsMatI};
+    use crate::sparse::{CsMat, CsMatI};
 
     #[test]
     fn triplet_incremental() {

@@ -9,9 +9,9 @@ use std::path::Path;
 
 use num_traits::cast::NumCast;
 
-use indexing::SpIndex;
-use num_kinds::{NumKind, PrimitiveKind};
-use sparse::{SparseMat, TriMatI};
+use crate::indexing::SpIndex;
+use crate::num_kinds::{NumKind, PrimitiveKind};
+use crate::sparse::{SparseMat, TriMatI};
 
 #[derive(Debug)]
 pub enum IoError {
@@ -428,7 +428,7 @@ mod test {
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
     use tempdir::TempDir;
-    use CsMat;
+    use crate::CsMat;
     #[test]
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";
