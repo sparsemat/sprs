@@ -6,7 +6,7 @@ version = "0.5.0"
 authors = ["Vincent Barrielle"]
 edition = "2018"
 
-readme = "README.rst"
+readme = "README.md"
 license = "LGPL-2.1"
 repository = "https://github.com/vbarrielle/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
