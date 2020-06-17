@@ -92,8 +92,8 @@ where
 #[cfg(test)]
 mod test {
     use super::{nnz_image, nnz_pattern_formatter};
-    use ndarray::arr2;
     use crate::sparse::CsMat;
+    use ndarray::arr2;
 
     #[test]
     fn test_nnz_pattern_formatter() {

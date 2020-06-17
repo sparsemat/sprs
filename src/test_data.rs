@@ -1,7 +1,7 @@
 //! Some matrices used in tests
 
-use ndarray::{arr2, Array, Ix2, ShapeBuilder};
 use crate::sparse::CsMat;
+use ndarray::{arr2, Array, Ix2, ShapeBuilder};
 
 pub fn mat1() -> CsMat<f64> {
     let indptr = vec![0, 2, 4, 5, 6, 7];

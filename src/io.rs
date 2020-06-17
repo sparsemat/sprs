@@ -427,8 +427,8 @@ mod test {
         read_matrix_market, read_matrix_market_from_bufread,
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
-    use tempdir::TempDir;
     use crate::CsMat;
+    use tempdir::TempDir;
     #[test]
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";

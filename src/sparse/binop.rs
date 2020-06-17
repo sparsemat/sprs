@@ -1,14 +1,14 @@
 ///! Sparse matrix addition, subtraction
 use crate::indexing::SpIndex;
-use ndarray::{
-    self, Array, ArrayBase, ArrayView, ArrayViewMut, Axis, ShapeBuilder,
-};
-use num_traits::Num;
 use crate::sparse::compressed::SpMatView;
 use crate::sparse::csmat::CompressedStorage;
 use crate::sparse::prelude::*;
 use crate::sparse::vec::NnzEither::{Both, Left, Right};
 use crate::sparse::vec::SparseIterTools;
+use ndarray::{
+    self, Array, ArrayBase, ArrayView, ArrayViewMut, Axis, ShapeBuilder,
+};
+use num_traits::Num;
 
 use crate::Ix2;
 use crate::SpRes;
@@ -343,10 +343,10 @@ fn csvec_fix_zeros<N, I: SpIndex>(
 
 #[cfg(test)]
 mod test {
-    use ndarray::{arr2, Array};
     use crate::sparse::CsMat;
     use crate::sparse::CsVec;
     use crate::test_data::{mat1, mat1_times_2, mat2, mat_dense1};
+    use ndarray::{arr2, Array};
 
     fn mat1_plus_mat2() -> CsMat<f64> {
         let indptr = vec![0, 5, 8, 9, 12, 15];

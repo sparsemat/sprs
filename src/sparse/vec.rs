@@ -1,3 +1,4 @@
+use crate::Ix1;
 use ndarray::{self, ArrayBase};
 use std::cmp;
 use std::collections::HashSet;
@@ -24,7 +25,6 @@ use std::iter::{Enumerate, FilterMap, IntoIterator, Peekable, Sum, Zip};
 use std::marker::PhantomData;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::{self, Iter, IterMut};
-use crate::Ix1;
 
 use num_traits::{Float, Num, Signed, Zero};
 
@@ -1362,9 +1362,9 @@ mod alga_impls {
 #[cfg(test)]
 mod test {
     use super::SparseIterTools;
+    use crate::sparse::{CsVec, CsVecI};
     use ndarray::Array;
     use num_traits::Zero;
-    use crate::sparse::{CsVec, CsVecI};
 
     fn test_vec1() -> CsVec<f64> {
         let n = 8;

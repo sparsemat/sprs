@@ -2,9 +2,9 @@
 //! Bank and Douglas, 2001, Sparse Matrix Multiplication Package (SMPP)
 
 use crate::indexing::SpIndex;
-use num_traits::Num;
 use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
+use num_traits::Num;
 
 /// Compute the symbolic structure of the matrix product C = A * B, with
 /// A, B and C stored in the CSR matrix format.

@@ -18,9 +18,9 @@ use std::mem;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Range, Sub};
 use std::slice::{self, Iter, Windows};
 
+use crate::{Ix1, Ix2, Shape};
 use ndarray::linalg::Dot;
 use ndarray::{self, Array, ArrayBase, ShapeBuilder};
-use crate::{Ix1, Ix2, Shape};
 
 use crate::array_backend::Array2;
 use crate::indexing::SpIndex;
@@ -2311,9 +2311,9 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex> Iterator
 mod test {
     use super::CompressedStorage::{CSC, CSR};
     use crate::errors::SprsError;
-    use ndarray::{arr2, Array};
     use crate::sparse::{CsMat, CsMatI, CsMatView};
     use crate::test_data::{mat1, mat1_csc, mat1_times_2};
+    use ndarray::{arr2, Array};
 
     #[test]
     fn test_copy() {

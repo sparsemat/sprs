@@ -1,6 +1,6 @@
 use crate::indexing::SpIndex;
-use num_traits::Num;
 use crate::sparse::prelude::*;
+use num_traits::Num;
 ///! Triplet format matrix
 ///!
 ///! Useful for building a matrix, but not for computations. Therefore this

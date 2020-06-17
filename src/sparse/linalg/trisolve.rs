@@ -1,10 +1,10 @@
 use crate::errors::SprsError;
 use crate::indexing::SpIndex;
-use num_traits::Num;
 use crate::sparse::vec;
 use crate::sparse::CsMatViewI;
 use crate::sparse::CsVecViewI;
 use crate::stack::{self, DStack, StackVal};
+use num_traits::Num;
 /// Sparse triangular solves
 use std::ops::IndexMut;
 

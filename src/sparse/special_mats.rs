@@ -67,8 +67,8 @@ where
 
 #[cfg(test)]
 mod test {
-    use ndarray::arr2;
     use crate::sparse::CsMat;
+    use ndarray::arr2;
 
     #[test]
     fn tri_mesh_graph_laplacian() {
