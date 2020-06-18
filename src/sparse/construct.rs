@@ -1,7 +1,7 @@
 //! High level construction of sparse matrices by stacking, by block, ...
 
-use indexing::SpIndex;
-use sparse::prelude::*;
+use crate::indexing::SpIndex;
+use crate::sparse::prelude::*;
 use std::cmp;
 use std::default::Default;
 
@@ -163,8 +163,8 @@ where
 
 #[cfg(test)]
 mod test {
-    use sparse::CsMat;
-    use test_data::{mat1, mat2, mat3, mat4};
+    use crate::sparse::CsMat;
+    use crate::test_data::{mat1, mat2, mat3, mat4};
 
     fn mat1_vstack_mat2() -> CsMat<f64> {
         let indptr = vec![0, 2, 4, 5, 6, 7, 11, 13, 13, 15, 17];

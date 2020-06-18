@@ -1,10 +1,10 @@
-use errors::SprsError;
-use indexing::SpIndex;
+use crate::errors::SprsError;
+use crate::indexing::SpIndex;
+use crate::sparse::vec;
+use crate::sparse::CsMatViewI;
+use crate::sparse::CsVecViewI;
+use crate::stack::{self, DStack, StackVal};
 use num_traits::Num;
-use sparse::vec;
-use sparse::CsMatViewI;
-use sparse::CsVecViewI;
-use stack::{self, DStack, StackVal};
 /// Sparse triangular solves
 use std::ops::IndexMut;
 
@@ -347,8 +347,8 @@ where
 #[cfg(test)]
 mod test {
 
-    use sparse::{CsMat, CsVec};
-    use stack::{self, DStack};
+    use crate::sparse::{CsMat, CsVec};
+    use crate::stack::{self, DStack};
     use std::collections::HashSet;
 
     #[test]

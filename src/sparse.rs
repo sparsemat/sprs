@@ -1,6 +1,9 @@
-use array_backend::Array2;
-use indexing::SpIndex;
+use crate::array_backend::Array2;
+use crate::indexing::SpIndex;
 use std::ops::Deref;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 pub use self::csmat::CompressedStorage;
 
@@ -76,10 +79,7 @@ pub use self::csmat::CompressedStorage;
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
 #[derive(Eq, PartialEq, Debug, Clone)]
-#[cfg_attr(
-    all(feature = "serde", feature = "serde_derive"),
-    derive(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
 where
     I: SpIndex,
@@ -139,10 +139,7 @@ pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
 #[derive(PartialEq, Debug, Clone)]
-#[cfg_attr(
-    all(feature = "serde", feature = "serde_derive"),
-    derive(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
     indices: IStorage,
@@ -258,7 +255,7 @@ pub trait SparseMat {
 }
 
 mod utils {
-    use indexing::SpIndex;
+    use crate::indexing::SpIndex;
 
     pub fn sort_indices_data_slices<N: Copy, I: SpIndex>(
         indices: &mut [I],

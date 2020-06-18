@@ -1,9 +1,4 @@
-#[macro_use]
-extern crate bencher;
-extern crate ndarray;
-extern crate sprs;
-
-use bencher::Bencher;
+use bencher::{benchmark_group, benchmark_main, Bencher};
 use ndarray::{Array, Array2, ShapeBuilder};
 use sprs::{CsMat, CsVec};
 

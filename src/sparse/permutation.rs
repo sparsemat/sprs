@@ -3,8 +3,8 @@
 /// Both the permutation matrices and its inverse are stored
 use std::ops::{Deref, Mul};
 
-use indexing::SpIndex;
-use sparse::{CompressedStorage, CsMatI, CsMatViewI};
+use crate::indexing::SpIndex;
+use crate::sparse::{CompressedStorage, CsMatI, CsMatViewI};
 
 #[derive(Debug, Clone)]
 enum PermStorage<I, IndStorage>
@@ -315,7 +315,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use sparse::CsMat;
+    use crate::sparse::CsMat;
 
     #[test]
     fn perm_mul() {

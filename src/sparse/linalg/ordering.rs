@@ -1,7 +1,7 @@
-use indexing::SpIndex;
-use sparse::permutation::PermOwnedI;
-use sparse::symmetric::is_symmetric;
-use sparse::CsMatViewI;
+use crate::indexing::SpIndex;
+use crate::sparse::permutation::PermOwnedI;
+use crate::sparse::symmetric::is_symmetric;
+use crate::sparse::CsMatViewI;
 use std::collections::vec_deque::VecDeque;
 
 pub struct Ordering<I> {
@@ -12,8 +12,8 @@ pub struct Ordering<I> {
 }
 
 pub mod start {
-    use indexing::SpIndex;
-    use sparse::CsMatViewI;
+    use crate::indexing::SpIndex;
+    use crate::sparse::CsMatViewI;
 
     /// This trait abstracts over possible strategies to choose a starting
     /// vertex for the Cutihll-McKee algorithm. Common strategies are provided.
@@ -271,8 +271,8 @@ pub mod start {
 pub mod order {
 
     use super::Ordering;
-    use indexing::SpIndex;
-    use sparse::permutation::PermOwnedI;
+    use crate::indexing::SpIndex;
+    use crate::sparse::permutation::PermOwnedI;
 
     /// This trait is very deeply integrated with the inner workings of the
     /// Cuthill-McKee algorithm implemented here.  It is conceptually only an
@@ -559,8 +559,8 @@ where
 #[cfg(test)]
 mod test {
     use super::{cuthill_mckee_custom, order, reverse_cuthill_mckee, start};
-    use sparse::permutation::Permutation;
-    use sparse::CsMat;
+    use crate::sparse::permutation::Permutation;
+    use crate::sparse::CsMat;
 
     fn unconnected_graph_lap() -> CsMat<f64> {
         // Take the laplacian matrix of the following graph

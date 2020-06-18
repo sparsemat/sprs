@@ -1,10 +1,5 @@
-#[macro_use]
-extern crate bencher;
-extern crate alga;
-extern crate sprs;
-
 use alga::general::{Additive, TwoSidedInverse};
-use bencher::Bencher;
+use bencher::{benchmark_group, benchmark_main, Bencher};
 use sprs::CsVec;
 
 fn csvec_neg(bench: &mut Bencher) {

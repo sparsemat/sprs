@@ -1,8 +1,8 @@
 /// Functions dealing with symmetric sparse matrices
 use std::ops::Deref;
 
-use indexing::SpIndex;
-use sparse::prelude::*;
+use crate::indexing::SpIndex;
+use crate::sparse::prelude::*;
 
 pub fn is_symmetric<N, I, Iptr, IpStorage, IStorage, DStorage>(
     mat: &CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>,
@@ -36,8 +36,8 @@ where
 #[cfg(test)]
 mod test {
     use super::is_symmetric;
-    use sparse::csmat::CompressedStorage::CSR;
-    use sparse::CsMatView;
+    use crate::sparse::csmat::CompressedStorage::CSR;
+    use crate::sparse::CsMatView;
 
     #[test]
     fn is_symmetric_simple() {

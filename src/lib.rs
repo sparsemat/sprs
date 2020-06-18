@@ -76,20 +76,6 @@ assert_eq!(a, b.to_csc());
 
 #![deny(warnings)]
 
-#[cfg(feature = "alga")]
-extern crate alga;
-extern crate ndarray;
-extern crate num_complex;
-extern crate num_traits;
-#[cfg(feature = "serde")]
-extern crate serde;
-extern crate smallvec;
-#[cfg(feature = "serde_derive")]
-#[macro_use]
-extern crate serde_derive;
-#[cfg(test)]
-extern crate tempdir;
-
 pub mod array_backend;
 pub mod errors;
 pub mod indexing;
@@ -103,9 +89,9 @@ pub type Ix_ = ndarray::Ix1;
 pub type Ix1 = ndarray::Ix1;
 pub type Ix2 = ndarray::Ix2;
 
-pub use indexing::SpIndex;
+pub use crate::indexing::SpIndex;
 
-pub use sparse::{
+pub use crate::sparse::{
     csmat::CsIter, csmat::OuterIterator, csmat::OuterIteratorMut,
     csmat::OuterIteratorPerm, CsMat, CsMatBase, CsMatI, CsMatVecView,
     CsMatView, CsMatViewI, CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase,
@@ -114,33 +100,33 @@ pub use sparse::{
     TriMatViewMut, TriMatViewMutI,
 };
 
-pub use sparse::symmetric::is_symmetric;
+pub use crate::sparse::symmetric::is_symmetric;
 
-pub use sparse::permutation::{
+pub use crate::sparse::permutation::{
     transform_mat_papt, PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
 };
 
-pub use sparse::CompressedStorage::{self, CSC, CSR};
+pub use crate::sparse::CompressedStorage::{self, CSC, CSR};
 
-pub use sparse::binop;
-pub use sparse::linalg;
-pub use sparse::prod;
-pub use sparse::smmp;
-pub use sparse::special_mats;
-pub use sparse::visu;
+pub use crate::sparse::binop;
+pub use crate::sparse::linalg;
+pub use crate::sparse::prod;
+pub use crate::sparse::smmp;
+pub use crate::sparse::special_mats;
+pub use crate::sparse::visu;
 
 pub mod vec {
-    pub use sparse::{CsVec, CsVecBase, CsVecView, CsVecViewMut};
+    pub use crate::sparse::{CsVec, CsVecBase, CsVecView, CsVecViewMut};
 
-    pub use sparse::vec::{
+    pub use crate::sparse::vec::{
         IntoSparseVecIter, NnzEither, NnzIndex, NnzOrZip, SparseIterTools,
         VecDim, VectorIterator, VectorIteratorMut,
     };
 }
 
-pub use sparse::construct::{bmat, hstack, vstack};
+pub use crate::sparse::construct::{bmat, hstack, vstack};
 
-pub use sparse::to_dense::assign_to_dense;
+pub use crate::sparse::to_dense::assign_to_dense;
 
 /// The shape of a matrix. This a 2-tuple with the first element indicating
 /// the number of rows, and the second element indicating the number of

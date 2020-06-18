@@ -1,17 +1,17 @@
 ///! Sparse matrix addition, subtraction
-use indexing::SpIndex;
+use crate::indexing::SpIndex;
+use crate::sparse::compressed::SpMatView;
+use crate::sparse::csmat::CompressedStorage;
+use crate::sparse::prelude::*;
+use crate::sparse::vec::NnzEither::{Both, Left, Right};
+use crate::sparse::vec::SparseIterTools;
 use ndarray::{
     self, Array, ArrayBase, ArrayView, ArrayViewMut, Axis, ShapeBuilder,
 };
 use num_traits::Num;
-use sparse::compressed::SpMatView;
-use sparse::csmat::CompressedStorage;
-use sparse::prelude::*;
-use sparse::vec::NnzEither::{Both, Left, Right};
-use sparse::vec::SparseIterTools;
 
-use Ix2;
-use SpRes;
+use crate::Ix2;
+use crate::SpRes;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, I, Iptr, Mat1, Mat2>(
@@ -343,10 +343,10 @@ fn csvec_fix_zeros<N, I: SpIndex>(
 
 #[cfg(test)]
 mod test {
+    use crate::sparse::CsMat;
+    use crate::sparse::CsVec;
+    use crate::test_data::{mat1, mat1_times_2, mat2, mat_dense1};
     use ndarray::{arr2, Array};
-    use sparse::CsMat;
-    use sparse::CsVec;
-    use test_data::{mat1, mat1_times_2, mat2, mat_dense1};
 
     fn mat1_plus_mat2() -> CsMat<f64> {
         let indptr = vec![0, 5, 8, 9, 12, 15];

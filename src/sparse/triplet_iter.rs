@@ -3,9 +3,9 @@
 
 use num_traits::Num;
 
+use crate::indexing::SpIndex;
+use crate::sparse::{CsMatI, TriMatIter};
 use crate::CompressedStorage;
-use indexing::SpIndex;
-use sparse::{CsMatI, TriMatIter};
 
 impl<'a, N, I, RI, CI, DI> Iterator for TriMatIter<RI, CI, DI>
 where

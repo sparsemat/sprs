@@ -1,4 +1,3 @@
-extern crate num_traits;
 ///! Cholesky factorization module.
 ///!
 ///! Contains LDLT decomposition methods.
@@ -52,8 +51,6 @@ extern crate num_traits;
 //     the code and to distribute modified code is granted, provided the
 //     Copyright, this License, and the Availability note are retained,
 //     and a notice that the code was modified is included.
-extern crate sprs;
-
 use std::ops::Deref;
 use std::ops::IndexMut;
 

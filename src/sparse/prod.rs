@@ -1,12 +1,12 @@
-use indexing::SpIndex;
+use crate::indexing::SpIndex;
+use crate::sparse::compressed::SpMatView;
+///! Sparse matrix product
+use crate::sparse::prelude::*;
+use crate::sparse::vec::DenseVector;
+use crate::Ix2;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
 use num_traits::Num;
-use sparse::compressed::SpMatView;
-///! Sparse matrix product
-use sparse::prelude::*;
-use sparse::vec::DenseVector;
 use std::iter::Sum;
-use Ix2;
 
 /// Compute the dot product of two sparse vectors, using binary search to find matching indices.
 ///
@@ -407,14 +407,14 @@ pub fn csr_mulacc_dense_colmaj<'a, N, I, Iptr>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use ndarray::{arr2, Array, ShapeBuilder};
-    use sparse::csmat::CompressedStorage::{CSC, CSR};
-    use sparse::{CsMat, CsMatView, CsVec};
-    use test_data::{
+    use crate::sparse::csmat::CompressedStorage::{CSC, CSR};
+    use crate::sparse::{CsMat, CsMatView, CsVec};
+    use crate::test_data::{
         mat1, mat1_csc, mat1_csc_matprod_mat4, mat1_matprod_mat2,
         mat1_self_matprod, mat2, mat4, mat5, mat_dense1, mat_dense1_colmaj,
         mat_dense2,
     };
+    use ndarray::{arr2, Array, ShapeBuilder};
 
     #[test]
     fn test_csvec_dot_by_binary_search() {
