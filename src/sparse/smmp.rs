@@ -467,8 +467,6 @@ where
     let mut res_data = vec![N::zero(); res_indices.len()];
     let nb_threads = tmps.len();
     let chunk_size = res_indices.len() / nb_threads;
-    let mut lhs_indptr_rem = lhs.indptr();
-    let mut res_indptr_rem = &res_indptr[..];
     let mut res_indices_rem = &res_indices[..];
     let mut res_data_rem = &mut res_data[..];
     let mut prev_nnz = 0;
@@ -481,27 +479,27 @@ where
     for (row, nnz) in res_indptr.iter().enumerate() {
         let nnz = nnz.index();
         if nnz - split_nnz > chunk_size && row > 0 {
-            lhs_indptr_chunks.push(&lhs_indptr_rem[split_row..row]);
-            lhs_indptr_rem = &lhs_indptr_rem[row - 1..];
+            lhs_indptr_chunks.push(&lhs.indptr()[split_row..row]);
 
-            res_indptr_chunks.push(&res_indptr_rem[split_row..row]);
-            res_indptr_rem = &res_indptr_rem[row - 1..];
+            res_indptr_chunks.push(&res_indptr[split_row..row]);
 
-            let (left, right) = res_indices_rem.split_at(prev_nnz);
+            let (left, right) = res_indices_rem
+                .split_at(prev_nnz - res_indptr[split_row].index());
             res_indices_chunks.push(left);
             res_indices_rem = right;
 
-            let (left, right) = res_data_rem.split_at_mut(prev_nnz);
+            let (left, right) = res_data_rem
+                .split_at_mut(prev_nnz - res_indptr[split_row].index());
             res_data_chunks.push(left);
             res_data_rem = right;
 
             split_nnz = nnz;
-            split_row = row;
+            split_row = row - 1;
         }
         prev_nnz = nnz;
     }
-    lhs_indptr_chunks.push(lhs_indptr_rem);
-    res_indptr_chunks.push(res_indptr_rem);
+    lhs_indptr_chunks.push(&lhs.indptr()[split_row..]);
+    res_indptr_chunks.push(&res_indptr[split_row..]);
     res_indices_chunks.push(res_indices_rem);
     res_data_chunks.push(res_data_rem);
     lhs_indptr_chunks
@@ -605,6 +603,17 @@ mod test {
     fn mul_csr_csr() {
         let a = test_data::mat1();
         let exp = test_data::mat1_self_matprod();
+        let res = super::mul_csr_csr(a.view(), a.view());
+        assert_eq!(exp, res);
+    }
+
+    #[test]
+    fn mul_csr_csr_multithreaded() {
+        let a = test_data::mat1();
+        let exp = test_data::mat1_self_matprod();
+        super::set_thread_threading_strategy(super::ThreadingStrategy::Fixed(
+            4,
+        ));
         let res = super::mul_csr_csr(a.view(), a.view());
         assert_eq!(exp, res);
     }
