@@ -233,6 +233,8 @@ pub fn symbolic_boolvec<Iptr: SpIndex, I: SpIndex>(
         c_indptr[a_row + 1] = c_indptr[a_row] + Iptr::from_usize(length);
         let c_start = c_indptr[a_row].index();
         let c_end = c_start + length;
+        // TODO maybe sorting should be done outside, to have an even parallel
+        // workload
         c_indices[c_start..c_end].sort_unstable();
         for c_col in &c_indices[c_start..c_end] {
             seen[c_col.index()] = false;
@@ -360,8 +362,11 @@ where
             mul_csr_csr_with_workspace(lhs, rhs, &mut index, &mut tmps[0])
         }
         SymbMethod::BoolVecAndSort => {
-            let mut seen = vec![false; workspace_len];
-            mul_csr_csr_with_workspace_boolvec(lhs, rhs, &mut seen, &mut tmps)
+            let mut seens = Vec::with_capacity(nb_threads);
+            for _ in 0..nb_threads {
+                seens.push(vec![false; workspace_len].into_boxed_slice());
+            }
+            mul_csr_csr_with_workspace_boolvec(lhs, rhs, &mut seens, &mut tmps)
         }
     }
 }
@@ -436,7 +441,7 @@ where
 pub fn mul_csr_csr_with_workspace_boolvec<N, I, Iptr>(
     lhs: CsMatViewI<N, I, Iptr>,
     rhs: CsMatViewI<N, I, Iptr>,
-    seen: &mut [bool],
+    seens: &mut [Box<[bool]>],
     tmps: &mut [Box<[N]>],
 ) -> CsMatI<N, I, Iptr>
 where
@@ -450,20 +455,68 @@ where
     let r_cols = rhs.cols();
     let workspace_len = l_rows.max(l_cols).max(r_cols);
     assert_eq!(l_cols, r_rows);
-    assert_eq!(seen.len(), workspace_len);
+    assert!(seens.iter().all(|x| x.len() == workspace_len));
     assert!(tmps.iter().all(|x| x.len() == workspace_len));
-    let mut res_indptr = vec![Iptr::zero(); l_rows + 1];
+    let indptr_len = l_rows + 1;
     let mut res_indices = Vec::new();
-    symbolic_boolvec(
-        lhs.indptr(),
-        lhs.indices(),
-        r_cols,
-        rhs.indptr(),
-        rhs.indices(),
-        &mut res_indptr,
-        &mut res_indices,
-        seen,
-    );
+    let nb_threads = seens.len();
+    let chunk_size = lhs.indptr().len() / nb_threads;
+    let mut lhs_indptr_chunks = Vec::with_capacity(nb_threads);
+    let mut res_indptr_chunks = Vec::with_capacity(nb_threads);
+    let mut res_indices_chunks = Vec::with_capacity(nb_threads);
+    for chunk_id in 0..nb_threads {
+        let start = if chunk_id == 0 {
+            0
+        } else {
+            chunk_id * chunk_size
+        };
+        let stop = if chunk_id + 1 < nb_threads {
+            (chunk_id + 1) * chunk_size + 1
+        } else {
+            indptr_len
+        };
+        lhs_indptr_chunks.push(&lhs.indptr()[start..stop]);
+        res_indptr_chunks.push(vec![Iptr::zero(); stop - start]);
+        res_indices_chunks
+            .push(Vec::with_capacity(lhs.nnz() + rhs.nnz() / chunk_size));
+    }
+    lhs_indptr_chunks
+        .par_iter()
+        .zip(res_indptr_chunks.par_iter_mut())
+        .zip(res_indices_chunks.par_iter_mut())
+        .zip(seens.par_iter_mut())
+        .for_each(
+            |(
+                (
+                    (lhs_indptr_chunk, mut res_indptr_chunk),
+                    mut res_indices_chunk,
+                ),
+                mut seen,
+            )| {
+                symbolic_boolvec(
+                    lhs_indptr_chunk,
+                    lhs.indices(),
+                    r_cols,
+                    rhs.indptr(),
+                    rhs.indices(),
+                    &mut res_indptr_chunk,
+                    &mut res_indices_chunk,
+                    &mut seen,
+                );
+            },
+        );
+    res_indices.reserve(res_indices_chunks.iter().map(|x| x.len()).sum());
+    for res_indices_chunk in &res_indices_chunks {
+        res_indices.extend_from_slice(res_indices_chunk);
+    }
+    let mut res_indptr = Vec::with_capacity(indptr_len);
+    res_indptr.push(Iptr::zero());
+    for res_indptr_chunk in &res_indptr_chunks {
+        for row in res_indptr_chunk.windows(2) {
+            let nnz = row[1] - row[0];
+            res_indptr.push(nnz + *res_indptr.last().unwrap());
+        }
+    }
     let mut res_data = vec![N::zero(); res_indices.len()];
     let nb_threads = tmps.len();
     let chunk_size = res_indices.len() / nb_threads;
