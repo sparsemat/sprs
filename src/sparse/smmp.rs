@@ -38,14 +38,20 @@ pub fn thread_symbolic_method() -> SymbMethod {
 /// Control the strategy used to parallelize the matrix product workload.
 ///
 /// The `Automatic` strategy will try to pick a good number of threads based
-/// on the number of physical cores and an estimation of the nnz of the product
-/// matrix.
+/// on the number of cores and an estimation of the nnz of the product
+/// matrix. This strategy is used by default.
+///
+/// The `AutomaticPhysical` strategy will try to pick a good number of threads
+/// based on the number of physical cores and an estimation of the nnz of the
+/// product matrix. This strategy is a fallback for machines where virtual
+/// cores do not provide a performance advantage.
 ///
 /// The `Fixed` strategy leaves the control to the user. It is a programming
 /// error to request 0 threads.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ThreadingStrategy {
     Automatic,
+    AutomaticPhysical,
     Fixed(usize),
 }
 
@@ -343,10 +349,15 @@ where
     assert_eq!(l_cols, r_rows);
     let method = thread_symbolic_method();
     let workspace_len = l_rows.max(l_cols).max(r_cols);
+    use self::ThreadingStrategy::{Automatic, AutomaticPhysical};
     let nb_threads = match thread_threading_strategy() {
         ThreadingStrategy::Fixed(nb_threads) => nb_threads,
-        ThreadingStrategy::Automatic => {
-            let nb_cpus = num_cpus::get_physical();
+        strat @ Automatic | strat @ AutomaticPhysical => {
+            let nb_cpus = if strat == ThreadingStrategy::Automatic {
+                num_cpus::get()
+            } else {
+                num_cpus::get_physical()
+            };
             let ideal_chunk_size = 8128;
             let wanted_threads = (lhs.nnz() + rhs.nnz()) / ideal_chunk_size;
             1.max(wanted_threads).min(nb_cpus)
