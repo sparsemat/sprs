@@ -193,6 +193,9 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
 
         let mut times = Vec::with_capacity(densities.len());
         let mut times_boolvec = Vec::with_capacity(densities.len());
+        let mut times_autothread = Vec::with_capacity(densities.len());
+        let mut times_2threads = Vec::with_capacity(densities.len());
+        let mut times_4threads = Vec::with_capacity(densities.len());
         let mut times_old = Vec::with_capacity(densities.len());
         #[cfg(feature = "nightly")]
         let mut times_py = Vec::with_capacity(densities.len());
@@ -222,6 +225,9 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             times.push(elapsed);
 
             smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
+            smmp::set_thread_threading_strategy(
+                smmp::ThreadingStrategy::Fixed(1),
+            );
             let now = std::time::Instant::now();
             let prod_b = &m1 * &m2;
             let elapsed = now.elapsed().as_millis();
@@ -231,6 +237,48 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             );
             assert_eq!(prod, prod_b);
             times_boolvec.push(elapsed);
+
+            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
+            smmp::set_thread_threading_strategy(
+                smmp::ThreadingStrategy::Fixed(2),
+            );
+            let now = std::time::Instant::now();
+            let prod_b = &m1 * &m2;
+            let elapsed = now.elapsed().as_millis();
+            println!(
+                "New product (boolvec, 2 threads) of shape ({}, {}) and density {} done in {}ms",
+                shape.0, shape.1, density, elapsed,
+            );
+            assert_eq!(prod, prod_b);
+            times_2threads.push(elapsed);
+
+            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
+            smmp::set_thread_threading_strategy(
+                smmp::ThreadingStrategy::Fixed(4),
+            );
+            let now = std::time::Instant::now();
+            let prod_b = &m1 * &m2;
+            let elapsed = now.elapsed().as_millis();
+            println!(
+                "New product (boolvec, 4 threads) of shape ({}, {}) and density {} done in {}ms",
+                shape.0, shape.1, density, elapsed,
+            );
+            assert_eq!(prod, prod_b);
+            times_4threads.push(elapsed);
+
+            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
+            smmp::set_thread_threading_strategy(
+                smmp::ThreadingStrategy::Automatic,
+            );
+            let now = std::time::Instant::now();
+            let prod_b = &m1 * &m2;
+            let elapsed = now.elapsed().as_millis();
+            println!(
+                "New product (boolvec, auto thread) of shape ({}, {}) and density {} done in {}ms",
+                shape.0, shape.1, density, elapsed,
+            );
+            assert_eq!(prod, prod_b);
+            times_autothread.push(elapsed);
 
             if !spec.forbid_old {
                 let now = std::time::Instant::now();
@@ -292,6 +340,12 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         println!("Product densities: {:?}", res_densities);
         println!("Product times: {:?}", times);
         println!("Product times (boolvec): {:?}", times_boolvec);
+        println!("Product times (boolvec, 2 threads): {:?}", times_2threads);
+        println!("Product times (boolvec, 4 threads): {:?}", times_4threads);
+        println!(
+            "Product times (boolvec, auto threads): {:?}",
+            times_autothread
+        );
         println!("Product times (old): {:?}", times_old);
         #[cfg(feature = "nightly")]
         println!("Product times (scipy): {:?}", times_py);
@@ -323,11 +377,19 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 "Time vs density"
             };
             let max_time =
-                *std::cmp::max(times.iter().max(), times_old.iter().max())
+                *std::cmp::max(times.iter().max(), times_boolvec.iter().max())
                     .unwrap_or(&1);
             let max_time = std::cmp::max(
                 max_time,
-                *times_boolvec.iter().max().unwrap_or(&1),
+                *times_2threads.iter().max().unwrap_or(&1),
+            );
+            let max_time = std::cmp::max(
+                max_time,
+                *times_4threads.iter().max().unwrap_or(&1),
+            );
+            let max_time = std::cmp::max(
+                max_time,
+                *times_autothread.iter().max().unwrap_or(&1),
             );
             #[cfg(feature = "eigen")]
             let max_time = std::cmp::max(
@@ -374,25 +436,49 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .zip(times_boolvec.iter().map(|t| *t as f32)),
                     &MAGENTA,
                 ))?
-                .label("sprs (new)")
+                .label("sprs (boolvec 1T)")
                 .legend(|(x, y)| {
                     PathElement::new(vec![(x, y), (x + 20, y)], &MAGENTA)
                 });
 
-            if !spec.forbid_old {
-                chart
-                    .draw_series(LineSeries::new(
-                        abscisses
-                            .iter()
-                            .map(|d| *d as f32)
-                            .zip(times_old.iter().map(|t| *t as f32)),
-                        &BLUE,
-                    ))?
-                    .label("sprs (old)")
-                    .legend(|(x, y)| {
-                        PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
-                    });
-            }
+            chart
+                .draw_series(LineSeries::new(
+                    abscisses
+                        .iter()
+                        .map(|d| *d as f32)
+                        .zip(times_2threads.iter().map(|t| *t as f32)),
+                    &BLACK,
+                ))?
+                .label("sprs (boolvec 2T)")
+                .legend(|(x, y)| {
+                    PathElement::new(vec![(x, y), (x + 20, y)], &BLACK)
+                });
+
+            chart
+                .draw_series(LineSeries::new(
+                    abscisses
+                        .iter()
+                        .map(|d| *d as f32)
+                        .zip(times_4threads.iter().map(|t| *t as f32)),
+                    &YELLOW,
+                ))?
+                .label("sprs (boolvec 4T)")
+                .legend(|(x, y)| {
+                    PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW)
+                });
+
+            chart
+                .draw_series(LineSeries::new(
+                    abscisses
+                        .iter()
+                        .map(|d| *d as f32)
+                        .zip(times_autothread.iter().map(|t| *t as f32)),
+                    &BLUE,
+                ))?
+                .label("sprs (boolvec auto)")
+                .legend(|(x, y)| {
+                    PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
+                });
 
             #[cfg(feature = "nightly")]
             chart
