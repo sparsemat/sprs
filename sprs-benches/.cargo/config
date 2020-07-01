@@ -1,3 +1,7 @@
 [build]
 
 rustflags = "-C force-frame-pointers=yes"
+
+[profile.release]
+
+debug = true
