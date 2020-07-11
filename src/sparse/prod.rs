@@ -421,13 +421,13 @@ mod test {
     use super::*;
     use crate::sparse::csmat::CompressedStorage::{CSC, CSR};
     use crate::sparse::{CsMat, CsMatView, CsVec};
-    use ndarray::linalg::Dot;
-    use ndarray::{arr2, s, Array, Array2, Dimension, ShapeBuilder};
     use crate::test_data::{
         mat1, mat1_csc, mat1_csc_matprod_mat4, mat1_matprod_mat2,
         mat1_self_matprod, mat2, mat4, mat5, mat_dense1, mat_dense1_colmaj,
         mat_dense2,
     };
+    use ndarray::linalg::Dot;
+    use ndarray::{arr2, s, Array, Array2, Dimension, ShapeBuilder};
 
     #[test]
     fn test_csvec_dot_by_binary_search() {
