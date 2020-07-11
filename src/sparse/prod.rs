@@ -102,56 +102,6 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
     }
 }
 
-/// Perform a matrix multiplication for matrices sharing the same storage order.
-///
-/// For brevity, this method assumes a CSR storage order, transposition should
-/// be used for the CSC-CSC case.
-/// Accumulates the result line by line.
-///
-/// lhs: left hand size matrix
-/// rhs: right hand size matrix
-/// workspace: used to accumulate the line values. Should be of length
-///            rhs.cols()
-pub fn csr_mul_csr<N, I, Iptr, Mat1, Mat2>(
-    lhs: &Mat1,
-    rhs: &Mat2,
-    workspace: &mut [N],
-) -> CsMatI<N, I, Iptr>
-where
-    N: Num + Copy,
-    I: SpIndex,
-    Iptr: SpIndex,
-    Mat1: SpMatView<N, I, Iptr>,
-    Mat2: SpMatView<N, I, Iptr>,
-{
-    csr_mul_csr_impl(lhs.view(), rhs.view(), workspace)
-}
-
-/// Perform a matrix multiplication for matrices sharing the same storage order.
-///
-/// This method assumes a CSC storage order, and uses free transposition to
-/// invoke the CSR method
-///
-/// lhs: left hand size matrix
-/// rhs: right hand size matrix
-/// workspace: used to accumulate the line values. Should be of length
-///            lhs.lines()
-pub fn csc_mul_csc<N, I, Iptr, Mat1, Mat2>(
-    lhs: &Mat1,
-    rhs: &Mat2,
-    workspace: &mut [N],
-) -> CsMatI<N, I, Iptr>
-where
-    N: Num + Copy,
-    I: SpIndex,
-    Iptr: SpIndex,
-    Mat1: SpMatView<N, I, Iptr>,
-    Mat2: SpMatView<N, I, Iptr>,
-{
-    csr_mul_csr_impl(rhs.transpose_view(), lhs.transpose_view(), workspace)
-        .transpose_into()
-}
-
 /// Allocate the appropriate workspace for a CSR-CSR product
 pub fn workspace_csr<N, I, Iptr, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
 where
@@ -176,57 +126,6 @@ where
 {
     let len = lhs.view().rows();
     vec![N::zero(); len]
-}
-
-/// Actual implementation of CSR-CSR multiplication
-/// All other matrix products are implemented in terms of this one.
-pub fn csr_mul_csr_impl<N, I, Iptr>(
-    lhs: CsMatViewI<N, I, Iptr>,
-    rhs: CsMatViewI<N, I, Iptr>,
-    workspace: &mut [N],
-) -> CsMatI<N, I, Iptr>
-where
-    N: Num + Copy,
-    I: SpIndex,
-    Iptr: SpIndex,
-{
-    let res_rows = lhs.rows();
-    let res_cols = rhs.cols();
-    if lhs.cols() != rhs.rows() {
-        panic!("Dimension mismatch");
-    }
-    if res_cols != workspace.len() {
-        panic!("Bad storage dimension");
-    }
-    if lhs.storage() != rhs.storage() || !rhs.is_csr() {
-        panic!("Storage mismatch");
-    }
-
-    let mut res = CsMatI::empty(lhs.storage(), res_cols);
-    res.reserve_nnz_exact(lhs.nnz() + rhs.nnz());
-    for lvec in lhs.outer_iterator() {
-        // reset the accumulators
-        for wval in workspace.iter_mut() {
-            *wval = N::zero();
-        }
-        // accumulate the resulting row
-        for (lcol, &lval) in lvec.iter() {
-            // we can't be out of bounds thanks to the checks of dimension
-            // compatibility and the structure check of CsMat. Therefore it
-            // should be safe to call into an unsafe version of outer_view
-            let rvec = rhs.outer_view(lcol).unwrap();
-            for (rcol, &rval) in rvec.iter() {
-                let wval = &mut workspace[rcol];
-                let prod = lval * rval;
-                *wval = *wval + prod;
-            }
-        }
-        // compress the row into the resulting matrix
-        res = res.append_outer(&workspace);
-    }
-    // TODO: shrink res storage? would need methods on CsMat
-    assert_eq!(res_rows, res.rows());
-    res
 }
 
 /// CSR-vector multiplication
@@ -492,17 +391,6 @@ mod test {
             .iter()
             .zip(expected_output.iter())
             .all(|(x, y)| (*x - *y).abs() < epsilon));
-    }
-
-    #[test]
-    fn mul_csr_csr_identity() {
-        let eye: CsMat<i32> = CsMat::eye(10);
-        let mut workspace = [0; 10];
-        let res = csr_mul_csr(&eye, &eye, &mut workspace);
-        assert_eq!(eye, res);
-
-        let res = &eye * &eye;
-        assert_eq!(eye, res);
     }
 
     #[test]
