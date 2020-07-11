@@ -185,7 +185,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             std::iter::repeat(shape).take(densities.len()).collect()
         };
 
-        let mut times = Vec::with_capacity(densities.len());
         let mut times_boolvec = Vec::with_capacity(densities.len());
         let mut times_autothread = Vec::with_capacity(densities.len());
         let mut times_2threads = Vec::with_capacity(densities.len());
@@ -206,70 +205,55 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             let elapsed = now.elapsed().as_millis();
             println!("Generating matrices took {}ms", elapsed);
 
-            smmp::set_thread_symbolic_method(smmp::SymbMethod::LinkedList);
-            let now = std::time::Instant::now();
-            let prod = &m1 * &m2;
-            let elapsed = now.elapsed().as_millis();
-            println!(
-                "New product of shape ({}, {}) and density {} done in {}ms",
-                shape.0, shape.1, density, elapsed,
-            );
-            times.push(elapsed);
-
-            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
             smmp::set_thread_threading_strategy(
                 smmp::ThreadingStrategy::Fixed(1),
             );
             let now = std::time::Instant::now();
-            let prod_b = &m1 * &m2;
+            let prod = &m1 * &m2;
             let elapsed = now.elapsed().as_millis();
             println!(
                 "New product (boolvec) of shape ({}, {}) and density {} done in {}ms",
                 shape.0, shape.1, density, elapsed,
             );
-            assert_eq!(prod, prod_b);
             times_boolvec.push(elapsed);
 
-            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
             smmp::set_thread_threading_strategy(
                 smmp::ThreadingStrategy::Fixed(2),
             );
             let now = std::time::Instant::now();
-            let prod_b = &m1 * &m2;
+            let prod_ = &m1 * &m2;
             let elapsed = now.elapsed().as_millis();
             println!(
                 "New product (boolvec, 2 threads) of shape ({}, {}) and density {} done in {}ms",
                 shape.0, shape.1, density, elapsed,
             );
-            assert_eq!(prod, prod_b);
+            assert_eq!(prod, prod_);
             times_2threads.push(elapsed);
 
-            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
             smmp::set_thread_threading_strategy(
                 smmp::ThreadingStrategy::Fixed(4),
             );
             let now = std::time::Instant::now();
-            let prod_b = &m1 * &m2;
+            let prod_ = &m1 * &m2;
             let elapsed = now.elapsed().as_millis();
             println!(
                 "New product (boolvec, 4 threads) of shape ({}, {}) and density {} done in {}ms",
                 shape.0, shape.1, density, elapsed,
             );
-            assert_eq!(prod, prod_b);
+            assert_eq!(prod, prod_);
             times_4threads.push(elapsed);
 
-            smmp::set_thread_symbolic_method(smmp::SymbMethod::BoolVecAndSort);
             smmp::set_thread_threading_strategy(
                 smmp::ThreadingStrategy::Automatic,
             );
             let now = std::time::Instant::now();
-            let prod_b = &m1 * &m2;
+            let prod_ = &m1 * &m2;
             let elapsed = now.elapsed().as_millis();
             println!(
                 "New product (boolvec, auto thread) of shape ({}, {}) and density {} done in {}ms",
                 shape.0, shape.1, density, elapsed,
             );
-            assert_eq!(prod, prod_b);
+            assert_eq!(prod, prod_);
             times_autothread.push(elapsed);
 
             nnzs.push(prod.nnz());
@@ -318,7 +302,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         println!("Results for shape: ({}, {})", shape.0, shape.1);
         println!("Product nnzs: {:?}", nnzs);
         println!("Product densities: {:?}", res_densities);
-        println!("Product times: {:?}", times);
         println!("Product times (boolvec): {:?}", times_boolvec);
         println!("Product times (boolvec, 2 threads): {:?}", times_2threads);
         println!("Product times (boolvec, 4 threads): {:?}", times_4threads);
@@ -356,12 +339,10 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 "Time vs density"
             };
             let max_time =
-                *std::cmp::max(times.iter().max(), times_boolvec.iter().max())
-                    .unwrap_or(&1);
-            let max_time = std::cmp::max(
-                max_time,
-                *times_2threads.iter().max().unwrap_or(&1),
-            );
+                *std::cmp::max(
+                    times_boolvec.iter().max(),
+                    times_2threads.iter().max(),
+                ).unwrap_or(&1);
             let max_time = std::cmp::max(
                 max_time,
                 *times_4threads.iter().max().unwrap_or(&1),
@@ -393,19 +374,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             chart.configure_mesh().draw()?;
-
-            chart
-                .draw_series(LineSeries::new(
-                    abscisses
-                        .iter()
-                        .map(|d| *d as f32)
-                        .zip(times.iter().map(|t| *t as f32)),
-                    &RED,
-                ))?
-                .label("sprs (new)")
-                .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &RED)
-                });
 
             chart
                 .draw_series(LineSeries::new(
