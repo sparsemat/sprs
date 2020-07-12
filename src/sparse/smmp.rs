@@ -72,7 +72,7 @@ pub fn thread_threading_strategy() -> ThreadingStrategy {
 /// `a_indptr.last().unwrap() + b_indptr.last.unwrap()` in `c_indices`.
 /// Therefore, to prevent this function from allocating, it is required
 /// to have reserved at least this amount of memory.
-pub fn symbolic_boolvec<Iptr: SpIndex, I: SpIndex>(
+pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     a_indptr: &[Iptr],
     a_indices: &[I],
     b_cols: usize,
@@ -242,7 +242,7 @@ where
     for _ in 0..nb_threads {
         seens.push(vec![false; workspace_len].into_boxed_slice());
     }
-    mul_csr_csr_with_workspace_boolvec(lhs, rhs, &mut seens, &mut tmps)
+    mul_csr_csr_with_workspace(lhs, rhs, &mut seens, &mut tmps)
 }
 
 /// Compute a sparse matrix product using the SMMP routines, using temporary
@@ -262,7 +262,7 @@ where
 /// - if `tmps.len() == 0`
 /// - if `seens[i].len() != lhs.cols().max(lhs.rows()).max(rhs.cols())`
 /// - if `tmps[i].len() != lhs.cols().max(lhs.rows()).max(rhs.cols())`
-pub fn mul_csr_csr_with_workspace_boolvec<N, I, Iptr>(
+pub fn mul_csr_csr_with_workspace<N, I, Iptr>(
     lhs: CsMatViewI<N, I, Iptr>,
     rhs: CsMatViewI<N, I, Iptr>,
     seens: &mut [Box<[bool]>],
@@ -284,6 +284,7 @@ where
     let indptr_len = l_rows + 1;
     let mut res_indices = Vec::new();
     let nb_threads = seens.len();
+    assert!(nb_threads > 0);
     let chunk_size = lhs.indptr().len() / nb_threads;
     let mut lhs_indptr_chunks = Vec::with_capacity(nb_threads);
     let mut res_indptr_chunks = Vec::with_capacity(nb_threads);
@@ -317,7 +318,7 @@ where
                 ),
                 mut seen,
             )| {
-                symbolic_boolvec(
+                symbolic(
                     lhs_indptr_chunk,
                     lhs.indices(),
                     r_cols,
@@ -343,6 +344,7 @@ where
     }
     let mut res_data = vec![N::zero(); res_indices.len()];
     let nb_threads = tmps.len();
+    assert!(nb_threads > 0);
     let chunk_size = res_indices.len() / nb_threads;
     let mut res_indices_rem = &res_indices[..];
     let mut res_data_rem = &mut res_data[..];
@@ -446,7 +448,7 @@ mod test {
         let mut c_indices = Vec::new();
         let mut seen = [false; 5];
 
-        super::symbolic_boolvec(
+        super::symbolic(
             a.indptr(),
             a.indices(),
             b.cols(),
