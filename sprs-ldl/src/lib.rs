@@ -250,7 +250,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
         V: Deref<Target = [N]>,
     {
         let mut x = &self.symbolic.perm * &rhs[..];
-        let l = self.l_view();
+        let l = self.l();
         ldl_lsolve(&l, &mut x);
         linalg::diag_solve(&self.diag, &mut x);
         ldl_ltsolve(&l, &mut x);
@@ -258,7 +258,13 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
         &pinv * &x
     }
 
-    fn l_view(&self) -> CsMatViewI<N, I> {
+    /// The diagonal factor D of the LDL^T decomposition
+    pub fn d(&self) -> &[N] {
+        &self.diag[..]
+    }
+
+    /// The L factor of the LDL^T decomposition
+    pub fn l(&self) -> CsMatViewI<N, I> {
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm
         unsafe {
