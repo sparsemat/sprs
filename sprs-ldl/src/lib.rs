@@ -308,7 +308,7 @@ pub fn ldl_symbolic<N, I, PStorage>(
 
     let n = mat.rows();
 
-    let outer_it = mat.outer_iterator_perm(perm.view());
+    let outer_it = mat.outer_iterator_papt(perm.view());
     // compute the elimination tree of L
     for (k, (_, vec)) in outer_it.enumerate() {
         flag_workspace[k] = I::from_usize(k); // this node is visited
@@ -358,7 +358,7 @@ where
     I: SpIndex,
     PStorage: Deref<Target = [I]>,
 {
-    let outer_it = mat.outer_iterator_perm(perm.view());
+    let outer_it = mat.outer_iterator_papt(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
         // compute the nonzero pattern of the kth row of L
         // in topological order

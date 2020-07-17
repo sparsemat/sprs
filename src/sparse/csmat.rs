@@ -1166,16 +1166,18 @@ where
         }
     }
 
-    /// Return an outer iterator over P*A, as well as the proper permutation
-    /// for iterating over the inner dimension of P*A*P^T
-    /// Unstable
-    pub fn outer_iterator_perm<'a, 'perm: 'a>(
+    /// Return an outer iterator over P*A*P^T, where it is necessary to use
+    /// `CsVec::iter_perm(perm.inv())` to iterate over the inner dimension.
+    /// Unstable, this is a convenience function for the crate `sprs-ldl`
+    /// for now.
+    #[doc(hidden)]
+    pub fn outer_iterator_papt<'a, 'perm: 'a>(
         &'a self,
         perm: PermViewI<'perm, I>,
     ) -> OuterIteratorPerm<'a, 'perm, N, I, Iptr> {
-        let (inner_len, oriented_perm) = match self.storage {
-            CSR => (self.ncols, perm.reborrow()),
-            CSC => (self.nrows, perm.reborrow_inv()),
+        let inner_len = match self.storage {
+            CSR => self.ncols,
+            CSC => self.nrows,
         };
         let n = self.indptr.len() - 1;
         OuterIteratorPerm {
@@ -1184,7 +1186,7 @@ where
             indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
-            perm: oriented_perm,
+            perm: perm,
         }
     }
 
