@@ -100,7 +100,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
     {
         assert_eq!(mat.rows(), mat.cols());
         let perm: Permutation<I, Vec<I>> = Permutation::identity(mat.rows());
-        LdlSymbolic::new_perm(mat, perm)
+        LdlSymbolic::new_perm(mat, perm, SymmetryCheck::CheckSymmetry)
     }
 
     /// Compute the symbolic decomposition L D L^T = P A P^T
@@ -115,6 +115,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
     pub fn new_perm<N>(
         mat: CsMatViewI<N, I>,
         perm: PermOwnedI<I>,
+        check_symmetry: SymmetryCheck,
     ) -> LdlSymbolic<I>
     where
         N: Copy + PartialEq,
@@ -133,7 +134,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
             parents.view_mut(),
             &mut l_nz,
             &mut flag_workspace,
-            SymmetryCheck::CheckSymmetry,
+            check_symmetry,
         );
 
         LdlSymbolic {
@@ -211,11 +212,12 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     pub fn new_perm(
         mat: CsMatViewI<N, I>,
         perm: PermOwnedI<I>,
+        check_symmetry: SymmetryCheck,
     ) -> Result<Self, SprsError>
     where
         N: Copy + Num + PartialOrd,
     {
-        let symbolic = LdlSymbolic::new_perm(mat.view(), perm);
+        let symbolic = LdlSymbolic::new_perm(mat.view(), perm, check_symmetry);
         symbolic.factor(mat)
     }
 
@@ -658,7 +660,12 @@ mod test {
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 
-        let ldlt = super::LdlNumeric::new_perm(mat.view(), perm).unwrap();
+        let ldlt = super::LdlNumeric::new_perm(
+            mat.view(),
+            perm,
+            super::SymmetryCheck::CheckSymmetry,
+        )
+        .unwrap();
         let b = vec![9, 60, 18, 34];
         let x0 = vec![1, 2, 3, 4];
         let x = ldlt.solve(&b);
