@@ -67,6 +67,17 @@ pub enum SymmetryCheck {
     DontCheckSymmetry,
 }
 
+pub enum FillInReduction {
+    NoReduction,
+    ReverseCuthillMcKee,
+}
+
+/// Builder pattern structure to customize a LDLT decomposition
+pub struct Ldl {
+    check_symmetry: SymmetryCheck,
+    fill_red_method: FillInReduction,
+}
+
 /// Structure to compute and hold a symbolic LDLT decomposition
 #[derive(Debug, Clone)]
 pub struct LdlSymbolic<I> {
@@ -86,6 +97,56 @@ pub struct LdlNumeric<N, I> {
     diag: Vec<N>,
     y_workspace: Vec<N>,
     pattern_workspace: DStack<I>,
+}
+
+impl Ldl {
+    pub fn new() -> Self {
+        Self {
+            check_symmetry: SymmetryCheck::CheckSymmetry,
+            fill_red_method: FillInReduction::ReverseCuthillMcKee,
+        }
+    }
+
+    pub fn check_symmetry(self, check: SymmetryCheck) -> Self {
+        Self {
+            check_symmetry: check,
+            ..self
+        }
+    }
+
+    pub fn fill_in_reduction(self, method: FillInReduction) -> Self {
+        Self {
+            fill_red_method: method,
+            ..self
+        }
+    }
+
+    pub fn symbolic<I, N>(self, mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
+    where
+        I: SpIndex,
+        N: Copy + PartialEq,
+    {
+        let perm = match self.fill_red_method {
+            FillInReduction::NoReduction => PermOwnedI::identity(mat.rows()),
+            FillInReduction::ReverseCuthillMcKee => {
+                sprs::linalg::reverse_cuthill_mckee(mat).perm
+            }
+        };
+        LdlSymbolic::new_perm(mat, perm, self.check_symmetry)
+    }
+
+    pub fn numeric<I, N>(
+        self,
+        mat: CsMatViewI<N, I>,
+    ) -> Result<LdlNumeric<N, I>, SprsError>
+    where
+        I: SpIndex,
+        N: Copy + Num + PartialOrd,
+    {
+        // self.symbolic(mat).factor(mat)
+        let symb = self.symbolic(mat);
+        symb.factor(mat)
+    }
 }
 
 impl<I: SpIndex> LdlSymbolic<I> {
@@ -674,6 +735,27 @@ mod test {
         .unwrap();
         let b = vec![9, 60, 18, 34];
         let x0 = vec![1, 2, 3, 4];
+        let x = ldlt.solve(&b);
+        assert_eq!(x, x0);
+    }
+
+    #[test]
+    fn cuthill_ldl_solve() {
+        let mat = CsMat::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1., 2., 21., 6., 6., 2., 2., 8.],
+        );
+
+        let b = vec![9., 60., 18., 34.];
+        let x0 = vec![1., 2., 3., 4.];
+
+        let ldlt = super::Ldl::new()
+            .check_symmetry(super::SymmetryCheck::DontCheckSymmetry)
+            .fill_in_reduction(super::FillInReduction::ReverseCuthillMcKee)
+            .numeric(mat.view())
+            .unwrap();
         let x = ldlt.solve(&b);
         assert_eq!(x, x0);
     }
