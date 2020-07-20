@@ -35,6 +35,18 @@ pub type PermOwnedI<I> = Permutation<I, Vec<I>>;
 pub type PermView<'a> = Permutation<usize, &'a [usize]>;
 pub type PermViewI<'a, I> = Permutation<I, &'a [I]>;
 
+pub fn perm_is_valid<I: SpIndex>(perm: &[I]) -> bool {
+    let n = perm.len();
+    let mut seen = vec![false; n];
+    for i in perm {
+        if *i < I::zero() || *i >= I::from_usize(n) || seen[i.index()] {
+            return false;
+        }
+        seen[i.index()] = true;
+    }
+    return true;
+}
+
 impl<I: SpIndex> Permutation<I, Vec<I>> {
     pub fn new(perm: Vec<I>) -> PermOwnedI<I> {
         let mut perm_inv = perm.clone();
@@ -366,5 +378,14 @@ mod test {
         );
         let papt = super::transform_mat_papt(mat.view(), perm.view());
         assert_eq!(expected_papt, papt);
+    }
+
+    #[test]
+    fn perm_validity() {
+        use super::perm_is_valid;
+        assert!(perm_is_valid(&[0, 1, 2, 3, 4]));
+        assert!(perm_is_valid(&[1, 0, 3, 4, 2]));
+        assert!(!perm_is_valid(&[0, 1, 2, 3, 5]));
+        assert!(!perm_is_valid(&[0, 1, 2, 3, 3]));
     }
 }
