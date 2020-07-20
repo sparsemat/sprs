@@ -340,8 +340,9 @@ pub mod order {
 
         #[inline]
         fn into_ordering(self) -> Ordering<I> {
+            debug_assert!(crate::perm_is_valid(&self.perm));
             Ordering {
-                perm: PermOwnedI::new(self.perm),
+                perm: PermOwnedI::new_trusted(self.perm),
                 connected_parts: self.connected_parts,
             }
         }
@@ -409,8 +410,9 @@ pub mod order {
                 .for_each(|i| *i = nb_vertices - *i);
             connected_parts.reverse();
 
+            debug_assert!(crate::perm_is_valid(&self.perm));
             Ordering {
-                perm: PermOwnedI::new(self.perm),
+                perm: PermOwnedI::new_trusted(self.perm),
                 connected_parts,
             }
         }

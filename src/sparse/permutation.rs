@@ -49,6 +49,11 @@ pub fn perm_is_valid<I: SpIndex>(perm: &[I]) -> bool {
 
 impl<I: SpIndex> Permutation<I, Vec<I>> {
     pub fn new(perm: Vec<I>) -> PermOwnedI<I> {
+        assert!(perm_is_valid(&perm));
+        Permutation::new_trusted(perm)
+    }
+
+    pub(crate) fn new_trusted(perm: Vec<I>) -> PermOwnedI<I> {
         let mut perm_inv = perm.clone();
         for (ind, val) in perm.iter().enumerate() {
             perm_inv[val.index()] = I::from_usize(ind);
