@@ -10,5 +10,5 @@ rand_distr = "0.2.2"
 rand_pcg = "0.2.1"
 
 [dependencies.sprs]
-version = "0.7.1"
+version = "0.8.0"
 path = ".."
