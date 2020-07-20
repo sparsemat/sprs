@@ -7,4 +7,7 @@ if [ -z ${WITH_NIGHTLY+x} ]; then
 else
     cd sprs-benches
     cargo build --features nightly
+    cd ..
+    cd sprs-ldl
+    cargo test --features sprs_suitesparse_ldl
 fi

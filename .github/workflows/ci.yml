@@ -68,6 +68,10 @@ jobs:
       run: cargo test --verbose --workspace
       if: matrix.os == 'ubuntu-18.04'
 
+    - name: Test (suitesparse integration)
+      run: cargo test -p sprs-ldl --features sprs_suitesparse_ldl -Zpackage-features
+      if: matrix.os == 'ubuntu-18.04' && matrix.build == 'nightly'
+
   rustfmt:
     name: rustfmt
     runs-on: ubuntu-18.04
