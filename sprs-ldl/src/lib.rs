@@ -61,16 +61,8 @@ use sprs::indexing::SpIndex;
 use sprs::linalg;
 use sprs::stack::DStack;
 use sprs::{is_symmetric, CsMatViewI, PermOwnedI, Permutation};
+use sprs::{SymmetryCheck, FillInReduction, PermutationCheck};
 
-pub enum SymmetryCheck {
-    CheckSymmetry,
-    DontCheckSymmetry,
-}
-
-pub enum FillInReduction {
-    NoReduction,
-    ReverseCuthillMcKee,
-}
 
 /// Builder pattern structure to customize a LDLT decomposition
 pub struct Ldl {

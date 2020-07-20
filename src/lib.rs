@@ -135,6 +135,29 @@ pub type Shape = (usize, usize); // FIXME: maybe we could use Ix2 here?
 
 pub type SpRes<T> = Result<T, errors::SprsError>;
 
+/// Configuration enum to ask for symmetry checks in algorithms
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum SymmetryCheck {
+    CheckSymmetry,
+    DontCheckSymmetry,
+}
+pub use SymmetryCheck::*;
+
+/// Configuration enum to ask for permutation checks in algorithms
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum PermutationCheck {
+    CheckPerm,
+    DontCheckPerm,
+}
+pub use PermutationCheck::*;
+
+/// The different kinds of fill-in-reduction algorithms supported by sprs
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum FillInReduction {
+    NoReduction,
+    ReverseCuthillMcKee,
+}
+
 #[cfg(test)]
 mod test_data;
 
