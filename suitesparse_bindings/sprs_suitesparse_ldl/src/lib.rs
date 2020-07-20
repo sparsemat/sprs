@@ -57,7 +57,8 @@ macro_rules! ldl_impl {
             {
                 assert_eq!(mat.rows(), mat.cols());
                 let n = mat.rows();
-                $Symbolic::new_perm(mat, PermOwnedI::identity(n))
+                let perm_check = sprs::DontCheckPerm;
+                $Symbolic::new_perm(mat, PermOwnedI::identity(n), perm_check)
             }
 
             /// Compute the symbolic decomposition L D L^T = P A P^T
@@ -73,6 +74,7 @@ macro_rules! ldl_impl {
             pub fn new_perm<N, I>(
                 mat: CsMatViewI<N, I>,
                 perm: PermOwnedI<I>,
+                check_perm: sprs::PermutationCheck,
             ) -> $Symbolic
             where
                 N: Clone + Into<f64>,
@@ -90,12 +92,14 @@ macro_rules! ldl_impl {
                 let p = perm.vec();
                 let pinv = perm.inv_vec();
                 let mut flag = vec![0; n];
-                let valid_p =
-                    unsafe { $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr()) };
-                let valid_pinv = unsafe {
-                    $valid_perm(n_, pinv.as_ptr(), flag.as_mut_ptr())
-                };
-                assert!(valid_p == 1 && valid_pinv == 1);
+                if check_perm == sprs::CheckPerm {
+                    let valid_p =
+                        unsafe { $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr()) };
+                    let valid_pinv = unsafe {
+                        $valid_perm(n_, pinv.as_ptr(), flag.as_mut_ptr())
+                    };
+                    assert!(valid_p == 1 && valid_pinv == 1);
+                }
                 let mut res = $Symbolic {
                     n: n_,
                     lp: vec![0; n + 1],
@@ -194,12 +198,13 @@ macro_rules! ldl_impl {
             pub fn new_perm<N, I>(
                 mat: CsMatViewI<N, I>,
                 perm: PermOwnedI<I>,
+                check_perm: sprs::PermutationCheck,
             ) -> Result<Self, SprsError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
             {
-                let symbolic = $Symbolic::new_perm(mat.view(), perm);
+                let symbolic = $Symbolic::new_perm(mat.view(), perm, check_perm);
                 symbolic.factor(mat)
             }
 
@@ -351,7 +356,8 @@ mod tests {
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
         );
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let ldlt = LdlSymbolic::new_perm(mat.view(), perm)
+        let check_perm = sprs::CheckPerm;
+        let ldlt = LdlSymbolic::new_perm(mat.view(), perm, check_perm)
             .factor(mat.view())
             .unwrap();
         let b = vec![9., 60., 18., 34.];
@@ -369,7 +375,8 @@ mod tests {
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
         );
         let perm = PermOwnedI::new(vec![0, 2, 1, 3]);
-        let ldlt = LdlLongSymbolic::new_perm(mat.view(), perm)
+        let check_perm = sprs::CheckPerm;
+        let ldlt = LdlLongSymbolic::new_perm(mat.view(), perm, check_perm)
             .factor(mat.view())
             .unwrap();
         let b = vec![9., 60., 18., 34.];
