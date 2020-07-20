@@ -63,10 +63,18 @@ use sprs::stack::DStack;
 use sprs::{is_symmetric, CsMatViewI, PermOwnedI, Permutation};
 use sprs::{SymmetryCheck, FillInReduction, PermutationCheck};
 
+#[cfg(feature = "sprs_suitesparse_ldl")]
+use sprs_suitesparse_ldl::{LdlLongSymbolic, LdlLongNumeric};
+#[cfg(feature = "sprs_suitesparse_ldl")]
+use sprs_suitesparse_ldl::LdlSymbolic as LdlSymbolicC;
+#[cfg(feature = "sprs_suitesparse_ldl")]
+use sprs_suitesparse_ldl::LdlNumeric as LdlNumericC;
 
 /// Builder pattern structure to customize a LDLT decomposition
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Ldl {
     check_symmetry: SymmetryCheck,
+    check_perm: PermutationCheck,
     fill_red_method: FillInReduction,
 }
 
@@ -96,12 +104,20 @@ impl Ldl {
         Self {
             check_symmetry: SymmetryCheck::CheckSymmetry,
             fill_red_method: FillInReduction::ReverseCuthillMcKee,
+            check_perm: PermutationCheck::CheckPerm,
         }
     }
 
     pub fn check_symmetry(self, check: SymmetryCheck) -> Self {
         Self {
             check_symmetry: check,
+            ..self
+        }
+    }
+
+    pub fn check_perm(self, check: PermutationCheck) -> Self {
+        Self {
+            check_perm: check,
             ..self
         }
     }
@@ -113,21 +129,48 @@ impl Ldl {
         }
     }
 
-    pub fn symbolic<I, N>(self, mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
+    pub fn perm<N, I>(&self, mat: CsMatViewI<N, I>) -> PermOwnedI<I>
     where
         I: SpIndex,
         N: Copy + PartialEq,
     {
-        let perm = match self.fill_red_method {
+        match self.fill_red_method {
             FillInReduction::NoReduction => PermOwnedI::identity(mat.rows()),
             FillInReduction::ReverseCuthillMcKee => {
                 sprs::linalg::reverse_cuthill_mckee(mat).perm
             }
-        };
-        LdlSymbolic::new_perm(mat, perm, self.check_symmetry)
+        }
     }
 
-    pub fn numeric<I, N>(
+
+    pub fn symbolic<N, I>(self, mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
+    where
+        I: SpIndex,
+        N: Copy + PartialEq,
+    {
+        LdlSymbolic::new_perm(mat, self.perm(mat), self.check_symmetry)
+    }
+
+    #[cfg(feature = "sprs_suitesparse_ldl")]
+    pub fn symbolic_c<N, I>(self, mat: CsMatViewI<N, I>) -> LdlSymbolicC
+    where
+        I: SpIndex,
+        N: Copy + PartialEq + Into<f64>,
+    {
+        LdlSymbolicC::new_perm(mat, self.perm(mat), self.check_perm)
+    }
+
+    #[cfg(feature = "sprs_suitesparse_ldl")]
+    pub fn symbolic_c_long<N, I>(self, mat: CsMatViewI<N, I>) -> LdlLongSymbolic
+    where
+        I: SpIndex,
+        N: Copy + PartialEq + Into<f64>,
+    {
+        LdlLongSymbolic::new_perm(mat, self.perm(mat), self.check_perm)
+    }
+
+
+    pub fn numeric<N, I>(
         self,
         mat: CsMatViewI<N, I>,
     ) -> Result<LdlNumeric<N, I>, SprsError>
@@ -138,6 +181,30 @@ impl Ldl {
         // self.symbolic(mat).factor(mat)
         let symb = self.symbolic(mat);
         symb.factor(mat)
+    }
+
+    #[cfg(feature = "sprs_suitesparse_ldl")]
+    pub fn numeric_c<N, I>(
+        self,
+        mat: CsMatViewI<N, I>,
+    ) -> Result<LdlNumericC, SprsError>
+    where
+        I: SpIndex,
+        N: Copy + Num + PartialOrd + Into<f64>,
+    {
+        self.symbolic_c(mat).factor(mat)
+    }
+
+    #[cfg(feature = "sprs_suitesparse_ldl")]
+    pub fn numeric_c_long<N, I>(
+        self,
+        mat: CsMatViewI<N, I>,
+    ) -> Result<LdlLongNumeric, SprsError>
+    where
+        I: SpIndex,
+        N: Copy + Num + PartialOrd + Into<f64>,
+    {
+        self.symbolic_c_long(mat).factor(mat)
     }
 }
 
@@ -747,6 +814,28 @@ mod test {
             .check_symmetry(super::SymmetryCheck::DontCheckSymmetry)
             .fill_in_reduction(super::FillInReduction::ReverseCuthillMcKee)
             .numeric(mat.view())
+            .unwrap();
+        let x = ldlt.solve(&b);
+        assert_eq!(x, x0);
+    }
+
+    #[cfg(feature = "sprs_suitesparse_ldl")]
+    #[test]
+    fn cuthill_ldl_solve_c() {
+        let mat = CsMat::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1., 2., 21., 6., 6., 2., 2., 8.],
+        );
+
+        let b = vec![9., 60., 18., 34.];
+        let x0 = vec![1., 2., 3., 4.];
+
+        let ldlt = super::Ldl::new()
+            .check_perm(super::PermutationCheck::CheckPerm)
+            .fill_in_reduction(super::FillInReduction::ReverseCuthillMcKee)
+            .numeric_c(mat.view())
             .unwrap();
         let x = ldlt.solve(&b);
         assert_eq!(x, x0);
