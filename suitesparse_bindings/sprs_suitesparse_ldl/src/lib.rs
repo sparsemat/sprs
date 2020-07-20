@@ -93,8 +93,9 @@ macro_rules! ldl_impl {
                 let pinv = perm.inv_vec();
                 let mut flag = vec![0; n];
                 if check_perm == sprs::CheckPerm {
-                    let valid_p =
-                        unsafe { $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr()) };
+                    let valid_p = unsafe {
+                        $valid_perm(n_, p.as_ptr(), flag.as_mut_ptr())
+                    };
                     let valid_pinv = unsafe {
                         $valid_perm(n_, pinv.as_ptr(), flag.as_mut_ptr())
                     };
@@ -204,7 +205,8 @@ macro_rules! ldl_impl {
                 N: Clone + Into<f64>,
                 I: SpIndex,
             {
-                let symbolic = $Symbolic::new_perm(mat.view(), perm, check_perm);
+                let symbolic =
+                    $Symbolic::new_perm(mat.view(), perm, check_perm);
                 symbolic.factor(mat)
             }
 

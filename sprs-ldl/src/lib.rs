@@ -61,14 +61,14 @@ use sprs::indexing::SpIndex;
 use sprs::linalg;
 use sprs::stack::DStack;
 use sprs::{is_symmetric, CsMatViewI, PermOwnedI, Permutation};
-use sprs::{SymmetryCheck, FillInReduction, PermutationCheck};
+use sprs::{FillInReduction, PermutationCheck, SymmetryCheck};
 
 #[cfg(feature = "sprs_suitesparse_ldl")]
-use sprs_suitesparse_ldl::{LdlLongSymbolic, LdlLongNumeric};
+use sprs_suitesparse_ldl::LdlNumeric as LdlNumericC;
 #[cfg(feature = "sprs_suitesparse_ldl")]
 use sprs_suitesparse_ldl::LdlSymbolic as LdlSymbolicC;
 #[cfg(feature = "sprs_suitesparse_ldl")]
-use sprs_suitesparse_ldl::LdlNumeric as LdlNumericC;
+use sprs_suitesparse_ldl::{LdlLongNumeric, LdlLongSymbolic};
 
 /// Builder pattern structure to customize a LDLT decomposition
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -142,7 +142,6 @@ impl Ldl {
         }
     }
 
-
     pub fn symbolic<N, I>(self, mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
     where
         I: SpIndex,
@@ -168,7 +167,6 @@ impl Ldl {
     {
         LdlLongSymbolic::new_perm(mat, self.perm(mat), self.check_perm)
     }
-
 
     pub fn numeric<N, I>(
         self,
