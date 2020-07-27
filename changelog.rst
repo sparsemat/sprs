@@ -2,6 +2,13 @@
 Changelog
 =========
 
+- 0.8.0
+    - accelerate sparse matrix product, remove the old implementation
+      **breaking change**
+    - introduce fill-in reduction permutation using reverse Cuthil-McKee
+    - fix permuted iteration that caused bugs in ``sprs-ldl``
+      **breaking change**
+    - check permutation validity on creation **breaking change**
 - 0.7.1
     - fix issue when building docs on nightly, which broke on docs.sprs
 - 0.7.0
