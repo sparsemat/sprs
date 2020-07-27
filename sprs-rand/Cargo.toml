@@ -5,6 +5,7 @@ version = "0.1.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
+documentation = "https://docs.rs/sprs-rand"
 
 [dependencies]
 rand = "0.7.3"
