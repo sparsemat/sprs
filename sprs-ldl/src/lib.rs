@@ -502,7 +502,7 @@ where
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             pattern_workspace.clear_left();
-            while flag_workspace[i].index() != k {
+            while flag_workspace[i].index_unchecked() != k {
                 pattern_workspace.push_left(I::from_usize(i));
                 flag_workspace[i] = I::from_usize(k);
                 i = parents.get_parent(i).expect("enforced by ldl_symbolic");
@@ -515,7 +515,7 @@ where
         diag[k] = y_workspace[k];
         y_workspace[k] = N::zero();
         'pattern: for &i in pattern_workspace.iter_right() {
-            let i = i.index();
+            let i = i.index_unchecked();
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
             let p2 = (l_colptr[i] + l_nz[i]).index();
