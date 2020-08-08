@@ -485,6 +485,7 @@ where
     PStorage: Deref<Target = [I]>,
 {
     assert!(y_workspace.len() == mat.outer_dims());
+    assert!(diag.len() == mat.outer_dims());
     let outer_it = mat.outer_iterator_papt(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
         // compute the nonzero pattern of the kth row of L
@@ -517,9 +518,9 @@ where
             let i = i.index();
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
-            let p2 = l_colptr[i] + l_nz[i];
-            let r0 = l_colptr[i].index()..p2.index();
-            let r1 = l_colptr[i].index()..p2.index(); // Hack because not Copy
+            let p2 = (l_colptr[i] + l_nz[i]).index();
+            let r0 = l_colptr[i].index()..p2;
+            let r1 = l_colptr[i].index()..p2; // Hack because not Copy
             for (y_index, lx) in l_indices[r0].iter().zip(l_data[r1].iter()) {
                 // we cannot go inside this loop before something has actually
                 // be written into l_indices[l_colptr[i]..p2] so this
@@ -537,10 +538,14 @@ where
                     *yw = *yw - *lx * yi;
                 }
             }
-            let l_ki = yi / diag[i];
-            diag[k] = diag[k] - l_ki * yi;
-            l_indices[p2.index()] = I::from_usize(k);
-            l_data[p2.index()] = l_ki;
+            // Safety: i and k are <= `mat.outer_dims()` and we have asserted
+            // that `diag.len() == mat.outer_dims()`.
+            let di = *unsafe { diag.get_unchecked(i) };
+            let dk = unsafe { diag.get_unchecked_mut(k) };
+            let l_ki = yi / di;
+            *dk = *dk - l_ki * yi;
+            l_indices[p2] = I::from_usize(k);
+            l_data[p2] = l_ki;
             l_nz[i] += I::one();
         }
         if diag[k] == N::zero() {
