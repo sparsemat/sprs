@@ -484,6 +484,7 @@ where
     I: SpIndex,
     PStorage: Deref<Target = [I]>,
 {
+    assert!(y_workspace.len() == mat.outer_dims());
     let outer_it = mat.outer_iterator_papt(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
         // compute the nonzero pattern of the kth row of L
@@ -517,15 +518,24 @@ where
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
             let p2 = l_colptr[i] + l_nz[i];
-            for p in l_colptr[i].index()..p2.index() {
+            let r0 = l_colptr[i].index()..p2.index();
+            let r1 = l_colptr[i].index()..p2.index(); // Hack because not Copy
+            for (y_index, lx) in l_indices[r0].iter().zip(l_data[r1].iter()) {
                 // we cannot go inside this loop before something has actually
                 // be written into l_indices[l_colptr[i]..p2] so this
                 // read is actually not into garbage
                 // actually each iteration of the 'pattern loop adds writes the
                 // value in l_indices that will be read on the next iteration
                 // TODO: can some design change make this fact more obvious?
-                let y_index = l_indices[p].index();
-                y_workspace[y_index] = y_workspace[y_index] - l_data[p] * yi;
+                // This means we always know it will fit in an usize
+                let y_index = y_index.index_unchecked();
+                // Safety: `y_index` can take the values taken by `k`, so
+                // it is in `0..mat.outer_dims()`, and we have asserted
+                // that `y_workspace.len() == mat.outer_dims()`.
+                unsafe {
+                    let yw = y_workspace.get_unchecked_mut(y_index);
+                    *yw = *yw - *lx * yi;
+                }
             }
             let l_ki = yi / diag[i];
             diag[k] = diag[k] - l_ki * yi;
