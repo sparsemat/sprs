@@ -80,7 +80,7 @@ pub mod array_backend;
 pub mod errors;
 pub mod indexing;
 pub mod io;
-mod num_kinds;
+pub mod num_kinds;
 mod sparse;
 pub mod stack;
 
