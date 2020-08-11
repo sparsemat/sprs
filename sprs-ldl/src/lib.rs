@@ -484,6 +484,8 @@ where
     I: SpIndex,
     PStorage: Deref<Target = [I]>,
 {
+    assert!(y_workspace.len() == mat.outer_dims());
+    assert!(diag.len() == mat.outer_dims());
     let outer_it = mat.outer_iterator_papt(perm.view());
     for (k, (_, vec)) in outer_it.enumerate() {
         // compute the nonzero pattern of the kth row of L
@@ -500,7 +502,7 @@ where
             y_workspace[inner_ind] = y_workspace[inner_ind] + val;
             let mut i = inner_ind;
             pattern_workspace.clear_left();
-            while flag_workspace[i].index() != k {
+            while flag_workspace[i].index_unchecked() != k {
                 pattern_workspace.push_left(I::from_usize(i));
                 flag_workspace[i] = I::from_usize(k);
                 i = parents.get_parent(i).expect("enforced by ldl_symbolic");
@@ -513,24 +515,37 @@ where
         diag[k] = y_workspace[k];
         y_workspace[k] = N::zero();
         'pattern: for &i in pattern_workspace.iter_right() {
-            let i = i.index();
+            let i = i.index_unchecked();
             let yi = y_workspace[i];
             y_workspace[i] = N::zero();
-            let p2 = l_colptr[i] + l_nz[i];
-            for p in l_colptr[i].index()..p2.index() {
+            let p2 = (l_colptr[i] + l_nz[i]).index();
+            let r0 = l_colptr[i].index()..p2;
+            let r1 = l_colptr[i].index()..p2; // Hack because not Copy
+            for (y_index, lx) in l_indices[r0].iter().zip(l_data[r1].iter()) {
                 // we cannot go inside this loop before something has actually
                 // be written into l_indices[l_colptr[i]..p2] so this
                 // read is actually not into garbage
                 // actually each iteration of the 'pattern loop adds writes the
                 // value in l_indices that will be read on the next iteration
                 // TODO: can some design change make this fact more obvious?
-                let y_index = l_indices[p].index();
-                y_workspace[y_index] = y_workspace[y_index] - l_data[p] * yi;
+                // This means we always know it will fit in an usize
+                let y_index = y_index.index_unchecked();
+                // Safety: `y_index` can take the values taken by `k`, so
+                // it is in `0..mat.outer_dims()`, and we have asserted
+                // that `y_workspace.len() == mat.outer_dims()`.
+                unsafe {
+                    let yw = y_workspace.get_unchecked_mut(y_index);
+                    *yw = *yw - *lx * yi;
+                }
             }
-            let l_ki = yi / diag[i];
-            diag[k] = diag[k] - l_ki * yi;
-            l_indices[p2.index()] = I::from_usize(k);
-            l_data[p2.index()] = l_ki;
+            // Safety: i and k are <= `mat.outer_dims()` and we have asserted
+            // that `diag.len() == mat.outer_dims()`.
+            let di = *unsafe { diag.get_unchecked(i) };
+            let dk = unsafe { diag.get_unchecked_mut(k) };
+            let l_ki = yi / di;
+            *dk = *dk - l_ki * yi;
+            l_indices[p2] = I::from_usize(k);
+            l_data[p2] = l_ki;
             l_nz[i] += I::one();
         }
         if diag[k] == N::zero() {
