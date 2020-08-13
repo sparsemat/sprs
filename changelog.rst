@@ -2,6 +2,9 @@
 Changelog
 =========
 
+- 0.8.1
+    - Expose the ``num_kinds`` module to allow generic usage of matrix market
+      serialization functions in client crates
 - 0.8.0
     - accelerate sparse matrix product, remove the old implementation
       **breaking change**

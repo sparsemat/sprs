@@ -2,7 +2,7 @@
 
 name = "sprs-ldl"
 description = "Sparse cholesky factorization"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Vincent Barrielle"]
 edition = "2018"
 
