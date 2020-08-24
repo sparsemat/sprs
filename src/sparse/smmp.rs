@@ -5,8 +5,10 @@ use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
 use num_traits::Num;
+#[cfg(feature = "multi_thread")]
 use rayon::prelude::*;
 
+#[cfg(feature = "multi_thread")]
 use std::cell::RefCell;
 
 /// Control the strategy used to parallelize the matrix product workload.
@@ -23,12 +25,14 @@ use std::cell::RefCell;
 /// The `Fixed` strategy leaves the control to the user. It is a programming
 /// error to request 0 threads.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg(feature = "multi_thread")]
 pub enum ThreadingStrategy {
     Automatic,
     AutomaticPhysical,
     Fixed(usize),
 }
 
+#[cfg(feature = "multi_thread")]
 thread_local!(static THREADING_STRAT: RefCell<ThreadingStrategy> =
     RefCell::new(ThreadingStrategy::Automatic)
 );
@@ -38,6 +42,7 @@ thread_local!(static THREADING_STRAT: RefCell<ThreadingStrategy> =
 /// # Panics
 ///
 /// If a number of 0 threads is requested.
+#[cfg(feature = "multi_thread")]
 pub fn set_thread_threading_strategy(strategy: ThreadingStrategy) {
     if let ThreadingStrategy::Fixed(nb_threads) = strategy {
         assert!(nb_threads > 0);
@@ -47,6 +52,7 @@ pub fn set_thread_threading_strategy(strategy: ThreadingStrategy) {
     });
 }
 
+#[cfg(feature = "multi_thread")]
 pub fn thread_threading_strategy() -> ThreadingStrategy {
     THREADING_STRAT.with(|s| *s.borrow())
 }
@@ -220,20 +226,25 @@ where
     let r_cols = rhs.cols();
     assert_eq!(l_cols, r_rows);
     let workspace_len = l_rows.max(l_cols).max(r_cols);
-    use self::ThreadingStrategy::{Automatic, AutomaticPhysical};
-    let nb_threads = match thread_threading_strategy() {
-        ThreadingStrategy::Fixed(nb_threads) => nb_threads,
-        strat @ Automatic | strat @ AutomaticPhysical => {
-            let nb_cpus = if strat == ThreadingStrategy::Automatic {
-                num_cpus::get()
-            } else {
-                num_cpus::get_physical()
-            };
-            let ideal_chunk_size = 8128;
-            let wanted_threads = (lhs.nnz() + rhs.nnz()) / ideal_chunk_size;
-            1.max(wanted_threads).min(nb_cpus)
+    #[cfg(feature = "multi_thread")]
+    let nb_threads = {
+        use self::ThreadingStrategy::{Automatic, AutomaticPhysical};
+        match thread_threading_strategy() {
+            ThreadingStrategy::Fixed(nb_threads) => nb_threads,
+            strat @ Automatic | strat @ AutomaticPhysical => {
+                let nb_cpus = if strat == ThreadingStrategy::Automatic {
+                    num_cpus::get()
+                } else {
+                    num_cpus::get_physical()
+                };
+                let ideal_chunk_size = 8128;
+                let wanted_threads = (lhs.nnz() + rhs.nnz()) / ideal_chunk_size;
+                1.max(wanted_threads).min(nb_cpus)
+            }
         }
     };
+    #[cfg(not(feature = "multi_thread"))]
+    let nb_threads = 1;
     let mut tmps = Vec::with_capacity(nb_threads);
     for _ in 0..nb_threads {
         tmps.push(vec![N::zero(); workspace_len].into_boxed_slice())
@@ -305,31 +316,35 @@ where
         res_indices_chunks
             .push(Vec::with_capacity(lhs.nnz() + rhs.nnz() / chunk_size));
     }
-    lhs_indptr_chunks
+    #[cfg(feature = "multi_thread")]
+    let iter = lhs_indptr_chunks
         .par_iter()
         .zip(res_indptr_chunks.par_iter_mut())
         .zip(res_indices_chunks.par_iter_mut())
-        .zip(seens.par_iter_mut())
-        .for_each(
-            |(
-                (
-                    (lhs_indptr_chunk, mut res_indptr_chunk),
-                    mut res_indices_chunk,
-                ),
-                mut seen,
-            )| {
-                symbolic(
-                    lhs_indptr_chunk,
-                    lhs.indices(),
-                    r_cols,
-                    rhs.indptr(),
-                    rhs.indices(),
-                    &mut res_indptr_chunk,
-                    &mut res_indices_chunk,
-                    &mut seen,
-                );
-            },
-        );
+        .zip(seens.par_iter_mut());
+    #[cfg(not(feature = "multi_thread"))]
+    let iter = lhs_indptr_chunks
+        .iter()
+        .zip(res_indptr_chunks.iter_mut())
+        .zip(res_indices_chunks.iter_mut())
+        .zip(seens.iter_mut());
+    iter.for_each(
+        |(
+            ((lhs_indptr_chunk, mut res_indptr_chunk), mut res_indices_chunk),
+            mut seen,
+        )| {
+            symbolic(
+                lhs_indptr_chunk,
+                lhs.indices(),
+                r_cols,
+                rhs.indptr(),
+                rhs.indices(),
+                &mut res_indptr_chunk,
+                &mut res_indices_chunk,
+                &mut seen,
+            );
+        },
+    );
     res_indices.reserve(res_indices_chunks.iter().map(|x| x.len()).sum());
     for res_indices_chunk in &res_indices_chunks {
         res_indices.extend_from_slice(res_indices_chunk);
@@ -381,34 +396,42 @@ where
     res_indptr_chunks.push(&res_indptr[split_row..]);
     res_indices_chunks.push(res_indices_rem);
     res_data_chunks.push(res_data_rem);
-    lhs_indptr_chunks
+    #[cfg(feature = "multi_thread")]
+    let iter = lhs_indptr_chunks
         .par_iter()
         .zip(res_indptr_chunks.par_iter())
         .zip(res_indices_chunks.par_iter())
         .zip(res_data_chunks.par_iter_mut())
-        .zip(tmps.par_iter_mut())
-        .for_each(
-            |(
-                (
-                    ((lhs_indptr_chunk, res_indptr_chunk), res_indices_chunk),
-                    res_data_chunk,
-                ),
+        .zip(tmps.par_iter_mut());
+    #[cfg(not(feature = "multi_thread"))]
+    let iter = lhs_indptr_chunks
+        .iter()
+        .zip(res_indptr_chunks.iter())
+        .zip(res_indices_chunks.iter())
+        .zip(res_data_chunks.iter_mut())
+        .zip(tmps.iter_mut());
+    iter.for_each(
+        |(
+            (
+                ((lhs_indptr_chunk, res_indptr_chunk), res_indices_chunk),
+                res_data_chunk,
+            ),
+            tmp,
+        )| {
+            numeric(
+                lhs_indptr_chunk,
+                lhs.indices(),
+                lhs.data(),
+                rhs.indptr(),
+                rhs.indices(),
+                rhs.data(),
+                res_indptr_chunk,
+                res_indices_chunk,
+                res_data_chunk,
                 tmp,
-            )| {
-                numeric(
-                    lhs_indptr_chunk,
-                    lhs.indices(),
-                    lhs.data(),
-                    rhs.indptr(),
-                    rhs.indices(),
-                    rhs.data(),
-                    res_indptr_chunk,
-                    res_indices_chunk,
-                    res_data_chunk,
-                    tmp,
-                );
-            },
-        );
+            );
+        },
+    );
 
     // Correctness: The invariants of the output come from the invariants of
     // the inputs when in-bounds indices are concerned, and we are sorting
@@ -487,6 +510,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "multi_thread")]
     fn mul_csr_csr_multithreaded() {
         let a = test_data::mat1();
         let exp = test_data::mat1_self_matprod();
