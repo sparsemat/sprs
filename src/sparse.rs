@@ -285,6 +285,7 @@ pub mod binop;
 pub mod compressed;
 pub mod construct;
 pub mod csmat;
+pub mod kronecker;
 pub mod linalg;
 pub mod permutation;
 pub mod prod;
