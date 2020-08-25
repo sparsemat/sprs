@@ -3160,10 +3160,10 @@ mod approx_impls {
             m2.add_triplet(1, 1, 8_u8);
             let m2 = m2.to_csr();
 
-            approx::assert_abs_diff_ne!(m1, m2);
-            approx::assert_abs_diff_ne!(m1, m2.to_csc());
-            approx::assert_abs_diff_ne!(m1.to_csc(), m2);
-            approx::assert_abs_diff_ne!(m1.to_csc(), m2.to_csc());
+            ::approx::assert_abs_diff_ne!(m1, m2);
+            ::approx::assert_abs_diff_ne!(m1, m2.to_csc());
+            ::approx::assert_abs_diff_ne!(m1.to_csc(), m2);
+            ::approx::assert_abs_diff_ne!(m1.to_csc(), m2.to_csc());
         }
 
         #[test]
@@ -3178,10 +3178,14 @@ mod approx_impls {
             let m1 = m1.to_csr();
             let m2 = m1.clone();
 
-            approx::assert_abs_diff_eq!(m1, m2, epsilon = 0);
-            approx::assert_abs_diff_eq!(m1.to_csc(), m2, epsilon = 0);
-            approx::assert_abs_diff_eq!(m1, m2.to_csc(), epsilon = 0);
-            approx::assert_abs_diff_eq!(m1.to_csc(), m2.to_csc(), epsilon = 0);
+            ::approx::assert_abs_diff_eq!(m1, m2, epsilon = 0);
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2, epsilon = 0);
+            ::approx::assert_abs_diff_eq!(m1, m2.to_csc(), epsilon = 0);
+            ::approx::assert_abs_diff_eq!(
+                m1.to_csc(),
+                m2.to_csc(),
+                epsilon = 0
+            );
 
             let mut m1 = TriMat::new((6, 9));
             m1.add_triplet(1, 1, 8.0_f32);
@@ -3193,20 +3197,20 @@ mod approx_impls {
             let m1 = m1.to_csr();
             let m2 = m1.clone();
 
-            approx::assert_abs_diff_eq!(m1, m2);
-            approx::assert_abs_diff_eq!(m1.to_csc(), m2);
-            approx::assert_abs_diff_eq!(m1, m2.to_csc());
-            approx::assert_abs_diff_eq!(m1.to_csc(), m2.to_csc());
+            ::approx::assert_abs_diff_eq!(m1, m2);
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2);
+            ::approx::assert_abs_diff_eq!(m1, m2.to_csc());
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2.to_csc());
 
-            approx::assert_relative_eq!(m1, m2);
-            approx::assert_relative_eq!(m1.to_csc(), m2);
-            approx::assert_relative_eq!(m1, m2.to_csc());
-            approx::assert_relative_eq!(m1.to_csc(), m2.to_csc());
+            ::approx::assert_relative_eq!(m1, m2);
+            ::approx::assert_relative_eq!(m1.to_csc(), m2);
+            ::approx::assert_relative_eq!(m1, m2.to_csc());
+            ::approx::assert_relative_eq!(m1.to_csc(), m2.to_csc());
 
-            approx::assert_ulps_eq!(m1, m2);
-            approx::assert_ulps_eq!(m1.to_csc(), m2);
-            approx::assert_ulps_eq!(m1, m2.to_csc());
-            approx::assert_ulps_eq!(m1.to_csc(), m2.to_csc());
+            ::approx::assert_ulps_eq!(m1, m2);
+            ::approx::assert_ulps_eq!(m1.to_csc(), m2);
+            ::approx::assert_ulps_eq!(m1, m2.to_csc());
+            ::approx::assert_ulps_eq!(m1.to_csc(), m2.to_csc());
         }
 
         #[test]
@@ -3228,19 +3232,19 @@ mod approx_impls {
             m2.add_triplet(4, 3, 0.2); // extra element
             let m2 = m2.to_csr();
 
-            approx::assert_abs_diff_eq!(m1, m2, epsilon = 0.6);
-            approx::assert_abs_diff_eq!(m1.to_csc(), m2, epsilon = 0.6);
-            approx::assert_abs_diff_eq!(m1, m2.to_csc(), epsilon = 0.6);
-            approx::assert_abs_diff_eq!(
+            ::approx::assert_abs_diff_eq!(m1, m2, epsilon = 0.6);
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2, epsilon = 0.6);
+            ::approx::assert_abs_diff_eq!(m1, m2.to_csc(), epsilon = 0.6);
+            ::approx::assert_abs_diff_eq!(
                 m1.to_csc(),
                 m2.to_csc(),
                 epsilon = 0.6
             );
 
-            approx::assert_abs_diff_ne!(m1, m2, epsilon = 0.4);
-            approx::assert_abs_diff_ne!(m1.to_csc(), m2, epsilon = 0.4);
-            approx::assert_abs_diff_ne!(m1, m2.to_csc(), epsilon = 0.4);
-            approx::assert_abs_diff_ne!(
+            ::approx::assert_abs_diff_ne!(m1, m2, epsilon = 0.4);
+            ::approx::assert_abs_diff_ne!(m1.to_csc(), m2, epsilon = 0.4);
+            ::approx::assert_abs_diff_ne!(m1, m2.to_csc(), epsilon = 0.4);
+            ::approx::assert_abs_diff_ne!(
                 m1.to_csc(),
                 m2.to_csc(),
                 epsilon = 0.4
