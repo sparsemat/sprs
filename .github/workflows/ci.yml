@@ -125,3 +125,19 @@ jobs:
     - name: Run test
       run: |
           cargo test --no-default-features
+
+  optional_approx:
+    name: Optional features
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+    - name: Run test
+      run: |
+          cargo test --features approx
