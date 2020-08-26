@@ -1,0 +1,12 @@
+[package]
+name = "suitesparse_camd_sys"
+version = "0.1.0"
+authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
+edition = "2018"
+description = "Raw bindings to SuiteSparse's CAMD algorithm"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libc = "0.2.74"
