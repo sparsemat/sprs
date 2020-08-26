@@ -2953,3 +2953,302 @@ mod test {
         assert_eq!(CsMat::eye(2), onehot);
     }
 }
+
+#[cfg(feature = "approx")]
+mod approx_impls {
+    use super::*;
+    use approx::*;
+
+    impl<N, I, Iptr, IS1, DS1, ISptr1, IS2, ISptr2, DS2>
+        AbsDiffEq<CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>>
+        for CsMatBase<N, I, ISptr1, IS1, DS1, Iptr>
+    where
+        I: SpIndex,
+        Iptr: SpIndex,
+        CsMatBase<N, I, ISptr1, IS1, DS1, Iptr>:
+            std::cmp::PartialEq<CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>>,
+        IS1: Deref<Target = [I]>,
+        IS2: Deref<Target = [I]>,
+        ISptr1: Deref<Target = [Iptr]>,
+        ISptr2: Deref<Target = [Iptr]>,
+        DS1: Deref<Target = [N]>,
+        DS2: Deref<Target = [N]>,
+        N: AbsDiffEq,
+        N::Epsilon: Clone,
+        N: num_traits::Zero,
+    {
+        type Epsilon = N::Epsilon;
+        fn default_epsilon() -> N::Epsilon {
+            N::default_epsilon()
+        }
+        fn abs_diff_eq(
+            &self,
+            other: &CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>,
+            epsilon: N::Epsilon,
+        ) -> bool {
+            if self.shape() != other.shape() {
+                return false;
+            }
+            if self.storage() == other.storage() {
+                self.outer_iterator()
+                    .zip(other.outer_iterator())
+                    .all(|(r1, r2)| r1.abs_diff_eq(&r2, epsilon.clone()))
+            } else {
+                // Checks if all elements in self has a matching element
+                // in other
+                if !self.iter().all(|(n, (i, j))| {
+                    n.abs_diff_eq(
+                        other
+                            .get(i.to_usize().unwrap(), j.to_usize().unwrap())
+                            .unwrap_or(&N::zero()),
+                        epsilon.clone(),
+                    )
+                }) {
+                    return false;
+                }
+
+                // Must also check if all elements in other matches self
+                other.iter().all(|(n, (i, j))| {
+                    n.abs_diff_eq(
+                        self.get(i.to_usize().unwrap(), j.to_usize().unwrap())
+                            .unwrap_or(&N::zero()),
+                        epsilon.clone(),
+                    )
+                })
+            }
+        }
+    }
+    impl<N, I, Iptr, IS1, DS1, ISptr1, IS2, ISptr2, DS2>
+        UlpsEq<CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>>
+        for CsMatBase<N, I, ISptr1, IS1, DS1, Iptr>
+    where
+        I: SpIndex,
+        Iptr: SpIndex,
+        CsMatBase<N, I, ISptr1, IS1, DS1, Iptr>:
+            std::cmp::PartialEq<CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>>,
+        IS1: Deref<Target = [I]>,
+        IS2: Deref<Target = [I]>,
+        ISptr1: Deref<Target = [Iptr]>,
+        ISptr2: Deref<Target = [Iptr]>,
+        DS1: Deref<Target = [N]>,
+        DS2: Deref<Target = [N]>,
+        N: UlpsEq,
+        N::Epsilon: Clone,
+        N: num_traits::Zero,
+    {
+        fn default_max_ulps() -> u32 {
+            N::default_max_ulps()
+        }
+        fn ulps_eq(
+            &self,
+            other: &CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>,
+            epsilon: N::Epsilon,
+            max_ulps: u32,
+        ) -> bool {
+            if self.shape() != other.shape() {
+                return false;
+            }
+            if self.storage() == other.storage() {
+                self.outer_iterator()
+                    .zip(other.outer_iterator())
+                    .all(|(r1, r2)| r1.ulps_eq(&r2, epsilon.clone(), max_ulps))
+            } else {
+                // Checks if all elements in self has a matching element
+                // in other
+                if !self.iter().all(|(n, (i, j))| {
+                    n.ulps_eq(
+                        other
+                            .get(i.to_usize().unwrap(), j.to_usize().unwrap())
+                            .unwrap_or(&N::zero()),
+                        epsilon.clone(),
+                        max_ulps,
+                    )
+                }) {
+                    return false;
+                }
+
+                // Must also check if all elements in other matches self
+                other.iter().all(|(n, (i, j))| {
+                    n.ulps_eq(
+                        self.get(i.to_usize().unwrap(), j.to_usize().unwrap())
+                            .unwrap_or(&N::zero()),
+                        epsilon.clone(),
+                        max_ulps,
+                    )
+                })
+            }
+        }
+    }
+    impl<N, I, Iptr, IS1, DS1, ISptr1, IS2, ISptr2, DS2>
+        RelativeEq<CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>>
+        for CsMatBase<N, I, ISptr1, IS1, DS1, Iptr>
+    where
+        I: SpIndex,
+        Iptr: SpIndex,
+        CsMatBase<N, I, ISptr1, IS1, DS1, Iptr>:
+            std::cmp::PartialEq<CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>>,
+        IS1: Deref<Target = [I]>,
+        IS2: Deref<Target = [I]>,
+        ISptr1: Deref<Target = [Iptr]>,
+        ISptr2: Deref<Target = [Iptr]>,
+        DS1: Deref<Target = [N]>,
+        DS2: Deref<Target = [N]>,
+        N: RelativeEq,
+        N::Epsilon: Clone,
+        N: num_traits::Zero,
+    {
+        fn default_max_relative() -> N::Epsilon {
+            N::default_max_relative()
+        }
+        fn relative_eq(
+            &self,
+            other: &CsMatBase<N, I, ISptr2, IS2, DS2, Iptr>,
+            epsilon: N::Epsilon,
+            max_relative: Self::Epsilon,
+        ) -> bool {
+            if self.shape() != other.shape() {
+                return false;
+            }
+            if self.storage() == other.storage() {
+                self.outer_iterator().zip(other.outer_iterator()).all(
+                    |(r1, r2)| {
+                        r1.relative_eq(
+                            &r2,
+                            epsilon.clone(),
+                            max_relative.clone(),
+                        )
+                    },
+                )
+            } else {
+                // Checks if all elements in self has a matching element
+                // in other
+                if !self.iter().all(|(n, (i, j))| {
+                    n.relative_eq(
+                        other
+                            .get(i.to_usize().unwrap(), j.to_usize().unwrap())
+                            .unwrap_or(&N::zero()),
+                        epsilon.clone(),
+                        max_relative.clone(),
+                    )
+                }) {
+                    return false;
+                }
+
+                // Must also check if all elements in other matches self
+                other.iter().all(|(n, (i, j))| {
+                    n.relative_eq(
+                        self.get(i.to_usize().unwrap(), j.to_usize().unwrap())
+                            .unwrap_or(&N::zero()),
+                        epsilon.clone(),
+                        max_relative.clone(),
+                    )
+                })
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use crate::*;
+
+        #[test]
+        fn different_shapes() {
+            let mut m1 = TriMat::new((3, 2));
+            m1.add_triplet(1, 1, 8_u8);
+            let m1 = m1.to_csr();
+            let mut m2 = TriMat::new((2, 3));
+            m2.add_triplet(1, 1, 8_u8);
+            let m2 = m2.to_csr();
+
+            ::approx::assert_abs_diff_ne!(m1, m2);
+            ::approx::assert_abs_diff_ne!(m1, m2.to_csc());
+            ::approx::assert_abs_diff_ne!(m1.to_csc(), m2);
+            ::approx::assert_abs_diff_ne!(m1.to_csc(), m2.to_csc());
+        }
+
+        #[test]
+        fn equal_elements() {
+            let mut m1 = TriMat::new((6, 9));
+            m1.add_triplet(1, 1, 8_u8);
+            m1.add_triplet(1, 2, 7_u8);
+            m1.add_triplet(0, 1, 6_u8);
+            m1.add_triplet(0, 8, 5_u8);
+            m1.add_triplet(4, 2, 4_u8);
+
+            let m1 = m1.to_csr();
+            let m2 = m1.clone();
+
+            ::approx::assert_abs_diff_eq!(m1, m2, epsilon = 0);
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2, epsilon = 0);
+            ::approx::assert_abs_diff_eq!(m1, m2.to_csc(), epsilon = 0);
+            ::approx::assert_abs_diff_eq!(
+                m1.to_csc(),
+                m2.to_csc(),
+                epsilon = 0
+            );
+
+            let mut m1 = TriMat::new((6, 9));
+            m1.add_triplet(1, 1, 8.0_f32);
+            m1.add_triplet(1, 2, 7.0);
+            m1.add_triplet(0, 1, 6.0);
+            m1.add_triplet(0, 8, 5.0);
+            m1.add_triplet(4, 2, 4.0);
+
+            let m1 = m1.to_csr();
+            let m2 = m1.clone();
+
+            ::approx::assert_abs_diff_eq!(m1, m2);
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2);
+            ::approx::assert_abs_diff_eq!(m1, m2.to_csc());
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2.to_csc());
+
+            ::approx::assert_relative_eq!(m1, m2);
+            ::approx::assert_relative_eq!(m1.to_csc(), m2);
+            ::approx::assert_relative_eq!(m1, m2.to_csc());
+            ::approx::assert_relative_eq!(m1.to_csc(), m2.to_csc());
+
+            ::approx::assert_ulps_eq!(m1, m2);
+            ::approx::assert_ulps_eq!(m1.to_csc(), m2);
+            ::approx::assert_ulps_eq!(m1, m2.to_csc());
+            ::approx::assert_ulps_eq!(m1.to_csc(), m2.to_csc());
+        }
+
+        #[test]
+        fn almost_equal_elements() {
+            let mut m1 = TriMat::new((6, 9));
+            m1.add_triplet(1, 1, 8.0_f32);
+            m1.add_triplet(1, 2, 7.0);
+            m1.add_triplet(0, 1, 6.0);
+            m1.add_triplet(0, 8, 5.0);
+            m1.add_triplet(4, 2, 4.0);
+            let m1 = m1.to_csr();
+
+            let mut m2 = TriMat::new((6, 9));
+            m2.add_triplet(1, 1, 8.0_f32);
+            m2.add_triplet(1, 2, 7.0 - 0.5); // 0.5 subtracted
+            m2.add_triplet(0, 1, 6.0);
+            m2.add_triplet(0, 8, 5.0);
+            m2.add_triplet(4, 2, 4.0);
+            m2.add_triplet(4, 3, 0.2); // extra element
+            let m2 = m2.to_csr();
+
+            ::approx::assert_abs_diff_eq!(m1, m2, epsilon = 0.6);
+            ::approx::assert_abs_diff_eq!(m1.to_csc(), m2, epsilon = 0.6);
+            ::approx::assert_abs_diff_eq!(m1, m2.to_csc(), epsilon = 0.6);
+            ::approx::assert_abs_diff_eq!(
+                m1.to_csc(),
+                m2.to_csc(),
+                epsilon = 0.6
+            );
+
+            ::approx::assert_abs_diff_ne!(m1, m2, epsilon = 0.4);
+            ::approx::assert_abs_diff_ne!(m1.to_csc(), m2, epsilon = 0.4);
+            ::approx::assert_abs_diff_ne!(m1, m2.to_csc(), epsilon = 0.4);
+            ::approx::assert_abs_diff_ne!(
+                m1.to_csc(),
+                m2.to_csc(),
+                epsilon = 0.4
+            );
+        }
+    }
+}

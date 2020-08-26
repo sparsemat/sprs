@@ -1359,6 +1359,142 @@ mod alga_impls {
     }
 }
 
+#[cfg(feature = "approx")]
+mod approx_impls {
+    use super::*;
+    use approx::*;
+
+    impl<N, I, IS1, DS1, IS2, DS2> AbsDiffEq<CsVecBase<IS2, DS2>>
+        for CsVecBase<IS1, DS1>
+    where
+        I: SpIndex,
+        CsVecBase<IS1, DS1>: std::cmp::PartialEq<CsVecBase<IS2, DS2>>,
+        IS1: Deref<Target = [I]>,
+        IS2: Deref<Target = [I]>,
+        DS1: Deref<Target = [N]>,
+        DS2: Deref<Target = [N]>,
+        N: AbsDiffEq,
+        N::Epsilon: Clone,
+        N: num_traits::Zero,
+    {
+        type Epsilon = N::Epsilon;
+        fn default_epsilon() -> N::Epsilon {
+            N::default_epsilon()
+        }
+
+        fn abs_diff_eq(
+            &self,
+            other: &CsVecBase<IS2, DS2>,
+            epsilon: N::Epsilon,
+        ) -> bool {
+            match (self.dim(), other.dim()) {
+                (0, _) | (_, 0) => {}
+                (nx, ny) => {
+                    if nx != ny {
+                        return false;
+                    }
+                }
+            }
+            let zero = N::zero();
+            self.iter()
+                .nnz_or_zip(other.iter())
+                .map(|either| match either {
+                    NnzEither::Both((_, l, r)) => (l, r),
+                    NnzEither::Left((_, l)) => (l, &zero),
+                    NnzEither::Right((_, r)) => (&zero, r),
+                })
+                .all(|(v0, v1)| v0.abs_diff_eq(v1, epsilon.clone()))
+        }
+    }
+
+    impl<N, I, IS1, DS1, IS2, DS2> UlpsEq<CsVecBase<IS2, DS2>>
+        for CsVecBase<IS1, DS1>
+    where
+        I: SpIndex,
+        CsVecBase<IS1, DS1>: std::cmp::PartialEq<CsVecBase<IS2, DS2>>,
+        IS1: Deref<Target = [I]>,
+        IS2: Deref<Target = [I]>,
+        DS1: Deref<Target = [N]>,
+        DS2: Deref<Target = [N]>,
+        N: UlpsEq,
+        N::Epsilon: Clone,
+        N: num_traits::Zero,
+    {
+        fn default_max_ulps() -> u32 {
+            N::default_max_ulps()
+        }
+
+        fn ulps_eq(
+            &self,
+            other: &CsVecBase<IS2, DS2>,
+            epsilon: N::Epsilon,
+            max_ulps: u32,
+        ) -> bool {
+            match (self.dim(), other.dim()) {
+                (0, _) | (_, 0) => {}
+                (nx, ny) => {
+                    if nx != ny {
+                        return false;
+                    }
+                }
+            }
+            let zero = N::zero();
+            self.iter()
+                .nnz_or_zip(other.iter())
+                .map(|either| match either {
+                    NnzEither::Both((_, l, r)) => (l, r),
+                    NnzEither::Left((_, l)) => (l, &zero),
+                    NnzEither::Right((_, r)) => (&zero, r),
+                })
+                .all(|(v0, v1)| v0.ulps_eq(v1, epsilon.clone(), max_ulps))
+        }
+    }
+    impl<N, I, IS1, DS1, IS2, DS2> RelativeEq<CsVecBase<IS2, DS2>>
+        for CsVecBase<IS1, DS1>
+    where
+        I: SpIndex,
+        CsVecBase<IS1, DS1>: std::cmp::PartialEq<CsVecBase<IS2, DS2>>,
+        IS1: Deref<Target = [I]>,
+        IS2: Deref<Target = [I]>,
+        DS1: Deref<Target = [N]>,
+        DS2: Deref<Target = [N]>,
+        N: RelativeEq,
+        N::Epsilon: Clone,
+        N: num_traits::Zero,
+    {
+        fn default_max_relative() -> N::Epsilon {
+            N::default_max_relative()
+        }
+
+        fn relative_eq(
+            &self,
+            other: &CsVecBase<IS2, DS2>,
+            epsilon: N::Epsilon,
+            max_relative: Self::Epsilon,
+        ) -> bool {
+            match (self.dim(), other.dim()) {
+                (0, _) | (_, 0) => {}
+                (nx, ny) => {
+                    if nx != ny {
+                        return false;
+                    }
+                }
+            }
+            let zero = N::zero();
+            self.iter()
+                .nnz_or_zip(other.iter())
+                .map(|either| match either {
+                    NnzEither::Both((_, l, r)) => (l, r),
+                    NnzEither::Left((_, l)) => (l, &zero),
+                    NnzEither::Right((_, r)) => (&zero, r),
+                })
+                .all(|(v0, v1)| {
+                    v0.relative_eq(v1, epsilon.clone(), max_relative.clone())
+                })
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::SparseIterTools;
@@ -1669,5 +1805,54 @@ mod test {
     fn larger_zero_vector_is_identified_as_zero() {
         let vector = CsVec::new(3, vec![1, 2], vec![0., 0.]);
         assert!(vector.is_zero());
+    }
+
+    #[cfg(feature = "approx")]
+    mod approx {
+        use crate::*;
+
+        #[test]
+        fn approx_abs_diff_eq() {
+            let v1 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            ::approx::assert_abs_diff_eq!(v1, v2);
+
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 4]);
+            ::approx::assert_abs_diff_eq!(v1, v2, epsilon = 1);
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 4]);
+            ::approx::assert_abs_diff_ne!(v1, v2, epsilon = 0);
+
+            let v1 = CsVec::new(5, vec![0, 2, 4], vec![1.0_f32, 2.0, 3.0]);
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1.0_f32, 2.0, 3.0]);
+            ::approx::assert_abs_diff_eq!(v1, v2);
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1.0_f32, 2.0, 3.1]);
+            ::approx::assert_abs_diff_ne!(v1, v2);
+
+            let v1 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            let v2 = CsVec::new(5, vec![0, 3, 4], vec![1_u8, 2, 3]);
+            ::approx::assert_abs_diff_ne!(v1, v2);
+
+            let v1 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            let v2 = CsVec::new(6, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            ::approx::assert_abs_diff_ne!(v1, v2);
+
+            // Zero sized vector
+            let v2 = CsVec::new(0, vec![], vec![]);
+            ::approx::assert_abs_diff_ne!(v1, v2);
+        }
+
+        #[test]
+        /// Testing if views can be compared
+        fn approx_view() {
+            let v1 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1_u8, 2, 3]);
+            ::approx::assert_abs_diff_eq!(v1, v2);
+            ::approx::assert_abs_diff_eq!(v1.view(), v2.view());
+
+            let v1 = CsVec::new(5, vec![0, 2, 4], vec![1.0_f32, 2.0, 3.0]);
+            let v2 = CsVec::new(5, vec![0, 2, 4], vec![1.0_f32, 2.0, 3.0]);
+            ::approx::assert_abs_diff_eq!(v1, v2);
+            ::approx::assert_abs_diff_eq!(v1.view(), v2.view());
+        }
     }
 }

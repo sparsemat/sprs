@@ -159,6 +159,15 @@ pub enum FillInReduction {
     ReverseCuthillMcKee,
 }
 
+#[cfg(feature = "approx")]
+/// Traits for comparing vectors and matrices using the approx traits
+///
+/// Comparisons of sparse matrices with different storages might be slow.
+/// It is advised to compare using the same storage order for efficiency
+pub mod approx {
+    pub use approx::{AbsDiffEq, RelativeEq, UlpsEq};
+}
+
 #[cfg(test)]
 mod test_data;
 
