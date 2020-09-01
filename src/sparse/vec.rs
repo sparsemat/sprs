@@ -361,6 +361,7 @@ impl<'a, N: 'a> DenseVector<N> for &'a [N] {
         self.len()
     }
 
+    #[inline]
     fn index(&self, idx: usize) -> &N {
         &self[idx]
     }
@@ -371,6 +372,7 @@ impl<N> DenseVector<N> for Vec<N> {
         self.len()
     }
 
+    #[inline]
     fn index(&self, idx: usize) -> &N {
         &self[idx]
     }
@@ -381,6 +383,7 @@ impl<'a, N: 'a> DenseVector<N> for &'a Vec<N> {
         self.len()
     }
 
+    #[inline]
     fn index(&self, idx: usize) -> &N {
         &self[idx]
     }
@@ -394,6 +397,7 @@ where
         self.shape()[0]
     }
 
+    #[inline]
     fn index(&self, idx: usize) -> &N {
         &self[[idx]]
     }
