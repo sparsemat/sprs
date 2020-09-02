@@ -3,6 +3,8 @@ pub type SuiteSparseLong = libc::c_longlong;
 #[cfg(not(target_os = "windows"))]
 pub type SuiteSparseLong = libc::c_long;
 
+pub type SuiteSparseInt = libc::c_int;
+
 #[link(name = "camd")]
 extern "C" {
     /// Find a permutation matrix P, represented by the permutation indices
@@ -25,14 +27,14 @@ extern "C" {
     /// - `info` must be an array of size `CAMD_INFO`.
     /// - `constraint` must be either the null pointer, or an array of size `n`.
     pub fn camd_order(
-        n: libc::c_int,
-        ap: *const libc::c_int,
-        ai: *const libc::c_int,
-        p: *mut libc::c_int,
+        n: SuiteSparseInt,
+        ap: *const SuiteSparseInt,
+        ai: *const SuiteSparseInt,
+        p: *mut SuiteSparseInt,
         control: *mut libc::c_double,
         info: *mut libc::c_double,
-        constraint: *mut libc::c_int,
-    ) -> libc::c_int;
+        constraint: *mut SuiteSparseInt,
+    ) -> SuiteSparseInt;
 
     /// Long version of `camd_order`, see its documentation.
     pub fn camd_l_order(
@@ -54,11 +56,11 @@ extern "C" {
     ///
     /// Otherwise `CAMD_INVALID` will be returned.
     pub fn camd_valid(
-        n_rows: libc::c_int,
-        n_cols: libc::c_int,
-        ap: *const libc::c_int,
-        ai: *const libc::c_int,
-    ) -> libc::c_int;
+        n_rows: SuiteSparseInt,
+        n_cols: SuiteSparseInt,
+        ap: *const SuiteSparseInt,
+        ai: *const SuiteSparseInt,
+    ) -> SuiteSparseInt;
 
     /// Long version of `camd_valid`, see its documentation.
     pub fn camd_l_valid(
@@ -70,7 +72,7 @@ extern "C" {
 
     /// Check if the array `constraint`, of size `n`, is valid as input
     /// to `camd_order`. Returns `1` if valid, `0` otherwise.
-    pub fn camd_cvalid(n: libc::c_int, constraint: *const libc::c_int);
+    pub fn camd_cvalid(n: SuiteSparseInt, constraint: *const SuiteSparseInt);
 
     /// Long version of `camd_cvalid`, see its documentation.
     pub fn camd_l_cvalid(
@@ -125,32 +127,33 @@ pub const CAMD_OK_BUT_JUMBLED: isize = 1;
 
 #[cfg(test)]
 mod tests {
+    use super::SuiteSparseInt;
     #[test]
     fn camd_valid() {
         // | 0 1 3 |
         // | 1 1 0 |
         // | 3 0 0 |
-        let n: libc::c_int = 3;
+        let n: SuiteSparseInt = 3;
         let ap = &[0, 2, 4, 5];
         let ai = &[1, 2, 0, 1, 0];
         let valid =
             unsafe { super::camd_valid(n, n, ap.as_ptr(), ai.as_ptr()) };
-        assert_eq!(valid, super::CAMD_OK as libc::c_int);
+        assert_eq!(valid, super::CAMD_OK as SuiteSparseInt);
         let ai = &[2, 1, 0, 1, 0];
         let valid =
             unsafe { super::camd_valid(n, n, ap.as_ptr(), ai.as_ptr()) };
-        assert_eq!(valid, super::CAMD_OK_BUT_JUMBLED as libc::c_int);
+        assert_eq!(valid, super::CAMD_OK_BUT_JUMBLED as SuiteSparseInt);
         let ai = &[1, 2, 0, 1, 1];
         let valid =
             unsafe { super::camd_valid(n, n, ap.as_ptr(), ai.as_ptr()) };
-        assert_eq!(valid, super::CAMD_OK as libc::c_int);
+        assert_eq!(valid, super::CAMD_OK as SuiteSparseInt);
         let valid =
             unsafe { super::camd_valid(n, n + 1, ap.as_ptr(), ai.as_ptr()) };
-        assert_eq!(valid, super::CAMD_INVALID as libc::c_int);
+        assert_eq!(valid, super::CAMD_INVALID as SuiteSparseInt);
         let valid = unsafe {
             super::camd_valid(n + 1, n + 1, ap.as_ptr(), ai.as_ptr())
         };
-        assert_eq!(valid, super::CAMD_INVALID as libc::c_int);
+        assert_eq!(valid, super::CAMD_INVALID as SuiteSparseInt);
 
         // long version test, only test once as we now have the behavior tested
         // (we only want tot test the binding is correct now).
@@ -168,13 +171,16 @@ mod tests {
         // | 0 1 3 |
         // | 1 1 0 |
         // | 3 0 0 |
-        let n: libc::c_int = 3;
+        let n: SuiteSparseInt = 3;
         let ap = &[0, 2, 4, 5];
         let ai = &[1, 2, 0, 1, 0];
         let mut perm = [0; 3];
         let mut control = [0.; super::CAMD_CONTROL];
         let mut info = [0.; super::CAMD_INFO];
-        let constraint: *const libc::c_int = std::ptr::null();
+        let constraint: *const SuiteSparseInt = std::ptr::null();
+        unsafe {
+            super::camd_defaults(control.as_mut_ptr());
+        }
         let res = unsafe {
             super::camd_order(
                 n,
@@ -183,9 +189,9 @@ mod tests {
                 perm.as_mut_ptr(),
                 control.as_mut_ptr(),
                 info.as_mut_ptr(),
-                constraint as *mut libc::c_int,
+                constraint as *mut SuiteSparseInt,
             )
         };
-        assert_eq!(res, super::CAMD_OK as libc::c_int);
+        assert_eq!(res, super::CAMD_OK as SuiteSparseInt);
     }
 }
