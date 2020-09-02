@@ -1127,6 +1127,28 @@ where
         }
     }
 
+    pub fn structure_view(&self) -> CsStructureViewI<I, Iptr> {
+        // Safety: std::slice::from_raw_parts requires its passed
+        // pointer to be valid for the whole length of the slice. We have a
+        // zero-sized type, so the length is zero, and since we cast
+        // a non-null pointer, the pointer is valid as all pointers to zero-sized
+        // types are valid if they are not null.
+        let zst_data = unsafe {
+            std::slice::from_raw_parts(
+                self.data.as_ptr() as *const (),
+                self.data.len(),
+            )
+        };
+        CsStructureViewI {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: &self.indptr[..],
+            indices: &self.indices[..],
+            data: zst_data,
+        }
+    }
+
     pub fn to_dense(&self) -> Array<N, Ix2>
     where
         N: Clone + Zero,
