@@ -1,0 +1,17 @@
+[package]
+name = "sprs_suitesparse_camd"
+description = "sprs bindings to the suitesparse camd fill-in reducting ordering"
+version = "0.1.0"
+authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
+edition = "2018"
+keywords = ["sparse", "matrix", "fill-in", "permutation", "suitesparse"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.sprs]
+version = "0.8.0"
+path = "../.."
+
+[dependencies.suitesparse_camd_sys]
+path = "../suitesparse_camd_sys/"
+version = "0.1.0"
