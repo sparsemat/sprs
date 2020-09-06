@@ -256,7 +256,6 @@ pub trait SparseMat {
 
 mod utils {
     use crate::indexing::SpIndex;
-    use itertools::izip;
 
     pub fn sort_indices_data_slices<N: Copy, I: SpIndex>(
         indices: &mut [I],
@@ -275,8 +274,10 @@ mod utils {
 
         buf.sort_unstable_by_key(|x| x.0);
 
-        for (i, v, &mut (ind, x)) in izip!(indices, data, buf) {
-            *i = ind;
+        for (&(i, x), (ind, v)) in
+            buf.iter().zip(indices.iter_mut().zip(data.iter_mut()))
+        {
+            *ind = i;
             *v = x;
         }
     }
