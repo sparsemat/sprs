@@ -268,15 +268,17 @@ mod utils {
         let data = &mut data[..len];
         buf.clear();
         buf.reserve_exact(len);
-        for i in 0..len {
-            buf.push((indices[i], data[i]));
+        for (i, v) in indices.iter().zip(data.iter()) {
+            buf.push((*i, *v));
         }
 
         buf.sort_unstable_by_key(|x| x.0);
 
-        for (i, &(ind, x)) in buf.iter().enumerate() {
-            indices[i] = ind;
-            data[i] = x;
+        for (&(i, x), (ind, v)) in
+            buf.iter().zip(indices.iter_mut().zip(data.iter_mut()))
+        {
+            *ind = i;
+            *v = x;
         }
     }
 }
@@ -297,3 +299,18 @@ pub mod triplet;
 pub mod triplet_iter;
 pub mod vec;
 pub mod visu;
+
+#[cfg(test)]
+mod test {
+
+    use super::utils;
+    #[test]
+    fn test_sort_indices() {
+        let mut idx: Vec<usize> = vec![4, 1, 6, 2];
+        let mut dat: Vec<i32> = vec![4, -1, 2, -3];
+        let mut buf: Vec<(usize, i32)> = Vec::new();
+        utils::sort_indices_data_slices(&mut idx[..], &mut dat[..], &mut buf);
+        assert_eq!(idx, vec![1, 2, 4, 6]);
+        assert_eq!(dat, vec![-1, -3, 4, 2]);
+    }
+}
