@@ -25,30 +25,50 @@ where
             "Input to camd must be square",
         ));
     }
-    let mut perm: Vec<SuiteSparseInt> = vec![0; n];
     let mut control = [0.; CAMD_CONTROL];
     let mut info = [0.; CAMD_INFO];
-    let constraint: *const SuiteSparseInt = std::ptr::null();
-    // TODO use the long version when required by the size of the matrix
-    let mat: CsStructureI<SuiteSparseInt, SuiteSparseInt> =
-        mat.to_other_types();
-    let res = unsafe {
-        camd_order(
-            n as SuiteSparseInt,
-            mat.indptr().as_ptr(),
-            mat.indices().as_ptr(),
-            perm.as_mut_ptr(),
-            control.as_mut_ptr(),
-            info.as_mut_ptr(),
-            constraint as *mut SuiteSparseInt,
-        )
+    let (camd_res, perm) = if n <= SuiteSparseInt::MAX as usize {
+        let constraint: *const SuiteSparseInt = std::ptr::null();
+        let mat: CsStructureI<SuiteSparseInt, SuiteSparseInt> =
+            mat.to_other_types();
+        let mut perm: Vec<SuiteSparseInt> = vec![0; n];
+        let camd_res = unsafe {
+            camd_order(
+                n as SuiteSparseInt,
+                mat.indptr().as_ptr(),
+                mat.indices().as_ptr(),
+                perm.as_mut_ptr(),
+                control.as_mut_ptr(),
+                info.as_mut_ptr(),
+                constraint as *mut SuiteSparseInt,
+            ) as isize
+        };
+        let perm = perm.iter().map(|&i| I::from_usize(i as usize)).collect();
+        (camd_res, perm)
+    } else {
+        let constraint: *const SuiteSparseLong = std::ptr::null();
+        let mat: CsStructureI<SuiteSparseLong, SuiteSparseLong> =
+            mat.to_other_types();
+        let mut perm: Vec<SuiteSparseLong> = vec![0; n];
+        let camd_res = unsafe {
+            camd_l_order(
+                n as SuiteSparseLong,
+                mat.indptr().as_ptr(),
+                mat.indices().as_ptr(),
+                perm.as_mut_ptr(),
+                control.as_mut_ptr(),
+                info.as_mut_ptr(),
+                constraint as *mut SuiteSparseLong,
+            )
+        } as isize;
+        let perm = perm.iter().map(|&i| I::from_usize(i as usize)).collect();
+        (camd_res, perm)
     };
     // CsMat invariants guarantee sorted and non duplicate indices so this
     // should not happen.
-    if res as isize != CAMD_OK {
+    if camd_res != CAMD_OK {
         return Err(SprsError::NonSortedIndices);
     }
-    let perm = perm.iter().map(|&i| I::from_usize(i as usize)).collect();
     Ok(PermOwnedI::new(perm))
 }
 
