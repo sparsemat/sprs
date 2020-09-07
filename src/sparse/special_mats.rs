@@ -15,11 +15,8 @@ where
     I: SpIndex,
 {
     assert!(triangles.shape()[1] == 3);
-    let mut neighbors = Vec::with_capacity(nb_vertices);
-    for _ in 0..nb_vertices {
-        let vert_neighbs: SmallVec<[usize; 16]> = SmallVec::new();
-        neighbors.push(vert_neighbs);
-    }
+    let mut neighbors = vec![SmallVec::<[usize; 16]>::new(); nb_vertices];
+
     let mut insert_edge = |v0, v1| {
         let vert_neighbs: &mut SmallVec<[usize; 16]> = &mut neighbors[v0];
         if let Err(pos) = vert_neighbs.binary_search(&v1) {
