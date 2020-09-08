@@ -514,6 +514,7 @@ where
         // of the kth row of L
         diag[k] = y_workspace[k];
         y_workspace[k] = N::zero();
+        #[allow(unused_labels)]
         'pattern: for &i in pattern_workspace.iter_right() {
             let i = i.index_unchecked();
             let yi = y_workspace[i];

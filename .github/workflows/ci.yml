@@ -57,8 +57,10 @@ jobs:
       if: matrix.os != 'ubuntu-18.04'
 
     - name: Build (all)
-      run: cargo build --verbose --workspace
+      run: env && cargo build --verbose --workspace
       if: matrix.os == 'ubuntu-18.04'
+      env:
+        RUSTFLAGS: -D warnings
 
     - name: Test (exclude suitesparse)
       run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl
