@@ -47,14 +47,12 @@ impl From<io::Error> for IoError {
 impl PartialEq for IoError {
     fn eq(&self, rhs: &IoError) -> bool {
         match *self {
-            IoError::BadMatrixMarketFile => match *rhs {
-                IoError::BadMatrixMarketFile => true,
-                _ => false,
-            },
-            IoError::UnsupportedMatrixMarketFormat => match *rhs {
-                IoError::UnsupportedMatrixMarketFormat => true,
-                _ => false,
-            },
+            IoError::BadMatrixMarketFile => {
+                matches!(*rhs, IoError::BadMatrixMarketFile)
+            }
+            IoError::UnsupportedMatrixMarketFormat => {
+                matches!(*rhs, IoError::UnsupportedMatrixMarketFormat)
+            }
             _ => false,
         }
     }

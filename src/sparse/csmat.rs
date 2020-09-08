@@ -1186,7 +1186,7 @@ where
             indptr: &self.indptr[..],
             indices: &self.indices[..],
             data: &self.data[..],
-            perm: perm,
+            perm,
         }
     }
 

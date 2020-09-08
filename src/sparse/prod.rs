@@ -94,10 +94,13 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
     }
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
+        // this unwrap is ok because we did the check before to ensure
+        // mat.row() == res_vec.len() and now the row_ind is within the
+        // range of [0, mat.row). So it should be safe.
+        let tv = res_vec.get_mut(row_ind).unwrap();
         for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            res_vec[row_ind] =
-                res_vec[row_ind] + *in_vec.index(col_ind) * value;
+            *tv = *tv + *in_vec.index(col_ind) * value;
         }
     }
 }

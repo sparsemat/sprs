@@ -249,10 +249,8 @@ where
     for _ in 0..nb_threads {
         tmps.push(vec![N::zero(); workspace_len].into_boxed_slice())
     }
-    let mut seens = Vec::with_capacity(nb_threads);
-    for _ in 0..nb_threads {
-        seens.push(vec![false; workspace_len].into_boxed_slice());
-    }
+    let mut seens =
+        vec![vec![false; workspace_len].into_boxed_slice(); nb_threads];
     mul_csr_csr_with_workspace(lhs, rhs, &mut seens, &mut tmps)
 }
 

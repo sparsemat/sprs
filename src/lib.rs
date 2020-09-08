@@ -73,7 +73,6 @@ assert_eq!(a, b.to_csc());
 ```
 
 */
-
 #![deny(warnings)]
 
 pub mod array_backend;

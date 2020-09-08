@@ -44,7 +44,7 @@ pub fn perm_is_valid<I: SpIndex>(perm: &[I]) -> bool {
         }
         seen[i.index()] = true;
     }
-    return true;
+    true
 }
 
 impl<I: SpIndex> Permutation<I, Vec<I>> {
