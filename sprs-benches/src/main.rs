@@ -83,6 +83,7 @@ fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
 struct BenchSpec {
     shape: (usize, usize),
     densities: Vec<f64>,
+    #[allow(dead_code)] // this variable is only present with eigen's feature
     forbid_eigen: bool,
     shapes: Vec<(usize, usize)>, // will trigger shape benchmark
     nnz_over_rows: usize,        // used to compute density in shape benchmark
