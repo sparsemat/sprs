@@ -65,6 +65,7 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V>(
         panic!("Storage mismatch");
     }
 
+    res_vec.iter_mut().for_each(|v| *v = N::zero());
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
         let multiplier = in_vec.index(col_ind);
         for (row_ind, &value) in vec.iter() {
@@ -94,10 +95,11 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
     }
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
+        let tv = res_vec.get_mut(row_ind).unwrap(); // this unwrap is ok because we did the check
+        *tv = N::zero();
         for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            res_vec[row_ind] =
-                res_vec[row_ind] + *in_vec.index(col_ind) * value;
+            *tv = *tv + *in_vec.index(col_ind) * value;
         }
     }
 }
