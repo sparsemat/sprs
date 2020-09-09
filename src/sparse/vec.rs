@@ -183,6 +183,7 @@ pub trait SparseIterTools: Iterator {
     /// assert_eq!(nnz_zip.next(), Some((2, &2., &-2.)));
     /// assert_eq!(nnz_zip.next(), None);
     /// ```
+    #[allow(clippy::type_complexity)]
     fn nnz_zip<'a, I, N1, N2>(
         self,
         other: I,

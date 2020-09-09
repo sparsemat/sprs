@@ -106,9 +106,9 @@ macro_rules! ldl_impl {
                     lp: vec![0; n + 1],
                     parent: vec![0; n],
                     lnz: vec![0; n],
-                    flag: flag,
-                    p: p,
-                    pinv: pinv,
+                    flag,
+                    p,
+                    pinv,
                 };
                 unsafe {
                     $symbolic(
@@ -162,11 +162,11 @@ macro_rules! ldl_impl {
                 let pattern = vec![0; n];
                 let mut ldl_numeric = $Numeric {
                     symbolic: self,
-                    li: li,
-                    lx: lx,
-                    d: d,
-                    y: y,
-                    pattern: pattern,
+                    li,
+                    lx,
+                    d,
+                    y,
+                    pattern,
                 };
                 ldl_numeric.update(mat).map(|_| ldl_numeric)
             }

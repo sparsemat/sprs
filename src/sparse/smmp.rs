@@ -78,6 +78,7 @@ pub fn thread_threading_strategy() -> ThreadingStrategy {
 /// `a_indptr.last().unwrap() + b_indptr.last.unwrap()` in `c_indices`.
 /// Therefore, to prevent this function from allocating, it is required
 /// to have reserved at least this amount of memory.
+#[allow(clippy::too_many_arguments)]
 pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     a_indptr: &[Iptr],
     a_indices: &[I],
@@ -152,6 +153,7 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
 /// (though some cases might go unnoticed).
 ///
 /// The parts for the C matrix should come from the `symbolic` function.
+#[allow(clippy::too_many_arguments)]
 pub fn numeric<
     Iptr: SpIndex,
     I: SpIndex,

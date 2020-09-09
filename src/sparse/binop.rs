@@ -87,7 +87,7 @@ pub fn csmat_binop<N, I, Iptr, F>(
     binop: F,
 ) -> CsMatI<N, I, Iptr>
 where
-    N: Num,
+    N: Num + Clone,
     I: SpIndex,
     Iptr: SpIndex,
     F: Fn(&N, &N) -> N,
@@ -109,10 +109,7 @@ where
     // Sadly the vec! macro requires Clone, but we don't want to force
     // Clone on our consumers, so we have to use this workaround.
     // This should compile to decent code however.
-    let mut out_data = Vec::with_capacity(max_nnz);
-    for _ in 0..max_nnz {
-        out_data.push(N::zero());
-    }
+    let mut out_data = vec![N::zero(); max_nnz];
 
     let nnz = csmat_binop_same_storage_raw(
         lhs,

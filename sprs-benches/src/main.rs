@@ -164,7 +164,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
     for spec in &bench_specs {
         let shape = spec.shape;
 
-        let is_shape_bench = spec.shapes.len() != 0;
+        let is_shape_bench = !spec.shapes.is_empty();
         let densities = if is_shape_bench {
             spec.shapes
                 .iter()
