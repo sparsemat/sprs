@@ -162,6 +162,8 @@ pub enum FillInReduction {
 ///
 /// Comparisons of sparse matrices with different storages might be slow.
 /// It is advised to compare using the same storage order for efficiency
+///
+/// These traits requires the `approx` feature to be activated
 pub mod approx {
     pub use approx::{AbsDiffEq, RelativeEq, UlpsEq};
 }

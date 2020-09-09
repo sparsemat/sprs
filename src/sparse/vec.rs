@@ -1280,6 +1280,7 @@ impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
 }
 
 #[cfg(feature = "alga")]
+/// These traits requires the `alga` feature to be activated
 mod alga_impls {
     use super::*;
     use alga::general::*;
