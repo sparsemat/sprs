@@ -1,4 +1,3 @@
-#[cfg(feature = "nightly")]
 use pyo3::{
     prelude::*,
     types::{IntoPyDict, PyModule},
@@ -6,7 +5,6 @@ use pyo3::{
 use sprs::smmp;
 use sprs_rand::rand_csr_std;
 
-#[cfg(feature = "nightly")]
 fn scipy_mat<'a>(
     scipy_sparse: &'a PyModule,
     py: &Python,
@@ -155,11 +153,8 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         },
     ];
 
-    #[cfg(feature = "nightly")]
     let gil = Python::acquire_gil();
-    #[cfg(feature = "nightly")]
     let py = gil.python();
-    #[cfg(feature = "nightly")]
     let scipy_sparse = PyModule::import(py, "scipy.sparse").map_err(|e| {
         let res = format!("Python error: {:?}", e);
         e.print_and_set_sys_last_vars(py);
@@ -190,7 +185,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         let mut times_autothread = Vec::with_capacity(densities.len());
         let mut times_2threads = Vec::with_capacity(densities.len());
         let mut times_4threads = Vec::with_capacity(densities.len());
-        #[cfg(feature = "nightly")]
         let mut times_py = Vec::with_capacity(densities.len());
         #[cfg(feature = "eigen")]
         let mut times_eigen = Vec::with_capacity(densities.len());
@@ -261,7 +255,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             res_densities.push(prod.density());
 
             // bench scipy as well
-            #[cfg(feature = "nightly")]
             {
                 let m1_py = scipy_mat(scipy_sparse, &py, &m1)?;
                 let m2_py = scipy_mat(scipy_sparse, &py, &m2)?;
@@ -307,7 +300,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         println!("Product times (sprs, 2 threads): {:?}", times_2threads);
         println!("Product times (sprs, 4 threads): {:?}", times_4threads);
         println!("Product times (sprs, auto threads): {:?}", times_autothread);
-        #[cfg(feature = "nightly")]
         println!("Product times (scipy): {:?}", times_py);
         #[cfg(feature = "eigen")]
         println!("Product times (eigen): {:?}", times_eigen);
@@ -352,7 +344,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 max_time,
                 *times_eigen.iter().max().unwrap_or(&1),
             );
-            #[cfg(feature = "nightly")]
             let max_time =
                 std::cmp::max(max_time, *times_py.iter().max().unwrap_or(&1));
             let max_time = max_time as f32;
@@ -423,7 +414,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                     PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
                 });
 
-            #[cfg(feature = "nightly")]
             chart
                 .draw_series(LineSeries::new(
                     abscisses
