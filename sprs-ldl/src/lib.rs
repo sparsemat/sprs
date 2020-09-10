@@ -144,6 +144,12 @@ impl Ldl {
             FillInReduction::ReverseCuthillMcKee => {
                 sprs::linalg::reverse_cuthill_mckee(mat.structure_view()).perm
             }
+            FillInReduction::CAMDSuiteSparse => {
+                #[cfg(not(feature = "sprs_suitesparse_camd"))]
+                panic!("Unavailable without the `sprs_suitesparse_camd` feature");
+                #[cfg(feature = "sprs_suitesparse_camd")]
+                sprs_suitesparse_camd::camd(mat.structure_view())
+            }
             _ => {
                 unreachable!(
                     "Unhandled method, report a bug at https://github.com/vbarrielle/sprs/issues/199"
@@ -864,5 +870,49 @@ mod test {
             .unwrap();
         let x = ldlt.solve(&b);
         assert_eq!(x, x0);
+    }
+
+    #[cfg(feature = "sprs_suitesparse_camd")]
+    #[test]
+    fn camd_ldl_solve() {
+        // 0 - A - 2 - 3
+        // | \ | \ | / |
+        // 7 - 5 - 6 - 4
+        // | / | / | \ |
+        // 8 - 9 - 1 - E
+        #[rustfmt::skip]
+        let triangles = ndarray::arr2(
+            &[[0, 7, 5],
+              [0, 5, 10],
+              [10, 5, 6],
+              [10, 6, 2],
+              [2, 6, 3],
+              [3, 6, 4],
+              [7, 8, 5],
+              [5, 8, 9],
+              [5, 9, 6],
+              [6, 9, 1],
+              [6, 1, 11],
+              [6, 11, 4]],
+        );
+        let lap_mat =
+            sprs::special_mats::tri_mesh_graph_laplacian(12, triangles.view());
+        let ldlt_camd = super::Ldl::new()
+            .check_symmetry(super::SymmetryCheck::DontCheckSymmetry)
+            .fill_in_reduction(super::FillInReduction::CAMDSuiteSparse)
+            .numeric(lap_mat.view())
+            .unwrap();
+        let ldlt_cuthill = super::Ldl::new()
+            .check_symmetry(super::SymmetryCheck::DontCheckSymmetry)
+            .fill_in_reduction(super::FillInReduction::ReverseCuthillMcKee)
+            .numeric(lap_mat.view())
+            .unwrap();
+        let ldlt_raw = super::Ldl::new()
+            .check_symmetry(super::SymmetryCheck::DontCheckSymmetry)
+            .fill_in_reduction(super::FillInReduction::NoReduction)
+            .numeric(lap_mat.view())
+            .unwrap();
+        assert!(ldlt_camd.nnz() < ldlt_raw.nnz());
+        assert!(ldlt_camd.nnz() < ldlt_cuthill.nnz());
     }
 }

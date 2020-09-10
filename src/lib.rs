@@ -157,6 +157,7 @@ pub use PermutationCheck::*;
 pub enum FillInReduction {
     NoReduction,
     ReverseCuthillMcKee,
+    CAMDSuiteSparse,
 }
 
 #[cfg(feature = "approx")]
