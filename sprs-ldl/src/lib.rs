@@ -138,12 +138,11 @@ impl Ldl {
     pub fn perm<N, I>(&self, mat: CsMatViewI<N, I>) -> PermOwnedI<I>
     where
         I: SpIndex,
-        N: Copy + PartialEq,
     {
         match self.fill_red_method {
             FillInReduction::NoReduction => PermOwnedI::identity(mat.rows()),
             FillInReduction::ReverseCuthillMcKee => {
-                sprs::linalg::reverse_cuthill_mckee(mat).perm
+                sprs::linalg::reverse_cuthill_mckee(mat.structure_view()).perm
             }
             _ => {
                 unreachable!(
