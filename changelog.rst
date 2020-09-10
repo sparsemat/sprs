@@ -2,6 +2,10 @@
 Changelog
 =========
 
+- 0.9.0
+    - Make FillInReduction enum non exhaustive to prevent excessive breakage
+      when new algorithms are implemented. **breaking change**
+    - Make rayon optional **breaking change**
 - 0.8.1
     - Expose the ``num_kinds`` module to allow generic usage of matrix market
       serialization functions in client crates
