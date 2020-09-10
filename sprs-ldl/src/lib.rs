@@ -145,6 +145,11 @@ impl Ldl {
             FillInReduction::ReverseCuthillMcKee => {
                 sprs::linalg::reverse_cuthill_mckee(mat).perm
             }
+            _ => {
+                unreachable!(
+                    "Unhandled method, report a bug at https://github.com/vbarrielle/sprs/issues/199"
+                )
+            }
         }
     }
 

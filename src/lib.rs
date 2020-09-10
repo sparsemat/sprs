@@ -153,6 +153,7 @@ pub use PermutationCheck::*;
 
 /// The different kinds of fill-in-reduction algorithms supported by sprs
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[non_exhaustive]
 pub enum FillInReduction {
     NoReduction,
     ReverseCuthillMcKee,
