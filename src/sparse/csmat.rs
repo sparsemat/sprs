@@ -702,10 +702,7 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         if outer_ind >= outer_dims {
             // we need to add a new outer dimension
             let last_nnz = *self.indptr.last().unwrap(); // indptr never empty
-            self.indptr.reserve(1 + outer_ind - outer_dims);
-            for _ in outer_dims..outer_ind {
-                self.indptr.push(last_nnz);
-            }
+            self.indptr.resize(outer_ind + 1, last_nnz);
             self.set_outer_dims(outer_ind + 1);
             self.indptr.push(last_nnz + Iptr::one());
             self.indices.push(inner_ind_idx);
@@ -2996,14 +2993,15 @@ mod approx_impls {
             } else {
                 // Checks if all elements in self has a matching element
                 // in other
-                if !self.iter().all(|(n, (i, j))| {
+                let all_matching = self.iter().all(|(n, (i, j))| {
                     n.abs_diff_eq(
                         other
                             .get(i.to_usize().unwrap(), j.to_usize().unwrap())
                             .unwrap_or(&N::zero()),
                         epsilon.clone(),
                     )
-                }) {
+                });
+                if !all_matching {
                     return false;
                 }
 
@@ -3055,7 +3053,7 @@ mod approx_impls {
             } else {
                 // Checks if all elements in self has a matching element
                 // in other
-                if !self.iter().all(|(n, (i, j))| {
+                let all_matches = self.iter().all(|(n, (i, j))| {
                     n.ulps_eq(
                         other
                             .get(i.to_usize().unwrap(), j.to_usize().unwrap())
@@ -3063,7 +3061,8 @@ mod approx_impls {
                         epsilon.clone(),
                         max_ulps,
                     )
-                }) {
+                });
+                if !all_matches {
                     return false;
                 }
 
@@ -3122,7 +3121,7 @@ mod approx_impls {
             } else {
                 // Checks if all elements in self has a matching element
                 // in other
-                if !self.iter().all(|(n, (i, j))| {
+                let all_matches = self.iter().all(|(n, (i, j))| {
                     n.relative_eq(
                         other
                             .get(i.to_usize().unwrap(), j.to_usize().unwrap())
@@ -3130,7 +3129,8 @@ mod approx_impls {
                         epsilon.clone(),
                         max_relative.clone(),
                     )
-                }) {
+                });
+                if !all_matches {
                     return false;
                 }
 

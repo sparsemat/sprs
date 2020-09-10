@@ -4,8 +4,6 @@ version = "0.1.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies.sprs]
 version = "0.8.0"
 path = ".."
@@ -18,7 +16,7 @@ path = "../sprs-rand"
 version = "0.2.12"
 
 [dependencies]
-pyo3 = { version="0.9.2", optional=true }
+pyo3 = { version="0.11.1" }
 
 [build-dependencies]
 cc = "1.0.52"
@@ -29,6 +27,5 @@ libflate = {version="1.0.0", optional=true }
 [features]
 
 default = []
-nightly = ["pyo3"]
 dl_eigen = ["reqwest", "tar", "libflate"]
 eigen = []

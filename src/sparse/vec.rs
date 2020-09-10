@@ -183,6 +183,7 @@ pub trait SparseIterTools: Iterator {
     /// assert_eq!(nnz_zip.next(), Some((2, &2., &-2.)));
     /// assert_eq!(nnz_zip.next(), None);
     /// ```
+    #[allow(clippy::type_complexity)]
     fn nnz_zip<'a, I, N1, N2>(
         self,
         other: I,
@@ -1280,6 +1281,7 @@ impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
 }
 
 #[cfg(feature = "alga")]
+/// These traits requires the `alga` feature to be activated
 mod alga_impls {
     use super::*;
     use alga::general::*;

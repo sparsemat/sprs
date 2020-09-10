@@ -7,7 +7,59 @@ on:
     - master
   schedule:
   - cron: '0 0 15 * *'
+
+env:
+    CARGO_TERM_COLOR: always
+    RUSTFLAGS: -D warnings
+
 jobs:
+  rustfmt:
+    name: rustfmt
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+        components: rustfmt
+    - name: Check formatting
+      run: cargo fmt -- --check
+
+  documentation:
+    name: documentation
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+    - name: Documentation
+      run: cargo doc --all-features --workspace
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+        components: clippy
+    - name: Run Clippy
+      run: cargo clippy --workspace --all-features
+
   test:
     name: test
     runs-on: ${{ matrix.os }}
@@ -57,10 +109,8 @@ jobs:
       if: matrix.os != 'ubuntu-18.04'
 
     - name: Build (all)
-      run: env && cargo build --verbose --workspace
+      run: cargo build --verbose --workspace
       if: matrix.os == 'ubuntu-18.04'
-      env:
-        RUSTFLAGS: -D warnings
 
     - name: Test (exclude suitesparse)
       run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl
@@ -73,25 +123,6 @@ jobs:
     - name: Test (suitesparse integration)
       run: cargo test -p sprs-ldl --features sprs_suitesparse_ldl -Zpackage-features
       if: matrix.os == 'ubuntu-18.04' && matrix.build == 'nightly'
-
-  rustfmt:
-    name: rustfmt
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - name: Install rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-        profile: minimal
-        components: rustfmt
-    - name: Check formatting
-      run: |
-        cargo fmt -- --check
-    - name: Documentation
-      run: cargo doc
 
   benches:
     name: benchmarks
@@ -112,8 +143,8 @@ jobs:
       run: |
           cargo bench --workspace
 
-  optional_features:
-    name: Optional features
+  optional_none:
+    name: Optional features (none selected)
     runs-on: ubuntu-18.04
     steps:
     - name: Checkout repository
@@ -129,7 +160,7 @@ jobs:
           cargo test --no-default-features
 
   optional_approx:
-    name: Optional features
+    name: Optional features (approx selected)
     runs-on: ubuntu-18.04
     steps:
     - name: Checkout repository

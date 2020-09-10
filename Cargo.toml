@@ -54,3 +54,6 @@ members = [
     "sprs-rand",
     "sprs-benches",
 ]
+
+[package.metadata.docs.rs]
+all-features = true

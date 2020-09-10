@@ -78,6 +78,16 @@ pub struct Ldl {
     fill_red_method: FillInReduction,
 }
 
+impl Default for Ldl {
+    fn default() -> Self {
+        Self {
+            check_symmetry: SymmetryCheck::CheckSymmetry,
+            fill_red_method: FillInReduction::ReverseCuthillMcKee,
+            check_perm: PermutationCheck::CheckPerm,
+        }
+    }
+}
+
 /// Structure to compute and hold a symbolic LDLT decomposition
 #[derive(Debug, Clone)]
 pub struct LdlSymbolic<I> {
@@ -101,11 +111,7 @@ pub struct LdlNumeric<N, I> {
 
 impl Ldl {
     pub fn new() -> Self {
-        Self {
-            check_symmetry: SymmetryCheck::CheckSymmetry,
-            fill_red_method: FillInReduction::ReverseCuthillMcKee,
-            check_perm: PermutationCheck::CheckPerm,
-        }
+        Self::default()
     }
 
     pub fn check_symmetry(self, check: SymmetryCheck) -> Self {
@@ -257,10 +263,10 @@ impl<I: SpIndex> LdlSymbolic<I> {
 
         LdlSymbolic {
             colptr: l_colptr,
-            parents: parents,
+            parents,
             nz: l_nz,
-            flag_workspace: flag_workspace,
-            perm: perm,
+            flag_workspace,
+            perm,
         }
     }
 
@@ -294,11 +300,11 @@ impl<I: SpIndex> LdlSymbolic<I> {
         let pattern_workspace = DStack::with_capacity(n);
         let mut ldl_numeric = LdlNumeric {
             symbolic: self,
-            l_indices: l_indices,
-            l_data: l_data,
-            diag: diag,
-            y_workspace: y_workspace,
-            pattern_workspace: pattern_workspace,
+            l_indices,
+            l_data,
+            diag,
+            y_workspace,
+            pattern_workspace,
         };
         ldl_numeric.update(mat).map(|_| ldl_numeric)
     }
@@ -466,6 +472,7 @@ pub fn ldl_symbolic<N, I, PStorage>(
 /// Perform numeric LDLT decomposition
 ///
 /// pattern_workspace is a DStack of capacity n
+#[allow(clippy::too_many_arguments)]
 pub fn ldl_numeric<N, I, PStorage>(
     mat: CsMatViewI<N, I>,
     l_colptr: &[I],
