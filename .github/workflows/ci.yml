@@ -65,11 +65,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build:
-        - stable
-        - beta
-        - nightly
         include:
+        - build: msrv
+          os: ubuntu-18.04
+          rust: 1.42.0
         - build: stable
           os: ubuntu-18.04
           rust: stable
