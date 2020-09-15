@@ -105,7 +105,7 @@ jobs:
         override: true
 
     - name: Build (exclude suitesparse)
-      run: cargo build --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl
+      run: cargo build --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys
       if: matrix.os != 'ubuntu-18.04'
 
     - name: Build (all)
@@ -113,7 +113,7 @@ jobs:
       if: matrix.os == 'ubuntu-18.04'
 
     - name: Test (exclude suitesparse)
-      run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl
+      run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys
       if: matrix.os != 'ubuntu-18.04'
 
     - name: Test (all)
@@ -121,7 +121,7 @@ jobs:
       if: matrix.os == 'ubuntu-18.04'
 
     - name: Test (suitesparse integration)
-      run: cargo test -p sprs-ldl --features sprs_suitesparse_ldl -Zpackage-features
+      run: cargo test -p sprs-ldl --features "sprs_suitesparse_ldl sprs_suitesparse_camd" -Zpackage-features
       if: matrix.os == 'ubuntu-18.04' && matrix.build == 'nightly'
 
   benches:

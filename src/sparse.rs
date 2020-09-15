@@ -111,6 +111,11 @@ pub type CsMatViewMut<'a, N> = CsMatViewMutI<'a, N, usize>;
 // FIXME: a fixed size array would be better, but no Deref impl
 pub type CsMatVecView<'a, N> = CsMatVecView_<'a, N, usize>;
 
+pub type CsStructureViewI<'a, I, Iptr = I> = CsMatViewI<'a, (), I, Iptr>;
+pub type CsStructureView<'a> = CsStructureViewI<'a, usize>;
+pub type CsStructureI<I, Iptr = I> = CsMatI<(), I, Iptr>;
+pub type CsStructure = CsStructureI<usize>;
+
 /// A sparse vector, storing the indices of its non-zero data.
 ///
 /// A `CsVec` represents a sparse vector by storing a sorted `indices()` array
@@ -235,10 +240,11 @@ pub struct TriMatIter<RI, CI, DI> {
 mod prelude {
     pub use super::{
         CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatVecView_, CsMatView,
-        CsMatViewI, CsMatViewMut, CsMatViewMutI, CsVec, CsVecBase, CsVecI,
-        CsVecView, CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat,
-        TriMatBase, TriMatI, TriMatIter, TriMatView, TriMatViewI,
-        TriMatViewMut, TriMatViewMutI,
+        CsMatViewI, CsMatViewMut, CsMatViewMutI, CsStructure, CsStructureI,
+        CsStructureView, CsStructureViewI, CsVec, CsVecBase, CsVecI, CsVecView,
+        CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat, TriMatBase,
+        TriMatI, TriMatIter, TriMatView, TriMatViewI, TriMatViewMut,
+        TriMatViewMutI,
     };
 }
 

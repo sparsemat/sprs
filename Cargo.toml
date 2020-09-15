@@ -2,7 +2,7 @@
 
 name = "sprs"
 description = "A sparse matrix library"
-version = "0.8.1"
+version = "0.9.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 edition = "2018"
 
@@ -51,6 +51,8 @@ members = [
     "sprs-ldl",
     "suitesparse_bindings/suitesparse_ldl_sys",
     "suitesparse_bindings/sprs_suitesparse_ldl",
+    "suitesparse_bindings/suitesparse_camd_sys",
+    "suitesparse_bindings/sprs_suitesparse_camd",
     "sprs-rand",
     "sprs-benches",
 ]

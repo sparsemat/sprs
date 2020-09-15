@@ -19,7 +19,6 @@ script:
     - cargo test --release --all --verbose
     - cargo run --example heat
     - ./.travis_rustfmt
-    - ./.travis_nightly
 
 notifications:
   email:
