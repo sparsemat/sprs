@@ -2,6 +2,11 @@ use sprs::errors::SprsError;
 use sprs::{CsStructureI, CsStructureViewI, PermOwnedI, SpIndex};
 use suitesparse_camd_sys::*;
 
+// FIXME should be using SuiteSparseInt::MAX but this will not compile
+// in rust 1.42 as u32::MAX was introduced in 1.43. This can be changed if
+// the MSRV is bumped.
+const MAX_INT32: usize = std::u32::MAX as usize;
+
 /// Find a permutation matrix P which reduces the fill-in of the square
 /// sparse matrix `mat` in Cholesky factorization (ie, the number of nonzeros
 /// of the Cholesky factorization of P A P^T is less than for the Cholesky
@@ -27,7 +32,7 @@ where
     }
     let mut control = [0.; CAMD_CONTROL];
     let mut info = [0.; CAMD_INFO];
-    let (camd_res, perm) = if n <= SuiteSparseInt::MAX as usize {
+    let (camd_res, perm) = if n <= MAX_INT32 {
         let constraint: *const SuiteSparseInt = std::ptr::null();
         let mat: CsStructureI<SuiteSparseInt, SuiteSparseInt> =
             mat.to_other_types();
