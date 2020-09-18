@@ -27,7 +27,7 @@ where
     }
     let mut control = [0.; CAMD_CONTROL];
     let mut info = [0.; CAMD_INFO];
-    let (camd_res, perm) = if n <= SuiteSparseInt::MAX as usize {
+    let (camd_res, perm) = if n <= SuiteSparseInt::max_value() as usize {
         let constraint: *const SuiteSparseInt = std::ptr::null();
         let mat: CsStructureI<SuiteSparseInt, SuiteSparseInt> =
             mat.to_other_types();

@@ -50,11 +50,11 @@ fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
     let (b_rows, b_cols) = b.shape();
     assert_eq!(a_cols, b_rows);
     assert!(a.is_csr());
-    assert!(a.rows() <= isize::MAX as usize);
-    assert!(a.indptr()[a.rows()] <= isize::MAX as usize);
+    assert!(a.rows() <= std::isize::MAX as usize);
+    assert!(a.indptr()[a.rows()] <= std::isize::MAX as usize);
     assert!(b.is_csr());
-    assert!(b.rows() <= isize::MAX as usize);
-    assert!(b.indptr()[b.rows()] <= isize::MAX as usize);
+    assert!(b.rows() <= std::isize::MAX as usize);
+    assert!(b.indptr()[b.rows()] <= std::isize::MAX as usize);
     let a_indptr = a.indptr().as_ptr() as *const isize;
     let a_indices = a.indices().as_ptr() as *const isize;
     let a_data = a.data().as_ptr();

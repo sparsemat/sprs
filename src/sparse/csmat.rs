@@ -2963,7 +2963,7 @@ mod test {
             (2, 2),
             vec![0, 2, 3],
             vec![0, 1, 1],
-            vec![2.0, f64::NAN, 2.0],
+            vec![2.0, std::f64::NAN, 2.0],
         );
 
         let onehot = mat.to_inner_onehot();
