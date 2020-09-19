@@ -82,8 +82,6 @@ pub mod num_kinds;
 mod sparse;
 pub mod stack;
 
-/// Deprecated type alias, will be removed on next breaking change
-pub type Ix_ = ndarray::Ix1;
 pub type Ix1 = ndarray::Ix1;
 pub type Ix2 = ndarray::Ix2;
 
