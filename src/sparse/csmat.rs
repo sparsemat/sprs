@@ -1931,6 +1931,40 @@ sparse_scalar_mul!(usize);
 sparse_scalar_mul!(f32);
 sparse_scalar_mul!(f64);
 
+impl<'a, I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::MulAssign<T>
+    for CsMatBase<T, I, IpStorage, IStorage, DStorage, Iptr>
+where
+    I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
+    IpStorage: 'a + Deref<Target = [Iptr]>,
+    IStorage: 'a + Deref<Target = [I]>,
+    DStorage: 'a + DerefMut<Target = [T]>,
+    T: std::ops::MulAssign<T> + Clone,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        self.data_mut()
+            .iter_mut()
+            .for_each(|v| v.mul_assign(rhs.clone()));
+    }
+}
+
+impl<'a, I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::DivAssign<T>
+    for CsMatBase<T, I, IpStorage, IStorage, DStorage, Iptr>
+where
+    I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
+    IpStorage: 'a + Deref<Target = [Iptr]>,
+    IStorage: 'a + Deref<Target = [I]>,
+    DStorage: 'a + DerefMut<Target = [T]>,
+    T: std::ops::DivAssign<T> + Clone,
+{
+    fn div_assign(&mut self, rhs: T) {
+        self.data_mut()
+            .iter_mut()
+            .for_each(|v| v.div_assign(rhs.clone()));
+    }
+}
+
 impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IpS2, IS2, DS2>
     Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
@@ -2970,6 +3004,52 @@ mod test {
 
         assert!(onehot.is_csr());
         assert_eq!(CsMat::eye(2), onehot);
+    }
+
+    #[test]
+    fn mul_assign() {
+        let mut m1 = crate::TriMat::new((6, 9));
+        m1.add_triplet(1, 1, 8_i32);
+        m1.add_triplet(1, 2, 7);
+        m1.add_triplet(0, 1, 6);
+        m1.add_triplet(0, 8, 5);
+        m1.add_triplet(4, 2, 4);
+        let mut m1 = m1.to_csr();
+
+        m1 *= 2;
+        for (&v, (j, i)) in m1.iter() {
+            match (j, i) {
+                (1, 1) => assert_eq!(v, 16),
+                (1, 2) => assert_eq!(v, 14),
+                (0, 1) => assert_eq!(v, 12),
+                (0, 8) => assert_eq!(v, 10),
+                (4, 2) => assert_eq!(v, 8),
+                _ => panic!(),
+            }
+        }
+    }
+
+    #[test]
+    fn div_assign() {
+        let mut m1 = crate::TriMat::new((6, 9));
+        m1.add_triplet(1, 1, 8_i32);
+        m1.add_triplet(1, 2, 7);
+        m1.add_triplet(0, 1, 6);
+        m1.add_triplet(0, 8, 5);
+        m1.add_triplet(4, 2, 4);
+        let mut m1 = m1.to_csr();
+
+        m1 /= 2;
+        for (&v, (j, i)) in m1.iter() {
+            match (j, i) {
+                (1, 1) => assert_eq!(v, 4),
+                (1, 2) => assert_eq!(v, 3),
+                (0, 1) => assert_eq!(v, 3),
+                (0, 8) => assert_eq!(v, 2),
+                (4, 2) => assert_eq!(v, 2),
+                _ => panic!(),
+            }
+        }
     }
 }
 
