@@ -1224,6 +1224,36 @@ impl<N: Num + Copy + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
     }
 }
 
+impl<N, I, IStorage, DStorage> std::ops::MulAssign<N>
+    for CsVecBase<IStorage, DStorage>
+where
+    N: Clone + std::ops::MulAssign<N>,
+    I: SpIndex,
+    IStorage: Deref<Target = [I]>,
+    DStorage: DerefMut<Target = [N]>,
+{
+    fn mul_assign(&mut self, rhs: N) {
+        self.data_mut()
+            .iter_mut()
+            .for_each(|v| v.mul_assign(rhs.clone()))
+    }
+}
+
+impl<N, I, IStorage, DStorage> std::ops::DivAssign<N>
+    for CsVecBase<IStorage, DStorage>
+where
+    N: Clone + std::ops::DivAssign<N>,
+    I: SpIndex,
+    IStorage: Deref<Target = [I]>,
+    DStorage: DerefMut<Target = [N]>,
+{
+    fn div_assign(&mut self, rhs: N) {
+        self.data_mut()
+            .iter_mut()
+            .for_each(|v| v.div_assign(rhs.clone()))
+    }
+}
+
 impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS>
 where
     IS: Deref<Target = [usize]>,
@@ -1811,6 +1841,20 @@ mod test {
     fn larger_zero_vector_is_identified_as_zero() {
         let vector = CsVec::new(3, vec![1, 2], vec![0., 0.]);
         assert!(vector.is_zero());
+    }
+
+    #[test]
+    fn mul_assign() {
+        let mut vector = CsVec::new(4, vec![1, 2, 3], vec![1_i32, 3, 4]);
+        vector *= 2;
+        assert_eq!(vector, CsVec::new(4, vec![1, 2, 3], vec![2_i32, 6, 8]));
+    }
+
+    #[test]
+    fn div_assign() {
+        let mut vector = CsVec::new(4, vec![1, 2, 3], vec![1_i32, 3, 4]);
+        vector /= 2;
+        assert_eq!(vector, CsVec::new(4, vec![1, 2, 3], vec![0_i32, 1, 2]));
     }
 
     #[cfg(feature = "approx")]
