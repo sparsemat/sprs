@@ -37,8 +37,6 @@ use crate::sparse::prelude::*;
 use crate::sparse::utils;
 use crate::sparse::{binop, prod};
 
-impl<IS: Copy, DS: Copy> Copy for CsVecBase<IS, DS> {}
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///

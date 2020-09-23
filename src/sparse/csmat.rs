@@ -36,18 +36,6 @@ use crate::sparse::to_dense::assign_to_dense;
 use crate::sparse::utils;
 use crate::sparse::vec;
 
-impl<N, I, IptrStorage, IndStorage, DataStorage, Iptr> Copy
-    for CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr>
-where
-    I: SpIndex,
-    N: Copy,
-    Iptr: SpIndex,
-    IptrStorage: Deref<Target = [Iptr]> + Copy,
-    IndStorage: Deref<Target = [I]> + Copy,
-    DataStorage: Deref<Target = [N]> + Copy,
-{
-}
-
 /// Describe the storage of a CsMat
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
