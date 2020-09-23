@@ -1992,9 +1992,12 @@ where
                 smmp::mul_csr_csr(self.view(), rhs_csr.view())
             }
             (CSC, CSR) => {
-                let rhs_csr = rhs.to_other_storage();
-                smmp::mul_csr_csr(rhs_csr.view(), self.transpose_view())
-                    .transpose_into()
+                let rhs_csc = rhs.to_other_storage();
+                smmp::mul_csr_csr(
+                    rhs_csc.transpose_view(),
+                    self.transpose_view(),
+                )
+                .transpose_into()
             }
             (CSC, CSC) => {
                 smmp::mul_csr_csr(rhs.transpose_view(), self.transpose_view())
@@ -3050,6 +3053,13 @@ mod test {
                 _ => panic!(),
             }
         }
+    }
+
+    #[test]
+    fn issue_99() {
+        let a = crate::TriMat::<i32>::new((10, 1)).to_csc();
+        let b = crate::TriMat::<i32>::new((1, 9)).to_csr();
+        let _c = &a * &b;
     }
 }
 

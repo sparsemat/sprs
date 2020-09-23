@@ -6,6 +6,7 @@
 use std::ops::{Deref, DerefMut};
 
 /// Wrapper around a size 2 array, with `Deref` implementation.
+#[derive(Debug, Copy, Clone)]
 pub struct Array2<T> {
     pub data: [T; 2],
 }
