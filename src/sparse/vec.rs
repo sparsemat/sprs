@@ -507,12 +507,14 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     where
         N: Copy,
     {
-        let mut buf = Vec::with_capacity(indices.len());
-        utils::sort_indices_data_slices(
-            &mut indices[..],
-            &mut data[..],
-            &mut buf,
-        );
+        if !utils::sorted_indices(&indices) {
+            let mut buf = Vec::with_capacity(indices.len());
+            utils::sort_indices_data_slices(
+                &mut indices[..],
+                &mut data[..],
+                &mut buf,
+            );
+        }
         let v = CsVecI {
             dim: n,
             indices,

@@ -625,6 +625,9 @@ impl<N, I: SpIndex, Iptr: SpIndex>
             let start = start_stop[0].index_unchecked();
             let stop = start_stop[1].index_unchecked();
             let indices = &mut self.indices[start..stop];
+            if utils::sorted_indices(indices) {
+                continue;
+            }
             let data = &mut self.data[start..stop];
             let len = stop - start;
             let indices = &mut indices[..len];
