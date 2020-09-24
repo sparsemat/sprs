@@ -499,26 +499,31 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     /// Try create an owning CsVec from vector data.
     pub fn try_new(
         n: usize,
-        mut indices: Vec<I>,
-        mut data: Vec<N>,
+        indices: Vec<I>,
+        data: Vec<N>,
     ) -> Result<CsVecI<N, I>, SprsError>
     where
         N: Copy,
     {
-        if !utils::sorted_indices(&indices) {
-            let mut buf = Vec::with_capacity(indices.len());
-            utils::sort_indices_data_slices(
-                &mut indices[..],
-                &mut data[..],
-                &mut buf,
-            );
-        }
-        let v = CsVecI {
+        if !utils::sorted_indices(&indices) {}
+        let mut v = CsVecI {
             dim: n,
             indices,
             data,
         };
-        v.check_structure().and(Ok(v))
+        match v.check_structure() {
+            Err(SprsError::NonSortedIndices) => {
+                let mut buf = Vec::with_capacity(v.indices.len());
+                utils::sort_indices_data_slices(
+                    &mut v.indices[..],
+                    &mut v.data[..],
+                    &mut buf,
+                );
+                v.check_structure()
+            }
+            v => v,
+        }
+        .and(Ok(v))
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
@@ -655,8 +660,7 @@ where
         for i in self.indices.iter() {
             i.index();
         }
-
-        if !self.indices.windows(2).all(|x| x[0] < x[1]) {
+        if !utils::sorted_indices(&self.indices) {
             return Err(SprsError::NonSortedIndices);
         }
 
