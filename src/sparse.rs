@@ -78,7 +78,7 @@ pub use self::csmat::CompressedStorage;
 /// [`vstack`]: fn.vstack.html
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
-#[derive(Eq, PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
 where
@@ -143,7 +143,7 @@ pub type CsStructure = CsStructureI<usize>;
 /// [`CsVecI`]: type.CsVecI.html
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
@@ -262,6 +262,18 @@ pub trait SparseMat {
 
 mod utils {
     use crate::indexing::SpIndex;
+    use std::convert::TryInto;
+
+    pub fn sorted_indices<I: SpIndex>(indices: &[I]) -> bool {
+        for w in indices.windows(2) {
+            // w will always be a size 2
+            let &[i1, i2]: &[I; 2] = w.try_into().unwrap();
+            if i2 <= i1 {
+                return false;
+            }
+        }
+        true
+    }
 
     pub fn sort_indices_data_slices<N: Copy, I: SpIndex>(
         indices: &mut [I],
@@ -318,5 +330,16 @@ mod test {
         utils::sort_indices_data_slices(&mut idx[..], &mut dat[..], &mut buf);
         assert_eq!(idx, vec![1, 2, 4, 6]);
         assert_eq!(dat, vec![-1, -3, 4, 2]);
+    }
+
+    #[test]
+    fn test_sorted_indices() {
+        use utils::sorted_indices;
+        assert!(sorted_indices(&[1, 2, 3]));
+        assert!(sorted_indices(&[1, 2, 8]));
+        assert!(!sorted_indices(&[1, 1, 3]));
+        assert!(!sorted_indices(&[2, 1, 3]));
+        assert!(sorted_indices(&[1, 2]));
+        assert!(sorted_indices(&[1]));
     }
 }
