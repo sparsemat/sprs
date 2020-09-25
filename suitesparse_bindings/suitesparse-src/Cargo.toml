@@ -1,0 +1,16 @@
+[package]
+name = "suitesparse-src"
+version = "0.1.0"
+authors = ["Magnus Ulimoen <magnus@ulimoen.dev>"]
+edition = "2018"
+build = "build.rs"
+links = "suitesparse-src"
+
+[features]
+camd = []
+ldl = []
+
+[dependencies]
+
+[build-dependencies]
+cc = "1.0.60"
