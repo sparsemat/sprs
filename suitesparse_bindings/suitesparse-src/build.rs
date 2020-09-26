@@ -3,6 +3,7 @@ fn main() {
     println!("cargo:root={}", std::env::var("OUT_DIR").unwrap());
     if std::env::var_os("CARGO_FEATURE_CAMD").is_some() {
         cc::Build::new()
+            .include("SuiteSparse/SuiteSparse_config")
             .include("SuiteSparse/CAMD/Include")
             .file("SuiteSparse/CAMD/Source/camd_1.c")
             .file("SuiteSparse/CAMD/Source/camd_2.c")
@@ -21,6 +22,7 @@ fn main() {
     }
     if std::env::var_os("CARGO_FEATURE_LDL").is_some() {
         cc::Build::new()
+            .include("SuiteSparse/SuiteSparse_config")
             .include("SuiteSparse/LDL/Include")
             .file("SuiteSparse/LDL/Source/ldl.c")
             .cargo_metadata(false)
