@@ -19,6 +19,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -35,6 +36,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -50,6 +52,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -90,6 +93,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
 
     - name: Install suitesparse
       if: matrix.os == 'ubuntu-18.04'
@@ -129,6 +133,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install dependencies
       run: |
           sudo apt-get install libeigen3-dev libsuitesparse-dev
@@ -148,6 +153,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -164,6 +170,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
