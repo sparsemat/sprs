@@ -6,6 +6,16 @@ Changelog
     - Make FillInReduction enum non exhaustive to prevent excessive breakage
       when new algorithms are implemented. **breaking change**
     - Make rayon optional **breaking change**
+    - Make fill in reduction enum non exhaustive **breaking change**
+    - Add SuiteSparse's CAMD in the fill in reduction enum
+    - Add structure only sparse matrix type
+    - Add Kronecker product
+    - Implemnt Approx for matrix comparison
+    - Various performance improvements with code patterns enabling removal
+      of bounds checking by the compiler
+    - Improve performance of sparse matrix creation by checking if indices are
+      sorted and sorting only if necessary for owning matrices.
+    - Fix CSC/CSR multiplication which would fail without reason.
 - 0.8.1
     - Expose the ``num_kinds`` module to allow generic usage of matrix market
       serialization functions in client crates
