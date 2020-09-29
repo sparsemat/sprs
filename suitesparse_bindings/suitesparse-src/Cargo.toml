@@ -5,6 +5,10 @@ authors = ["Magnus Ulimoen <magnus@ulimoen.dev>"]
 edition = "2018"
 build = "build.rs"
 links = "suitesparse-src"
+license-file = "SuiteSparse/LICENSE.txt"
+readme = "README.md"
+repository = "https://github.com/vbarrielle/sprs"
+description = "Builds the SuiteSparse components"
 
 [features]
 camd = []

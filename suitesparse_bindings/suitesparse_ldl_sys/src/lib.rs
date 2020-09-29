@@ -9,7 +9,6 @@ pub const LDL_MAIN_VERSION: usize = 2;
 pub const LDL_SUB_VERSION: usize = 1;
 pub const LDL_SUBSUB_VERSION: usize = 0;
 
-#[link(name = "ldl")]
 extern "C" {
     pub fn ldl_symbolic(
         n: ldl_int,
@@ -161,4 +160,16 @@ extern "C" {
         ap: *const ldl_long,
         ai: *const ldl_long,
     ) -> ldl_long;
+}
+
+#[test]
+fn sanity() {
+    let n = 1;
+    let ap = &[0, 1];
+    let ai = &[0];
+    let valid;
+    unsafe {
+        valid = ldl_valid_matrix(n, ap.as_ptr(), ai.as_ptr());
+    }
+    assert_eq!(valid, 1);
 }
