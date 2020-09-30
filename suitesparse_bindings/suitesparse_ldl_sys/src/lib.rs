@@ -1,13 +1,11 @@
-#[allow(non_camel_case_types)]
+#![allow(non_camel_case_types)]
 pub type ldl_int = libc::c_int;
-#[allow(non_camel_case_types)]
-pub type ldl_long = libc::c_long;
-#[allow(non_camel_case_types)]
-pub type ldl_double = libc::c_double;
 
-pub const LDL_MAIN_VERSION: usize = 2;
-pub const LDL_SUB_VERSION: usize = 1;
-pub const LDL_SUBSUB_VERSION: usize = 0;
+#[cfg(target_os = "windows")]
+pub type ldl_long = i64;
+#[cfg(not(target_os = "windows"))]
+pub type ldl_long = libc::c_long;
+pub type ldl_double = libc::c_double;
 
 extern "C" {
     pub fn ldl_symbolic(
