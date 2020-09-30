@@ -1,7 +1,6 @@
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     let root = std::env::var_os("OUT_DIR").unwrap();
-    println!("cargo:root={}", root.to_string_lossy());
 
     let mut suitesparse_config = false;
     if std::env::var_os("CARGO_FEATURE_CAMD").is_some() {
@@ -75,4 +74,5 @@ fn main() {
             .cargo_metadata(false)
             .compile("suitesparseconfig");
     }
+    println!("cargo:root={}", root.to_string_lossy());
 }
