@@ -5,7 +5,6 @@ pub type SuiteSparseLong = libc::c_long;
 
 pub type SuiteSparseInt = libc::c_int;
 
-#[link(name = "camd")]
 extern "C" {
     /// Find a permutation matrix P, represented by the permutation indices
     /// `p`, which reduces the fill-in of the symmetric sparse matrix A
