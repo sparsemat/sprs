@@ -1,7 +1,10 @@
 [package]
 name = "suitesparse-src"
 version = "0.1.0"
-authors = ["Magnus Ulimoen <magnus@ulimoen.dev>"]
+authors = [
+  "Magnus Ulimoen <magnus@ulimoen.dev>",
+  "Vincent Barrielle <vincent.barrielle@m4x.org"
+]
 edition = "2018"
 build = "build.rs"
 links = "suitesparse-src"
