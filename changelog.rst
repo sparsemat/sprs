@@ -2,6 +2,9 @@
 Changelog
 =========
 
+- 0.9.1
+    - Fix a crash when parallelizing matrix products with less rows than the
+      number of CPU cores.
 - 0.9.0
     - Make FillInReduction enum non exhaustive to prevent excessive breakage
       when new algorithms are implemented. **breaking change**
