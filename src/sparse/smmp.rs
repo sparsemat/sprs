@@ -229,7 +229,7 @@ where
     assert_eq!(l_cols, r_rows);
     let workspace_len = l_rows.max(l_cols).max(r_cols);
     #[cfg(feature = "multi_thread")]
-    let nb_threads = {
+    let nb_threads = std::cmp::min(l_rows, {
         use self::ThreadingStrategy::{Automatic, AutomaticPhysical};
         match thread_threading_strategy() {
             ThreadingStrategy::Fixed(nb_threads) => nb_threads,
@@ -244,7 +244,7 @@ where
                 1.max(wanted_threads).min(nb_cpus)
             }
         }
-    };
+    });
     #[cfg(not(feature = "multi_thread"))]
     let nb_threads = 1;
     let mut tmps = Vec::with_capacity(nb_threads);
@@ -519,5 +519,17 @@ mod test {
         ));
         let res = super::mul_csr_csr(a.view(), a.view());
         assert_eq!(exp, res);
+    }
+
+    #[test]
+    #[cfg(feature = "multi_thread")]
+    fn mul_csr_csr_one_long_row_multithreaded() {
+        super::set_thread_threading_strategy(super::ThreadingStrategy::Fixed(
+            4,
+        ));
+        let a = crate::CsVec::<f32>::empty(100);
+        let b = crate::CsMat::<f32>::zero((100, 10)).to_csc();
+
+        let _ = &a * &b;
     }
 }
