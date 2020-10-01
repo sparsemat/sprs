@@ -58,6 +58,7 @@ members = [
     "suitesparse_bindings/sprs_suitesparse_ldl",
     "suitesparse_bindings/suitesparse_camd_sys",
     "suitesparse_bindings/sprs_suitesparse_camd",
+    "suitesparse_bindings/suitesparse-src",
     "sprs-rand",
     "sprs-benches",
 ]

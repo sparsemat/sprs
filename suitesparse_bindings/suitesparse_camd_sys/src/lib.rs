@@ -1,3 +1,7 @@
+//! FFI bindings to the SuiteSparse component CAMD
+//!
+//! For a static build activate the "static" feature, which builds CAMD
+//! from source and includes this statically.
 #[cfg(target_os = "windows")]
 pub type SuiteSparseLong = libc::c_longlong;
 #[cfg(not(target_os = "windows"))]
@@ -5,7 +9,6 @@ pub type SuiteSparseLong = libc::c_long;
 
 pub type SuiteSparseInt = libc::c_int;
 
-#[link(name = "camd")]
 extern "C" {
     /// Find a permutation matrix P, represented by the permutation indices
     /// `p`, which reduces the fill-in of the symmetric sparse matrix A

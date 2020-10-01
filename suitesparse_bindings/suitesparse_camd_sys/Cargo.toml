@@ -5,8 +5,12 @@ authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 edition = "2018"
 description = "Raw bindings to SuiteSparse's CAMD algorithm"
 license = "MIT OR Apache-2.0"
+build = "build.rs"
+links = "camd"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+static = ["suitesparse-src/camd"]
 
 [dependencies]
 libc = "0.2.74"
+suitesparse-src = { path = "../suitesparse-src", optional = true }

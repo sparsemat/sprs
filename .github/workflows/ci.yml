@@ -19,6 +19,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -35,6 +36,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -50,6 +52,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -90,6 +93,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
 
     - name: Install suitesparse
       if: matrix.os == 'ubuntu-18.04'
@@ -129,6 +133,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install dependencies
       run: |
           sudo apt-get install libeigen3-dev libsuitesparse-dev
@@ -148,6 +153,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -164,6 +170,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with: {submodules: true}
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -173,3 +180,40 @@ jobs:
     - name: Run test
       run: |
           cargo test --features approx
+
+  static_suitesparse:
+    name: static SuiteSparse
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - build: stable
+          os: ubuntu-18.04
+          rust: stable
+        - build: macos
+          os: macos-latest
+          rust: stable
+        - build: win-msvc
+          os: windows-2019
+          rust: stable
+        - build: win-gnu
+          os: windows-2019
+          rust: stable
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with: {submodules: true}
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+    - name: Run tests (camd)
+      run: |
+          cd suitesparse_bindings/sprs_suitesparse_camd
+          cargo test --features suitesparse_camd_sys/static
+    - name: Run tests (ldl)
+      run: |
+          cd suitesparse_bindings/sprs_suitesparse_ldl
+          cargo test --features suitesparse_ldl_sys/static

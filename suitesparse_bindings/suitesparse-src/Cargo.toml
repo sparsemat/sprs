@@ -1,0 +1,65 @@
+[package]
+name = "suitesparse-src"
+version = "0.1.0"
+authors = ["Magnus Ulimoen <magnus@ulimoen.dev>"]
+edition = "2018"
+build = "build.rs"
+links = "suitesparse-src"
+license-file = "SuiteSparse/LICENSE.txt"
+readme = "README.md"
+repository = "https://github.com/vbarrielle/sprs"
+description = "Builds the SuiteSparse components"
+exclude = [
+    "SuiteSparse/AMD/",
+    "SuiteSparse/bin/",
+    "SuiteSparse/BTF/",
+    "SuiteSparse/CCOLAMD/",
+    "SuiteSparse/CHOLMOD/",
+    "SuiteSparse/COLAMD/",
+    "SuiteSparse/CSparse/",
+    "SuiteSparse/CSparse_to_CXSparse/",
+    "SuiteSparse/CXSparse/",
+    "SuiteSparse/CXSparse_newfiles/",
+    "SuiteSparse/GPUQREngine/",
+    "SuiteSparse/GraphBLAS/",
+    "SuiteSparse/KLU/",
+    "SuiteSparse/lib/",
+    "SuiteSparse/Makefile",
+    "SuiteSparse/MATLAB_Tools/",
+    "SuiteSparse/metis-5.1.0/",
+    "SuiteSparse/Mongoose/",
+    "SuiteSparse/RBio/",
+    "SuiteSparse/share/",
+    "SuiteSparse/SLIP_LU/",
+    "SuiteSparse/SPQR/",
+    "SuiteSparse/ssget/",
+    "SuiteSparse/UMFPACK/",
+
+    "SuiteSparse/contents.m",
+    "SuiteSparse/SuiteSparse_GPURuntime/",
+    "SuiteSparse/SuiteSparse_demo.m",
+    "SuiteSparse/SuiteSparse_install.m",
+    "SuiteSparse/SuiteSparse_test.m",
+
+    "SuiteSparse/CAMD/Demo/",
+    "SuiteSparse/CAMD/Doc/",
+    "SuiteSparse/CAMD/Lib/",
+    "SuiteSparse/CAMD/Makefile",
+    "SuiteSparse/CAMD/MATLAB/",
+
+    "SuiteSparse/LDL/Demo/",
+    "SuiteSparse/LDL/Doc/",
+    "SuiteSparse/LDL/Lib/",
+    "SuiteSparse/LDL/Makefile",
+    "SuiteSparse/LDL/MATLAB/",
+    "SuiteSparse/LDL/Matrix/",
+]
+
+[features]
+camd = []
+ldl = []
+
+[dependencies]
+
+[build-dependencies]
+cc = "1.0.60"
