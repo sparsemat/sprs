@@ -1,6 +1,6 @@
 [package]
 name = "suitesparse_camd_sys"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 edition = "2018"
 description = "Raw bindings to SuiteSparse's CAMD algorithm"
@@ -13,4 +13,8 @@ static = ["suitesparse-src/camd"]
 
 [dependencies]
 libc = "0.2.74"
-suitesparse-src = { path = "../suitesparse-src", optional = true }
+
+[dependencies.suitesparse-src]
+path = "../suitesparse-src"
+version = "0.1.0"
+optional = true
