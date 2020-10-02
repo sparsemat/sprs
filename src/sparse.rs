@@ -291,7 +291,7 @@ pub(crate) mod utils {
                 "Index type not large enough for this matrix",
             ));
         }
-        if Iptr::from(outer).is_none() {
+        if Iptr::from(outer + 1).is_none() {
             return Err(SprsError::IllegalArguments(
                 "Iptr type not large enough for this matrix",
             ));
