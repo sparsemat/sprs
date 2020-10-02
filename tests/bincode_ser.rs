@@ -1,6 +1,10 @@
 #[cfg(feature = "serde")]
 fn main() {
-    use sprs::CsMat;
+    use sprs::{CsMat, CsVecI};
+    let v = CsVecI::new(5, vec![0_i32, 2, 4], vec![1., 2., 3.]);
+    let serialized = bincode::serialize(&v.view()).unwrap();
+    let deserialized = bincode::deserialize(&serialized).unwrap();
+    assert_eq!(v, deserialized);
 
     let m: CsMat<f32> = CsMat::<f32>::eye(3);
     let serialized = bincode::serialize(&m.view()).unwrap();
