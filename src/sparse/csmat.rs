@@ -530,7 +530,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVecBase<&[I], &[N]>) -> Self
+    pub fn append_outer_csvec(mut self, vec: CsVecViewI<N, I>) -> Self
     where
         N: Clone,
     {

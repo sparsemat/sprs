@@ -39,7 +39,7 @@ pub trait SpVecView<N, I: SpIndex> {
 }
 
 impl<N, I, IndStorage, DataStorage> SpVecView<N, I>
-    for CsVecBase<IndStorage, DataStorage>
+    for CsVecBase<IndStorage, DataStorage, N, I>
 where
     IndStorage: Deref<Target = [I]>,
     DataStorage: Deref<Target = [N]>,
