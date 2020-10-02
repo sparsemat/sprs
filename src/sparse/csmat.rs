@@ -128,7 +128,7 @@ pub struct OuterIteratorMut<'iter, N: 'iter, I: 'iter, Iptr: 'iter = I> {
 impl<'iter, N: 'iter, I: 'iter + SpIndex, Iptr: 'iter + SpIndex> Iterator
     for OuterIterator<'iter, N, I, Iptr>
 {
-    type Item = CsVecBase<&'iter [I], &'iter [N]>;
+    type Item = CsVecViewI<'iter, N, I>;
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.indptr_iter.next() {
@@ -164,7 +164,7 @@ impl<
         Iptr: 'iter + SpIndex,
     > Iterator for OuterIteratorPerm<'iter, 'perm, N, I, Iptr>
 {
-    type Item = (usize, CsVecBase<&'iter [I], &'iter [N]>);
+    type Item = (usize, CsVecViewI<'iter, N, I>);
     #[inline]
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         match self.outer_ind_iter.next() {
@@ -702,7 +702,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVecBase<&[I], &[N]>) -> Self
+    pub fn append_outer_csvec(mut self, vec: CsVecViewI<N, I>) -> Self
     where
         N: Clone,
     {

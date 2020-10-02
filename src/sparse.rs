@@ -4,7 +4,9 @@ use crate::indexing::SpIndex;
 use std::ops::Deref;
 
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+mod serde_traits;
+#[cfg(feature = "serde")]
+use serde_traits::{CsVecBaseShadow, Deserialize, Serialize};
 
 pub use self::csmat::CompressedStorage;
 
@@ -148,19 +150,28 @@ pub type CsStructure = CsStructureI<usize>;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct CsVecBase<IStorage, DStorage> {
+#[cfg_attr(
+    feature = "serde",
+    serde(try_from = "CsVecBaseShadow<IStorage, DStorage, N, I>")
+)]
+pub struct CsVecBase<IStorage, DStorage, N, I: SpIndex = usize>
+where
+    IStorage: Deref<Target = [I]>,
+    DStorage: Deref<Target = [N]>,
+{
     dim: usize,
     indices: IStorage,
     data: DStorage,
 }
 
-pub type CsVecI<N, I> = CsVecBase<Vec<I>, Vec<N>>;
-pub type CsVecViewI<'a, N, I> = CsVecBase<&'a [I], &'a [N]>;
-pub type CsVecViewMutI<'a, N, I> = CsVecBase<&'a [I], &'a mut [N]>;
+pub type CsVecI<N, I = usize> = CsVecBase<Vec<I>, Vec<N>, N, I>;
+pub type CsVecViewI<'a, N, I = usize> = CsVecBase<&'a [I], &'a [N], N, I>;
+pub type CsVecViewMutI<'a, N, I = usize> =
+    CsVecBase<&'a [I], &'a mut [N], N, I>;
 
-pub type CsVecView<'a, N> = CsVecViewI<'a, N, usize>;
-pub type CsVecViewMut<'a, N> = CsVecViewMutI<'a, N, usize>;
-pub type CsVec<N> = CsVecI<N, usize>;
+pub type CsVecView<'a, N> = CsVecViewI<'a, N>;
+pub type CsVecViewMut<'a, N> = CsVecViewMutI<'a, N>;
+pub type CsVec<N> = CsVecI<N>;
 
 /// Sparse matrix in the triplet format.
 ///
