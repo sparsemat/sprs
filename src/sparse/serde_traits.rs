@@ -28,3 +28,46 @@ where
         Self::new_(dim, indices, data).map_err(|(_, _, e)| e)
     }
 }
+
+#[derive(Deserialize)]
+pub struct CsMatBaseShadow<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
+where
+    I: SpIndex,
+    Iptr: SpIndex,
+    IptrStorage: Deref<Target = [Iptr]>,
+    IndStorage: Deref<Target = [I]>,
+    DataStorage: Deref<Target = [N]>,
+{
+    storage: CompressedStorage,
+    nrows: usize,
+    ncols: usize,
+    indptr: IptrStorage,
+    indices: IndStorage,
+    data: DataStorage,
+}
+
+impl<IptrStorage, IndStorage, DStorage, N, I: SpIndex, Iptr: SpIndex>
+    TryFrom<CsMatBaseShadow<N, I, IptrStorage, IndStorage, DStorage, Iptr>>
+    for CsMatBase<N, I, IptrStorage, IndStorage, DStorage, Iptr>
+where
+    IndStorage: Deref<Target = [I]>,
+    IptrStorage: Deref<Target = [Iptr]>,
+    DStorage: Deref<Target = [N]>,
+{
+    type Error = SprsError;
+    fn try_from(
+        val: CsMatBaseShadow<N, I, IptrStorage, IndStorage, DStorage, Iptr>,
+    ) -> Result<Self, Self::Error> {
+        let CsMatBaseShadow {
+            storage,
+            nrows,
+            ncols,
+            indptr,
+            indices,
+            data,
+        } = val;
+        let shape = (nrows, ncols);
+        Self::new_checked(storage, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
+    }
+}

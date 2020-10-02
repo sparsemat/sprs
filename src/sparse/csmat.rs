@@ -144,7 +144,7 @@ where
     IStorage: Deref<Target = [I]>,
     DStorage: Deref<Target = [N]>,
 {
-    fn new_checked(
+    pub(crate) fn new_checked(
         storage: CompressedStorage,
         shape: (usize, usize),
         indptr: IptrStorage,

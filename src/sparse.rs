@@ -7,7 +7,7 @@ use std::ops::Deref;
 #[cfg(feature = "serde")]
 mod serde_traits;
 #[cfg(feature = "serde")]
-use serde_traits::{CsVecBaseShadow, Deserialize, Serialize};
+use serde_traits::{CsMatBaseShadow, CsVecBaseShadow, Deserialize, Serialize};
 
 pub use self::csmat::CompressedStorage;
 
@@ -85,6 +85,12 @@ pub use self::csmat::CompressedStorage;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(
+        try_from = "CsMatBaseShadow<N, I, IptrStorage, IndStorage, DataStorage, Iptr>"
+    )
+)]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
 where
     I: SpIndex,
