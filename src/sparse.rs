@@ -1,4 +1,5 @@
 use crate::array_backend::Array2;
+use crate::errors::SprsError;
 use crate::indexing::SpIndex;
 use std::ops::Deref;
 
@@ -260,9 +261,111 @@ pub trait SparseMat {
     fn nnz(&self) -> usize;
 }
 
-mod utils {
-    use crate::indexing::SpIndex;
+pub(crate) mod utils {
+    use super::*;
     use std::convert::TryInto;
+
+    /// Check the structure of CsMat components
+    /// This will ensure that:
+    /// * indptr is of length outer_dim() + 1
+    /// * indices and data have the same length, nnz == indptr\[outer_dims()\]
+    /// * indptr is sorted
+    /// * indptr values do not exceed usize::MAX / 2, as that would mean
+    ///   indices and indptr would take more space than the addressable memory
+    /// * indices is sorted for each outer slice
+    /// * indices are lower than inner_dims()
+    pub(crate) fn check_compressed_structure<I: SpIndex, Iptr: SpIndex>(
+        inner: usize,
+        outer: usize,
+        indptr: &[Iptr],
+        indices: &[I],
+    ) -> Result<(), SprsError> {
+        if indptr.len() != outer + 1 {
+            return Err(SprsError::IllegalArguments(
+                "Indptr length does not match dimension",
+            ));
+        }
+        // Make sure Iptr and I can represent all types for this size
+        if I::from(inner).is_none() {
+            return Err(SprsError::IllegalArguments(
+                "Index type not large enough for this matrix",
+            ));
+        }
+        if Iptr::from(outer).is_none() {
+            return Err(SprsError::IllegalArguments(
+                "Iptr type not large enough for this matrix",
+            ));
+        }
+        // Make sure both indptr and indices can be converted to usize
+        // this could happen if index is negative for sized types
+        for i in indptr.iter() {
+            if i.try_index().is_none() {
+                return Err(SprsError::IllegalArguments(
+                    "Indptr value out of range of usize",
+                ));
+            }
+        }
+        for i in indices.iter() {
+            if i.try_index().is_none() {
+                return Err(SprsError::IllegalArguments(
+                    "Indices value out of range of usize",
+                ));
+            }
+        }
+        let nnz = indices.len();
+        if nnz != indptr.last().unwrap().to_usize().unwrap() {
+            return Err(SprsError::IllegalArguments(
+                "Indices length and inpdtr's nnz do not match",
+            ));
+        }
+
+        // indptr should be non-monotonically increasing
+        if !indptr
+            .windows(2)
+            .all(|x| x[0].index_unchecked() <= x[1].index_unchecked())
+        {
+            return Err(SprsError::UnsortedIndptr);
+        }
+        // Guaranteed to have at least one element
+        let max_indptr = indptr.last().unwrap();
+        if max_indptr.index_unchecked() > nnz {
+            return Err(SprsError::IllegalArguments(
+                "An indptr value is out of bounds",
+            ));
+        }
+        if max_indptr.index_unchecked() > usize::max_value() / 2 {
+            // We do not allow indptr values to be larger than half
+            // the maximum value of an usize, as that would clearly exhaust
+            // all available memory
+            // This means we could have an isize, but in practice it's
+            // easier to work with usize for indexing.
+            return Err(SprsError::IllegalArguments(
+                "An indptr value is larger than allowed",
+            ));
+        }
+
+        // check that the indices are sorted for each row
+        for win in indptr.windows(2) {
+            let [i1, i2]: &[Iptr; 2] = win.try_into().unwrap();
+            let i1 = i1.to_usize().unwrap();
+            let i2 = i2.to_usize().unwrap();
+            let indices = &indices[i1..i2];
+            // Indices must be monotonically increasing
+            if !sorted_indices(indices) {
+                return Err(SprsError::NonSortedIndices);
+            }
+            // Last index (which is the largest) must be in bounds
+            if let Some(i) = indices.last() {
+                if i.to_usize().unwrap() >= inner {
+                    return Err(SprsError::IllegalArguments(
+                        "Indice is larger than inner dimension",
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
 
     pub fn sorted_indices<I: SpIndex>(indices: &[I]) -> bool {
         for w in indices.windows(2) {

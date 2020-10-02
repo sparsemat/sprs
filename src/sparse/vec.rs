@@ -505,25 +505,20 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
     where
         N: Copy,
     {
-        if !utils::sorted_indices(&indices) {}
-        let mut v = CsVecI {
-            dim: n,
-            indices,
-            data,
-        };
-        match v.check_structure() {
-            Err(SprsError::NonSortedIndices) => {
-                let mut buf = Vec::with_capacity(v.indices.len());
+        let v = Self::new_(n, indices, data);
+        match v {
+            Err((mut indices, mut data, SprsError::NonSortedIndices)) => {
+                let mut buf = Vec::with_capacity(indices.len());
                 utils::sort_indices_data_slices(
-                    &mut v.indices[..],
-                    &mut v.data[..],
+                    &mut indices[..],
+                    &mut data[..],
                     &mut buf,
                 );
-                v.check_structure()
+                Self::new_(n, indices, data)
             }
             v => v,
         }
-        .and(Ok(v))
+        .map_err(|(_, _, e)| e)
     }
 
     /// Create an empty CsVec, which can be used for incremental construction
@@ -590,6 +585,63 @@ where
             indices: &self.indices[..],
             data: &self.data[..],
         }
+    }
+
+    /// Try to create a new vector from the given buffers
+    ///
+    /// Will return the buffers along with the error if
+    /// conversion is illegal
+    pub(crate) fn new_(
+        n: usize,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, (IStorage, DStorage, SprsError)> {
+        if I::from(n).is_none() {
+            return Err((
+                indices,
+                data,
+                SprsError::IllegalArguments("Index size is too small"),
+            ));
+        }
+        if indices.len() != data.len() {
+            return Err((
+                indices,
+                data,
+                SprsError::IllegalArguments(
+                    "indices and data do not have compatible lengths",
+                ),
+            ));
+        }
+        for i in indices.iter() {
+            if i.to_usize().is_none() {
+                return Err((
+                    indices,
+                    data,
+                    SprsError::IllegalArguments(
+                        "index can not be converted to usize",
+                    ),
+                ));
+            }
+        }
+        if !utils::sorted_indices(indices.as_ref()) {
+            return Err((indices, data, SprsError::NonSortedIndices));
+        }
+        if let Some(i) = indices.last() {
+            if i.to_usize().unwrap() >= n {
+                return Err((
+                    indices,
+                    data,
+                    SprsError::IllegalArguments(
+                        "indices larger than vector size",
+                    ),
+                ));
+            }
+        }
+        Ok(Self {
+            dim: n,
+            indices,
+            data,
+        })
     }
 
     /// Iterate over the non zero values.
@@ -1015,12 +1067,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
         indices: &'a [I],
         data: &'a [N],
     ) -> Result<CsVecViewI<'a, N, I>, SprsError> {
-        let v = CsVecViewI {
-            dim: n,
-            indices,
-            data,
-        };
-        v.check_structure().and(Ok(v))
+        Self::new_(n, indices, data).map_err(|(_, _, e)| e)
     }
 
     /// Access element at given index, with logarithmic complexity

@@ -1341,75 +1341,21 @@ where
     /// * indices is sorted for each outer slice
     /// * indices are lower than inner_dims()
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
-        // Make sure both indptr and indices can be converted to usize
-        for i in self.indptr.iter() {
-            if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
-                    "Indptr value out of range of usize",
-                ));
-            }
-        }
-        for i in self.indices.iter() {
-            if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
-                    "Indices value out of range of usize",
-                ));
-            }
-        }
-
+        let inner = self.inner_dims();
         let outer = self.outer_dims();
 
-        if self.indptr.len() != outer + 1 {
-            return Err(SprsError::IllegalArguments(
-                "Indptr length does not match dimension",
-            ));
-        }
         if self.indices.len() != self.data.len() {
             return Err(SprsError::IllegalArguments(
                 "Indices and data lengths do not match",
             ));
         }
-        let nnz = self.indices.len();
-        if nnz != self.nnz() {
-            return Err(SprsError::IllegalArguments(
-                "Indices length and inpdtr's nnz do not match",
-            ));
-        }
-        if let Some(&max_indptr) = self.indptr.iter().max() {
-            if max_indptr.index_unchecked() > nnz {
-                return Err(SprsError::IllegalArguments(
-                    "An indptr value is out of bounds",
-                ));
-            }
-            if max_indptr.index_unchecked() > usize::max_value() / 2 {
-                // We do not allow indptr values to be larger than half
-                // the maximum value of an usize, as that would clearly exhaust
-                // all available memory
-                // This means we could have an isize, but in practice it's
-                // easier to work with usize for indexing.
-                return Err(SprsError::IllegalArguments(
-                    "An indptr value is larger than allowed",
-                ));
-            }
-        } else {
-            unreachable!();
-        }
 
-        if !self
-            .indptr
-            .deref()
-            .windows(2)
-            .all(|x| x[0].index_unchecked() <= x[1].index_unchecked())
-        {
-            return Err(SprsError::UnsortedIndptr);
-        }
-
-        // check that the indices are sorted for each row
-        for vec in self.outer_iterator() {
-            vec.check_structure()?;
-        }
-
-        Ok(())
+        utils::check_compressed_structure(
+            inner,
+            outer,
+            &self.indptr,
+            &self.indices,
+        )
     }
 
     /// Get an iterator that yields the non-zero locations and values stored in
