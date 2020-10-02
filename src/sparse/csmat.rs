@@ -1691,6 +1691,9 @@ where
             &mut self.indices[..],
             &mut self.data[..],
         );
+        // This is safe as long as we do the check, if we panic
+        // the structure can not be retrieved, as &mut self can not pass
+        // safely across an unwind boundary
         self.check_compressed_structure().unwrap();
     }
 }
