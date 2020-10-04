@@ -78,7 +78,8 @@ pub use self::csmat::CompressedStorage;
 /// [`vstack`]: fn.vstack.html
 /// [`hstack`]: fn.hstack.html
 /// [`bmat`]: fn.bmat.html
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr = I>
 where
@@ -143,7 +144,8 @@ pub type CsStructure = CsStructureI<usize>;
 /// [`CsVecI`]: type.CsVecI.html
 /// [`CsVecViewI`]: type.CsVecViewI.html
 /// [`CsVecViewMutI`]: type.CsVecViewMutI.html
-#[derive(PartialEq, Debug, Copy, Clone)]
+
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CsVecBase<IStorage, DStorage> {
     dim: usize,
@@ -202,7 +204,7 @@ pub type CsVec<N> = CsVecI<N, usize>;
 /// [`TriMatI`]: type.TriMatI.html
 /// [`TriMatViewI`]: type.TriMatViewI.html
 /// [`TriMatViewMutI`]: type.TriMatViewMutI.html
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Hash)]
 pub struct TriMatBase<IStorage, DStorage> {
     rows: usize,
     cols: usize,
