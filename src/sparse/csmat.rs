@@ -37,7 +37,7 @@ use crate::sparse::utils;
 use crate::sparse::vec;
 
 /// Describe the storage of a CsMat
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CompressedStorage {
     /// Compressed row storage
