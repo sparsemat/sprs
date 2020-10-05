@@ -309,10 +309,122 @@ where
     }
 }
 
-/// # Constructor methods for owned sparse matrices
-impl<N, I: SpIndex, Iptr: SpIndex>
-    CsMatBase<N, I, Vec<Iptr>, Vec<I>, Vec<N>, Iptr>
+impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
+    CsMatBase<N, I, IptrStorage, IStorage, DStorage, Iptr>
+where
+    IptrStorage: Deref<Target = [Iptr]>,
+    IStorage: Deref<Target = [I]>,
+    DStorage: Deref<Target = [N]>,
 {
+    fn new_checked(
+        storage: CompressedStorage,
+        shape: (usize, usize),
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, SprsError)> {
+        let (nrows, ncols) = shape;
+        let (inner, outer) = match storage {
+            CSR => (ncols, nrows),
+            CSC => (nrows, ncols),
+        };
+        if data.len() != indices.len() {
+            return Err((
+                indptr,
+                indices,
+                data,
+                SprsError::IllegalArguments(
+                    "data and indices have different sizes",
+                ),
+            ));
+        }
+        match crate::sparse::utils::check_compressed_structure(
+            inner,
+            outer,
+            indptr.as_ref(),
+            indices.as_ref(),
+        ) {
+            Err(e) => Err((indptr, indices, data, e)),
+            Ok(_) => Ok(Self {
+                storage,
+                nrows,
+                ncols,
+                indptr,
+                indices,
+                data,
+            }),
+        }
+    }
+}
+
+impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
+    CsMatBase<N, I, IptrStorage, IStorage, DStorage, Iptr>
+where
+    IptrStorage: Deref<Target = [Iptr]>,
+    IStorage: DerefMut<Target = [I]>,
+    DStorage: DerefMut<Target = [N]>,
+{
+    fn new_sorted_checked(
+        storage: CompressedStorage,
+        shape: (usize, usize),
+        indptr: IptrStorage,
+        mut indices: IStorage,
+        mut data: DStorage,
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, SprsError)>
+    where
+        N: Copy,
+    {
+        let (nrows, ncols) = shape;
+        let (inner, outer) = match storage {
+            CSR => (ncols, nrows),
+            CSC => (nrows, ncols),
+        };
+        if data.len() != indices.len() {
+            return Err((
+                indptr,
+                indices,
+                data,
+                SprsError::IllegalArguments(
+                    "data and indices have different sizes",
+                ),
+            ));
+        }
+        let mut buf = Vec::new();
+        for start_stop in indptr.windows(2) {
+            let start = start_stop[0].to_usize().unwrap();
+            let stop = start_stop[1].to_usize().unwrap();
+            let indices = &mut indices[start..stop];
+            if utils::sorted_indices(indices) {
+                continue;
+            }
+            let data = &mut data[start..stop];
+            let len = stop - start;
+            let indices = &mut indices[..len];
+            let data = &mut data[..len];
+            utils::sort_indices_data_slices(indices, data, &mut buf);
+        }
+
+        match crate::sparse::utils::check_compressed_structure(
+            inner,
+            outer,
+            indptr.as_ref(),
+            indices.as_ref(),
+        ) {
+            Err(e) => Err((indptr, indices, data, e)),
+            Ok(_) => Ok(Self {
+                storage,
+                nrows,
+                ncols,
+                indptr,
+                indices,
+                data,
+            }),
+        }
+    }
+}
+
+/// # Constructor methods for owned sparse matrices
+impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// Identity matrix, stored as a CSR matrix.
     ///
     /// ```rust
@@ -323,7 +435,7 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye(dim: usize) -> CsMatI<N, I, Iptr>
+    pub fn eye(dim: usize) -> Self
     where
         N: Num + Clone,
     {
@@ -332,14 +444,7 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
         let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
-        CsMatI {
-            storage: CSR,
-            nrows: n,
-            ncols: n,
-            indptr,
-            indices,
-            data,
-        }
+        CsMatI::new_trusted(CSR, (n, n), indptr, indices, data)
     }
 
     /// Identity matrix, stored as a CSC matrix.
@@ -361,46 +466,37 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
         let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
-        CsMatI {
-            storage: CSC,
-            nrows: n,
-            ncols: n,
-            indptr,
-            indices,
-            data,
-        }
+        CsMatI::new_trusted(CSC, (n, n), indptr, indices, data)
     }
     /// Create an empty CsMat for building purposes
     pub fn empty(
         storage: CompressedStorage,
         inner_size: usize,
     ) -> CsMatI<N, I, Iptr> {
-        let (nrows, ncols) = match storage {
+        let shape = match storage {
             CSR => (0, inner_size),
             CSC => (inner_size, 0),
         };
-        CsMatI {
+        CsMatI::new_trusted(
             storage,
-            nrows,
-            ncols,
-            indptr: vec![Iptr::zero(); 1],
-            indices: Vec::new(),
-            data: Vec::new(),
-        }
+            shape,
+            vec![Iptr::zero(); 1],
+            Vec::new(),
+            Vec::new(),
+        )
     }
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
     pub fn zero(shape: Shape) -> CsMatI<N, I, Iptr> {
-        let (nrows, ncols) = shape;
-        CsMatI {
-            storage: CSR,
-            nrows,
-            ncols,
-            indptr: vec![Iptr::zero(); nrows + 1],
-            indices: Vec::new(),
-            data: Vec::new(),
-        }
+        let (nrows, _ncols) = shape;
+        CsMatI::new_trusted(
+            CSR,
+            shape,
+            vec![Iptr::zero(); nrows + 1],
+            Vec::new(),
+            Vec::new(),
+        )
     }
 
     /// Reserve the storage for the given additional number of nonzero data
@@ -439,7 +535,8 @@ impl<N, I: SpIndex, Iptr: SpIndex>
     where
         N: Copy,
     {
-        CsMatI::new_(CSR, shape, indptr, indices, data)
+        CsMatI::new_sorted_checked(CSR, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
     }
 
     /// Create an owned CSR matrix from moved data.
@@ -476,11 +573,12 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<CsMatI<N, I, Iptr>, SprsError>
+    ) -> Result<Self, SprsError>
     where
         N: Copy,
     {
-        CsMatI::new_(CSC, shape, indptr, indices, data)
+        CsMatI::new_sorted_checked(CSC, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
     }
 
     /// Create an owned CSC matrix from moved data.
@@ -500,11 +598,11 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> CsMatI<N, I, Iptr>
+    ) -> Self
     where
         N: Copy,
     {
-        CsMatI::try_new_csc(shape, indptr, indices, data).unwrap()
+        Self::try_new_csc(shape, indptr, indices, data).unwrap()
     }
 
     pub(crate) fn new_trusted(
@@ -513,8 +611,8 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> CsMatI<N, I, Iptr> {
-        CsMatI {
+    ) -> Self {
+        Self {
             storage,
             nrows: shape.0,
             ncols: shape.1,
@@ -522,28 +620,6 @@ impl<N, I: SpIndex, Iptr: SpIndex>
             indices,
             data,
         }
-    }
-
-    fn new_(
-        storage: CompressedStorage,
-        shape: Shape,
-        indptr: Vec<Iptr>,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Result<CsMatI<N, I, Iptr>, SprsError>
-    where
-        N: Copy,
-    {
-        let mut m = CsMatI {
-            storage,
-            nrows: shape.0,
-            ncols: shape.1,
-            indptr,
-            indices,
-            data,
-        };
-        m.sort_indices();
-        m.check_compressed_structure().and(Ok(m))
     }
 
     /// Create a CSR matrix from a dense matrix, ignoring elements lower than `epsilon`.
@@ -602,26 +678,6 @@ impl<N, I: SpIndex, Iptr: SpIndex>
         N: Num + Clone + cmp::PartialOrd + Signed,
     {
         Self::csr_from_dense(m.reversed_axes(), epsilon).transpose_into()
-    }
-
-    fn sort_indices(&mut self)
-    where
-        N: Copy,
-    {
-        let mut buf = Vec::new();
-        for start_stop in self.indptr.windows(2) {
-            let start = start_stop[0].index_unchecked();
-            let stop = start_stop[1].index_unchecked();
-            let indices = &mut self.indices[start..stop];
-            if utils::sorted_indices(indices) {
-                continue;
-            }
-            let data = &mut self.data[start..stop];
-            let len = stop - start;
-            let indices = &mut indices[..len];
-            let data = &mut data[..len];
-            utils::sort_indices_data_slices(indices, data, &mut buf);
-        }
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
@@ -757,15 +813,8 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         indices: &'a [I],
         data: &'a [N],
     ) -> Result<CsMatViewI<'a, N, I, Iptr>, SprsError> {
-        let m = CsMatViewI {
-            storage,
-            nrows: shape.0,
-            ncols: shape.1,
-            indptr,
-            indices,
-            data,
-        };
-        m.check_compressed_structure().and(Ok(m))
+        Self::new_checked(storage, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
     }
 
     /// Create a borrowed CsMat matrix from raw data,
@@ -1341,75 +1390,21 @@ where
     /// * indices is sorted for each outer slice
     /// * indices are lower than inner_dims()
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
-        // Make sure both indptr and indices can be converted to usize
-        for i in self.indptr.iter() {
-            if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
-                    "Indptr value out of range of usize",
-                ));
-            }
-        }
-        for i in self.indices.iter() {
-            if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
-                    "Indices value out of range of usize",
-                ));
-            }
-        }
-
+        let inner = self.inner_dims();
         let outer = self.outer_dims();
 
-        if self.indptr.len() != outer + 1 {
-            return Err(SprsError::IllegalArguments(
-                "Indptr length does not match dimension",
-            ));
-        }
         if self.indices.len() != self.data.len() {
             return Err(SprsError::IllegalArguments(
                 "Indices and data lengths do not match",
             ));
         }
-        let nnz = self.indices.len();
-        if nnz != self.nnz() {
-            return Err(SprsError::IllegalArguments(
-                "Indices length and inpdtr's nnz do not match",
-            ));
-        }
-        if let Some(&max_indptr) = self.indptr.iter().max() {
-            if max_indptr.index_unchecked() > nnz {
-                return Err(SprsError::IllegalArguments(
-                    "An indptr value is out of bounds",
-                ));
-            }
-            if max_indptr.index_unchecked() > usize::max_value() / 2 {
-                // We do not allow indptr values to be larger than half
-                // the maximum value of an usize, as that would clearly exhaust
-                // all available memory
-                // This means we could have an isize, but in practice it's
-                // easier to work with usize for indexing.
-                return Err(SprsError::IllegalArguments(
-                    "An indptr value is larger than allowed",
-                ));
-            }
-        } else {
-            unreachable!();
-        }
 
-        if !self
-            .indptr
-            .deref()
-            .windows(2)
-            .all(|x| x[0].index_unchecked() <= x[1].index_unchecked())
-        {
-            return Err(SprsError::UnsortedIndptr);
-        }
-
-        // check that the indices are sorted for each row
-        for vec in self.outer_iterator() {
-            vec.check_structure()?;
-        }
-
-        Ok(())
+        utils::check_compressed_structure(
+            inner,
+            outer,
+            &self.indptr,
+            &self.indices,
+        )
     }
 
     /// Get an iterator that yields the non-zero locations and values stored in
@@ -1696,6 +1691,9 @@ where
             &mut self.indices[..],
             &mut self.data[..],
         );
+        // This is safe as long as we do the check, if we panic
+        // the structure can not be retrieved, as &mut self can not pass
+        // safely across an unwind boundary
         self.check_compressed_structure().unwrap();
     }
 }
@@ -2585,9 +2583,14 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok: Vec<f64> = vec![1., 1., 1.];
-        assert!(
-            CsMat::new_(CSR, (3, 3), indptr_ok, indices_ok, data_ok).is_ok()
-        );
+        assert!(CsMat::new_sorted_checked(
+            CSR,
+            (3, 3),
+            indptr_ok,
+            indices_ok,
+            data_ok
+        )
+        .is_ok());
     }
 
     #[test]
