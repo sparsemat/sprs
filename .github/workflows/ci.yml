@@ -181,6 +181,23 @@ jobs:
       run: |
           cargo test --features approx
 
+  optional_serde:
+    name: Optional features (serde selected)
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with: {submodules: true}
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+    - name: Run test
+      run: |
+          cargo test --features "serde serde_json"
+
   static_suitesparse:
     name: static SuiteSparse
     runs-on: ${{ matrix.os }}
