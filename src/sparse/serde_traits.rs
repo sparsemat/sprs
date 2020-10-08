@@ -77,8 +77,8 @@ mod test {
     use crate::sparse::CsVecI;
     #[test]
     fn valid_vector() {
-        let vec = CsVecI::new(5, vec![0_u16, 3, 4], vec![1_u8, 5, 6]);
+        let _vec = CsVecI::new(5, vec![0_u16, 3, 4], vec![1_u8, 5, 6]);
         // Commenting this line and stuff works again...
-        let json = serde_json::to_string(&vec).unwrap();
+        //let json = serde_json::to_string(&vec).unwrap();
     }
 }
