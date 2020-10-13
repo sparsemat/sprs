@@ -61,6 +61,7 @@ members = [
     "suitesparse_bindings/suitesparse-src",
     "sprs-rand",
     "sprs-benches",
+    "sprs-tests",
 ]
 
 [package.metadata.docs.rs]

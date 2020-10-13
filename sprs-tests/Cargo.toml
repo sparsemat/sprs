@@ -1,0 +1,10 @@
+[package]
+name = "sprs-tests"
+version = "0.1.0"
+authors = ["Magnus Ulimoen <magnus@ulimoen.dev>"]
+edition = "2018"
+publish = false
+
+[dev-dependencies]
+sprs = { path = "..", features = ["serde"], default-features = false }
+serde_json = "1.0.58"
