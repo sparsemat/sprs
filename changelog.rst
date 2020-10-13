@@ -2,6 +2,8 @@
 Changelog
 =========
 
+- 0.9.2
+    - Fix a crash on matrix products with 0 rows.
 - 0.9.1
     - Fix a crash when parallelizing matrix products with less rows than the
       number of CPU cores.
