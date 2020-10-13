@@ -229,7 +229,7 @@ where
     assert_eq!(l_cols, r_rows);
     let workspace_len = l_rows.max(l_cols).max(r_cols);
     #[cfg(feature = "multi_thread")]
-    let nb_threads = std::cmp::min(l_rows, {
+    let nb_threads = std::cmp::min(l_rows.max(1), {
         use self::ThreadingStrategy::{Automatic, AutomaticPhysical};
         match thread_threading_strategy() {
             ThreadingStrategy::Fixed(nb_threads) => nb_threads,
@@ -507,6 +507,22 @@ mod test {
         let exp = test_data::mat1_self_matprod();
         let res = super::mul_csr_csr(a.view(), a.view());
         assert_eq!(exp, res);
+    }
+
+    #[test]
+    fn mul_zero_rows() {
+        // See https://github.com/vbarrielle/sprs/issues/239
+        let a = crate::CsMat::new((0, 11), vec![0], vec![], vec![]);
+        let b = crate::CsMat::new(
+            (11, 11),
+            vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            vec![],
+            vec![],
+        );
+        let c: crate::CsMat<f64> = &a * &b;
+        assert_eq!(c.rows(), 0);
+        assert_eq!(c.cols(), 11);
+        assert_eq!(c.nnz(), 0);
     }
 
     #[test]
