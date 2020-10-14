@@ -56,7 +56,7 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMat<f64> {
             indptr.push(cumsum);
 
             let mut add_elt = |i, j, x| {
-                indices.push(i * rows + j);
+                indices.push(i * cols + j);
                 data.push(x);
                 cumsum += 1;
             };
@@ -91,7 +91,7 @@ fn set_boundary_condition<F>(
     for i in 0..rows {
         for j in 0..cols {
             if is_border(i, j, grid_shape) {
-                let index = i * rows + j;
+                let index = i * cols + j;
                 rhs[[index]] = f(i, j);
             }
         }
