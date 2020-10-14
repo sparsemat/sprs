@@ -5,6 +5,81 @@ use smallvec::SmallVec;
 use crate::indexing::SpIndex;
 use crate::sparse::CsMatI;
 
+fn grid_neighbors4(
+    row: usize,
+    col: usize,
+    shape: (usize, usize),
+) -> SmallVec<[(usize, usize, f64); 4]> {
+    let (rows, cols) = shape;
+    let top_row = row == 0;
+    let bottom_row = row + 1 == rows;
+
+    let left_col = col == 0;
+    let right_col = col + 1 == cols;
+    let mut nb_neighbors = 0.;
+    if !top_row {
+        nb_neighbors += 1.;
+    }
+    if !bottom_row {
+        nb_neighbors += 1.;
+    }
+    if !left_col {
+        nb_neighbors += 1.;
+    }
+    if !right_col {
+        nb_neighbors += 1.;
+    }
+
+    let mut res = SmallVec::new();
+    if !top_row {
+        res.push((row - 1, col, 1.));
+    }
+    if !left_col {
+        res.push((row, col - 1, 1.));
+    }
+    res.push((row, col, -nb_neighbors));
+    if !right_col {
+        res.push((row, col + 1, 1.));
+    }
+    if !bottom_row {
+        res.push((row + 1, col, 1.));
+    }
+
+    res
+}
+
+/// Compute the graph laplacian of a regular grid defined by its number of rows
+/// and colums. Indexing of nodes in the grid is defined as the C-order raveling
+/// of the grid locations.
+pub fn grid2d_graph_laplacian<I>(shape: (usize, usize)) -> CsMatI<f64, I>
+where
+    I: SpIndex,
+{
+    let (rows, cols) = shape;
+    let nb_vert = rows * cols;
+    let mut indptr = Vec::with_capacity(nb_vert + 1);
+    let nnz = 5 * nb_vert + 5;
+    let mut indices = Vec::with_capacity(nnz);
+    let mut data = Vec::with_capacity(nnz);
+    let mut cumsum = I::zero();
+
+    for i in 0..rows {
+        for j in 0..cols {
+            indptr.push(cumsum);
+            let neighbors = grid_neighbors4(i, j, (rows, cols));
+            for n in neighbors {
+                indices.push(I::from_usize(n.0 * cols + n.1));
+                data.push(n.2);
+                cumsum += I::one();
+            }
+        }
+    }
+
+    indptr.push(cumsum);
+
+    CsMatI::new_trusted(crate::CSR, (nb_vert, nb_vert), indptr, indices, data)
+}
+
 /// Compute the graph laplacian of a triangle mesh
 pub fn tri_mesh_graph_laplacian<I>(
     nb_vertices: usize,
@@ -66,6 +141,50 @@ where
 mod test {
     use crate::sparse::CsMat;
     use ndarray::arr2;
+
+    #[test]
+    fn grid2d_graph_laplacian() {
+        // 0 - 1 - 2 - 3
+        // |   |   |   |
+        // 4 - 5 - 6 - 7
+        // |   |   |   |
+        // 8 - 9 - a - b
+        let lap = super::grid2d_graph_laplacian((3, 4));
+        let a = 10;
+        let b = 11;
+        #[rustfmt::skip]
+        let expected = CsMat::new(
+            (12, 12),
+            vec![0, 3, 7, 11, 14, 18, 23, 28, 32, 35, 39, 43, 46],
+            vec![0, 1, 4,
+                 0, 1, 2, 5,
+                 1, 2, 3, 6,
+                 2, 3, 7,
+                 0, 4, 5, 8,
+                 1, 4, 5, 6, 9,
+                 2, 5, 6, 7, a,
+                 3, 6, 7, b,
+                 4, 8, 9,
+                 5, 8, 9, a,
+                 6, 9, a, b,
+                 7, a, b,
+            ],
+            vec![-2., 1., 1.,
+                 1., -3., 1., 1.,
+                 1., -3., 1., 1.,
+                 1., -2., 1.,
+                 1., -3., 1., 1.,
+                 1., 1., -4., 1., 1.,
+                 1., 1., -4., 1., 1.,
+                 1., 1., -3., 1.,
+                 1., -2., 1.,
+                 1., 1., -3., 1.,
+                 1., 1., -3., 1.,
+                 1., 1., -2.,
+            ],
+        );
+        assert_eq!(lap, expected);
+    }
 
     #[test]
     fn tri_mesh_graph_laplacian() {
