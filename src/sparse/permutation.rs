@@ -7,7 +7,7 @@ use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::indexing::SpIndex;
 use crate::sparse::{CompressedStorage, CsMatI, CsMatViewI};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 enum PermStorage<I, IndStorage>
 where
     IndStorage: Deref<Target = [I]>,
@@ -21,7 +21,7 @@ where
 
 use self::PermStorage::{FinitePerm, Identity};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Permutation<I, IndStorage>
 where
     IndStorage: Deref<Target = [I]>,
