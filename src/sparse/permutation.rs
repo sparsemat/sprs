@@ -347,6 +347,48 @@ where
     }
 }
 
+/// Compute a permutation P that puts the requested indices at the
+/// start of a matrix A of shape `(n, n)` when applying P * A * P^T
+///
+/// This can be useful to expose a block structure in a matrix.
+///
+/// # Failure
+///
+/// Returns `None` if an input index is not in the range `0..n`.
+pub fn try_permute_to_top<I>(indices: &[I], n: usize) -> Option<PermOwnedI<I>>
+where
+    I: SpIndex,
+{
+    let mut used = vec![false; n];
+    let mut perm = Vec::with_capacity(n);
+    for i in indices {
+        *used.get_mut(i.try_index()?)? = true;
+        perm.push(*i);
+    }
+    perm.extend(
+        used.iter()
+            .enumerate()
+            .filter(|(_, u)| !*u)
+            .map(|(i, _)| I::from_usize(i)),
+    );
+    Some(PermOwnedI::new_trusted(perm))
+}
+
+/// Compute a permutation P that puts the requested indices at the
+/// start of a matrix A of shape `(n, n)` when applying P * A * P^T
+///
+/// This can be useful to expose a block structure in a matrix.
+///
+/// # Panics
+///
+/// Panics if an input index is not in the range `0..n`.
+pub fn permute_to_top<I>(indices: &[I], n: usize) -> PermOwnedI<I>
+where
+    I: SpIndex,
+{
+    try_permute_to_top(indices, n).expect("Out of bounds index")
+}
+
 #[cfg(test)]
 mod test {
     use crate::sparse::CsMat;
@@ -404,6 +446,14 @@ mod test {
         );
         let papt = super::transform_mat_papt(mat.view(), perm.view());
         assert_eq!(expected_papt, papt);
+    }
+
+    #[test]
+    fn permute_to_top() {
+        let perm = super::permute_to_top(&[2, 3, 7, 8], 12);
+        let expected =
+            super::PermOwned::new(vec![2, 3, 7, 8, 0, 1, 4, 5, 6, 9, 10, 11]);
+        assert_eq!(perm, expected);
     }
 
     #[test]
