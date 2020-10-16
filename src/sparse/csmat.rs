@@ -1904,13 +1904,17 @@ macro_rules! sparse_scalar_mul {
         {
             type Output = CsMatI<$scalar, I, Iptr>;
 
-            fn mul(self, rhs: $scalar) -> CsMatI<$scalar, I, Iptr> {
+            fn mul(self, rhs: $scalar) -> Self::Output {
                 binop::scalar_mul_mat(self, rhs)
             }
         }
     };
 }
 
+sparse_scalar_mul!(u8);
+sparse_scalar_mul!(i8);
+sparse_scalar_mul!(u16);
+sparse_scalar_mul!(i16);
 sparse_scalar_mul!(u32);
 sparse_scalar_mul!(i32);
 sparse_scalar_mul!(u64);
