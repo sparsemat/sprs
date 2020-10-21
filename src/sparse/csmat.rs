@@ -864,10 +864,14 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         if i >= self.outer_dims() || iend > self.outer_dims() {
             panic!("Out of bounds index");
         }
+        let (nrows, ncols) = match self.storage {
+            CSR => (count, self.cols()),
+            CSC => (self.rows(), count),
+        };
         CsMatViewI {
             storage: self.storage,
-            nrows: count,
-            ncols: self.cols(),
+            nrows,
+            ncols,
             indptr: &self.indptr[i..=iend],
             indices: &self.indices[..],
             data: &self.data[..],
