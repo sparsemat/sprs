@@ -864,10 +864,14 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         if i >= self.outer_dims() || iend > self.outer_dims() {
             panic!("Out of bounds index");
         }
+        let (nrows, ncols) = match self.storage {
+            CSR => (count, self.cols()),
+            CSC => (self.rows(), count),
+        };
         CsMatViewI {
             storage: self.storage,
-            nrows: count,
-            ncols: self.cols(),
+            nrows,
+            ncols,
             indptr: &self.indptr[i..=iend],
             indices: &self.indices[..],
             data: &self.data[..],
@@ -2701,6 +2705,16 @@ mod test {
         block_iter.next().unwrap();
         block_iter.next().unwrap();
         assert_eq!(block_iter.next(), None);
+    }
+
+    #[test]
+    fn middle_outer_views() {
+        let size = 11;
+        let csr: CsMat<f64> = CsMat::eye(size);
+        assert_eq!(csr.view().middle_outer_views(1, 3).shape(), (3, size));
+
+        let csc = csr.to_other_storage();
+        assert_eq!(csc.view().middle_outer_views(1, 3).shape(), (size, 3));
     }
 
     #[test]
