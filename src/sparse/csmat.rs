@@ -2708,6 +2708,16 @@ mod test {
     }
 
     #[test]
+    fn middle_outer_views() {
+        let size = 11;
+        let csr: CsMat<f64> = CsMat::eye(size);
+        assert_eq!(csr.view().middle_outer_views(1, 3).shape(), (3, size));
+
+        let csc = csr.to_other_storage();
+        assert_eq!(csc.view().middle_outer_views(1, 3).shape(), (size, 3));
+    }
+
+    #[test]
     fn nnz_index() {
         let mat: CsMat<f64> = CsMat::eye(11);
 
