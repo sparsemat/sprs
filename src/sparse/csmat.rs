@@ -929,6 +929,7 @@ where
     /// algorithms, which are often linear in the number of non-zeros.
     pub fn nnz(&self) -> usize {
         self.indptr.last().unwrap().index_unchecked()
+            - self.indptr.first().unwrap().index_unchecked()
     }
 
     /// The density of the sparse matrix, defined as the number of non-zero
@@ -2711,10 +2712,14 @@ mod test {
     fn middle_outer_views() {
         let size = 11;
         let csr: CsMat<f64> = CsMat::eye(size);
-        assert_eq!(csr.view().middle_outer_views(1, 3).shape(), (3, size));
+        let v = csr.view().middle_outer_views(1, 3);
+        assert_eq!(v.shape(), (3, size));
+        assert_eq!(v.nnz(), 3);
 
         let csc = csr.to_other_storage();
-        assert_eq!(csc.view().middle_outer_views(1, 3).shape(), (size, 3));
+        let v = csc.view().middle_outer_views(1, 3);
+        assert_eq!(v.shape(), (size, 3));
+        assert_eq!(v.nnz(), 3);
     }
 
     #[test]
