@@ -89,12 +89,13 @@ pub use crate::indexing::SpIndex;
 
 pub use crate::sparse::{
     csmat::CsIter, csmat::OuterIterator, csmat::OuterIteratorMut,
-    csmat::OuterIteratorPerm, kronecker::kronecker_product, CsMat, CsMatBase,
-    CsMatI, CsMatVecView, CsMatView, CsMatViewI, CsMatViewMut, CsMatViewMutI,
-    CsStructure, CsStructureI, CsStructureView, CsStructureViewI, CsVec,
-    CsVecBase, CsVecI, CsVecView, CsVecViewI, CsVecViewMut, CsVecViewMutI,
-    SparseMat, TriMat, TriMatBase, TriMatI, TriMatIter, TriMatView,
-    TriMatViewI, TriMatViewMut, TriMatViewMutI,
+    csmat::OuterIteratorPerm, indptr::IndPtrStorage,
+    kronecker::kronecker_product, CsMat, CsMatBase, CsMatI, CsMatVecView,
+    CsMatView, CsMatViewI, CsMatViewMut, CsMatViewMutI, CsStructure,
+    CsStructureI, CsStructureView, CsStructureViewI, CsVec, CsVecBase, CsVecI,
+    CsVecView, CsVecViewI, CsVecViewMut, CsVecViewMutI, SparseMat, TriMat,
+    TriMatBase, TriMatI, TriMatIter, TriMatView, TriMatViewI, TriMatViewMut,
+    TriMatViewMutI,
 };
 
 pub use crate::sparse::symmetric::is_symmetric;
