@@ -66,6 +66,14 @@ where
         self.storage.len()
     }
 
+    /// Tests whether this indptr is empty
+    pub fn is_empty(&self) -> bool {
+        // An indptr of len 1 is nonsensical, we should treat that as empty
+        // but fail on debug
+        debug_assert!(self.storage.len() != 1);
+        self.storage.len() <= 1
+    }
+
     /// The number of outer dimensions this indptr represents
     pub fn outer_dims(&self) -> usize {
         if self.storage.len() >= 1 {
@@ -105,7 +113,8 @@ where
     }
 
     fn offset(&self) -> Iptr {
-        self.storage.get(0).cloned().unwrap_or(Iptr::zero())
+        let zero = Iptr::zero();
+        self.storage.get(0).cloned().unwrap_or(zero)
     }
 
     /// Iterate over outer dimensions, yielding start and end indices for each
