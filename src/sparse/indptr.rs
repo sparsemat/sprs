@@ -97,7 +97,7 @@ where
     /// Return a view on the underlying slice if it is a proper `indptr` slice,
     /// which is the case if its first element is 0. `None` will be returned
     /// otherwise.
-    pub fn slice(&self) -> Option<&[Iptr]> {
+    pub fn as_slice(&self) -> Option<&[Iptr]> {
         if self.is_proper() {
             Some(&self.storage[..])
         } else {
