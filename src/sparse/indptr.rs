@@ -112,6 +112,18 @@ where
         &self.storage[..]
     }
 
+    /// Returns a proper indptr representation, cloning if we do not have
+    /// a proper indptr.
+    pub fn to_proper(&self) -> std::borrow::Cow<[Iptr]> {
+        if self.is_proper() {
+            std::borrow::Cow::Borrowed(&self.storage[..])
+        } else {
+            let offset = self.offset();
+            let proper = self.storage.iter().map(|i| *i - offset).collect();
+            std::borrow::Cow::Owned(proper)
+        }
+    }
+
     fn offset(&self) -> Iptr {
         let zero = Iptr::zero();
         self.storage.get(0).cloned().unwrap_or(zero)
