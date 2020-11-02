@@ -7,7 +7,8 @@ use crate::errors::SprsError;
 use crate::indexing::SpIndex;
 use std::ops::Deref;
 
-pub struct IndPtr<Iptr, Storage>
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
+pub struct IndPtrBase<Iptr, Storage>
 where
     Iptr: SpIndex,
     Storage: Deref<Target = [Iptr]>,
@@ -15,7 +16,10 @@ where
     storage: Storage,
 }
 
-impl<Iptr, Storage> IndPtr<Iptr, Storage>
+pub type IndPtr<Iptr> = IndPtrBase<Iptr, Vec<Iptr>>;
+pub type IndPtrView<'a, Iptr> = IndPtrBase<Iptr, &'a [Iptr]>;
+
+impl<Iptr, Storage> IndPtrBase<Iptr, Storage>
 where
     Iptr: SpIndex,
     Storage: Deref<Target = [Iptr]>,
@@ -50,15 +54,22 @@ where
                 "An indptr value is larger than allowed",
             ));
         }
+        if storage.len() == 0 {
+            // An empty matrix has an inptr of size 1
+            return Err(SprsError::IllegalArguments(
+                "An indptr should have its len >= 1",
+            ));
+        }
         Ok(())
     }
 
     pub fn new(storage: Storage) -> Result<Self, crate::errors::SprsError> {
-        IndPtr::check_structure(&storage).map(|_| IndPtr::new_trusted(storage))
+        IndPtrBase::check_structure(&storage)
+            .map(|_| IndPtrBase::new_trusted(storage))
     }
 
     pub(crate) fn new_trusted(storage: Storage) -> Self {
-        IndPtr { storage }
+        IndPtrBase { storage }
     }
 
     /// The length of the underlying storage
@@ -68,9 +79,9 @@ where
 
     /// Tests whether this indptr is empty
     pub fn is_empty(&self) -> bool {
-        // An indptr of len 1 is nonsensical, we should treat that as empty
+        // An indptr of len 0 is nonsensical, we should treat that as empty
         // but fail on debug
-        debug_assert!(self.storage.len() != 1);
+        debug_assert!(self.storage.len() != 0);
         self.storage.len() <= 1
     }
 
@@ -174,5 +185,72 @@ where
             .map(|i| *i - offset)
             .map(Iptr::index_unchecked)
             .unwrap_or(0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{IndPtr, IndPtrView};
+
+    #[test]
+    fn constructors() {
+        let raw_valid = vec![0, 1, 2, 3];
+        assert!(IndPtr::new(raw_valid).is_ok());
+        let raw_valid = vec![0, 1, 2, 3];
+        assert!(IndPtrView::new(&raw_valid).is_ok());
+        // Indptr for an empty matrix
+        let raw_valid = vec![0];
+        assert!(IndPtrView::new(&raw_valid).is_ok());
+        // Indptr for an empty matrix view
+        let raw_valid = vec![1];
+        assert!(IndPtrView::new(&raw_valid).is_ok());
+
+        let raw_invalid = &[0, 2, 1];
+        assert_eq!(
+            IndPtrView::new(raw_invalid).unwrap_err(),
+            crate::errors::SprsError::UnsortedIndptr
+        );
+        let raw_invalid: &[usize] = &[];
+        assert!(IndPtrView::new(raw_invalid).is_err());
+    }
+
+    #[test]
+    fn empty() {
+        assert!(IndPtrView::new(&[0]).unwrap().is_empty());
+        assert!(!IndPtrView::new(&[0, 1]).unwrap().is_empty());
+        #[cfg(debug_assertions)]
+        {
+            #[should_panic]
+            assert!(IndPtrView::new_trusted(&[0]).is_empty());
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            assert!(IndPtrView::new_trusted(&[0]).is_empty());
+        }
+    }
+
+    #[test]
+    fn outer_dims() {
+        assert_eq!(IndPtrView::new(&[0]).unwrap().outer_dims(), 0);
+        assert_eq!(IndPtrView::new(&[0, 1]).unwrap().outer_dims(), 1);
+        assert_eq!(IndPtrView::new(&[2, 3, 5, 7]).unwrap().outer_dims(), 3);
+    }
+
+    #[test]
+    fn is_proper() {
+        assert!(IndPtrView::new(&[0, 1]).unwrap().is_proper());
+        assert!(!IndPtrView::new(&[1, 2]).unwrap().is_proper());
+    }
+
+    #[test]
+    fn offset() {
+        assert_eq!(IndPtrView::new(&[0, 1]).unwrap().offset(), 0);
+        assert_eq!(IndPtrView::new(&[1, 2]).unwrap().offset(), 1);
+    }
+
+    #[test]
+    fn nnz() {
+        assert_eq!(IndPtrView::new(&[0, 1]).unwrap().nnz(), 1);
+        assert_eq!(IndPtrView::new(&[1, 2]).unwrap().nnz(), 1);
     }
 }
