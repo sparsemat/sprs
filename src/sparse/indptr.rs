@@ -6,6 +6,7 @@
 use crate::errors::SprsError;
 use crate::indexing::SpIndex;
 use std::ops::Deref;
+use std::ops::Range;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct IndPtrBase<Iptr, Storage>
@@ -144,15 +145,15 @@ where
     /// outer dimension.
     pub fn iter_outer(
         &self,
-    ) -> impl std::iter::DoubleEndedIterator<Item = (Iptr, Iptr)>
-           + std::iter::DoubleEndedIterator<Item = (Iptr, Iptr)>
+    ) -> impl std::iter::DoubleEndedIterator<Item = Range<Iptr>>
+           + std::iter::DoubleEndedIterator<Item = Range<Iptr>>
            + '_ {
         let offset = self.offset();
         self.storage.windows(2).map(move |x| {
             if offset == Iptr::zero() {
-                (x[0], x[1])
+                x[0]..x[1]
             } else {
-                (x[0] - offset, x[1] - offset)
+                (x[0] - offset)..(x[1] - offset)
             }
         })
     }
@@ -169,10 +170,10 @@ where
     /// # Panics
     ///
     /// If `i >= self.outer_dims()`
-    pub fn outer_inds(&self, i: usize) -> (Iptr, Iptr) {
+    pub fn outer_inds(&self, i: usize) -> Range<Iptr> {
         assert!(i + 1 < self.storage.len());
         let offset = self.offset();
-        (self.storage[i] - offset, self.storage[i + 1] - offset)
+        (self.storage[i] - offset)..(self.storage[i + 1] - offset)
     }
 
     /// The number of nonzero elements described by this indptr
@@ -252,5 +253,25 @@ mod tests {
     fn nnz() {
         assert_eq!(IndPtrView::new(&[0, 1]).unwrap().nnz(), 1);
         assert_eq!(IndPtrView::new(&[1, 2]).unwrap().nnz(), 1);
+    }
+
+    #[test]
+    fn outer_inds() {
+        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        assert_eq!(iptr.outer_inds(0), 0..1);
+        assert_eq!(iptr.outer_inds(1), 1..3);
+        assert_eq!(iptr.outer_inds(2), 3..8);
+        let res = std::panic::catch_unwind(|| iptr.outer_inds(3));
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn iter_outer() {
+        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let mut iter = iptr.iter_outer();
+        assert_eq!(iter.next().unwrap(), 0..1);
+        assert_eq!(iter.next().unwrap(), 1..3);
+        assert_eq!(iter.next().unwrap(), 3..8);
+        assert!(iter.next().is_none());
     }
 }
