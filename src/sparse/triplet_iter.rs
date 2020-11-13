@@ -214,7 +214,7 @@ where
             storage,
             nrows: self.rows,
             ncols: self.cols,
-            indptr,
+            indptr: crate::IndPtr::new_trusted(indptr),
             indices,
             data,
         }

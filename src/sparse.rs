@@ -1,6 +1,7 @@
 use crate::array_backend::Array2;
 use crate::errors::SprsError;
 use crate::indexing::SpIndex;
+use crate::IndPtrBase;
 use std::ops::Deref;
 
 #[cfg(feature = "serde")]
@@ -93,7 +94,7 @@ where
     storage: CompressedStorage,
     nrows: usize,
     ncols: usize,
-    indptr: IptrStorage,
+    indptr: IndPtrBase<Iptr, IptrStorage>,
     indices: IndStorage,
     data: DataStorage,
 }

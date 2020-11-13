@@ -782,7 +782,7 @@ where
             storage: CSR,
             nrows: 1,
             ncols: self.dim,
-            indptr,
+            indptr: crate::IndPtrBase::new_trusted(indptr),
             indices: &self.indices[..],
             data: &self.data[..],
         }
@@ -802,7 +802,7 @@ where
             storage: CSC,
             nrows: self.dim,
             ncols: 1,
-            indptr,
+            indptr: crate::IndPtrBase::new_trusted(indptr),
             indices: &self.indices[..],
             data: &self.data[..],
         }

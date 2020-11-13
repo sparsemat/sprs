@@ -89,9 +89,6 @@ pub use crate::indexing::SpIndex;
 
 pub use crate::sparse::{
     csmat::CsIter,
-    csmat::OuterIterator,
-    csmat::OuterIteratorMut,
-    csmat::OuterIteratorPerm,
     indptr::{IndPtr, IndPtrBase, IndPtrView},
     kronecker::kronecker_product,
     CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatView, CsMatViewI,

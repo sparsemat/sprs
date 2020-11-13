@@ -304,9 +304,7 @@ where
     indptr.push(nnz);
     let mut tmp = Vec::with_capacity(mat.max_outer_nnz());
     for in_outer in p {
-        let nnz_in_outer =
-            mat.indptr()[in_outer.index() + 1] - mat.indptr()[in_outer.index()];
-        nnz += nnz_in_outer;
+        nnz += mat.indptr().nnz_in_outer(in_outer.index());
         indptr.push(nnz);
         tmp.clear();
         let outer = mat.outer_view(in_outer.index()).unwrap();
