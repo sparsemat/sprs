@@ -361,6 +361,18 @@ impl<'a, Iptr: SpIndex> IndPtrView<'a, Iptr> {
     }
 }
 
+/// Allows comparison to vectors and slices
+impl<Iptr: SpIndex, IptrStorage, IptrStorage2> std::cmp::PartialEq<IptrStorage2>
+    for IndPtrBase<Iptr, IptrStorage>
+where
+    IptrStorage: Deref<Target = [Iptr]>,
+    IptrStorage2: Deref<Target = [Iptr]>,
+{
+    fn eq(&self, other: &IptrStorage2) -> bool {
+        self.raw_storage() == other.deref()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{IndPtr, IndPtrView};
@@ -478,5 +490,14 @@ mod tests {
         assert_eq!(iter.next().unwrap(), 2);
         assert_eq!(iter.next().unwrap(), 2);
         assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn compare_with_slices() {
+        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        assert!(iptr == &[0, 1, 3, 8][..]);
+        assert!(iptr == vec![0, 1, 3, 8]);
+        let iptr = IndPtrView::new(&[1, 1, 3, 8]).unwrap();
+        assert!(iptr == &[1, 1, 3, 8][..]);
     }
 }

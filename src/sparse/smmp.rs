@@ -490,7 +490,7 @@ mod test {
             &mut c_data,
             &mut tmp,
         );
-        assert_eq!(exp.indptr().raw_storage(), c_indptr);
+        assert_eq!(exp.indptr(), &c_indptr[..]);
         assert_eq!(exp.indices(), &c_indices[..]);
         assert_eq!(exp.data(), &c_data[..]);
     }
