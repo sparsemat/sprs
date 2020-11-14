@@ -10,14 +10,11 @@ fn scipy_mat<'a>(
     py: &Python,
     mat: &sprs::CsMat<f64>,
 ) -> Result<&'a PyAny, String> {
+    let indptr = mat.indptr().to_proper().to_vec();
     scipy_sparse
         .call(
             "csr_matrix",
-            ((
-                mat.data().to_vec(),
-                mat.indices().to_vec(),
-                mat.indptr().to_vec(),
-            ),),
+            ((mat.data().to_vec(), mat.indices().to_vec(), indptr),),
             Some([("shape", mat.shape())].into_py_dict(*py)),
         )
         .map_err(|e| {

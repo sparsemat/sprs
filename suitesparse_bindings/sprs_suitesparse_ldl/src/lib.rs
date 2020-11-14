@@ -84,7 +84,9 @@ macro_rules! ldl_impl {
                 let n = mat.rows();
                 let n_ = n as $int;
                 let mat: CsMatI<f64, $int> = mat.to_other_types();
-                let ap = mat.indptr().as_ptr();
+                let indptr = mat.indptr();
+                let indptr_proper = indptr.to_proper();
+                let ap = indptr_proper.as_ptr();
                 let ai = mat.indices().as_ptr();
                 let valid_mat = unsafe { $valid_matrix(n_, ap, ai) };
                 assert!(valid_mat == 1);
@@ -225,7 +227,9 @@ macro_rules! ldl_impl {
                 I: SpIndex,
             {
                 let mat: CsMatI<f64, $int> = mat.to_other_types();
-                let ap = mat.indptr().as_ptr();
+                let indptr = mat.indptr();
+                let indptr_proper = indptr.to_proper();
+                let ap = indptr_proper.as_ptr();
                 let ai = mat.indices().as_ptr();
                 let ax = mat.data().as_ptr();
                 assert!(unsafe { $valid_matrix(self.symbolic.n, ap, ai) } != 0);
