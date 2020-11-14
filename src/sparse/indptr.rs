@@ -5,10 +5,13 @@
 
 use crate::errors::SprsError;
 use crate::indexing::SpIndex;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct IndPtrBase<Iptr, Storage>
 where
     Iptr: SpIndex,

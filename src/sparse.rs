@@ -94,6 +94,7 @@ where
     storage: CompressedStorage,
     nrows: usize,
     ncols: usize,
+    #[cfg_attr(feature = "serde", serde(flatten))]
     indptr: IndPtrBase<Iptr, IptrStorage>,
     indices: IndStorage,
     data: DataStorage,
