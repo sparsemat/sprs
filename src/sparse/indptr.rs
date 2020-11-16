@@ -297,12 +297,10 @@ where
     /// actual storage type
     pub fn nnz_i(&self) -> Iptr {
         let offset = self.offset();
+        let zero = Iptr::zero();
         // index_unchecked validity: structure checks ensure that the last index
         // larger than the first, and that both can be represented as an usize
-        self.storage
-            .last()
-            .map(|i| *i - offset)
-            .unwrap_or(Iptr::zero())
+        self.storage.last().map(|i| *i - offset).unwrap_or(zero)
     }
 }
 

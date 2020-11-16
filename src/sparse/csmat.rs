@@ -1464,7 +1464,7 @@ where
             data = next;
             CsVecViewMutI {
                 dim: inner_dim,
-                indices: &indices[range.clone()],
+                indices: &indices[range],
                 data: yield_data,
             }
         })
