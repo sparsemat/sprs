@@ -48,14 +48,18 @@ fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
     assert_eq!(a_cols, b_rows);
     assert!(a.is_csr());
     assert!(a.rows() <= isize::MAX as usize);
-    assert!(a.indptr()[a.rows()] <= isize::MAX as usize);
+    assert!(a.indptr().nnz() <= isize::MAX as usize);
     assert!(b.is_csr());
     assert!(b.rows() <= isize::MAX as usize);
-    assert!(b.indptr()[b.rows()] <= isize::MAX as usize);
-    let a_indptr = a.indptr().as_ptr() as *const isize;
+    assert!(b.indptr().nnz() <= isize::MAX as usize);
+    let a_indptr = a.indptr();
+    let a_indptr_proper = a_indptr.to_proper();
+    let a_indptr_isz = a_indptr_proper.as_ptr() as *const isize;
     let a_indices = a.indices().as_ptr() as *const isize;
     let a_data = a.data().as_ptr();
-    let b_indptr = b.indptr().as_ptr() as *const isize;
+    let b_indptr = b.indptr();
+    let b_indptr_proper = b_indptr.to_proper();
+    let b_indptr_isz = b_indptr_proper.as_ptr() as *const isize;
     let b_indices = b.indices().as_ptr() as *const isize;
     let b_data = b.data().as_ptr();
     // Safety: sprs guarantees the validity of these pointers, and our wrapping
@@ -68,8 +72,15 @@ fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
     // reinterpretation of the data will not produce negative values.
     unsafe {
         prod_nnz(
-            a_rows, a_cols, b_cols, a_indptr, a_indices, a_data, b_indptr,
-            b_indices, b_data,
+            a_rows,
+            a_cols,
+            b_cols,
+            a_indptr_isz,
+            a_indices,
+            a_data,
+            b_indptr_isz,
+            b_indices,
+            b_data,
         )
     }
 }
