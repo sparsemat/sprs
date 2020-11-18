@@ -2723,7 +2723,7 @@ mod test {
     fn convert_types() {
         let mat: CsMat<f32> = CsMat::eye(3);
         let mat_: CsMatI<f64, u32> = mat.to_other_types();
-        assert_eq!(mat_.indptr().raw_storage(), &[0, 1, 2, 3]);
+        assert_eq!(mat_.indptr(), &[0, 1, 2, 3][..]);
 
         let mat = CsMatI::new_csc(
             (3, 3),
@@ -2732,7 +2732,7 @@ mod test {
             vec![1.; 4],
         );
         let mat_: CsMatI<f32, usize, u32> = mat.to_other_types();
-        assert_eq!(mat_.indptr().raw_storage(), &[0, 1, 3, 4]);
+        assert_eq!(mat_.indptr(), &[0, 1, 3, 4][..]);
         assert_eq!(mat_.data(), &[1.0f32, 1., 1., 1.]);
     }
 
