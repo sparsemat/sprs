@@ -146,7 +146,9 @@ impl Ldl {
             }
             FillInReduction::CAMDSuiteSparse => {
                 #[cfg(not(feature = "sprs_suitesparse_camd"))]
-                panic!("Unavailable without the `sprs_suitesparse_camd` feature");
+                panic!(
+                    "Unavailable without the `sprs_suitesparse_camd` feature"
+                );
                 #[cfg(feature = "sprs_suitesparse_camd")]
                 sprs_suitesparse_camd::camd(mat.structure_view())
             }
