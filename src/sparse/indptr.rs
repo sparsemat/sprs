@@ -159,6 +159,31 @@ where
         }
     }
 
+    /// Returns a proper indptr representation, cloning if we do not have
+    /// a proper indptr, and a pointer to this proper representation for use
+    /// in ffi. The returned pointer has thus the same lifetime as the
+    /// proper representation.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mat: sprs::CsMat<f64> = sprs::CsMat::eye(5);
+    /// let mid = mat.view().middle_outer_views(1, 2);
+    /// let (_indptr_proper_owned, ptr) = mid.indptr().to_proper_ffi();
+    /// println!(
+    ///     "ptr {:?} is valid as long as _indptr_proper_owned is in scope",
+    ///     ptr
+    /// );
+    /// unsafe {
+    ///     assert_eq!(*ptr, 0)
+    /// };
+    /// ```
+    pub fn to_proper_ffi(&self) -> (std::borrow::Cow<[Iptr]>, *const Iptr) {
+        let proper = self.to_proper();
+        let ptr = proper.as_ptr();
+        (proper, ptr)
+    }
+
     fn offset(&self) -> Iptr {
         let zero = Iptr::zero();
         self.storage.get(0).cloned().unwrap_or(zero)
