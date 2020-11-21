@@ -810,6 +810,33 @@ where
         crate::IndPtrView::new_trusted(self.indptr.raw_storage())
     }
 
+    /// Get an indptr representation suitable for ffi, cloning if necessary to
+    /// get a compatible representation.
+    ///
+    /// # Warning
+    ///
+    /// For ffi usage, one needs to call `Cow::as_ptr`, but it's important
+    /// to keep the `Cow` alive during the lifetime of the pointer. Example
+    /// of a correct and incorrect ffi usage:
+    ///
+    /// ```rust
+    /// let mat: sprs::CsMat<f64> = sprs::CsMat::eye(5);
+    /// let mid = mat.view().middle_outer_views(1, 2);
+    /// let ptr = {
+    ///     let indptr_proper = mid.proper_indptr();
+    ///     println!(
+    ///         "ptr {:?} is valid as long as _indptr_proper_owned is in scope",
+    ///         indptr_proper.as_ptr()
+    ///     );
+    ///     indptr_proper.as_ptr()
+    /// };
+    /// // This line is UB.
+    /// // println!("ptr deref: {}", *ptr);
+    /// ```
+    pub fn proper_indptr(&self) -> std::borrow::Cow<[Iptr]> {
+        self.indptr.to_proper()
+    }
+
     /// The inner dimension location for each non-zero value. See
     /// the documentation of indptr() for more explanations.
     pub fn indices(&self) -> &[I] {

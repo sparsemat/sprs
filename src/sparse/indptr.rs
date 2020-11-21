@@ -149,6 +149,46 @@ where
 
     /// Returns a proper indptr representation, cloning if we do not have
     /// a proper indptr.
+    ///
+    /// # Warning
+    ///
+    /// For ffi usage, one needs to call `Cow::as_ptr`, but it's important
+    /// to keep the `Cow` alive during the lifetime of the pointer. Example
+    /// of a correct and incorrect ffi usage:
+    ///
+    /// ```rust
+    /// let mat: sprs::CsMat<f64> = sprs::CsMat::eye(5);
+    /// let mid = mat.view().middle_outer_views(1, 2);
+    /// let ptr = {
+    ///     let indptr = mid.indptr(); // needed for lifetime
+    ///     let indptr_proper = indptr.to_proper();
+    ///     println!(
+    ///         "ptr {:?} is valid as long as _indptr_proper_owned is in scope",
+    ///         indptr_proper.as_ptr()
+    ///     );
+    ///     indptr_proper.as_ptr()
+    /// };
+    /// // This line is UB.
+    /// // println!("ptr deref: {}", *ptr);
+    /// ```
+    ///
+    /// It is much easier to directly use the `proper_indptr` method of
+    /// `CsMatBase` directly:
+    ///
+    /// ```rust
+    /// let mat: sprs::CsMat<f64> = sprs::CsMat::eye(5);
+    /// let mid = mat.view().middle_outer_views(1, 2);
+    /// let ptr = {
+    ///     let indptr_proper = mid.proper_indptr();
+    ///     println!(
+    ///         "ptr {:?} is valid as long as _indptr_proper_owned is in scope",
+    ///         indptr_proper.as_ptr()
+    ///     );
+    ///     indptr_proper.as_ptr()
+    /// };
+    /// // This line is UB.
+    /// // println!("ptr deref: {}", *ptr);
+    /// ```
     pub fn to_proper(&self) -> std::borrow::Cow<[Iptr]> {
         if self.is_proper() {
             std::borrow::Cow::Borrowed(&self.storage[..])
@@ -157,31 +197,6 @@ where
             let proper = self.storage.iter().map(|i| *i - offset).collect();
             std::borrow::Cow::Owned(proper)
         }
-    }
-
-    /// Returns a proper indptr representation, cloning if we do not have
-    /// a proper indptr, and a pointer to this proper representation for use
-    /// in ffi. The returned pointer has thus the same lifetime as the
-    /// proper representation.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// let mat: sprs::CsMat<f64> = sprs::CsMat::eye(5);
-    /// let mid = mat.view().middle_outer_views(1, 2);
-    /// let (_indptr_proper_owned, ptr) = mid.indptr().to_proper_ffi();
-    /// println!(
-    ///     "ptr {:?} is valid as long as _indptr_proper_owned is in scope",
-    ///     ptr
-    /// );
-    /// unsafe {
-    ///     assert_eq!(*ptr, 0)
-    /// };
-    /// ```
-    pub fn to_proper_ffi(&self) -> (std::borrow::Cow<[Iptr]>, *const Iptr) {
-        let proper = self.to_proper();
-        let ptr = proper.as_ptr();
-        (proper, ptr)
     }
 
     fn offset(&self) -> Iptr {
