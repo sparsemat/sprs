@@ -146,14 +146,13 @@ where
         return Err(UnsupportedMatrixMarketFormat);
     }
     // The header is followed by any number of comment or empty lines, skip
-    loop {
+    'header: loop {
         line.clear();
         let len = reader.read_line(&mut line)?;
         if len == 0 || line.starts_with('%') {
-            continue;
-        } else {
-            break;
+            continue 'header;
         }
+        break;
     }
     // read shape and number of entries
     // this is a line like:
@@ -182,15 +181,14 @@ where
     // one non-zero entry per non-empty line
     for _ in 0..entries {
         // skip empty lines (no comment line should appear)
-        loop {
+        'empty_lines: loop {
             line.clear();
             let len = reader.read_line(&mut line)?;
             // check for an all whitespace line
             if len != 0 && line.split_whitespace().next() == None {
-                continue;
-            } else {
-                break;
+                continue 'empty_lines;
             }
+            break;
         }
         // Non-zero entries are lines of the form:
         // row col value
