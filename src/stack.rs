@@ -142,7 +142,6 @@ where
 /// Enable extraction of stack val from iterators
 pub fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
     match *stack_val {
-        StackVal::Enter(ref i) => &i,
-        StackVal::Exit(ref i) => &i,
+        StackVal::Enter(ref i) | StackVal::Exit(ref i) => &i,
     }
 }

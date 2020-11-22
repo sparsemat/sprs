@@ -26,10 +26,8 @@ impl fmt::Display for IoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             IoError::Io(ref err) => err.fmt(f),
-            IoError::BadMatrixMarketFile => {
-                write!(f, "Bad matrix market file.")
-            }
-            IoError::UnsupportedMatrixMarketFormat => {
+            IoError::BadMatrixMarketFile
+            | IoError::UnsupportedMatrixMarketFormat => {
                 write!(f, "Bad matrix market file.")
             }
         }

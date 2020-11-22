@@ -1873,13 +1873,13 @@ where
 
     fn add(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         match (self.storage(), rhs.is_standard_layout()) {
-            (CSR, true) => binop::add_dense_mat_same_ordering(
+            (CSR, true) | (CSC, false) => binop::add_dense_mat_same_ordering(
                 self,
                 rhs,
                 N::one(),
                 N::one(),
             ),
-            (CSR, false) => {
+            (CSR, false) | (CSC, true) => {
                 let lhs = self.to_other_storage();
                 binop::add_dense_mat_same_ordering(
                     &lhs,
@@ -1888,21 +1888,6 @@ where
                     N::one(),
                 )
             }
-            (CSC, true) => {
-                let lhs = self.to_other_storage();
-                binop::add_dense_mat_same_ordering(
-                    &lhs,
-                    rhs,
-                    N::one(),
-                    N::one(),
-                )
-            }
-            (CSC, false) => binop::add_dense_mat_same_ordering(
-                self,
-                rhs,
-                N::one(),
-                N::one(),
-            ),
         }
     }
 }

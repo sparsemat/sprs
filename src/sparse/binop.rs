@@ -262,8 +262,8 @@ pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
         rhs.is_standard_layout(),
         out.is_standard_layout(),
     ) {
-        (CompressedStorage::CSR, true, true) => (),
-        (CompressedStorage::CSC, false, false) => (),
+        (CompressedStorage::CSR, true, true)
+        | (CompressedStorage::CSC, false, false) => (),
         (_, _, _) => panic!("Storage mismatch"),
     }
     let outer_axis = if rhs.is_standard_layout() {
