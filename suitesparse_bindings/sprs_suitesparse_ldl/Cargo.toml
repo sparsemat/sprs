@@ -10,7 +10,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-num-traits = "0.1.32"
+num-traits = "0.2.0"
 suitesparse_ldl_sys = { path = "../suitesparse_ldl_sys", version = "0.3.0" }
 
 [dependencies.sprs]

@@ -14,7 +14,7 @@ keywords = ["sparse", "matrix", "cholesky", "factorization", "linalg"]
 
 [dependencies]
 
-num-traits = "0.1.32"
+num-traits = "0.2.0"
 
 
 [dependencies.sprs]
