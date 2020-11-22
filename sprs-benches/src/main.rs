@@ -7,7 +7,7 @@ use sprs_rand::rand_csr_std;
 
 fn scipy_mat<'a>(
     scipy_sparse: &'a PyModule,
-    py: &Python,
+    py: Python,
     mat: &sprs::CsMat<f64>,
 ) -> Result<&'a PyAny, String> {
     let indptr = mat.indptr().to_proper().to_vec();
@@ -15,11 +15,11 @@ fn scipy_mat<'a>(
         .call(
             "csr_matrix",
             ((mat.data().to_vec(), mat.indices().to_vec(), indptr),),
-            Some([("shape", mat.shape())].into_py_dict(*py)),
+            Some([("shape", mat.shape())].into_py_dict(py)),
         )
         .map_err(|e| {
             let res = format!("Python error: {:?}", e);
-            e.print_and_set_sys_last_vars(*py);
+            e.print_and_set_sys_last_vars(py);
             res
         })
 }
@@ -261,8 +261,8 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
 
             // bench scipy as well
             {
-                let m1_py = scipy_mat(scipy_sparse, &py, &m1)?;
-                let m2_py = scipy_mat(scipy_sparse, &py, &m2)?;
+                let m1_py = scipy_mat(scipy_sparse, py, &m1)?;
+                let m2_py = scipy_mat(scipy_sparse, py, &m2)?;
                 let now = std::time::Instant::now();
                 let _prod_py = py
                     .eval(
