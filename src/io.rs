@@ -426,7 +426,7 @@ mod test {
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
     use crate::CsMat;
-    use tempdir::TempDir;
+    use tempfile::tempdir;
     #[test]
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";
@@ -499,7 +499,7 @@ mod test {
     fn read_write_read_matrix_market() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
-        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("simple.mm");
         write_matrix_market(&save_path, mat.view()).unwrap();
         let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
@@ -514,7 +514,7 @@ mod test {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
         let csc = mat.to_csc();
-        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("simple_csc.mm");
         write_matrix_market(&save_path, &csc).unwrap();
         let mat2 = read_matrix_market::<f64, usize, _>(&save_path).unwrap();
@@ -533,7 +533,7 @@ mod test {
             vec![1., 10.5, 2.505e2, 1.5e-2, 2.505e2, 3.332e1, 3.332e1, 1.2e1],
         );
         assert_eq!(csc, expected);
-        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
         write_matrix_market_sym(&save_path, &csc, SymmetryMode::Symmetric)
             .unwrap();
@@ -559,7 +559,7 @@ mod test {
             vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
             vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4],
         );
-        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
         write_matrix_market_sym(&save_path, &mat, SymmetryMode::Symmetric)
             .unwrap();
@@ -575,7 +575,7 @@ mod test {
             vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
             vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4],
         );
-        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("skew_symmetric.mm");
         write_matrix_market_sym(&save_path, &mat, SymmetryMode::SkewSymmetric)
             .unwrap();
@@ -591,7 +591,7 @@ mod test {
             vec![0, 3, 0, 2, 1, 3, 2, 4, 0, 3],
             vec![2, -1, 2, 3, 3, 5, 5, 4, 1, 4],
         );
-        let tmp_dir = TempDir::new("sprs-tmp").unwrap();
+        let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("general.mm");
         write_matrix_market_sym(&save_path, &mat, SymmetryMode::General)
             .unwrap();
