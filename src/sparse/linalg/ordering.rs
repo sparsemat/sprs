@@ -57,7 +57,7 @@ pub mod start {
             visited
                 .iter()
                 .enumerate()
-                .find_map(|(i, &a)| if !a { Some(i) } else { None })
+                .find_map(|(i, &a)| if a { None } else { Some(i) })
                 .expect(
                     "There should always be a unvisited vertex left to choose",
                 )
@@ -232,7 +232,7 @@ pub mod start {
             let mut current = visited
                 .iter()
                 .enumerate()
-                .find_map(|(i, &a)| if !a { Some(i) } else { None })
+                .find_map(|(i, &a)| if a { None } else { Some(i) })
                 .expect(
                     "There should always be a unvisited vertex left to choose",
                 );
