@@ -103,7 +103,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
         BenchSpec {
-            shape: (15000, 25000),
+            shape: (15_000, 25_000),
             densities: vec![
                 1e-5, 2e-5, 5e-5, 1e-4, 2e-4,
                 5e-4, //1e-3, 2e-3, 3e-3, 5e-3,
@@ -111,13 +111,13 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
         BenchSpec {
-            shape: (150000, 25000),
+            shape: (15_0000, 25_000),
             densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
             forbid_eigen: true,
             ..Default::default()
         },
         BenchSpec {
-            shape: (150000, 250000),
+            shape: (15_0000, 25_0000),
             densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
             forbid_eigen: true,
             ..Default::default()
@@ -142,14 +142,14 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 (1500, 1500),
                 (3500, 3500),
                 (7500, 7500),
-                (15000, 15000),
-                (35000, 35000),
-                (75000, 75000),
-                (150000, 150000),
-                (350000, 350000),
-                (750000, 750000),
-                (1500000, 1500000),
-                (2500000, 2500000),
+                (15_000, 15_000),
+                (35_000, 35_000),
+                (75_000, 75_000),
+                (150_000, 150_000),
+                (350_000, 350_000),
+                (750_000, 750_000),
+                (1_500_000, 1_500_000),
+                (2_500_000, 2_500_000),
             ],
             forbid_eigen: true,
             nnz_over_rows: 4,
