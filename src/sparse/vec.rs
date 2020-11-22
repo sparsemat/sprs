@@ -486,13 +486,13 @@ where
 
 /// # Methods operating on owning sparse vectors
 impl<N, I: SpIndex> CsVecI<N, I> {
-    /// Create an owning CsVec from vector data.
+    /// Create an owning `CsVec` from vector data.
     ///
     /// # Panics
     ///
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
-    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> CsVecI<N, I>
+    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> Self
     where
         N: Copy,
     {
@@ -504,7 +504,7 @@ impl<N, I: SpIndex> CsVecI<N, I> {
         n: usize,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<CsVecI<N, I>, SprsError>
+    ) -> Result<Self, SprsError>
     where
         N: Copy,
     {
@@ -525,8 +525,8 @@ impl<N, I: SpIndex> CsVecI<N, I> {
     }
 
     /// Create an empty `CsVec`, which can be used for incremental construction
-    pub fn empty(dim: usize) -> CsVecI<N, I> {
-        CsVecI {
+    pub fn empty(dim: usize) -> Self {
+        Self {
             dim,
             indices: Vec::new(),
             data: Vec::new(),
