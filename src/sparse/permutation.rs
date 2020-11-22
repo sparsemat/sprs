@@ -73,8 +73,8 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
                 storage: Identity,
             },
             FinitePerm {
-                perm: ref p,
-                perm_inv: ref p_,
+                perm: p,
+                perm_inv: p_,
             } => PermViewI {
                 dim: self.dim,
                 storage: FinitePerm {
@@ -92,8 +92,8 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
                 storage: Identity,
             },
             FinitePerm {
-                perm: ref p,
-                perm_inv: ref p_,
+                perm: p,
+                perm_inv: p_,
             } => PermViewI {
                 dim: self.dim,
                 storage: FinitePerm {
