@@ -83,10 +83,10 @@ where
 }
 
 /// # Methods for creating triplet matrices that own their data.
-impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
+impl<N, I: SpIndex> TriMatI<N, I> {
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
-    pub fn new(shape: (usize, usize)) -> TriMatI<N, I> {
-        TriMatI {
+    pub fn new(shape: (usize, usize)) -> Self {
+        Self {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::new(),
@@ -97,8 +97,8 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
 
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
     /// pre-allocate `cap` elements on the backing storage
-    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TriMatI<N, I> {
-        TriMatI {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> Self {
+        Self {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::with_capacity(cap),
@@ -119,7 +119,7 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
         row_inds: Vec<I>,
         col_inds: Vec<I>,
         data: Vec<N>,
-    ) -> TriMatI<N, I> {
+    ) -> Self {
         assert_eq!(
             row_inds.len(),
             col_inds.len(),
@@ -143,7 +143,7 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
             col_inds.iter().all(|&j| j.index() < shape.1),
             "col indices should be within shape"
         );
-        TriMatI {
+        Self {
             rows: shape.0,
             cols: shape.1,
             row_inds,

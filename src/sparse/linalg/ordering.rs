@@ -101,7 +101,7 @@ pub mod start {
     impl PseudoPeripheral {
         #[inline]
         pub fn new() -> Self {
-            PseudoPeripheral::default()
+            Self::default()
         }
 
         /// Computes the rooted level structure rooted at `root`, returning the

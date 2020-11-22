@@ -1012,7 +1012,7 @@ where
     }
 
     pub fn view_mut(&mut self) -> CsVecViewMutI<N, I> {
-        CsVecBase {
+        CsVecViewMutI {
             dim: self.dim,
             indices: &self.indices[..],
             data: &mut self.data[..],
@@ -1112,7 +1112,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
 }
 
 /// # Methods propagating the lifetome of a `CsVecViewMutI`.
-impl<'a, N, I> CsVecBase<&'a [I], &'a mut [N], N, I>
+impl<'a, N, I> CsVecViewMutI<'a, N, I>
 where
     N: 'a,
     I: 'a + SpIndex,
@@ -1132,8 +1132,8 @@ where
         nnz: usize,
         indices: *const I,
         data: *mut N,
-    ) -> CsVecViewMutI<'a, N, I> {
-        CsVecBase {
+    ) -> Self {
+        Self {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts_mut(data, nnz),
@@ -1271,9 +1271,9 @@ where
 }
 
 impl<N: Num + Copy + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
-    type Output = CsVecI<N, I>;
+    type Output = Self;
 
-    fn neg(mut self) -> CsVecI<N, I> {
+    fn neg(mut self) -> Self::Output {
         for value in &mut self.data {
             *value = -*value;
         }
@@ -1358,8 +1358,8 @@ where
 }
 
 impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
-    fn zero() -> CsVecI<N, I> {
-        CsVecI::new(0, vec![], vec![])
+    fn zero() -> Self {
+        Self::new(0, vec![], vec![])
     }
 
     fn is_zero(&self) -> bool {
@@ -1376,14 +1376,14 @@ mod alga_impls {
     impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive>
         for CsVecI<N, I>
     {
-        fn operate(&self, right: &CsVecI<N, I>) -> CsVecI<N, I> {
+        fn operate(&self, right: &Self) -> Self {
             self + right
         }
     }
 
     impl<N: Copy + Num, I: SpIndex> Identity<Additive> for CsVecI<N, I> {
-        fn identity() -> CsVecI<N, I> {
-            CsVecI::zero()
+        fn identity() -> Self {
+            Self::zero()
         }
     }
 
@@ -1396,8 +1396,8 @@ mod alga_impls {
         N: Clone + Neg<Output = N> + Copy + Num,
         I: SpIndex,
     {
-        fn two_sided_inverse(&self) -> CsVecI<N, I> {
-            CsVecBase {
+        fn two_sided_inverse(&self) -> Self {
+            Self {
                 data: self.data.iter().map(|x| -*x).collect(),
                 indices: self.indices.clone(),
                 dim: self.dim,

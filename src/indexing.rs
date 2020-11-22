@@ -113,7 +113,7 @@ macro_rules! sp_index_impl {
             #[inline(always)]
             fn from_usize_unchecked(ind: usize) -> Self {
                 debug_assert!(Self::try_from_usize(ind).is_some());
-                ind as $int
+                ind as Self
             }
         }
     };

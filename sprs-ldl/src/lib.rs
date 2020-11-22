@@ -230,13 +230,13 @@ impl<I: SpIndex> LdlSymbolic<I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new<N>(mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
+    pub fn new<N>(mat: CsMatViewI<N, I>) -> Self
     where
         N: Copy + PartialEq,
     {
         assert_eq!(mat.rows(), mat.cols());
         let perm: Permutation<I, Vec<I>> = Permutation::identity(mat.rows());
-        LdlSymbolic::new_perm(mat, perm, SymmetryCheck::CheckSymmetry)
+        Self::new_perm(mat, perm, SymmetryCheck::CheckSymmetry)
     }
 
     /// Compute the symbolic decomposition L D L^T = P A P^T
@@ -252,7 +252,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
         mat: CsMatViewI<N, I>,
         perm: PermOwnedI<I>,
         check_symmetry: SymmetryCheck,
-    ) -> LdlSymbolic<I>
+    ) -> Self
     where
         N: Copy + PartialEq,
         I: SpIndex,
@@ -273,7 +273,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
             check_symmetry,
         );
 
-        LdlSymbolic {
+        Self {
             colptr: l_colptr,
             parents,
             nz: l_nz,

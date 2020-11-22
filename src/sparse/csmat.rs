@@ -48,7 +48,7 @@ pub enum CompressedStorage {
 
 impl CompressedStorage {
     /// Get the other storage, ie return CSC if we were CSR, and vice versa
-    pub fn other_storage(self) -> CompressedStorage {
+    pub fn other_storage(self) -> Self {
         match self {
             CSR => CSC,
             CSC => CSR,
@@ -272,7 +272,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
         let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
-        CsMatI::new_trusted(CSR, (n, n), indptr, indices, data)
+        Self::new_trusted(CSR, (n, n), indptr, indices, data)
     }
 
     /// Identity matrix, stored as a CSC matrix.
@@ -285,7 +285,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye_csc(dim: usize) -> CsMatI<N, I, Iptr>
+    pub fn eye_csc(dim: usize) -> Self
     where
         N: Num + Clone,
     {
@@ -294,18 +294,15 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
         let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
-        CsMatI::new_trusted(CSC, (n, n), indptr, indices, data)
+        Self::new_trusted(CSC, (n, n), indptr, indices, data)
     }
     /// Create an empty CsMat for building purposes
-    pub fn empty(
-        storage: CompressedStorage,
-        inner_size: usize,
-    ) -> CsMatI<N, I, Iptr> {
+    pub fn empty(storage: CompressedStorage, inner_size: usize) -> Self {
         let shape = match storage {
             CSR => (0, inner_size),
             CSC => (inner_size, 0),
         };
-        CsMatI::new_trusted(
+        Self::new_trusted(
             storage,
             shape,
             vec![Iptr::zero(); 1],
@@ -316,9 +313,9 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
 
     /// Create a new CsMat representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(shape: Shape) -> CsMatI<N, I, Iptr> {
+    pub fn zero(shape: Shape) -> Self {
         let (nrows, _ncols) = shape;
-        CsMatI::new_trusted(
+        Self::new_trusted(
             CSR,
             shape,
             vec![Iptr::zero(); nrows + 1],
@@ -359,11 +356,11 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<CsMatI<N, I, Iptr>, SprsError>
+    ) -> Result<Self, SprsError>
     where
         N: Copy,
     {
-        CsMatI::new_sorted_checked(CSR, shape, indptr, indices, data)
+        Self::new_sorted_checked(CSR, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
 
@@ -384,11 +381,11 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> CsMatI<N, I, Iptr>
+    ) -> Self
     where
         N: Copy,
     {
-        CsMatI::try_new(shape, indptr, indices, data).unwrap()
+        Self::try_new(shape, indptr, indices, data).unwrap()
     }
 
     /// Try create an owned CSC matrix from moved data.
@@ -405,7 +402,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     where
         N: Copy,
     {
-        CsMatI::new_sorted_checked(CSC, shape, indptr, indices, data)
+        Self::new_sorted_checked(CSC, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
 
@@ -453,10 +450,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// Create a CSR matrix from a dense matrix, ignoring elements lower than `epsilon`.
     ///
     /// If epsilon is negative, it will be clamped to zero.
-    pub fn csr_from_dense(
-        m: ArrayView<N, Ix2>,
-        epsilon: N,
-    ) -> CsMatI<N, I, Iptr>
+    pub fn csr_from_dense(m: ArrayView<N, Ix2>, epsilon: N) -> Self
     where
         N: Num + Clone + cmp::PartialOrd + Signed,
     {
@@ -485,7 +479,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
                 }
             }
         }
-        CsMatI {
+        Self {
             storage: CompressedStorage::CSR,
             nrows,
             ncols,
@@ -498,10 +492,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// Create a CSC matrix from a dense matrix, ignoring elements lower than `epsilon`.
     ///
     /// If epsilon is negative, it will be clamped to zero.
-    pub fn csc_from_dense(
-        m: ArrayView<N, Ix2>,
-        epsilon: N,
-    ) -> CsMatI<N, I, Iptr>
+    pub fn csc_from_dense(m: ArrayView<N, Ix2>, epsilon: N) -> Self
     where
         N: Num + Clone + cmp::PartialOrd + Signed,
     {
@@ -961,7 +952,7 @@ where
         }
 
         indptr.push(Iptr::from_usize(indptr_counter));
-        CsMatBase {
+        CsMatI {
             storage: self.storage,
             nrows: self.rows(),
             ncols: self.cols(),
@@ -1139,7 +1130,7 @@ where
         }
         let range = self.indptr.outer_inds_sz(i);
         // CsMat invariants imply CsVec invariants
-        Some(CsVecBase {
+        Some(CsVecViewI {
             dim: self.inner_dims(),
             indices: &self.indices[range.clone()],
             data: &self.data[range],
@@ -1342,7 +1333,7 @@ where
     /// Create a new CSC matrix equivalent to this one.
     /// If this matrix is CSR, it is converted to CSC
     /// If this matrix is CSC, it is returned by value
-    pub fn into_csc(self) -> CsMatI<N, I, Iptr>
+    pub fn into_csc(self) -> Self
     where
         N: Clone,
     {
@@ -1355,7 +1346,7 @@ where
     /// Create a new CSR matrix equivalent to this one.
     /// If this matrix is CSC, it is converted to CSR
     /// If this matrix is CSR, it is returned by value
-    pub fn into_csr(self) -> CsMatI<N, I, Iptr>
+    pub fn into_csr(self) -> Self
     where
         N: Clone,
     {

@@ -25,9 +25,8 @@ use self::IoError::*;
 impl fmt::Display for IoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            IoError::Io(ref err) => err.fmt(f),
-            IoError::BadMatrixMarketFile
-            | IoError::UnsupportedMatrixMarketFormat => {
+            Self::Io(ref err) => err.fmt(f),
+            Self::BadMatrixMarketFile | Self::UnsupportedMatrixMarketFormat => {
                 write!(f, "Bad matrix market file.")
             }
         }
@@ -37,21 +36,21 @@ impl fmt::Display for IoError {
 impl Error for IoError {}
 
 impl From<io::Error> for IoError {
-    fn from(err: io::Error) -> IoError {
-        IoError::Io(err)
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
     }
 }
 
 impl PartialEq for IoError {
-    fn eq(&self, rhs: &IoError) -> bool {
+    fn eq(&self, rhs: &Self) -> bool {
         match *self {
-            IoError::BadMatrixMarketFile => {
-                matches!(*rhs, IoError::BadMatrixMarketFile)
+            Self::BadMatrixMarketFile => {
+                matches!(*rhs, Self::BadMatrixMarketFile)
             }
-            IoError::UnsupportedMatrixMarketFormat => {
-                matches!(*rhs, IoError::UnsupportedMatrixMarketFormat)
+            Self::UnsupportedMatrixMarketFormat => {
+                matches!(*rhs, Self::UnsupportedMatrixMarketFormat)
             }
-            IoError::Io(..) => false,
+            Self::Io(..) => false,
         }
     }
 }
