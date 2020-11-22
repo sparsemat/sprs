@@ -43,15 +43,16 @@ extern "C" {
 
 #[cfg(feature = "eigen")]
 fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
+    use std::convert::TryFrom;
     let (a_rows, a_cols) = a.shape();
     let (b_rows, b_cols) = b.shape();
     assert_eq!(a_cols, b_rows);
     assert!(a.is_csr());
-    assert!(a.rows() <= isize::MAX as usize);
-    assert!(a.indptr().nnz() <= isize::MAX as usize);
+    assert!(isize::try_from(a.rows()).is_ok());
+    assert!(isize::try_from(a.indptr().nnz()).is_ok());
     assert!(b.is_csr());
-    assert!(b.rows() <= isize::MAX as usize);
-    assert!(b.indptr().nnz() <= isize::MAX as usize);
+    assert!(isize::try_from(b.rows()).is_ok());
+    assert!(isize::try_from(b.indptr().nnz()).is_ok());
     let a_indptr_proper = a.proper_indptr();
     let a_indices = a.indices().as_ptr() as *const isize;
     let a_data = a.data().as_ptr();
