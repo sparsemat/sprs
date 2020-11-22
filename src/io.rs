@@ -296,7 +296,7 @@ where
     writeln!(writer, "{} {} {}", rows, cols, nnz)?;
 
     // entries
-    for (val, (row, col)) in mat.into_iter() {
+    for (val, (row, col)) in mat {
         writeln!(writer, "{} {} {}", row.index() + 1, col.index() + 1, val)?;
     }
     Ok(())
@@ -361,7 +361,7 @@ where
     let mut entries = 0;
     match sym {
         SymmetryMode::General => {
-            for (val, (row, col)) in mat.into_iter() {
+            for (val, (row, col)) in mat {
                 writeln!(
                     writer,
                     "{} {} {}",
