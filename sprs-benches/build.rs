@@ -15,7 +15,9 @@ where
     let save_dir = save_dir.as_ref();
     let extracted_path = save_dir.join(extracted_path);
     let probe = save_dir.join(&extracted_path).join("dl_done");
-    if !probe.exists() {
+    if probe.exists() {
+        println!("Using cached archive {}", extracted_path.to_string_lossy());
+    } else {
         println!(
             "probe {} does not exist, downloading {}",
             probe.to_string_lossy(),
@@ -26,8 +28,6 @@ where
         )?)
         .unpack(save_dir)?;
         let _ = File::create(probe)?;
-    } else {
-        println!("Using cached archive {}", extracted_path.to_string_lossy());
     }
     Ok(())
 }
