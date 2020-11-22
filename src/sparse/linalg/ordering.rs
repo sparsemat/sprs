@@ -535,7 +535,7 @@ where
 /// configuration of the algorithm.
 ///
 /// This library also exposes a costomizable version of the algorithm,
-/// [cuthill_mckee_custom](fn.cuthill_mckee_custom.html).
+/// [`cuthill_mckee_custom`](cuthill_mckee_custom).
 ///
 /// Implemented as:
 /// ```text

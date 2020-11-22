@@ -292,7 +292,7 @@ pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
     }
 }
 
-/// Binary operations for CsVec
+/// Binary operations for [`CsVec`](CsVecBase)
 ///
 /// This function iterates the non-zero locations of `lhs` and `rhs`
 /// and applies the function `binop` to the matching elements (defaulting

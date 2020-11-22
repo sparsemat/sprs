@@ -251,16 +251,16 @@ where
 
 /// Sparse triangular CSC / sparse vector solve
 ///
-/// lower_tri_mat is a sparse lower triangular matrix of shape (n, n)
-/// rhs is a sparse vector of size n
-/// dstack is a double stack with capacity 2*n
-/// x_workspace is a workspace vector with length equal to the number of
-/// rows of lower_tri_mat. Its input values can be anything.
-/// visited is a workspace vector of same size as upper_tri_mat.indptr(),
+/// `lower_tri_mat` is a sparse lower triangular matrix of shape (n, n)
+/// `rhs` is a sparse vector of size n
+/// `dstack` is a double stack with capacity 2*n
+/// `x_workspace` is a workspace vector with length equal to the number of
+/// rows of `lower_tri_mat`. Its input values can be anything.
+/// visited is a workspace vector of same size as `upper_tri_mat.indptr()`,
 /// and should be all false.
 ///
 /// On succesful execution, dstack will hold the non-zero pattern in its
-/// right stack, and x_workspace will contain the solve values at the indices
+/// right stack, and `x_workspace` will contain the solve values at the indices
 /// contained in right stack. The non-zero pattern indices are not guaranteed
 /// to be sorted (they are sorted for each connected component of the matrix's
 /// graph).
@@ -269,7 +269,7 @@ where
 ///
 /// * if dstack.capacity() is too small
 /// * if dstack is not empty
-/// * if w_workspace is not of length n
+/// * if `w_workspace` is not of length n
 ///
 pub fn lsolve_csc_sparse_rhs<N, I, Iptr>(
     lower_tri_mat: CsMatViewI<N, I, Iptr>,

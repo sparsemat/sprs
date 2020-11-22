@@ -107,7 +107,7 @@ where
     CI: Clone + Iterator<Item = &'a I>,
     DI: Clone + Iterator<Item = &'a N>,
 {
-    /// Consume TriMatIter and produce a CSC matrix
+    /// Consume `TriMatIter` and produce a CSC matrix
     pub fn into_csc(self) -> CsMatI<N, I>
     where
         N: Num,
@@ -115,7 +115,7 @@ where
         self.into_cs(CompressedStorage::CSC)
     }
 
-    /// Consume TriMatIter and produce a CSR matrix
+    /// Consume `TriMatIter` and produce a CSR matrix
     pub fn into_csr(self) -> CsMatI<N, I>
     where
         N: Num,
@@ -123,7 +123,7 @@ where
         self.into_cs(CompressedStorage::CSR)
     }
 
-    /// Consume TriMatIter and produce a CsMat matrix with the chosen storage
+    /// Consume `TriMatIter` and produce a `CsMat` matrix with the chosen storage
     pub fn into_cs(self, storage: crate::CompressedStorage) -> CsMatI<N, I>
     where
         N: Num,

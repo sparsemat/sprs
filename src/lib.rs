@@ -18,7 +18,7 @@ It features a sparse matrix type, [**`CsMat`**](struct.CsMatBase.html), and a sp
 - sparse cholesky solver in the separate crate `sprs-ldl`.
 - fully generic integer type for the storage of indices, enabling compact
   representations.
-- planned interoperability with existing sparse solvers such as SuiteSparse.
+- planned interoperability with existing sparse solvers such as `SuiteSparse`.
 
 ## Quick Examples
 

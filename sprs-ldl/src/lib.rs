@@ -427,7 +427,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     }
 }
 
-/// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
+/// Perform a symbolic LDLT decomposition of a symmetric sparse matrix
 pub fn ldl_symbolic<N, I, PStorage>(
     mat: CsMatViewI<N, I>,
     perm: &Permutation<I, PStorage>,
@@ -483,7 +483,7 @@ pub fn ldl_symbolic<N, I, PStorage>(
 
 /// Perform numeric LDLT decomposition
 ///
-/// pattern_workspace is a DStack of capacity n
+/// `pattern_workspace` is a [`DStack`](DStack) of capacity n
 #[allow(clippy::too_many_arguments)]
 pub fn ldl_numeric<N, I, PStorage>(
     mat: CsMatViewI<N, I>,

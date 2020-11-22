@@ -5,12 +5,12 @@ use num_traits::Num;
 ///!
 ///! Useful for building a matrix, but not for computations. Therefore this
 ///! struct is mainly used to initialize a matrix before converting to
-///! to a CsMat.
+///! to a [`CsMat`](CsMatBase).
 ///!
 ///! A triplet format matrix is formed of three arrays of equal length, storing
 ///! the row indices, the column indices, and the values of the non-zero
 ///! entries. By convention, duplicate locations are summed up when converting
-///! into CsMat.
+///! into `CsMat`.
 use std::ops::{Deref, DerefMut};
 use std::slice::Iter;
 
@@ -304,7 +304,7 @@ where
     DStorage: DerefMut<Target = [N]>,
 {
     /// Replace a non-zero value at the given index.
-    /// Indices can be obtained using find_locations.
+    /// Indices can be obtained using [`find_locations`](Self::find_locations).
     pub fn set_triplet(
         &mut self,
         TripletIndex(triplet_ind): TripletIndex,

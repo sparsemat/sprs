@@ -40,7 +40,7 @@ use crate::sparse::{binop, prod};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
-/// An NnzIndex can be used to later access the non-zero element in constant
+/// An `NnzIndex` can be used to later access the non-zero element in constant
 /// time.
 pub struct NnzIndex(pub usize);
 
@@ -499,7 +499,7 @@ impl<N, I: SpIndex> CsVecI<N, I> {
         Self::try_new(n, indices, data).unwrap()
     }
 
-    /// Try create an owning CsVec from vector data.
+    /// Try create an owning `CsVec` from vector data.
     pub fn try_new(
         n: usize,
         indices: Vec<I>,
@@ -524,7 +524,7 @@ impl<N, I: SpIndex> CsVecI<N, I> {
         .map_err(|(_, _, e)| e)
     }
 
-    /// Create an empty CsVec, which can be used for incremental construction
+    /// Create an empty `CsVec`, which can be used for incremental construction
     pub fn empty(dim: usize) -> CsVecI<N, I> {
         CsVecI {
             dim,
@@ -534,7 +534,7 @@ impl<N, I: SpIndex> CsVecI<N, I> {
     }
 
     /// Append an element to the sparse vector. Used for incremental
-    /// building of the CsVec. The append should preserve the structure
+    /// building of the `CsVec`. The append should preserve the structure
     /// of the vector, ie the newly added index should be strictly greater
     /// than the last element of indices.
     ///
@@ -822,8 +822,8 @@ where
     /// Find the non-zero index of the requested dimension index,
     /// returning None if no non-zero is present at the requested location.
     ///
-    /// Looking for the NnzIndex is done with logarithmic complexity, but
-    /// once it is available, the NnzIndex enables retrieving the data with
+    /// Looking for the `NnzIndex` is done with logarithmic complexity, but
+    /// once it is available, the `NnzIndex` enables retrieving the data with
     /// O(1) complexity.
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
         self.indices
@@ -1063,13 +1063,13 @@ where
 }
 
 /// # Methods propagating the lifetime of a `CsVecViewI`.
-impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
-    /// Create a borrowed CsVec over slice data.
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
+    /// Create a borrowed `CsVec` over slice data.
     pub fn new_view(
         n: usize,
         indices: &'a [I],
         data: &'a [N],
-    ) -> Result<CsVecViewI<'a, N, I>, SprsError> {
+    ) -> Result<Self, SprsError> {
         Self::new_(n, indices, data).map_err(|(_, _, e)| e)
     }
 
@@ -1090,11 +1090,11 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
         }
     }
 
-    /// Create a borrowed CsVec over slice data without checking the structure
+    /// Create a borrowed `CsVec` over slice data without checking the structure
     ///
     /// # Safety
     /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_structure are enforced.
+    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
     pub unsafe fn new_view_raw(
@@ -1102,8 +1102,8 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
         nnz: usize,
         indices: *const I,
         data: *const N,
-    ) -> CsVecViewI<'a, N, I> {
-        CsVecViewI {
+    ) -> Self {
+        Self {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts(data, nnz),
@@ -1117,11 +1117,11 @@ where
     N: 'a,
     I: 'a + SpIndex,
 {
-    /// Create a borrowed CsVec over slice data without checking the structure
+    /// Create a borrowed [`CsVec`](CsMatBase) over slice data without checking the structure
     ///
     /// # Safety
     /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_structure are enforced, and
+    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced, and
     /// because the lifetime of the pointers is unconstrained.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
