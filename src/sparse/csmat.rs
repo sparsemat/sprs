@@ -934,7 +934,7 @@ where
     where
         N: Copy + Clone + Float + PartialOrd,
     {
-        let mut indptr_counter = 0usize;
+        let mut indptr_counter = 0_usize;
         let mut indptr: Vec<Iptr> = Vec::with_capacity(self.indptr.len());
 
         let max_data_len = self.indptr.len().min(self.data.len());

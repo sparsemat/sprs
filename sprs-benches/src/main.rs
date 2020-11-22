@@ -357,7 +357,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 .margin(5)
                 .x_label_area_size(30)
                 .y_label_area_size(50)
-                .build_ranged(0f32..max_absciss, 0f32..max_time)?;
+                .build_ranged(0_f32..max_absciss, 0_f32..max_time)?;
 
             let abscisses = if is_shape_bench {
                 shapes.iter().map(|(rows, _)| *rows as f64).collect()
