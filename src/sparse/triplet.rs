@@ -223,10 +223,13 @@ where
             .iter()
             .zip(self.col_inds.iter())
             .enumerate()
-            .filter(|&(_, (&i, &j))| {
-                i.index_unchecked() == row && j.index_unchecked() == col
+            .filter_map(|(ind, (&i, &j))| {
+                if i.index_unchecked() == row && j.index_unchecked() == col {
+                    Some(TripletIndex(ind))
+                } else {
+                    None
+                }
             })
-            .map(|(ind, _)| TripletIndex(ind))
             .collect()
     }
 
