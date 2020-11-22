@@ -51,7 +51,7 @@ impl PartialEq for IoError {
             IoError::UnsupportedMatrixMarketFormat => {
                 matches!(*rhs, IoError::UnsupportedMatrixMarketFormat)
             }
-            _ => false,
+            IoError::Io(..) => false,
         }
     }
 }

@@ -441,29 +441,30 @@ where
     type Item = NnzEither<'a, N1, N2>;
 
     fn next(&mut self) -> Option<NnzEither<'a, N1, N2>> {
+        use NnzEither::{Both, Left, Right};
         match (self.left.peek(), self.right.peek()) {
             (None, Some(&(_, _))) => {
                 let (rind, rval) = self.right.next().unwrap();
-                Some(NnzEither::Right((rind, rval)))
+                Some(Right((rind, rval)))
             }
             (Some(&(_, _)), None) => {
                 let (lind, lval) = self.left.next().unwrap();
-                Some(NnzEither::Left((lind, lval)))
+                Some(Left((lind, lval)))
             }
             (None, None) => None,
             (Some(&(lind, _)), Some(&(rind, _))) => match lind.cmp(&rind) {
                 std::cmp::Ordering::Less => {
                     let (lind, lval) = self.left.next().unwrap();
-                    Some(NnzEither::Left((lind, lval)))
+                    Some(Left((lind, lval)))
                 }
                 std::cmp::Ordering::Greater => {
                     let (rind, rval) = self.right.next().unwrap();
-                    Some(NnzEither::Right((rind, rval)))
+                    Some(Right((rind, rval)))
                 }
-                _ => {
+                std::cmp::Ordering::Equal => {
                     let (lind, lval) = self.left.next().unwrap();
                     let (_, rval) = self.right.next().unwrap();
-                    Some(NnzEither::Both((lind, lval, rval)))
+                    Some(Both((lind, lval, rval)))
                 }
             },
         }
