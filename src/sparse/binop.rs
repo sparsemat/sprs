@@ -180,6 +180,10 @@ where
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
+///
+/// The matrices must have the same ordering, a `CSR` matrix must be
+/// added with a matrix with `C`-like ordering, a `CSC` matrix
+/// must be added with a matrix with `F`-like ordering.
 pub fn add_dense_mat_same_ordering<N, I, Iptr, Mat, D>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
@@ -211,6 +215,10 @@ where
 
 /// Compute coeff wise `alpha * lhs * rhs` with `lhs` a sparse matrix,
 /// `rhs` a dense matrix, and `alpha` a scalar
+///
+/// The matrices must have the same ordering, a `CSR` matrix must be
+/// multiplied with a matrix with `C`-like ordering, a `CSC` matrix
+/// must be multiplied with a matrix with `F`-like ordering.
 pub fn mul_dense_mat_same_ordering<N, I, Iptr, Mat, D>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
@@ -241,6 +249,15 @@ where
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
+///
+/// # Panics
+///
+/// On dimension mismatch
+///
+/// On storage mismatch. The storage for the matrices must either be
+/// `lhs = CSR` with `rhs` and `out` with `Axis(1)` as the fastest dimension,
+/// or
+/// `lhs = CSC` with `rhs` and `out` with `Axis(0)` as the fastest dimension,
 pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
     lhs: CsMatViewI<'a, N, I, Iptr>,
     rhs: ArrayView<'a, N, Ix2>,
