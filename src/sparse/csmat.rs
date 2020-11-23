@@ -1866,7 +1866,9 @@ where
     type Output = Array<N, Ix2>;
 
     fn add(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
-        match (self.storage(), rhs.is_standard_layout()) {
+        let is_standard_layout =
+            utils::fastest_axis(rhs.view()) == ndarray::Axis(1);
+        match (self.storage(), is_standard_layout) {
             (CSR, true) | (CSC, false) => binop::add_dense_mat_same_ordering(
                 self,
                 rhs,
