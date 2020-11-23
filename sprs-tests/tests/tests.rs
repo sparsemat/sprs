@@ -59,4 +59,29 @@ mod serde_tests {
             serde_json::from_str(&json_mat);
         assert!(mat.is_err());
     }
+
+    #[test]
+    fn valid_indptr() {
+        let indptr = r#"{ "storage": [0, 0, 1, 2, 2, 6] }"#;
+        let indptr: IndPtr<usize> = serde_json::from_str(&indptr).unwrap();
+        assert_eq!(indptr.raw_storage(), &[0, 0, 1, 2, 2, 6]);
+
+        let indptr = r#"{ "storage": [5, 5, 8, 9] }"#;
+        let indptr: IndPtr<usize> = serde_json::from_str(&indptr).unwrap();
+        assert_eq!(indptr.raw_storage(), &[5, 5, 8, 9]);
+    }
+
+    #[test]
+    fn invalid_indptr() {
+        let indptr = r#"{ "storage": [0, 0, 1, 2, 2, 1] }"#;
+        let indptr: Result<IndPtr<usize>, _> = serde_json::from_str(&indptr);
+        assert!(indptr.is_err());
+        let indptr = r#"{ "storage": [2, 1, 2, 2, 2, 7] }"#;
+        let indptr: Result<IndPtr<usize>, _> = serde_json::from_str(&indptr);
+        assert!(indptr.is_err());
+        // Larger than permitted by i16
+        let indptr = r#"{ "storage": [0, 32768] }"#;
+        let indptr: Result<IndPtr<i16>, _> = serde_json::from_str(&indptr);
+        assert!(indptr.is_err());
+    }
 }

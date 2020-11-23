@@ -71,3 +71,26 @@ where
             .map_err(|(_, _, _, e)| e)
     }
 }
+
+#[derive(Deserialize)]
+pub struct IndPtrBaseShadow<Iptr, Storage>
+where
+    Iptr: SpIndex,
+    Storage: Deref<Target = [Iptr]>,
+{
+    storage: Storage,
+}
+
+impl<Iptr: SpIndex, Storage> TryFrom<IndPtrBaseShadow<Iptr, Storage>>
+    for IndPtrBase<Iptr, Storage>
+where
+    Storage: Deref<Target = [Iptr]>,
+{
+    type Error = SprsError;
+    fn try_from(
+        val: IndPtrBaseShadow<Iptr, Storage>,
+    ) -> Result<Self, Self::Error> {
+        let IndPtrBaseShadow { storage } = val;
+        Self::new(storage)
+    }
+}
