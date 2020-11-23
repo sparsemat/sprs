@@ -5,6 +5,7 @@ use crate::sparse::csmat::CompressedStorage;
 use crate::sparse::prelude::*;
 use crate::sparse::vec::NnzEither::{Both, Left, Right};
 use crate::sparse::vec::SparseIterTools;
+use crate::IndPtr;
 use ndarray::{
     self, Array, ArrayBase, ArrayView, ArrayViewMut, Axis, ShapeBuilder,
 };
@@ -125,7 +126,7 @@ where
         storage,
         nrows,
         ncols,
-        indptr: out_indptr,
+        indptr: IndPtr::new_trusted(out_indptr),
         indices: out_indices,
         data: out_data,
     }

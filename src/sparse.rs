@@ -1,6 +1,7 @@
 use crate::array_backend::Array2;
 use crate::errors::SprsError;
 use crate::indexing::SpIndex;
+use crate::IndPtrBase;
 use std::ops::Deref;
 
 #[cfg(feature = "serde")]
@@ -93,7 +94,8 @@ where
     storage: CompressedStorage,
     nrows: usize,
     ncols: usize,
-    indptr: IptrStorage,
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    indptr: IndPtrBase<Iptr, IptrStorage>,
     indices: IndStorage,
     data: DataStorage,
 }
@@ -282,6 +284,7 @@ pub(crate) mod utils {
         indptr: &[Iptr],
         indices: &[I],
     ) -> Result<(), SprsError> {
+        let indptr = crate::IndPtrView::new(indptr)?;
         if indptr.len() != outer + 1 {
             return Err(SprsError::IllegalArguments(
                 "Indptr length does not match dimension",
@@ -298,15 +301,8 @@ pub(crate) mod utils {
                 "Iptr type not large enough for this matrix",
             ));
         }
-        // Make sure both indptr and indices can be converted to usize
+        // Make sure indices can be converted to usize
         // this could happen if index is negative for sized types
-        for i in indptr.iter() {
-            if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
-                    "Indptr value out of range of usize",
-                ));
-            }
-        }
         for i in indices.iter() {
             if i.try_index().is_none() {
                 return Err(SprsError::IllegalArguments(
@@ -315,43 +311,15 @@ pub(crate) mod utils {
             }
         }
         let nnz = indices.len();
-        if nnz != indptr.last().unwrap().to_usize().unwrap() {
+        if nnz != indptr.nnz() {
             return Err(SprsError::IllegalArguments(
                 "Indices length and inpdtr's nnz do not match",
             ));
         }
 
-        // indptr should be non-monotonically increasing
-        if !indptr
-            .windows(2)
-            .all(|x| x[0].index_unchecked() <= x[1].index_unchecked())
-        {
-            return Err(SprsError::UnsortedIndptr);
-        }
-        // Guaranteed to have at least one element
-        let max_indptr = indptr.last().unwrap();
-        if max_indptr.index_unchecked() > nnz {
-            return Err(SprsError::IllegalArguments(
-                "An indptr value is out of bounds",
-            ));
-        }
-        if max_indptr.index_unchecked() > usize::max_value() / 2 {
-            // We do not allow indptr values to be larger than half
-            // the maximum value of an usize, as that would clearly exhaust
-            // all available memory
-            // This means we could have an isize, but in practice it's
-            // easier to work with usize for indexing.
-            return Err(SprsError::IllegalArguments(
-                "An indptr value is larger than allowed",
-            ));
-        }
-
         // check that the indices are sorted for each row
-        for win in indptr.windows(2) {
-            let [i1, i2]: &[Iptr; 2] = win.try_into().unwrap();
-            let i1 = i1.to_usize().unwrap();
-            let i2 = i2.to_usize().unwrap();
-            let indices = &indices[i1..i2];
+        for range in indptr.iter_outer_sz() {
+            let indices = &indices[range];
             // Indices must be monotonically increasing
             if !sorted_indices(indices) {
                 return Err(SprsError::NonSortedIndices);
@@ -410,6 +378,7 @@ pub mod binop;
 pub mod compressed;
 pub mod construct;
 pub mod csmat;
+pub mod indptr;
 pub mod kronecker;
 pub mod linalg;
 pub mod permutation;

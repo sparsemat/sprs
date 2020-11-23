@@ -38,9 +38,10 @@ where
             mat.to_other_types();
         let mut perm: Vec<SuiteSparseInt> = vec![0; n];
         let camd_res = unsafe {
+            let indptr_proper = mat.proper_indptr();
             camd_order(
                 n as SuiteSparseInt,
-                mat.indptr().as_ptr(),
+                indptr_proper.as_ptr(),
                 mat.indices().as_ptr(),
                 perm.as_mut_ptr(),
                 control.as_mut_ptr(),
@@ -56,9 +57,10 @@ where
             mat.to_other_types();
         let mut perm: Vec<SuiteSparseLong> = vec![0; n];
         let camd_res = unsafe {
+            let indptr_proper = mat.proper_indptr();
             camd_l_order(
                 n as SuiteSparseLong,
-                mat.indptr().as_ptr(),
+                indptr_proper.as_ptr(),
                 mat.indices().as_ptr(),
                 perm.as_mut_ptr(),
                 control.as_mut_ptr(),

@@ -4,6 +4,7 @@
 use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
+use crate::IndPtrView;
 use num_traits::Num;
 #[cfg(feature = "multi_thread")]
 use rayon::prelude::*;
@@ -80,10 +81,10 @@ pub fn thread_threading_strategy() -> ThreadingStrategy {
 /// to have reserved at least this amount of memory.
 #[allow(clippy::too_many_arguments)]
 pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
-    a_indptr: &[Iptr],
+    a_indptr: IndPtrView<Iptr>,
     a_indices: &[I],
     b_cols: usize,
-    b_indptr: &[Iptr],
+    b_indptr: IndPtrView<Iptr>,
     b_indices: &[I],
     c_indptr: &mut [Iptr],
     // TODO look for litterature on the nnz of C to be able to have a slice here
@@ -93,8 +94,8 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     assert!(a_indptr.len() == c_indptr.len());
     let a_rows = a_indptr.len() - 1;
     let b_rows = b_indptr.len() - 1;
-    let a_nnz = a_indptr[a_rows].index();
-    let b_nnz = b_indptr[b_rows].index();
+    let a_nnz = a_indptr.nnz();
+    let b_nnz = b_indptr.nnz();
     c_indices.clear();
     c_indices.reserve_exact(a_nnz + b_nnz);
 
@@ -105,16 +106,13 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     }
 
     c_indptr[0] = Iptr::from_usize(0);
-    for a_row in 0..a_rows {
+    for (a_row, a_range) in a_indptr.iter_outer_sz().enumerate() {
         let mut length = 0;
 
-        let a_start = a_indptr[a_row].index();
-        let a_stop = a_indptr[a_row + 1].index();
-        for &a_col in &a_indices[a_start..a_stop] {
+        for &a_col in &a_indices[a_range] {
             let b_row = a_col.index();
-            let b_start = b_indptr[b_row].index();
-            let b_stop = b_indptr[b_row + 1].index();
-            for b_col in &b_indices[b_start..b_stop] {
+            let b_range = b_indptr.outer_inds_sz(b_row);
+            for b_col in &b_indices[b_range] {
                 let b_col = b_col.index();
                 if !seen[b_col] {
                     seen[b_col] = true;
@@ -159,10 +157,10 @@ pub fn numeric<
     I: SpIndex,
     N: Num + Copy + std::ops::AddAssign,
 >(
-    a_indptr: &[Iptr],
+    a_indptr: IndPtrView<Iptr>,
     a_indices: &[I],
     a_data: &[N],
-    b_indptr: &[Iptr],
+    b_indptr: IndPtrView<Iptr>,
     b_indices: &[I],
     b_data: &[N],
     c_indptr: &[Iptr],
@@ -171,24 +169,19 @@ pub fn numeric<
     tmp: &mut [N],
 ) {
     assert!(a_indptr.len() == c_indptr.len());
-    let a_rows = a_indptr.len() - 1;
-    let b_rows = b_indptr.len() - 1;
-    assert!(b_indices.len() == b_indptr[b_rows].index());
-    assert!(b_data.len() == b_indptr[b_rows].index());
+    assert!(b_indices.len() == b_indptr.nnz());
+    assert!(b_data.len() == b_indptr.nnz());
 
     for elt in tmp.iter_mut() {
         *elt = N::zero();
     }
-    for a_row in 0..a_rows {
-        let a_start = a_indptr[a_row].index();
-        let a_stop = a_indptr[a_row + 1].index();
-        for a_cur in a_start..a_stop {
+    for (a_row, a_range) in a_indptr.iter_outer_sz().enumerate() {
+        for a_cur in a_range {
             let a_col = a_indices[a_cur].index();
             let a_val = a_data[a_cur];
             let b_row = a_col;
-            let b_start = b_indptr[b_row].index();
-            let b_stop = b_indptr[b_row + 1].index();
-            for b_cur in b_start..b_stop {
+            let b_range = b_indptr.outer_inds_sz(b_row);
+            for b_cur in b_range {
                 let b_col = b_indices[b_cur].index();
                 let b_val = b_data[b_cur];
                 tmp[b_col] += a_val * b_val;
@@ -297,7 +290,7 @@ where
     let nb_threads = seens.len();
     assert!(nb_threads > 0);
     let chunk_size = lhs.indptr().len() / nb_threads;
-    let mut lhs_indptr_chunks = Vec::with_capacity(nb_threads);
+    let mut lhs_chunks = Vec::with_capacity(nb_threads);
     let mut res_indptr_chunks = Vec::with_capacity(nb_threads);
     let mut res_indices_chunks = Vec::with_capacity(nb_threads);
     for chunk_id in 0..nb_threads {
@@ -307,35 +300,35 @@ where
             chunk_id * chunk_size
         };
         let stop = if chunk_id + 1 < nb_threads {
-            (chunk_id + 1) * chunk_size + 1
+            (chunk_id + 1) * chunk_size
         } else {
-            indptr_len
+            l_rows
         };
-        lhs_indptr_chunks.push(&lhs.indptr()[start..stop]);
-        res_indptr_chunks.push(vec![Iptr::zero(); stop - start]);
+        lhs_chunks.push(lhs.middle_outer_views(start, stop - start));
+        res_indptr_chunks.push(vec![Iptr::zero(); stop - start + 1]);
         res_indices_chunks
             .push(Vec::with_capacity(lhs.nnz() + rhs.nnz() / chunk_size));
     }
     #[cfg(feature = "multi_thread")]
-    let iter = lhs_indptr_chunks
+    let iter = lhs_chunks
         .par_iter()
         .zip(res_indptr_chunks.par_iter_mut())
         .zip(res_indices_chunks.par_iter_mut())
         .zip(seens.par_iter_mut());
     #[cfg(not(feature = "multi_thread"))]
-    let iter = lhs_indptr_chunks
+    let iter = lhs_chunks
         .iter()
         .zip(res_indptr_chunks.iter_mut())
         .zip(res_indices_chunks.iter_mut())
         .zip(seens.iter_mut());
     iter.for_each(
         |(
-            ((lhs_indptr_chunk, mut res_indptr_chunk), mut res_indices_chunk),
+            ((lhs_chunk, mut res_indptr_chunk), mut res_indices_chunk),
             mut seen,
         )| {
             symbolic(
-                lhs_indptr_chunk,
-                lhs.indices(),
+                lhs_chunk.indptr(),
+                lhs_chunk.indices(),
                 r_cols,
                 rhs.indptr(),
                 rhs.indices(),
@@ -366,14 +359,15 @@ where
     let mut prev_nnz = 0;
     let mut split_nnz = 0;
     let mut split_row = 0;
-    let mut lhs_indptr_chunks = Vec::with_capacity(nb_threads);
+    let mut lhs_chunks = Vec::with_capacity(nb_threads);
     let mut res_indptr_chunks = Vec::with_capacity(nb_threads);
     let mut res_indices_chunks = Vec::with_capacity(nb_threads);
     let mut res_data_chunks = Vec::with_capacity(nb_threads);
     for (row, nnz) in res_indptr.iter().enumerate() {
         let nnz = nnz.index();
         if nnz - split_nnz > chunk_size && row > 0 {
-            lhs_indptr_chunks.push(&lhs.indptr()[split_row..row]);
+            lhs_chunks
+                .push(lhs.middle_outer_views(split_row, row - 1 - split_row));
 
             res_indptr_chunks.push(&res_indptr[split_row..row]);
 
@@ -392,19 +386,19 @@ where
         }
         prev_nnz = nnz;
     }
-    lhs_indptr_chunks.push(&lhs.indptr()[split_row..]);
+    lhs_chunks.push(lhs.middle_outer_views(split_row, lhs.rows() - split_row));
     res_indptr_chunks.push(&res_indptr[split_row..]);
     res_indices_chunks.push(res_indices_rem);
     res_data_chunks.push(res_data_rem);
     #[cfg(feature = "multi_thread")]
-    let iter = lhs_indptr_chunks
+    let iter = lhs_chunks
         .par_iter()
         .zip(res_indptr_chunks.par_iter())
         .zip(res_indices_chunks.par_iter())
         .zip(res_data_chunks.par_iter_mut())
         .zip(tmps.par_iter_mut());
     #[cfg(not(feature = "multi_thread"))]
-    let iter = lhs_indptr_chunks
+    let iter = lhs_chunks
         .iter()
         .zip(res_indptr_chunks.iter())
         .zip(res_indices_chunks.iter())
@@ -413,15 +407,15 @@ where
     iter.for_each(
         |(
             (
-                ((lhs_indptr_chunk, res_indptr_chunk), res_indices_chunk),
+                ((lhs_chunk, res_indptr_chunk), res_indices_chunk),
                 res_data_chunk,
             ),
             tmp,
         )| {
             numeric(
-                lhs_indptr_chunk,
-                lhs.indices(),
-                lhs.data(),
+                lhs_chunk.indptr(),
+                lhs_chunk.indices(),
+                lhs_chunk.data(),
                 rhs.indptr(),
                 rhs.indices(),
                 rhs.data(),
@@ -496,7 +490,7 @@ mod test {
             &mut c_data,
             &mut tmp,
         );
-        assert_eq!(exp.indptr(), c_indptr);
+        assert_eq!(exp.indptr(), &c_indptr[..]);
         assert_eq!(exp.indices(), &c_indices[..]);
         assert_eq!(exp.data(), &c_data[..]);
     }
