@@ -3,6 +3,8 @@
 //!
 //! [`CsMatBase`]: type.CsMatBase.html
 
+#[cfg(feature = "serde")]
+use super::serde_traits::IndPtrBaseShadow;
 use crate::errors::SprsError;
 use crate::indexing::SpIndex;
 #[cfg(feature = "serde")]
@@ -12,6 +14,10 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(try_from = "IndPtrBaseShadow<Iptr, Storage>")
+)]
 pub struct IndPtrBase<Iptr, Storage>
 where
     Iptr: SpIndex,

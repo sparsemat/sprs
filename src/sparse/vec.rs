@@ -51,7 +51,9 @@ pub trait VecDim<N> {
     fn dim(&self) -> usize;
 }
 
-impl<N, IS, DS: Deref<Target = [N]>> VecDim<N> for CsVecBase<IS, DS> {
+impl<N, I: SpIndex, IS: Deref<Target = [I]>, DS: Deref<Target = [N]>> VecDim<N>
+    for CsVecBase<IS, DS, N, I>
+{
     fn dim(&self) -> usize {
         self.dim
     }
@@ -259,7 +261,7 @@ where
 }
 
 impl<'a, N: 'a, I: 'a, IS, DS> IntoSparseVecIter<'a, N>
-    for &'a CsVecBase<IS, DS>
+    for &'a CsVecBase<IS, DS, N, I>
 where
     I: SpIndex,
     IS: Deref<Target = [I]>,
@@ -482,7 +484,7 @@ where
 }
 
 /// # Methods operating on owning sparse vectors
-impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
+impl<N, I: SpIndex> CsVecI<N, I> {
     /// Create an owning CsVec from vector data.
     ///
     /// # Panics
@@ -572,7 +574,7 @@ impl<N, I: SpIndex> CsVecBase<Vec<I>, Vec<N>> {
 }
 
 /// # Common methods of sparse vectors
-impl<N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage>
+impl<N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage, N, I>
 where
     I: SpIndex,
     IStorage: Deref<Target = [I]>,
@@ -996,7 +998,7 @@ where
 }
 
 /// # Methods on sparse vectors with mutable access to their data
-impl<'a, N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage>
+impl<'a, N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage, N, I>
 where
     N: 'a,
     I: 'a + SpIndex,
@@ -1060,7 +1062,7 @@ where
 }
 
 /// # Methods propagating the lifetime of a `CsVecViewI`.
-impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
     /// Create a borrowed CsVec over slice data.
     pub fn new_view(
         n: usize,
@@ -1109,7 +1111,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N]> {
 }
 
 /// # Methods propagating the lifetome of a `CsVecViewMutI`.
-impl<'a, N, I> CsVecBase<&'a [I], &'a mut [N]>
+impl<'a, N, I> CsVecBase<&'a [I], &'a mut [N], N, I>
 where
     N: 'a,
     I: 'a + SpIndex,
@@ -1139,7 +1141,8 @@ where
 }
 
 impl<'a, 'b, N, I, Iptr, IS1, DS1, IpS2, IS2, DS2>
-    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>> for &'a CsVecBase<IS1, DS1>
+    Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
+    for &'a CsVecBase<IS1, DS1, N, I>
 where
     N: 'a + Copy + Num + Default + std::ops::AddAssign + Send + Sync,
     I: 'a + SpIndex,
@@ -1157,7 +1160,8 @@ where
     }
 }
 
-impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2> Mul<&'b CsVecBase<IS2, DS2>>
+impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2>
+    Mul<&'b CsVecBase<IS2, DS2, N, I>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
     N: Copy + Num + Default + Sum + std::ops::AddAssign + Send + Sync,
@@ -1171,7 +1175,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn mul(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
+    fn mul(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         } else {
@@ -1180,7 +1184,8 @@ where
     }
 }
 
-impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>> for CsVecBase<IS1, DS1>
+impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
+    for CsVecBase<IS1, DS1, N, I>
 where
     N: Copy + Num,
     I: SpIndex,
@@ -1191,13 +1196,13 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
+    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
         &self + &rhs
     }
 }
 
-impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2>>
-    for CsVecBase<IS1, DS1>
+impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2, N, I>>
+    for CsVecBase<IS1, DS1, N, I>
 where
     N: Copy + Num,
     I: SpIndex,
@@ -1208,13 +1213,13 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
+    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
         &self + rhs
     }
 }
 
-impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2>>
-    for &'a CsVecBase<IS1, DS1>
+impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
+    for &'a CsVecBase<IS1, DS1, N, I>
 where
     N: Copy + Num,
     I: SpIndex,
@@ -1225,13 +1230,13 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
+    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
         self + &rhs
     }
 }
 
-impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2>>
-    for &'a CsVecBase<IS1, DS1>
+impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2, N, I>>
+    for &'a CsVecBase<IS1, DS1, N, I>
 where
     N: Copy + Num,
     I: SpIndex,
@@ -1242,13 +1247,13 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
+    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
         binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x + y).unwrap()
     }
 }
 
-impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2>>
-    for &'a CsVecBase<IS1, DS1>
+impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2, N, I>>
+    for &'a CsVecBase<IS1, DS1, N, I>
 where
     N: Copy + Num,
     I: SpIndex,
@@ -1259,7 +1264,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn sub(self, rhs: &CsVecBase<IS2, DS2>) -> CsVecI<N, I> {
+    fn sub(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
         binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x - y).unwrap()
     }
 }
@@ -1276,7 +1281,7 @@ impl<N: Num + Copy + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
 }
 
 impl<N, I, IStorage, DStorage> std::ops::MulAssign<N>
-    for CsVecBase<IStorage, DStorage>
+    for CsVecBase<IStorage, DStorage, N, I>
 where
     N: Clone + std::ops::MulAssign<N>,
     I: SpIndex,
@@ -1291,7 +1296,7 @@ where
 }
 
 impl<N, I, IStorage, DStorage> std::ops::DivAssign<N>
-    for CsVecBase<IStorage, DStorage>
+    for CsVecBase<IStorage, DStorage, N, I>
 where
     N: Clone + std::ops::DivAssign<N>,
     I: SpIndex,
@@ -1305,7 +1310,7 @@ where
     }
 }
 
-impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS>
+impl<N, IS, DS> Index<usize> for CsVecBase<IS, DS, N>
 where
     IS: Deref<Target = [usize]>,
     DS: Deref<Target = [N]>,
@@ -1317,7 +1322,7 @@ where
     }
 }
 
-impl<N, IS, DS> IndexMut<usize> for CsVecBase<IS, DS>
+impl<N, IS, DS> IndexMut<usize> for CsVecBase<IS, DS, N>
 where
     IS: Deref<Target = [usize]>,
     DS: DerefMut<Target = [N]>,
@@ -1327,7 +1332,7 @@ where
     }
 }
 
-impl<N, IS, DS> Index<NnzIndex> for CsVecBase<IS, DS>
+impl<N, IS, DS> Index<NnzIndex> for CsVecBase<IS, DS, N>
 where
     IS: Deref<Target = [usize]>,
     DS: Deref<Target = [N]>,
@@ -1340,7 +1345,7 @@ where
     }
 }
 
-impl<N, IS, DS> IndexMut<NnzIndex> for CsVecBase<IS, DS>
+impl<N, IS, DS> IndexMut<NnzIndex> for CsVecBase<IS, DS, N>
 where
     IS: Deref<Target = [usize]>,
     DS: DerefMut<Target = [N]>,
@@ -1451,11 +1456,12 @@ mod approx_impls {
     use super::*;
     use approx::*;
 
-    impl<N, I, IS1, DS1, IS2, DS2> AbsDiffEq<CsVecBase<IS2, DS2>>
-        for CsVecBase<IS1, DS1>
+    impl<N, I, IS1, DS1, IS2, DS2> AbsDiffEq<CsVecBase<IS2, DS2, N, I>>
+        for CsVecBase<IS1, DS1, N, I>
     where
         I: SpIndex,
-        CsVecBase<IS1, DS1>: std::cmp::PartialEq<CsVecBase<IS2, DS2>>,
+        CsVecBase<IS1, DS1, N, I>:
+            std::cmp::PartialEq<CsVecBase<IS2, DS2, N, I>>,
         IS1: Deref<Target = [I]>,
         IS2: Deref<Target = [I]>,
         DS1: Deref<Target = [N]>,
@@ -1471,7 +1477,7 @@ mod approx_impls {
 
         fn abs_diff_eq(
             &self,
-            other: &CsVecBase<IS2, DS2>,
+            other: &CsVecBase<IS2, DS2, N, I>,
             epsilon: N::Epsilon,
         ) -> bool {
             match (self.dim(), other.dim()) {
@@ -1494,11 +1500,12 @@ mod approx_impls {
         }
     }
 
-    impl<N, I, IS1, DS1, IS2, DS2> UlpsEq<CsVecBase<IS2, DS2>>
-        for CsVecBase<IS1, DS1>
+    impl<N, I, IS1, DS1, IS2, DS2> UlpsEq<CsVecBase<IS2, DS2, N, I>>
+        for CsVecBase<IS1, DS1, N, I>
     where
         I: SpIndex,
-        CsVecBase<IS1, DS1>: std::cmp::PartialEq<CsVecBase<IS2, DS2>>,
+        CsVecBase<IS1, DS1, N, I>:
+            std::cmp::PartialEq<CsVecBase<IS2, DS2, N, I>>,
         IS1: Deref<Target = [I]>,
         IS2: Deref<Target = [I]>,
         DS1: Deref<Target = [N]>,
@@ -1513,7 +1520,7 @@ mod approx_impls {
 
         fn ulps_eq(
             &self,
-            other: &CsVecBase<IS2, DS2>,
+            other: &CsVecBase<IS2, DS2, N, I>,
             epsilon: N::Epsilon,
             max_ulps: u32,
         ) -> bool {
@@ -1536,11 +1543,12 @@ mod approx_impls {
                 .all(|(v0, v1)| v0.ulps_eq(v1, epsilon.clone(), max_ulps))
         }
     }
-    impl<N, I, IS1, DS1, IS2, DS2> RelativeEq<CsVecBase<IS2, DS2>>
-        for CsVecBase<IS1, DS1>
+    impl<N, I, IS1, DS1, IS2, DS2> RelativeEq<CsVecBase<IS2, DS2, N, I>>
+        for CsVecBase<IS1, DS1, N, I>
     where
         I: SpIndex,
-        CsVecBase<IS1, DS1>: std::cmp::PartialEq<CsVecBase<IS2, DS2>>,
+        CsVecBase<IS1, DS1, N, I>:
+            std::cmp::PartialEq<CsVecBase<IS2, DS2, N, I>>,
         IS1: Deref<Target = [I]>,
         IS2: Deref<Target = [I]>,
         DS1: Deref<Target = [N]>,
@@ -1555,7 +1563,7 @@ mod approx_impls {
 
         fn relative_eq(
             &self,
-            other: &CsVecBase<IS2, DS2>,
+            other: &CsVecBase<IS2, DS2, N, I>,
             epsilon: N::Epsilon,
             max_relative: Self::Epsilon,
         ) -> bool {
