@@ -5,12 +5,12 @@ use num_traits::Num;
 ///!
 ///! Useful for building a matrix, but not for computations. Therefore this
 ///! struct is mainly used to initialize a matrix before converting to
-///! to a CsMat.
+///! to a [`CsMat`](CsMatBase).
 ///!
 ///! A triplet format matrix is formed of three arrays of equal length, storing
 ///! the row indices, the column indices, and the values of the non-zero
 ///! entries. By convention, duplicate locations are summed up when converting
-///! into CsMat.
+///! into `CsMat`.
 use std::ops::{Deref, DerefMut};
 use std::slice::Iter;
 
@@ -83,10 +83,10 @@ where
 }
 
 /// # Methods for creating triplet matrices that own their data.
-impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
+impl<N, I: SpIndex> TriMatI<N, I> {
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`
-    pub fn new(shape: (usize, usize)) -> TriMatI<N, I> {
-        TriMatI {
+    pub fn new(shape: (usize, usize)) -> Self {
+        Self {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::new(),
@@ -97,8 +97,8 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
 
     /// Create a new triplet matrix of shape `(nb_rows, nb_cols)`, and
     /// pre-allocate `cap` elements on the backing storage
-    pub fn with_capacity(shape: (usize, usize), cap: usize) -> TriMatI<N, I> {
-        TriMatI {
+    pub fn with_capacity(shape: (usize, usize), cap: usize) -> Self {
+        Self {
             rows: shape.0,
             cols: shape.1,
             row_inds: Vec::with_capacity(cap),
@@ -119,7 +119,7 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
         row_inds: Vec<I>,
         col_inds: Vec<I>,
         data: Vec<N>,
-    ) -> TriMatI<N, I> {
+    ) -> Self {
         assert_eq!(
             row_inds.len(),
             col_inds.len(),
@@ -143,7 +143,7 @@ impl<N, I: SpIndex> TriMatBase<Vec<I>, Vec<N>> {
             col_inds.iter().all(|&j| j.index() < shape.1),
             "col indices should be within shape"
         );
-        TriMatI {
+        Self {
             rows: shape.0,
             cols: shape.1,
             row_inds,
@@ -223,10 +223,13 @@ where
             .iter()
             .zip(self.col_inds.iter())
             .enumerate()
-            .filter(|&(_, (&i, &j))| {
-                i.index_unchecked() == row && j.index_unchecked() == col
+            .filter_map(|(ind, (&i, &j))| {
+                if i.index_unchecked() == row && j.index_unchecked() == col {
+                    Some(TripletIndex(ind))
+                } else {
+                    None
+                }
             })
-            .map(|(ind, _)| TripletIndex(ind))
             .collect()
     }
 
@@ -304,7 +307,7 @@ where
     DStorage: DerefMut<Target = [N]>,
 {
     /// Replace a non-zero value at the given index.
-    /// Indices can be obtained using find_locations.
+    /// Indices can be obtained using [`find_locations`](Self::find_locations).
     pub fn set_triplet(
         &mut self,
         TripletIndex(triplet_ind): TripletIndex,

@@ -57,8 +57,7 @@ pub mod start {
             visited
                 .iter()
                 .enumerate()
-                .find(|(_i, &a)| !a)
-                .map(|(i, _a)| i)
+                .find_map(|(i, &a)| if a { None } else { Some(i) })
                 .expect(
                     "There should always be a unvisited vertex left to choose",
                 )
@@ -101,7 +100,7 @@ pub mod start {
     impl PseudoPeripheral {
         #[inline]
         pub fn new() -> Self {
-            PseudoPeripheral::default()
+            Self::default()
         }
 
         /// Computes the rooted level structure rooted at `root`, returning the
@@ -233,8 +232,7 @@ pub mod start {
             let mut current = visited
                 .iter()
                 .enumerate()
-                .find(|(_i, &a)| !a)
-                .map(|(i, _a)| i)
+                .find_map(|(i, &a)| if a { None } else { Some(i) })
                 .expect(
                     "There should always be a unvisited vertex left to choose",
                 );
@@ -535,7 +533,7 @@ where
 /// configuration of the algorithm.
 ///
 /// This library also exposes a costomizable version of the algorithm,
-/// [cuthill_mckee_custom](fn.cuthill_mckee_custom.html).
+/// [`cuthill_mckee_custom`](cuthill_mckee_custom).
 ///
 /// Implemented as:
 /// ```text

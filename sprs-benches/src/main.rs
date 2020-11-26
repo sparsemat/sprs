@@ -7,7 +7,7 @@ use sprs_rand::rand_csr_std;
 
 fn scipy_mat<'a>(
     scipy_sparse: &'a PyModule,
-    py: &Python,
+    py: Python,
     mat: &sprs::CsMat<f64>,
 ) -> Result<&'a PyAny, String> {
     let indptr = mat.indptr().to_proper().to_vec();
@@ -15,11 +15,11 @@ fn scipy_mat<'a>(
         .call(
             "csr_matrix",
             ((mat.data().to_vec(), mat.indices().to_vec(), indptr),),
-            Some([("shape", mat.shape())].into_py_dict(*py)),
+            Some([("shape", mat.shape())].into_py_dict(py)),
         )
         .map_err(|e| {
             let res = format!("Python error: {:?}", e);
-            e.print_and_set_sys_last_vars(*py);
+            e.print_and_set_sys_last_vars(py);
             res
         })
 }
@@ -43,15 +43,16 @@ extern "C" {
 
 #[cfg(feature = "eigen")]
 fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
+    use std::convert::TryFrom;
     let (a_rows, a_cols) = a.shape();
     let (b_rows, b_cols) = b.shape();
     assert_eq!(a_cols, b_rows);
     assert!(a.is_csr());
-    assert!(a.rows() <= isize::MAX as usize);
-    assert!(a.indptr().nnz() <= isize::MAX as usize);
+    assert!(isize::try_from(a.rows()).is_ok());
+    assert!(isize::try_from(a.indptr().nnz()).is_ok());
     assert!(b.is_csr());
-    assert!(b.rows() <= isize::MAX as usize);
-    assert!(b.indptr().nnz() <= isize::MAX as usize);
+    assert!(isize::try_from(b.rows()).is_ok());
+    assert!(isize::try_from(b.indptr().nnz()).is_ok());
     let a_indptr_proper = a.proper_indptr();
     let a_indices = a.indices().as_ptr() as *const isize;
     let a_data = a.data().as_ptr();
@@ -102,7 +103,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
         BenchSpec {
-            shape: (15000, 25000),
+            shape: (15_000, 25_000),
             densities: vec![
                 1e-5, 2e-5, 5e-5, 1e-4, 2e-4,
                 5e-4, //1e-3, 2e-3, 3e-3, 5e-3,
@@ -110,13 +111,13 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
         BenchSpec {
-            shape: (150000, 25000),
+            shape: (15_0000, 25_000),
             densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
             forbid_eigen: true,
             ..Default::default()
         },
         BenchSpec {
-            shape: (150000, 250000),
+            shape: (15_0000, 25_0000),
             densities: vec![1e-7, 1e-6, 1e-5, 1e-4],
             forbid_eigen: true,
             ..Default::default()
@@ -141,14 +142,14 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 (1500, 1500),
                 (3500, 3500),
                 (7500, 7500),
-                (15000, 15000),
-                (35000, 35000),
-                (75000, 75000),
-                (150000, 150000),
-                (350000, 350000),
-                (750000, 750000),
-                (1500000, 1500000),
-                (2500000, 2500000),
+                (15_000, 15_000),
+                (35_000, 35_000),
+                (75_000, 75_000),
+                (150_000, 150_000),
+                (350_000, 350_000),
+                (750_000, 750_000),
+                (1_500_000, 1_500_000),
+                (2_500_000, 2_500_000),
             ],
             forbid_eigen: true,
             nnz_over_rows: 4,
@@ -260,8 +261,8 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
 
             // bench scipy as well
             {
-                let m1_py = scipy_mat(scipy_sparse, &py, &m1)?;
-                let m2_py = scipy_mat(scipy_sparse, &py, &m2)?;
+                let m1_py = scipy_mat(scipy_sparse, py, &m1)?;
+                let m2_py = scipy_mat(scipy_sparse, py, &m2)?;
                 let now = std::time::Instant::now();
                 let _prod_py = py
                     .eval(
@@ -356,7 +357,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 .margin(5)
                 .x_label_area_size(30)
                 .y_label_area_size(50)
-                .build_ranged(0f32..max_absciss, 0f32..max_time)?;
+                .build_ranged(0_f32..max_absciss, 0_f32..max_time)?;
 
             let abscisses = if is_shape_bench {
                 shapes.iter().map(|(rows, _)| *rows as f64).collect()

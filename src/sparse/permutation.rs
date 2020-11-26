@@ -47,18 +47,18 @@ pub fn perm_is_valid<I: SpIndex>(perm: &[I]) -> bool {
     true
 }
 
-impl<I: SpIndex> Permutation<I, Vec<I>> {
-    pub fn new(perm: Vec<I>) -> PermOwnedI<I> {
+impl<I: SpIndex> PermOwnedI<I> {
+    pub fn new(perm: Vec<I>) -> Self {
         assert!(perm_is_valid(&perm));
-        Permutation::new_trusted(perm)
+        Self::new_trusted(perm)
     }
 
-    pub(crate) fn new_trusted(perm: Vec<I>) -> PermOwnedI<I> {
+    pub(crate) fn new_trusted(perm: Vec<I>) -> Self {
         let mut perm_inv = perm.clone();
         for (ind, val) in perm.iter().enumerate() {
             perm_inv[val.index()] = I::from_usize(ind);
         }
-        PermOwnedI {
+        Self {
             dim: perm.len(),
             storage: FinitePerm { perm, perm_inv },
         }
@@ -73,8 +73,8 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
                 storage: Identity,
             },
             FinitePerm {
-                perm: ref p,
-                perm_inv: ref p_,
+                perm: p,
+                perm_inv: p_,
             } => PermViewI {
                 dim: self.dim,
                 storage: FinitePerm {
@@ -92,8 +92,8 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
                 storage: Identity,
             },
             FinitePerm {
-                perm: ref p,
-                perm_inv: ref p_,
+                perm: p,
+                perm_inv: p_,
             } => PermViewI {
                 dim: self.dim,
                 storage: FinitePerm {
@@ -109,8 +109,8 @@ impl<I: SpIndex, IndStorage> Permutation<I, IndStorage>
 where
     IndStorage: Deref<Target = [I]>,
 {
-    pub fn identity(dim: usize) -> Permutation<I, IndStorage> {
-        Permutation {
+    pub fn identity(dim: usize) -> Self {
+        Self {
             dim,
             storage: Identity,
         }

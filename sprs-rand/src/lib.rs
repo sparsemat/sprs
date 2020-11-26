@@ -32,7 +32,7 @@ where
     N: Copy,
     I: SpIndex,
 {
-    assert!(density >= 0. && density <= 1.);
+    assert!((0.0..=1.0).contains(&density));
     let exp_nnz =
         (density * (shape.0 as f64) * (shape.1 as f64)).ceil() as usize;
     let mut indptr = Vec::with_capacity(shape.0 + 1);

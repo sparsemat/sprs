@@ -25,11 +25,8 @@ use self::IoError::*;
 impl fmt::Display for IoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            IoError::Io(ref err) => err.fmt(f),
-            IoError::BadMatrixMarketFile => {
-                write!(f, "Bad matrix market file.")
-            }
-            IoError::UnsupportedMatrixMarketFormat => {
+            Self::Io(ref err) => err.fmt(f),
+            Self::BadMatrixMarketFile | Self::UnsupportedMatrixMarketFormat => {
                 write!(f, "Bad matrix market file.")
             }
         }
@@ -39,21 +36,21 @@ impl fmt::Display for IoError {
 impl Error for IoError {}
 
 impl From<io::Error> for IoError {
-    fn from(err: io::Error) -> IoError {
-        IoError::Io(err)
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
     }
 }
 
 impl PartialEq for IoError {
-    fn eq(&self, rhs: &IoError) -> bool {
+    fn eq(&self, rhs: &Self) -> bool {
         match *self {
-            IoError::BadMatrixMarketFile => {
-                matches!(*rhs, IoError::BadMatrixMarketFile)
+            Self::BadMatrixMarketFile => {
+                matches!(*rhs, Self::BadMatrixMarketFile)
             }
-            IoError::UnsupportedMatrixMarketFormat => {
-                matches!(*rhs, IoError::UnsupportedMatrixMarketFormat)
+            Self::UnsupportedMatrixMarketFormat => {
+                matches!(*rhs, Self::UnsupportedMatrixMarketFormat)
             }
-            _ => false,
+            Self::Io(..) => false,
         }
     }
 }
@@ -146,14 +143,13 @@ where
         return Err(UnsupportedMatrixMarketFormat);
     }
     // The header is followed by any number of comment or empty lines, skip
-    loop {
+    'header: loop {
         line.clear();
         let len = reader.read_line(&mut line)?;
         if len == 0 || line.starts_with('%') {
-            continue;
-        } else {
-            break;
+            continue 'header;
         }
+        break;
     }
     // read shape and number of entries
     // this is a line like:
@@ -182,15 +178,14 @@ where
     // one non-zero entry per non-empty line
     for _ in 0..entries {
         // skip empty lines (no comment line should appear)
-        loop {
+        'empty_lines: loop {
             line.clear();
             let len = reader.read_line(&mut line)?;
             // check for an all whitespace line
             if len != 0 && line.split_whitespace().next() == None {
-                continue;
-            } else {
-                break;
+                continue 'empty_lines;
             }
+            break;
         }
         // Non-zero entries are lines of the form:
         // row col value
@@ -300,7 +295,7 @@ where
     writeln!(writer, "{} {} {}", rows, cols, nnz)?;
 
     // entries
-    for (val, (row, col)) in mat.into_iter() {
+    for (val, (row, col)) in mat {
         writeln!(writer, "{} {} {}", row.index() + 1, col.index() + 1, val)?;
     }
     Ok(())
@@ -365,7 +360,7 @@ where
     let mut entries = 0;
     match sym {
         SymmetryMode::General => {
-            for (val, (row, col)) in mat.into_iter() {
+            for (val, (row, col)) in mat {
                 writeln!(
                     writer,
                     "{} {} {}",

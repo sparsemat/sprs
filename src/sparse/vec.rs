@@ -40,7 +40,7 @@ use crate::sparse::{binop, prod};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
-/// An NnzIndex can be used to later access the non-zero element in constant
+/// An `NnzIndex` can be used to later access the non-zero element in constant
 /// time.
 pub struct NnzIndex(pub usize);
 
@@ -441,29 +441,30 @@ where
     type Item = NnzEither<'a, N1, N2>;
 
     fn next(&mut self) -> Option<NnzEither<'a, N1, N2>> {
+        use NnzEither::{Both, Left, Right};
         match (self.left.peek(), self.right.peek()) {
             (None, Some(&(_, _))) => {
                 let (rind, rval) = self.right.next().unwrap();
-                Some(NnzEither::Right((rind, rval)))
+                Some(Right((rind, rval)))
             }
             (Some(&(_, _)), None) => {
                 let (lind, lval) = self.left.next().unwrap();
-                Some(NnzEither::Left((lind, lval)))
+                Some(Left((lind, lval)))
             }
             (None, None) => None,
             (Some(&(lind, _)), Some(&(rind, _))) => match lind.cmp(&rind) {
                 std::cmp::Ordering::Less => {
                     let (lind, lval) = self.left.next().unwrap();
-                    Some(NnzEither::Left((lind, lval)))
+                    Some(Left((lind, lval)))
                 }
                 std::cmp::Ordering::Greater => {
                     let (rind, rval) = self.right.next().unwrap();
-                    Some(NnzEither::Right((rind, rval)))
+                    Some(Right((rind, rval)))
                 }
-                _ => {
+                std::cmp::Ordering::Equal => {
                     let (lind, lval) = self.left.next().unwrap();
                     let (_, rval) = self.right.next().unwrap();
-                    Some(NnzEither::Both((lind, lval, rval)))
+                    Some(Both((lind, lval, rval)))
                 }
             },
         }
@@ -485,25 +486,25 @@ where
 
 /// # Methods operating on owning sparse vectors
 impl<N, I: SpIndex> CsVecI<N, I> {
-    /// Create an owning CsVec from vector data.
+    /// Create an owning `CsVec` from vector data.
     ///
     /// # Panics
     ///
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
-    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> CsVecI<N, I>
+    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> Self
     where
         N: Copy,
     {
         Self::try_new(n, indices, data).unwrap()
     }
 
-    /// Try create an owning CsVec from vector data.
+    /// Try create an owning `CsVec` from vector data.
     pub fn try_new(
         n: usize,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<CsVecI<N, I>, SprsError>
+    ) -> Result<Self, SprsError>
     where
         N: Copy,
     {
@@ -523,9 +524,9 @@ impl<N, I: SpIndex> CsVecI<N, I> {
         .map_err(|(_, _, e)| e)
     }
 
-    /// Create an empty CsVec, which can be used for incremental construction
-    pub fn empty(dim: usize) -> CsVecI<N, I> {
-        CsVecI {
+    /// Create an empty `CsVec`, which can be used for incremental construction
+    pub fn empty(dim: usize) -> Self {
+        Self {
             dim,
             indices: Vec::new(),
             data: Vec::new(),
@@ -533,7 +534,7 @@ impl<N, I: SpIndex> CsVecI<N, I> {
     }
 
     /// Append an element to the sparse vector. Used for incremental
-    /// building of the CsVec. The append should preserve the structure
+    /// building of the `CsVec`. The append should preserve the structure
     /// of the vector, ie the newly added index should be strictly greater
     /// than the last element of indices.
     ///
@@ -821,8 +822,8 @@ where
     /// Find the non-zero index of the requested dimension index,
     /// returning None if no non-zero is present at the requested location.
     ///
-    /// Looking for the NnzIndex is done with logarithmic complexity, but
-    /// once it is available, the NnzIndex enables retrieving the data with
+    /// Looking for the `NnzIndex` is done with logarithmic complexity, but
+    /// once it is available, the `NnzIndex` enables retrieving the data with
     /// O(1) complexity.
     pub fn nnz_index(&self, index: usize) -> Option<NnzIndex> {
         self.indices
@@ -1011,7 +1012,7 @@ where
     }
 
     pub fn view_mut(&mut self) -> CsVecViewMutI<N, I> {
-        CsVecBase {
+        CsVecViewMutI {
             dim: self.dim,
             indices: &self.indices[..],
             data: &mut self.data[..],
@@ -1062,13 +1063,13 @@ where
 }
 
 /// # Methods propagating the lifetime of a `CsVecViewI`.
-impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
-    /// Create a borrowed CsVec over slice data.
+impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
+    /// Create a borrowed `CsVec` over slice data.
     pub fn new_view(
         n: usize,
         indices: &'a [I],
         data: &'a [N],
-    ) -> Result<CsVecViewI<'a, N, I>, SprsError> {
+    ) -> Result<Self, SprsError> {
         Self::new_(n, indices, data).map_err(|(_, _, e)| e)
     }
 
@@ -1089,11 +1090,11 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
         }
     }
 
-    /// Create a borrowed CsVec over slice data without checking the structure
+    /// Create a borrowed `CsVec` over slice data without checking the structure
     ///
     /// # Safety
     /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_structure are enforced.
+    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
     pub unsafe fn new_view_raw(
@@ -1101,8 +1102,8 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
         nnz: usize,
         indices: *const I,
         data: *const N,
-    ) -> CsVecViewI<'a, N, I> {
-        CsVecViewI {
+    ) -> Self {
+        Self {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts(data, nnz),
@@ -1111,16 +1112,16 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecBase<&'a [I], &'a [N], N, I> {
 }
 
 /// # Methods propagating the lifetome of a `CsVecViewMutI`.
-impl<'a, N, I> CsVecBase<&'a [I], &'a mut [N], N, I>
+impl<'a, N, I> CsVecViewMutI<'a, N, I>
 where
     N: 'a,
     I: 'a + SpIndex,
 {
-    /// Create a borrowed CsVec over slice data without checking the structure
+    /// Create a borrowed [`CsVec`](CsMatBase) over slice data without checking the structure
     ///
     /// # Safety
     /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_structure are enforced, and
+    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced, and
     /// because the lifetime of the pointers is unconstrained.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
@@ -1131,8 +1132,8 @@ where
         nnz: usize,
         indices: *const I,
         data: *mut N,
-    ) -> CsVecViewMutI<'a, N, I> {
-        CsVecBase {
+    ) -> Self {
+        Self {
             dim: n,
             indices: slice::from_raw_parts(indices, nnz),
             data: slice::from_raw_parts_mut(data, nnz),
@@ -1270,9 +1271,9 @@ where
 }
 
 impl<N: Num + Copy + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
-    type Output = CsVecI<N, I>;
+    type Output = Self;
 
-    fn neg(mut self) -> CsVecI<N, I> {
+    fn neg(mut self) -> Self::Output {
         for value in &mut self.data {
             *value = -*value;
         }
@@ -1357,8 +1358,8 @@ where
 }
 
 impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
-    fn zero() -> CsVecI<N, I> {
-        CsVecI::new(0, vec![], vec![])
+    fn zero() -> Self {
+        Self::new(0, vec![], vec![])
     }
 
     fn is_zero(&self) -> bool {
@@ -1375,14 +1376,14 @@ mod alga_impls {
     impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive>
         for CsVecI<N, I>
     {
-        fn operate(&self, right: &CsVecI<N, I>) -> CsVecI<N, I> {
+        fn operate(&self, right: &Self) -> Self {
             self + right
         }
     }
 
     impl<N: Copy + Num, I: SpIndex> Identity<Additive> for CsVecI<N, I> {
-        fn identity() -> CsVecI<N, I> {
-            CsVecI::zero()
+        fn identity() -> Self {
+            Self::zero()
         }
     }
 
@@ -1395,8 +1396,8 @@ mod alga_impls {
         N: Clone + Neg<Output = N> + Copy + Num,
         I: SpIndex,
     {
-        fn two_sided_inverse(&self) -> CsVecI<N, I> {
-            CsVecBase {
+        fn two_sided_inverse(&self) -> Self {
+            Self {
                 data: self.data.iter().map(|x| -*x).collect(),
                 indices: self.indices.clone(),
                 dim: self.dim,

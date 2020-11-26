@@ -22,8 +22,8 @@ pub enum StackVal<I> {
 }
 
 impl<I: Default> Default for StackVal<I> {
-    fn default() -> StackVal<I> {
-        StackVal::Enter(I::default())
+    fn default() -> Self {
+        Self::Enter(I::default())
     }
 }
 
@@ -32,12 +32,12 @@ where
     I: Copy,
 {
     /// Create a new double stacked suited for containing at most n elements
-    pub fn with_capacity(n: usize) -> DStack<I>
+    pub fn with_capacity(n: usize) -> Self
     where
         I: Default,
     {
         assert!(n > 1);
-        DStack {
+        Self {
             stacks: vec![I::default(); n],
             left_head: None,
             right_head: n,
@@ -141,8 +141,7 @@ where
 
 /// Enable extraction of stack val from iterators
 pub fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
-    match *stack_val {
-        StackVal::Enter(ref i) => &i,
-        StackVal::Exit(ref i) => &i,
+    match stack_val {
+        StackVal::Enter(i) | StackVal::Exit(i) => i,
     }
 }

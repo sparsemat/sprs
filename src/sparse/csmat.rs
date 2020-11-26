@@ -36,7 +36,7 @@ use crate::sparse::to_dense::assign_to_dense;
 use crate::sparse::utils;
 use crate::sparse::vec;
 
-/// Describe the storage of a CsMat
+/// Describe the storage of a `CsMat`
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CompressedStorage {
@@ -48,7 +48,7 @@ pub enum CompressedStorage {
 
 impl CompressedStorage {
     /// Get the other storage, ie return CSC if we were CSR, and vice versa
-    pub fn other_storage(self) -> CompressedStorage {
+    pub fn other_storage(self) -> Self {
         match self {
             CSR => CSC,
             CSC => CSR,
@@ -83,7 +83,7 @@ pub use self::CompressedStorage::{CSC, CSR};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// Hold the index of a non-zero element in the compressed storage
 ///
-/// An NnzIndex can be used to later access the non-zero element in constant
+/// An `NnzIndex` can be used to later access the non-zero element in constant
 /// time.
 pub struct NnzIndex(pub usize);
 
@@ -272,7 +272,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
         let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
-        CsMatI::new_trusted(CSR, (n, n), indptr, indices, data)
+        Self::new_trusted(CSR, (n, n), indptr, indices, data)
     }
 
     /// Identity matrix, stored as a CSC matrix.
@@ -285,7 +285,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// let y = &eye * &x;
     /// assert_eq!(x, y);
     /// ```
-    pub fn eye_csc(dim: usize) -> CsMatI<N, I, Iptr>
+    pub fn eye_csc(dim: usize) -> Self
     where
         N: Num + Clone,
     {
@@ -294,18 +294,15 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         let indptr = (0..=n).map(Iptr::from_usize_unchecked).collect();
         let indices = (0..n).map(I::from_usize_unchecked).collect();
         let data = vec![N::one(); n];
-        CsMatI::new_trusted(CSC, (n, n), indptr, indices, data)
+        Self::new_trusted(CSC, (n, n), indptr, indices, data)
     }
-    /// Create an empty CsMat for building purposes
-    pub fn empty(
-        storage: CompressedStorage,
-        inner_size: usize,
-    ) -> CsMatI<N, I, Iptr> {
+    /// Create an empty `CsMat` for building purposes
+    pub fn empty(storage: CompressedStorage, inner_size: usize) -> Self {
         let shape = match storage {
             CSR => (0, inner_size),
             CSC => (inner_size, 0),
         };
-        CsMatI::new_trusted(
+        Self::new_trusted(
             storage,
             shape,
             vec![Iptr::zero(); 1],
@@ -314,11 +311,11 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         )
     }
 
-    /// Create a new CsMat representing the zero matrix.
+    /// Create a new `CsMat` representing the zero matrix.
     /// Hence it has no non-zero elements.
-    pub fn zero(shape: Shape) -> CsMatI<N, I, Iptr> {
+    pub fn zero(shape: Shape) -> Self {
         let (nrows, _ncols) = shape;
-        CsMatI::new_trusted(
+        Self::new_trusted(
             CSR,
             shape,
             vec![Iptr::zero(); nrows + 1],
@@ -359,11 +356,11 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<CsMatI<N, I, Iptr>, SprsError>
+    ) -> Result<Self, SprsError>
     where
         N: Copy,
     {
-        CsMatI::new_sorted_checked(CSR, shape, indptr, indices, data)
+        Self::new_sorted_checked(CSR, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
 
@@ -384,11 +381,11 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> CsMatI<N, I, Iptr>
+    ) -> Self
     where
         N: Copy,
     {
-        CsMatI::try_new(shape, indptr, indices, data).unwrap()
+        Self::try_new(shape, indptr, indices, data).unwrap()
     }
 
     /// Try create an owned CSC matrix from moved data.
@@ -405,7 +402,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     where
         N: Copy,
     {
-        CsMatI::new_sorted_checked(CSC, shape, indptr, indices, data)
+        Self::new_sorted_checked(CSC, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
 
@@ -453,10 +450,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// Create a CSR matrix from a dense matrix, ignoring elements lower than `epsilon`.
     ///
     /// If epsilon is negative, it will be clamped to zero.
-    pub fn csr_from_dense(
-        m: ArrayView<N, Ix2>,
-        epsilon: N,
-    ) -> CsMatI<N, I, Iptr>
+    pub fn csr_from_dense(m: ArrayView<N, Ix2>, epsilon: N) -> Self
     where
         N: Num + Clone + cmp::PartialOrd + Signed,
     {
@@ -485,7 +479,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
                 }
             }
         }
-        CsMatI {
+        Self {
             storage: CompressedStorage::CSR,
             nrows,
             ncols,
@@ -498,10 +492,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// Create a CSC matrix from a dense matrix, ignoring elements lower than `epsilon`.
     ///
     /// If epsilon is negative, it will be clamped to zero.
-    pub fn csc_from_dense(
-        m: ArrayView<N, Ix2>,
-        epsilon: N,
-    ) -> CsMatI<N, I, Iptr>
+    pub fn csc_from_dense(m: ArrayView<N, Ix2>, epsilon: N) -> Self
     where
         N: Num + Clone + cmp::PartialOrd + Signed,
     {
@@ -627,7 +618,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
 impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     CsMatBase<N, I, &'a [Iptr], &'a [I], &'a [N], Iptr>
 {
-    /// Create a borrowed CsMat matrix from sliced data,
+    /// Create a borrowed `CsMat` matrix from sliced data,
     /// checking their validity
     pub fn new_view(
         storage: CompressedStorage,
@@ -640,12 +631,13 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
             .map_err(|(_, _, _, e)| e)
     }
 
-    /// Create a borrowed CsMat matrix from raw data,
+    /// Create a borrowed `CsMat` matrix from raw data,
     /// without checking their validity
     ///
     /// # Safety
     /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// that properties guaranteed by
+    /// [`check_compressed_structure`](Self::check_compressed_structure) are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
     pub unsafe fn new_view_raw(
@@ -778,8 +770,8 @@ where
     ///
     /// This access is logarithmic in the number of non-zeros
     /// in the corresponding outer slice. It is therefore advisable not to rely
-    /// on this for algorithms, and prefer outer_iterator() which accesses
-    /// elements in storage order.
+    /// on this for algorithms, and prefer [`outer_iterator`](Self::outer_iterator)
+    /// which accesses elements in storage order.
     pub fn get(&self, i: usize, j: usize) -> Option<&N> {
         match self.storage {
             CSR => self.get_outer_inner(i, j),
@@ -928,13 +920,14 @@ where
     /// Returns a matrix with the same size, the same CSR/CSC type,
     /// and a single value of 1.0 within each populated inner vector.
     ///
-    /// See [CsMatBase::into_csc] and [CsMatBase::into_csr] if you need to prepare a matrix
+    /// See [`into_csc`](CsMatBase::into_csc) and [`into_csr`](CsMatBase::into_csr)
+    /// if you need to prepare a matrix
     /// for one-hot compression.
     pub fn to_inner_onehot(&self) -> CsMatI<N, I, Iptr>
     where
         N: Copy + Clone + Float + PartialOrd,
     {
-        let mut indptr_counter = 0usize;
+        let mut indptr_counter = 0_usize;
         let mut indptr: Vec<Iptr> = Vec::with_capacity(self.indptr.len());
 
         let max_data_len = self.indptr.len().min(self.data.len());
@@ -961,7 +954,7 @@ where
         }
 
         indptr.push(Iptr::from_usize(indptr_counter));
-        CsMatBase {
+        CsMatI {
             storage: self.storage,
             nrows: self.rows(),
             ncols: self.cols(),
@@ -1139,14 +1132,14 @@ where
         }
         let range = self.indptr.outer_inds_sz(i);
         // CsMat invariants imply CsVec invariants
-        Some(CsVecBase {
+        Some(CsVecViewI {
             dim: self.inner_dims(),
             indices: &self.indices[range.clone()],
             data: &self.data[range],
         })
     }
 
-    /// Iteration on outer blocks of size block_size
+    /// Iteration on outer blocks of size `block_size`
     ///
     /// # Panics
     ///
@@ -1184,13 +1177,13 @@ where
         }
     }
 
-    /// Access an element given its outer_ind and inner_ind.
+    /// Access an element given its `outer_ind` and `inner_ind`.
     /// Will return None if there is no non-zero element at this location.
     ///
     /// This access is logarithmic in the number of non-zeros
     /// in the corresponding outer slice. It is therefore advisable not to rely
-    /// on this for algorithms, and prefer outer_iterator() which accesses
-    /// elements in storage order.
+    /// on this for algorithms, and prefer [`outer_iterator`](Self::outer_iterator)
+    /// which accesses elements in storage order.
     pub fn get_outer_inner(
         &self,
         outer_ind: usize,
@@ -1204,7 +1197,7 @@ where
     ///
     /// Searching this index is logarithmic in the number of non-zeros
     /// in the corresponding outer slice.
-    /// Once it is available, the NnzIndex enables retrieving the data with
+    /// Once it is available, the `NnzIndex` enables retrieving the data with
     /// O(1) complexity.
     pub fn nnz_index(&self, row: usize, col: usize) -> Option<NnzIndex> {
         match self.storage() {
@@ -1213,8 +1206,8 @@ where
         }
     }
 
-    /// Find the non-zero index of the element specified by outer_ind and
-    /// inner_ind.
+    /// Find the non-zero index of the element specified by `outer_ind` and
+    /// `inner_ind`.
     ///
     /// Searching this index is logarithmic in the number of non-zeros
     /// in the corresponding outer slice.
@@ -1232,15 +1225,15 @@ where
             .map(|vec::NnzIndex(ind)| NnzIndex(ind + offset))
     }
 
-    /// Check the structure of CsMat components
+    /// Check the structure of `CsMat` components
     /// This will ensure that:
-    /// * indptr is of length outer_dim() + 1
-    /// * indices and data have the same length, nnz == indptr\[outer_dims()\]
+    /// * indptr is of length `outer_dim() + 1`
+    /// * indices and data have the same length, `nnz == indptr[outer_dims()]`
     /// * indptr is sorted
-    /// * indptr values do not exceed usize::MAX / 2, as that would mean
+    /// * indptr values do not exceed [`usize::MAX`](usize::MAX)`/ 2`, as that would mean
     ///   indices and indptr would take more space than the addressable memory
     /// * indices is sorted for each outer slice
-    /// * indices are lower than inner_dims()
+    /// * indices are lower than `inner_dims()`
     pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
         let inner = self.inner_dims();
         let outer = self.outer_dims();
@@ -1342,7 +1335,7 @@ where
     /// Create a new CSC matrix equivalent to this one.
     /// If this matrix is CSR, it is converted to CSC
     /// If this matrix is CSC, it is returned by value
-    pub fn into_csc(self) -> CsMatI<N, I, Iptr>
+    pub fn into_csc(self) -> Self
     where
         N: Clone,
     {
@@ -1355,7 +1348,7 @@ where
     /// Create a new CSR matrix equivalent to this one.
     /// If this matrix is CSC, it is converted to CSR
     /// If this matrix is CSR, it is returned by value
-    pub fn into_csr(self) -> CsMatI<N, I, Iptr>
+    pub fn into_csr(self) -> Self
     where
         N: Clone,
     {
@@ -1415,9 +1408,9 @@ where
     ///
     /// This access is logarithmic in the number of non-zeros
     /// in the corresponding outer slice. It is therefore advisable not to rely
-    /// on this for algorithms, and prefer outer_iterator_mut() which accesses
-    /// elements in storage order.
-    /// TODO: outer_iterator_mut is not yet implemented
+    /// on this for algorithms, and prefer [`outer_iterator_mut`](Self::outer_iterator_mut)
+    /// which accesses elements in storage order.
+    /// TODO: `outer_iterator_mut` is not yet implemented
     pub fn get_mut(&mut self, i: usize, j: usize) -> Option<&mut N> {
         match self.storage {
             CSR => self.get_outer_inner_mut(i, j),
@@ -1425,13 +1418,13 @@ where
         }
     }
 
-    /// Get a mutable reference to an element given its outer_ind and inner_ind.
+    /// Get a mutable reference to an element given its `outer_ind` and `inner_ind`.
     /// Will return None if there is no non-zero element at this location.
     ///
     /// This access is logarithmic in the number of non-zeros
     /// in the corresponding outer slice. It is therefore advisable not to rely
-    /// on this for algorithms, and prefer outer_iterator_mut() which accesses
-    /// elements in storage order.
+    /// on this for algorithms, and prefer [`outer_iterator_mut`](Self::outer_iterator_mut)
+    /// which accesses elements in storage order.
     pub fn get_outer_inner_mut(
         &mut self,
         outer_ind: usize,
@@ -1513,8 +1506,8 @@ where
     ///
     /// # Panics
     ///
-    /// If the resulting matrix breaks the CsMat invariants (sorted indices,
-    /// no out of bounds indices).
+    /// If the resulting matrix breaks the `CsMat` invariants
+    /// (sorted indices, no out of bounds indices).
     ///
     /// # Example
     ///
@@ -1664,12 +1657,13 @@ pub mod raw {
 impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     CsMatBase<N, I, Vec<Iptr>, &'a [I], &'a [N], Iptr>
 {
-    /// Create a borrowed row or column CsMat matrix from raw data,
+    /// Create a borrowed row or column `CsMat` matrix from raw data,
     /// without checking their validity
     ///
     /// # Safety
     /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by check_compressed_structure are enforced.
+    /// that properties guaranteed by
+    /// [`check_compressed_structure`](Self::check_compressed_structure) are enforced.
     /// For instance, non out-of-bounds indices can be relied upon to
     /// perform unchecked slice access.
     pub unsafe fn new_vecview_raw(
@@ -1873,13 +1867,13 @@ where
 
     fn add(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         match (self.storage(), rhs.is_standard_layout()) {
-            (CSR, true) => binop::add_dense_mat_same_ordering(
+            (CSR, true) | (CSC, false) => binop::add_dense_mat_same_ordering(
                 self,
                 rhs,
                 N::one(),
                 N::one(),
             ),
-            (CSR, false) => {
+            (CSR, false) | (CSC, true) => {
                 let lhs = self.to_other_storage();
                 binop::add_dense_mat_same_ordering(
                     &lhs,
@@ -1888,21 +1882,6 @@ where
                     N::one(),
                 )
             }
-            (CSC, true) => {
-                let lhs = self.to_other_storage();
-                binop::add_dense_mat_same_ordering(
-                    &lhs,
-                    rhs,
-                    N::one(),
-                    N::one(),
-                )
-            }
-            (CSC, false) => binop::add_dense_mat_same_ordering(
-                self,
-                rhs,
-                N::one(),
-                N::one(),
-            ),
         }
     }
 }

@@ -230,13 +230,13 @@ impl<I: SpIndex> LdlSymbolic<I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new<N>(mat: CsMatViewI<N, I>) -> LdlSymbolic<I>
+    pub fn new<N>(mat: CsMatViewI<N, I>) -> Self
     where
         N: Copy + PartialEq,
     {
         assert_eq!(mat.rows(), mat.cols());
         let perm: Permutation<I, Vec<I>> = Permutation::identity(mat.rows());
-        LdlSymbolic::new_perm(mat, perm, SymmetryCheck::CheckSymmetry)
+        Self::new_perm(mat, perm, SymmetryCheck::CheckSymmetry)
     }
 
     /// Compute the symbolic decomposition L D L^T = P A P^T
@@ -252,7 +252,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
         mat: CsMatViewI<N, I>,
         perm: PermOwnedI<I>,
         check_symmetry: SymmetryCheck,
-    ) -> LdlSymbolic<I>
+    ) -> Self
     where
         N: Copy + PartialEq,
         I: SpIndex,
@@ -273,7 +273,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
             check_symmetry,
         );
 
-        LdlSymbolic {
+        Self {
             colptr: l_colptr,
             parents,
             nz: l_nz,
@@ -427,7 +427,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     }
 }
 
-/// Perform a symbolic LDLt decomposition of a symmetric sparse matrix
+/// Perform a symbolic LDLT decomposition of a symmetric sparse matrix
 pub fn ldl_symbolic<N, I, PStorage>(
     mat: CsMatViewI<N, I>,
     perm: &Permutation<I, PStorage>,
@@ -483,7 +483,7 @@ pub fn ldl_symbolic<N, I, PStorage>(
 
 /// Perform numeric LDLT decomposition
 ///
-/// pattern_workspace is a DStack of capacity n
+/// `pattern_workspace` is a [`DStack`](DStack) of capacity n
 #[allow(clippy::too_many_arguments)]
 pub fn ldl_numeric<N, I, PStorage>(
     mat: CsMatViewI<N, I>,

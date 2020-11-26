@@ -29,8 +29,8 @@ where
         panic!("Storage mismatch");
     }
 
-    let outer_dim = mats.iter().map(|x| x.outer_dims()).sum::<usize>();
-    let nnz = mats.iter().map(|x| x.nnz()).sum::<usize>();
+    let outer_dim = mats.iter().map(CsMatBase::outer_dims).sum::<usize>();
+    let nnz = mats.iter().map(CsMatBase::nnz).sum::<usize>();
 
     let mut res = CsMatI::empty(storage_type, inner_dim);
     res.reserve_outer_dim_exact(outer_dim);
@@ -53,12 +53,12 @@ where
     MatArray: AsRef<[CsMatViewI<'a, N, I, Iptr>]>,
 {
     let mats = mats.as_ref();
-    if mats.iter().all(|x| x.is_csr()) {
+    if mats.iter().all(CsMatBase::is_csr) {
         return same_storage_fast_stack(&mats);
     }
 
-    let mats_csr: Vec<_> = mats.iter().map(|x| x.to_csr()).collect();
-    let mats_csr_views: Vec<_> = mats_csr.iter().map(|x| x.view()).collect();
+    let mats_csr: Vec<_> = mats.iter().map(CsMatBase::to_csr).collect();
+    let mats_csr_views: Vec<_> = mats_csr.iter().map(CsMatBase::view).collect();
     same_storage_fast_stack(&mats_csr_views)
 }
 
@@ -71,12 +71,12 @@ where
     MatArray: AsRef<[CsMatViewI<'a, N, I, Iptr>]>,
 {
     let mats = mats.as_ref();
-    if mats.iter().all(|x| x.is_csc()) {
+    if mats.iter().all(CsMatBase::is_csc) {
         return same_storage_fast_stack(&mats);
     }
 
-    let mats_csc: Vec<_> = mats.iter().map(|x| x.to_csc()).collect();
-    let mats_csc_views: Vec<_> = mats_csc.iter().map(|x| x.view()).collect();
+    let mats_csc: Vec<_> = mats.iter().map(CsMatBase::to_csc).collect();
+    let mats_csc_views: Vec<_> = mats_csc.iter().map(CsMatBase::view).collect();
     same_storage_fast_stack(&mats_csc_views)
 }
 
@@ -116,7 +116,7 @@ where
         panic!("Dimension mismatch");
     }
 
-    if mats.iter().any(|x| x.as_ref().iter().all(|y| y.is_none())) {
+    if mats.iter().any(|x| x.as_ref().iter().all(Option::is_none)) {
         panic!("Empty bmat row");
     }
     if (0..super_cols).any(|j| mats.iter().all(|x| x.as_ref()[j].is_none())) {
@@ -150,14 +150,14 @@ where
             .enumerate()
             .map(|(j, m)| {
                 let shape = (rows_per_row[i], cols_per_col[j]);
-                m.as_ref().map_or(CsMatI::zero(shape), |x| x.to_owned())
+                m.as_ref().map_or(CsMatI::zero(shape), CsMatBase::to_owned)
             })
             .collect();
-        let borrows: Vec<_> = with_zeros.iter().map(|x| x.view()).collect();
+        let borrows: Vec<_> = with_zeros.iter().map(CsMatBase::view).collect();
         let stacked = hstack(&borrows);
         to_vstack.push(stacked);
     }
-    let borrows: Vec<_> = to_vstack.iter().map(|x| x.view()).collect();
+    let borrows: Vec<_> = to_vstack.iter().map(CsMatBase::view).collect();
     vstack(&borrows)
 }
 

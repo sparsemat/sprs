@@ -11,6 +11,7 @@ on:
 env:
     CARGO_TERM_COLOR: always
     RUSTFLAGS: -D warnings
+    CLIPPY_DISABLE_DOCS_LINKS: 1
 
 jobs:
   rustfmt:
@@ -61,7 +62,7 @@ jobs:
         profile: minimal
         components: clippy
     - name: Run Clippy
-      run: cargo clippy --workspace --all-features
+      run: cargo clippy --workspace --all-features -- -W clippy::doc_markdown -W clippy::needless_borrow -W clippy::checked_conversions -W clippy::unseparated_literal_suffix -W clippy::unreadable_literal -W clippy::if_not_else -W clippy::needless_continue -W clippy::match_same_arms -W clippy::match_wildcard_for_single_variants -W clippy::explicit_into_iter_loop -W clippy::needless_borrow
 
   test:
     name: test

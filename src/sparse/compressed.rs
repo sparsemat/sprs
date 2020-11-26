@@ -3,8 +3,8 @@ use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 use std::ops::Deref;
 
-/// The SpMatView trait describes data that can be seen as a view
-/// into a CsMat
+/// The `SpMatView` trait describes data that can be seen as a view
+/// into a `CsMat`
 pub trait SpMatView<N, I: SpIndex, Iptr: SpIndex = I> {
     /// Return a view into the current matrix
     fn view(&self) -> CsMatViewI<N, I, Iptr>;
@@ -31,8 +31,8 @@ where
     }
 }
 
-/// The SpVecView trait describes types that can be seen as a view into
-/// a CsVec
+/// The `SpVecView` trait describes types that can be seen as a view into
+/// a `CsVec`
 pub trait SpVecView<N, I: SpIndex> {
     /// Return a view into the current vector
     fn view(&self) -> CsVecViewI<N, I>;

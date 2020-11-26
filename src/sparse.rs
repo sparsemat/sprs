@@ -286,15 +286,15 @@ pub(crate) mod utils {
     use super::*;
     use std::convert::TryInto;
 
-    /// Check the structure of CsMat components
+    /// Check the structure of `CsMat` components
     /// This will ensure that:
-    /// * indptr is of length outer_dim() + 1
-    /// * indices and data have the same length, nnz == indptr\[outer_dims()\]
+    /// * indptr is of length `outer_dim() + 1`
+    /// * indices and data have the same length, `nnz == indptr[outer_dims()]`
     /// * indptr is sorted
-    /// * indptr values do not exceed usize::MAX / 2, as that would mean
+    /// * indptr values do not exceed [`usize::MAX`](usize::MAX)`/ 2`, as that would mean
     ///   indices and indptr would take more space than the addressable memory
     /// * indices is sorted for each outer slice
-    /// * indices are lower than inner_dims()
+    /// * indices are lower than `inner_dims()`
     pub(crate) fn check_compressed_structure<I: SpIndex, Iptr: SpIndex>(
         inner: usize,
         outer: usize,

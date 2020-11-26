@@ -338,7 +338,7 @@ where
             );
         },
     );
-    res_indices.reserve(res_indices_chunks.iter().map(|x| x.len()).sum());
+    res_indices.reserve(res_indices_chunks.iter().map(Vec::len).sum());
     for res_indices_chunk in &res_indices_chunks {
         res_indices.extend_from_slice(res_indices_chunk);
     }

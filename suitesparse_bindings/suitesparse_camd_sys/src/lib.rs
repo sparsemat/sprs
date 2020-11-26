@@ -1,4 +1,4 @@
-//! FFI bindings to the SuiteSparse component CAMD
+//! FFI bindings to the `SuiteSparse` component CAMD
 //!
 //! For a static build activate the "static" feature, which builds CAMD
 //! from source and includes this statically.
