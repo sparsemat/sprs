@@ -281,8 +281,8 @@ pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
         super::utils::fastest_axis(rhs),
         super::utils::fastest_axis(out.view()),
     ) {
-        (CompressedStorage::CSR, Axis(1), Axis(1)) => (),
-        (CompressedStorage::CSC, Axis(0), Axis(0)) => (),
+        (CompressedStorage::CSR, Axis(1), Axis(1))
+        | (CompressedStorage::CSC, Axis(0), Axis(0)) => (),
         (_, _, _) => panic!("Storage mismatch"),
     }
     let slowest_axis = super::utils::slowest_axis(rhs);
