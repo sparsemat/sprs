@@ -180,6 +180,10 @@ where
 
 /// Compute alpha * lhs + beta * rhs with lhs a sparse matrix and rhs dense
 /// and alpha and beta scalars
+///
+/// The matrices must have the same ordering, a `CSR` matrix must be
+/// added with a matrix with `C`-like ordering, a `CSC` matrix
+/// must be added with a matrix with `F`-like ordering.
 pub fn add_dense_mat_same_ordering<N, I, Iptr, Mat, D>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
@@ -194,7 +198,8 @@ where
     D: ndarray::Data<Elem = N>,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
-    let mut res = if rhs.is_standard_layout() {
+    let is_clike_layout = super::utils::fastest_axis(rhs.view()) == Axis(1);
+    let mut res = if is_clike_layout {
         Array::zeros(shape)
     } else {
         Array::zeros(shape.f())
@@ -210,6 +215,10 @@ where
 
 /// Compute coeff wise `alpha * lhs * rhs` with `lhs` a sparse matrix,
 /// `rhs` a dense matrix, and `alpha` a scalar
+///
+/// The matrices must have the same ordering, a `CSR` matrix must be
+/// multiplied with a matrix with `C`-like ordering, a `CSC` matrix
+/// must be multiplied with a matrix with `F`-like ordering.
 pub fn mul_dense_mat_same_ordering<N, I, Iptr, Mat, D>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
@@ -223,7 +232,8 @@ where
     D: ndarray::Data<Elem = N>,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
-    let mut res = if rhs.is_standard_layout() {
+    let is_clike_layout = super::utils::fastest_axis(rhs.view()) == Axis(1);
+    let mut res = if is_clike_layout {
         Array::zeros(shape)
     } else {
         Array::zeros(shape.f())
@@ -239,6 +249,15 @@ where
 
 /// Raw implementation of sparse/dense binary operations with the same
 /// ordering
+///
+/// # Panics
+///
+/// On dimension mismatch
+///
+/// On storage mismatch. The storage for the matrices must either be
+/// `lhs = CSR` with `rhs` and `out` with `Axis(1)` as the fastest dimension,
+/// or
+/// `lhs = CSC` with `rhs` and `out` with `Axis(0)` as the fastest dimension,
 pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
     lhs: CsMatViewI<'a, N, I, Iptr>,
     rhs: ArrayView<'a, N, Ix2>,
@@ -259,22 +278,18 @@ pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
     }
     match (
         lhs.storage(),
-        rhs.is_standard_layout(),
-        out.is_standard_layout(),
+        super::utils::fastest_axis(rhs),
+        super::utils::fastest_axis(out.view()),
     ) {
-        (CompressedStorage::CSR, true, true)
-        | (CompressedStorage::CSC, false, false) => (),
+        (CompressedStorage::CSR, Axis(1), Axis(1))
+        | (CompressedStorage::CSC, Axis(0), Axis(0)) => (),
         (_, _, _) => panic!("Storage mismatch"),
     }
-    let outer_axis = if rhs.is_standard_layout() {
-        Axis(0)
-    } else {
-        Axis(1)
-    };
+    let slowest_axis = super::utils::slowest_axis(rhs);
     for ((mut orow, lrow), rrow) in out
-        .axis_iter_mut(outer_axis)
+        .axis_iter_mut(slowest_axis)
         .zip(lhs.outer_iterator())
-        .zip(rhs.axis_iter(outer_axis))
+        .zip(rhs.axis_iter(slowest_axis))
     {
         // now some equivalent of nnz_or_zip is needed
         for items in orow
@@ -504,5 +519,83 @@ mod test {
         let expected_output = Array::eye(3);
 
         assert_eq!(c, expected_output);
+    }
+
+    #[test]
+    fn mul_dense_strided() {
+        // Multiplication should yield dense matrices
+        // with the same fastest axis as input
+        let a = Array::from_elem((6, 6), 1.0);
+        let a = a.slice(ndarray::s![..;2, ..;2]);
+        let b = CsMat::eye(3);
+
+        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.0);
+        assert!(c.is_standard_layout());
+
+        let expected_output = Array::eye(3);
+        assert_eq!(c, expected_output);
+
+        use ndarray::ShapeBuilder;
+        let a = Array::from_elem((6, 6).f(), 1.0);
+        let a = a.slice(ndarray::s![..;2, ..;2]);
+        let b = CsMat::eye_csc(3);
+
+        let c = super::mul_dense_mat_same_ordering(&b, &a, 1.0);
+        assert!(c.t().is_standard_layout());
+
+        let expected_output = Array::eye(3);
+        assert_eq!(c, expected_output);
+    }
+
+    #[test]
+    fn binop_standard_layouts() {
+        use ndarray::ShapeBuilder;
+        let csr = CsMat::zero((3, 4));
+        let a = Array::from_elem((3, 4), 1.0);
+        let mut out = a.clone();
+        super::csmat_binop_dense_raw(
+            csr.view(),
+            a.view(),
+            |_, _| 0.0,
+            out.view_mut(),
+        );
+
+        let csc = CsMat::zero((3, 4)).into_csc();
+        let a = Array::from_elem((3, 4).f(), 1.0);
+        let mut out = Array::zeros((3, 4).f());
+        super::csmat_binop_dense_raw(
+            csc.view(),
+            a.view(),
+            |_, _| 0.0,
+            out.view_mut(),
+        );
+    }
+
+    #[test]
+    fn binop_strided_layouts() {
+        // Strided matrices are compatible if they have
+        // the same fastest dimension
+        use ndarray::{s, ShapeBuilder};
+        let csr = CsMat::zero((3, 4));
+        let a = Array::from_elem((3, 8), 1.0);
+        let a = a.slice(s![.., ..;2]);
+        let mut out = Array::zeros((3, 4));
+        super::csmat_binop_dense_raw(
+            csr.view(),
+            a.view(),
+            |_, _| 0.0,
+            out.view_mut(),
+        );
+
+        let csc = CsMat::zero((3, 4)).into_csc();
+        let a = Array::from_elem((3, 8).f(), 1.0);
+        let a = a.slice(s![.., ..;2]);
+        let mut out = Array::zeros((3, 4).f());
+        super::csmat_binop_dense_raw(
+            csc.view(),
+            a.view(),
+            |_, _| 0.0,
+            out.view_mut(),
+        );
     }
 }

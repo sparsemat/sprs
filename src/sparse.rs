@@ -284,6 +284,7 @@ pub trait SparseMat {
 
 pub(crate) mod utils {
     use super::*;
+    use ndarray::Axis;
     use std::convert::TryInto;
 
     /// Check the structure of `CsMat` components
@@ -389,6 +390,23 @@ pub(crate) mod utils {
             *v = x;
         }
     }
+    /// Return the axis which varies the fastest. For a
+    /// `C`-style matrix this will be `Axis(1)`, for an
+    /// 'F`-style matrix this will be `Axis(0)`
+    pub(crate) fn fastest_axis<T>(mat: ndarray::ArrayView2<T>) -> Axis {
+        if mat.strides()[1] > mat.strides()[0] {
+            Axis(0)
+        } else {
+            Axis(1)
+        }
+    }
+    pub(crate) fn slowest_axis<T>(mat: ndarray::ArrayView2<T>) -> Axis {
+        match fastest_axis(mat) {
+            Axis(1) => Axis(0),
+            Axis(0) => Axis(1),
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub mod binop;
@@ -432,5 +450,23 @@ mod test {
         assert!(!sorted_indices(&[2, 1, 3]));
         assert!(sorted_indices(&[1, 2]));
         assert!(sorted_indices(&[1]));
+    }
+
+    #[test]
+    fn test_fastest_axis() {
+        use ndarray::{arr2, s, Array2, Axis, ShapeBuilder};
+        use utils::fastest_axis;
+        let arr = arr2(&[[1, 2], [3, 4]]);
+        assert_eq!(fastest_axis(arr.view()), Axis(1));
+
+        let arr = Array2::<i32>::zeros((10, 9));
+        assert_eq!(fastest_axis(arr.view()), Axis(1));
+        let arrslice = arr.slice(s![..;2, ..;3]);
+        assert_eq!(fastest_axis(arrslice.view()), Axis(1));
+
+        let arr = Array2::<i32>::zeros((10, 9).f());
+        assert_eq!(fastest_axis(arr.view()), Axis(0));
+        let arrslice = arr.slice(s![..;2, ..;3]);
+        assert_eq!(fastest_axis(arrslice.view()), Axis(0));
     }
 }
