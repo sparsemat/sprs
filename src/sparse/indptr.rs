@@ -381,6 +381,19 @@ impl<Iptr: SpIndex> IndPtr<Iptr> {
             *val += Iptr::one();
         }
     }
+
+    /// Slice this indptr to include only the outer dimensions in the range
+    /// `start..end`.
+    pub(crate) fn middle_slice(
+        &self,
+        range: impl crate::range::Range,
+    ) -> IndPtrView<Iptr> {
+        let start = range.start().unwrap_or(0);
+        let end = range.end().unwrap_or(self.outer_dims());
+        IndPtrView {
+            storage: &self.storage[start..=end],
+        }
+    }
 }
 
 impl<'a, Iptr: SpIndex> IndPtrView<'a, Iptr> {
@@ -389,9 +402,10 @@ impl<'a, Iptr: SpIndex> IndPtrView<'a, Iptr> {
     /// in this view
     pub(crate) fn middle_slice(
         &self,
-        start: usize,
-        end: usize,
+        range: impl crate::range::Range,
     ) -> IndPtrView<'a, Iptr> {
+        let start = range.start().unwrap_or(0);
+        let end = range.end().unwrap_or(self.outer_dims());
         IndPtrView {
             storage: &self.storage[start..=end],
         }
