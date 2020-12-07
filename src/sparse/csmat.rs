@@ -1518,6 +1518,18 @@ where
             }
         })
     }
+
+    /// Return a mutable view into the current matrix
+    pub fn view_mut(&mut self) -> CsMatViewMutI<N, I, Iptr> {
+        CsMatViewMutI {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: crate::IndPtrView::new_trusted(self.indptr.raw_storage()),
+            indices: &self.indices[..],
+            data: &mut self.data[..],
+        }
+    }
 }
 
 impl<N, I, Iptr, IptrStorage, IndStorage, DataStorage>
