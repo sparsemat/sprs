@@ -48,3 +48,23 @@ impl Range for std::ops::RangeFull {
         None
     }
 }
+
+impl Range for std::ops::RangeInclusive<usize> {
+    fn start(&self) -> Option<usize> {
+        Some(*self.start())
+    }
+
+    fn end(&self) -> Option<usize> {
+        Some(*self.end() + 1)
+    }
+}
+
+impl Range for std::ops::RangeToInclusive<usize> {
+    fn start(&self) -> Option<usize> {
+        None
+    }
+
+    fn end(&self) -> Option<usize> {
+        Some(self.end + 1)
+    }
+}
