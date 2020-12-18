@@ -1140,7 +1140,7 @@ where
     }
 
     /// Get the diagonal of a sparse matrix
-    pub fn diag(&self) -> CsVecI<N, I> 
+    pub fn diag(&self) -> CsVecI<N, I>
     where
         N: Clone,
     {
@@ -1155,7 +1155,7 @@ where
                 Some(idx) => {
                     data_vec.push(self[idx].clone());
                     index_vec.push(I::from_usize(i));
-                },
+                }
                 None => (),
             }
         }
@@ -2248,7 +2248,7 @@ where
 mod test {
     use super::CompressedStorage::{CSC, CSR};
     use crate::errors::SprsError;
-    use crate::sparse::{CsMat, CsVec, CsMatI, CsMatView};
+    use crate::sparse::{CsMat, CsMatI, CsMatView, CsVec};
     use crate::test_data::{mat1, mat1_csc, mat1_times_2};
     use ndarray::{arr2, Array};
 
@@ -2823,7 +2823,6 @@ mod test {
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
         assert_eq!(diag, expected);
     }
-
 
     #[test]
     fn onehot_zero() {
