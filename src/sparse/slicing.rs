@@ -14,7 +14,7 @@ where
     where
         S: Range,
     {
-        let start = range.start().unwrap_or(0);
+        let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         if end < start {
             panic!("Invalid view");
@@ -46,7 +46,7 @@ where
     where
         S: Range,
     {
-        let start = range.start().unwrap_or(0);
+        let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         if end < start {
             panic!("Invalid view");
@@ -81,7 +81,7 @@ where
     where
         S: Range,
     {
-        let start = range.start().unwrap_or(0);
+        let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         if end < start {
             panic!("Invalid view");

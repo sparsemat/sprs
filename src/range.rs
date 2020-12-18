@@ -4,14 +4,14 @@
 
 /// Abstract over `std::ops::{Range,RangeFrom,RangeTo,RangeFull}`
 pub trait Range {
-    fn start(&self) -> Option<usize>;
+    fn start(&self) -> usize;
 
     fn end(&self) -> Option<usize>;
 }
 
 impl Range for std::ops::Range<usize> {
-    fn start(&self) -> Option<usize> {
-        Some(self.start)
+    fn start(&self) -> usize {
+        self.start
     }
 
     fn end(&self) -> Option<usize> {
@@ -20,8 +20,8 @@ impl Range for std::ops::Range<usize> {
 }
 
 impl Range for std::ops::RangeFrom<usize> {
-    fn start(&self) -> Option<usize> {
-        Some(self.start)
+    fn start(&self) -> usize {
+        self.start
     }
 
     fn end(&self) -> Option<usize> {
@@ -30,8 +30,8 @@ impl Range for std::ops::RangeFrom<usize> {
 }
 
 impl Range for std::ops::RangeTo<usize> {
-    fn start(&self) -> Option<usize> {
-        None
+    fn start(&self) -> usize {
+        0
     }
 
     fn end(&self) -> Option<usize> {
@@ -40,8 +40,8 @@ impl Range for std::ops::RangeTo<usize> {
 }
 
 impl Range for std::ops::RangeFull {
-    fn start(&self) -> Option<usize> {
-        None
+    fn start(&self) -> usize {
+        0
     }
 
     fn end(&self) -> Option<usize> {
@@ -50,8 +50,8 @@ impl Range for std::ops::RangeFull {
 }
 
 impl Range for std::ops::RangeInclusive<usize> {
-    fn start(&self) -> Option<usize> {
-        Some(*self.start())
+    fn start(&self) -> usize {
+        *self.start()
     }
 
     fn end(&self) -> Option<usize> {
@@ -60,8 +60,8 @@ impl Range for std::ops::RangeInclusive<usize> {
 }
 
 impl Range for std::ops::RangeToInclusive<usize> {
-    fn start(&self) -> Option<usize> {
-        None
+    fn start(&self) -> usize {
+        0
     }
 
     fn end(&self) -> Option<usize> {

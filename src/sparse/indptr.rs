@@ -388,7 +388,7 @@ impl<Iptr: SpIndex> IndPtr<Iptr> {
         &self,
         range: impl crate::range::Range,
     ) -> IndPtrView<Iptr> {
-        let start = range.start().unwrap_or(0);
+        let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         IndPtrView {
             storage: &self.storage[start..=end],
@@ -404,7 +404,7 @@ impl<'a, Iptr: SpIndex> IndPtrView<'a, Iptr> {
         &self,
         range: impl crate::range::Range,
     ) -> IndPtrView<'a, Iptr> {
-        let start = range.start().unwrap_or(0);
+        let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         IndPtrView {
             storage: &self.storage[start..=end],
