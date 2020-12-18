@@ -60,7 +60,7 @@ where
             nrows,
             ncols,
             storage: self.storage,
-            indptr: self.indptr.middle_slice(range),
+            indptr: self.indptr.middle_slice_rbr(range),
             indices: &self.indices[outer_inds_slice.clone()],
             data: &self.data[outer_inds_slice],
         }

@@ -691,7 +691,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
             storage: self.storage,
             nrows,
             ncols,
-            indptr: self.indptr.middle_slice(i..iend),
+            indptr: self.indptr.middle_slice_rbr(i..iend),
             indices: &self.indices[data_range.clone()],
             data: &self.data[data_range],
         }
