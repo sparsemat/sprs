@@ -1300,7 +1300,36 @@ where
         })
     }
 
-    /// Iteration on outer blocks of size block_size
+    /// Get the diagonal of a sparse matrix
+    pub fn diag(&self) -> CsVecI<N, I>
+    where
+        N: Clone,
+    {
+        let shape = self.shape();
+        let smallest_dim: usize = cmp::min(shape.0, shape.1);
+        // Assuming most matrices have dense diagonals, it seems prudent
+        // to allocate a bit of memory up front
+        let heuristic = smallest_dim / 2;
+        let mut index_vec = Vec::with_capacity(heuristic);
+        let mut data_vec = Vec::with_capacity(heuristic);
+
+        for i in 0..smallest_dim {
+            let optional_index = self.nnz_index(i, i);
+            if let Some(idx) = optional_index {
+                data_vec.push(self[idx].clone());
+                index_vec.push(I::from_usize(i));
+            }
+        }
+        data_vec.shrink_to_fit();
+        index_vec.shrink_to_fit();
+        CsVecI {
+            dim: smallest_dim,
+            indices: index_vec,
+            data: data_vec,
+        }
+    }
+
+    /// Iteration on outer blocks of size `block_size`
     pub fn outer_block_iter(
         &self,
         block_size: usize,
@@ -2418,7 +2447,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex> Iterator
 mod test {
     use super::CompressedStorage::{CSC, CSR};
     use crate::errors::SprsError;
-    use crate::sparse::{CsMat, CsMatI, CsMatView};
+    use crate::sparse::{CsMat, CsMatI, CsMatView, CsVec};
     use crate::test_data::{mat1, mat1_csc, mat1_times_2};
     use ndarray::{arr2, Array};
 
@@ -2973,6 +3002,44 @@ mod test {
 
         let degrees = mat.degrees();
         assert_eq!(&degrees, &[2, 0, 1, 2, 1],);
+    }
+
+    #[test]
+    fn diag() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let diag = mat.diag();
+        let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
+        assert_eq!(diag, expected);
+    }
+
+    #[test]
+    fn diag_rectangular() {
+        // | 1 0 0 3 1 3|
+        // | 0 2 0 0 0 0|
+        // | 0 0 0 1 0 1|
+        // | 3 0 1 1 0 0|
+        // | 1 0 0 0 1 0|
+        let mat = CsMat::new_csc(
+            (5, 6),
+            vec![0, 3, 4, 5, 8, 10, 12],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4, 0, 2],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1, 3, 1],
+        );
+
+        let diag = mat.diag();
+        let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
+        assert_eq!(diag, expected);
     }
 
     #[test]
