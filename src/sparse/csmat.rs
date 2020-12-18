@@ -2827,25 +2827,6 @@ mod test {
     }
 
     #[test]
-    fn diag_using_shrink_to_fit() {
-        // | 1 0 0 3 1 |
-        // | 0 0 0 0 0 |
-        // | 0 0 0 1 0 |
-        // | 3 0 1 0 0 |
-        // | 1 0 0 0 0 |
-        let mat = CsMat::new_csc(
-            (5, 5),
-            vec![0, 3, 3, 4, 6, 7],
-            vec![0, 3, 4, 3, 0, 2, 0],
-            vec![1, 3, 1, 1, 3, 1, 1],
-        );
-
-        let diag = mat.diag();
-        let expected = CsVec::new(5, vec![0], vec![1]);
-        assert_eq!(diag, expected);
-    }
-
-    #[test]
     fn diag_rectangular() {
         // | 1 0 0 3 1 3|
         // | 0 2 0 0 0 0|
