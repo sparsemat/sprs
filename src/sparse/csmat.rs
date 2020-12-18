@@ -1146,11 +1146,14 @@ where
     {
         let shape = self.shape();
         let smallest_dim: usize = cmp::min(shape.0, shape.1);
-        let mut index_vec = Vec::new();
-        let mut data_vec = Vec::new();
-        let mut optional_index: Option<NnzIndex>;
+        // Assuming most matrices have dense diagonals, it seems prudent
+        // to allocate a bit of memory up front
+        let heuristic = smallest_dim / 2;
+        let mut index_vec = Vec::with_capacity(heuristic);
+        let mut data_vec = Vec::with_capacity(heuristic);
+
         for i in 0..smallest_dim {
-            optional_index = self.nnz_index(i, i);
+            let optional_index = self.nnz_index(i, i);
             if let Some(idx) = optional_index {
                 data_vec.push(self[idx].clone());
                 index_vec.push(I::from_usize(i));
@@ -2814,6 +2817,25 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let diag = mat.diag();
+        let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
+        assert_eq!(diag, expected);
+    }
+
+    #[test]
+    fn diag_rectangular() {
+        // | 1 0 0 3 1 3|
+        // | 0 2 0 0 0 0|
+        // | 0 0 0 1 0 1|
+        // | 3 0 1 1 0 0|
+        // | 1 0 0 0 1 0|
+        let mat = CsMat::new_csc(
+            (5, 6),
+            vec![0, 3, 4, 5, 8, 10, 12],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4, 0, 2],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1, 3, 1],
         );
 
         let diag = mat.diag();
