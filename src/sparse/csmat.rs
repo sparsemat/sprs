@@ -1151,12 +1151,9 @@ where
         let mut optional_index: Option<NnzIndex>;
         for i in 0..smallest_dim {
             optional_index = self.nnz_index(i, i);
-            match optional_index {
-                Some(idx) => {
-                    data_vec.push(self[idx].clone());
-                    index_vec.push(I::from_usize(i));
-                }
-                None => (),
+            if let Some(idx) = optional_index {
+                data_vec.push(self[idx].clone());
+                index_vec.push(I::from_usize(i));
             }
         }
         CsVecI {
