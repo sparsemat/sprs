@@ -1159,6 +1159,8 @@ where
                 index_vec.push(I::from_usize(i));
             }
         }
+        data_vec.shrink_to_fit();
+        index_vec.shrink_to_fit();
         CsVecI {
             dim: smallest_dim,
             indices: index_vec,
