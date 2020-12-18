@@ -1139,6 +1139,33 @@ where
         })
     }
 
+    /// Get the diagonal of a sparse matrix
+    pub fn diag(&self) -> CsVecI<N, I> 
+    where
+        N: Clone,
+    {
+        let shape = self.shape();
+        let smallest_dim: usize = cmp::min(shape.0, shape.1);
+        let mut index_vec = Vec::new();
+        let mut data_vec = Vec::new();
+        let mut optional_index: Option<NnzIndex>;
+        for i in 0..smallest_dim {
+            optional_index = self.nnz_index(i, i);
+            match optional_index {
+                Some(idx) => {
+                    data_vec.push(self[idx].clone());
+                    index_vec.push(I::from_usize(i));
+                },
+                None => (),
+            }
+        }
+        CsVecI {
+            dim: smallest_dim,
+            indices: index_vec,
+            data: data_vec,
+        }
+    }
+
     /// Iteration on outer blocks of size `block_size`
     ///
     /// # Panics
@@ -2221,7 +2248,7 @@ where
 mod test {
     use super::CompressedStorage::{CSC, CSR};
     use crate::errors::SprsError;
-    use crate::sparse::{CsMat, CsMatI, CsMatView};
+    use crate::sparse::{CsMat, CsVec, CsMatI, CsMatView};
     use crate::test_data::{mat1, mat1_csc, mat1_times_2};
     use ndarray::{arr2, Array};
 
@@ -2777,6 +2804,26 @@ mod test {
         let degrees = mat.degrees();
         assert_eq!(&degrees, &[2, 0, 1, 2, 1],);
     }
+
+    #[test]
+    fn diag() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let diag = mat.diag();
+        let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
+        assert_eq!(diag, expected);
+    }
+
 
     #[test]
     fn onehot_zero() {
