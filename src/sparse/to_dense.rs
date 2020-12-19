@@ -1,6 +1,6 @@
-use super::CsMatViewI;
+use super::{CsMatViewI, CsVecViewI};
 use crate::indexing::SpIndex;
-use crate::Ix2;
+use crate::{Ix1, Ix2};
 ///! Utilities for sparse-to-dense conversion
 use ndarray::{ArrayViewMut, Axis};
 
@@ -35,8 +35,8 @@ pub fn assign_to_dense<N, I, Iptr>(
 #[cfg(test)]
 mod test {
     use crate::test_data::{mat1, mat3};
-    use crate::CsMat;
-    use ndarray::{arr2, Array};
+    use crate::{CsMat, CsVec};
+    use ndarray::{arr1, arr2, Array};
 
     #[test]
     fn to_dense() {
@@ -74,5 +74,40 @@ mod test {
             [0., 0., 0., 7.],
         ]);
         assert_eq!(expected2, res2);
+    }
+
+    #[test]
+    fn vector_to_dense() {
+        let spvec = CsVec::new(4, vec![1, 2, 3], vec![1_i32, 3, 4]);
+
+        let mut dvec = Array::zeros(4);
+
+        super::assign_vector_to_dense(dvec.view_mut(), spvec.view());
+
+        let expected = arr1(&[0_i32, 1, 3, 4]);
+        assert_eq!(dvec, expected);
+
+        let dvec2 = spvec.to_dense();
+        assert_eq!(dvec2, expected)
+    }
+}
+
+/// Assign a sparse vector into a dense vector
+///
+/// The dense vector will not be zeroed prior to assignment,
+/// so existing values not corresponding to non-zeroes will be preserved.
+pub fn assign_vector_to_dense<N, I>(
+    mut array: ArrayViewMut<N, Ix1>,
+    spvec: CsVecViewI<N, I>,
+) where
+    N: Clone,
+    I: SpIndex,
+{
+    if spvec.dim() != array.len() {
+        panic!("Dimension mismatch");
+    }
+
+    for (ind, val) in spvec.iter() {
+        array[[ind]] = val.clone();
     }
 }
