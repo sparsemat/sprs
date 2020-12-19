@@ -1177,6 +1177,15 @@ where
         }
     }
 
+    /// Iteration over all entries on the diagonal
+    pub fn diag_iter(
+        &self,
+    ) -> impl ExactSizeIterator<Item = Option<&N>>
+           + DoubleEndedIterator<Item = Option<&N>> {
+        let smallest_dim = cmp::min(self.ncols, self.nrows);
+        (0..smallest_dim).map(move |i| self.get_outer_inner(i, i))
+    }
+
     /// Iteration on outer blocks of size `block_size`
     ///
     /// # Panics
@@ -1545,6 +1554,32 @@ where
             indices: &self.indices[..],
             data: &mut self.data[..],
         }
+    }
+
+    /// Iteration over all entries on the diagonal
+    pub fn diag_iter_mut(
+        &mut self,
+    ) -> impl ExactSizeIterator<Item = Option<&mut N>>
+           + DoubleEndedIterator<Item = Option<&mut N>>
+           + '_ {
+        let data_ptr: *mut N = self.data[..].as_mut_ptr();
+        let smallest_dim = cmp::min(self.ncols, self.nrows);
+        (0..smallest_dim).map(move |i| {
+            let idx = self.nnz_index_outer_inner(i, i);
+            if let Some(NnzIndex(idx)) = idx {
+                // To obtain multiple mutable references to different
+                // locations in data we must use a pointer and some unsafe.
+                // # Safety
+                // This is safe as
+                // * NnzIndex provides bounds checking
+                // * diagonal entries are never overlapping in memory
+                // * no entries are requested more than once
+                // * nnz_index_outer_inner does not modify or read from entries in self.data
+                Some(unsafe { &mut *data_ptr.add(idx) })
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -2854,6 +2889,35 @@ mod test {
         let diag = mat.diag();
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
         assert_eq!(diag, expected);
+
+        let mut iter = mat.diag_iter();
+        assert_eq!(iter.next().unwrap(), Some(&1));
+        assert_eq!(iter.next().unwrap(), Some(&2));
+        assert_eq!(iter.next().unwrap(), None);
+        assert_eq!(iter.next().unwrap(), Some(&1));
+        assert_eq!(iter.next().unwrap(), Some(&1));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn diag_mut() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mut mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let mut diags = mat.diag_iter_mut().collect::<Vec<_>>();
+        diags[4].as_mut().map(|x| **x *= 3);
+        diags[3].as_mut().map(|x| **x -= 4);
+        let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, -3, 3]);
+        assert_eq!(mat.diag(), expected);
     }
 
     #[test]
@@ -2873,6 +2937,14 @@ mod test {
         let diag = mat.diag();
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
         assert_eq!(diag, expected);
+
+        let mut iter = mat.diag_iter();
+        assert_eq!(iter.next().unwrap(), Some(&1));
+        assert_eq!(iter.next().unwrap(), Some(&2));
+        assert_eq!(iter.next().unwrap(), None);
+        assert_eq!(iter.next().unwrap(), Some(&1));
+        assert_eq!(iter.next().unwrap(), Some(&1));
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
