@@ -46,6 +46,15 @@ mod serde_tests {
     }
 
     #[test]
+    fn roundtrip_matrix() {
+        let json_mat = r#"{ "storage": "CSR", "ncols": 10, "nrows": 2, "indptr": [0, 2, 3], "indices": [4, 6, 9], "data": [4, 1, 8] }"#;
+        let mat: CsMat<u8> = serde_json::from_str(&json_mat).unwrap();
+        let serialized = serde_json::to_string(&mat).unwrap();
+        let mat2 = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(mat, mat2);
+    }
+
+    #[test]
     fn invalid_matrices() {
         // indices not sorted
         let json_mat = r#"{ "storage": "CSR", "ncols": 10, "nrows": 2, "indptr": [0, 3, 3], "indices": [4, 9, 6], "data": [4, 1, 8] }"#;
