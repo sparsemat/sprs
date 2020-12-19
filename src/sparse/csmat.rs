@@ -616,7 +616,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
 /// These constructors can be used to create views over non-matrix data
 /// such as slices.
 impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
-    CsMatBase<N, I, &'a [Iptr], &'a [I], &'a [N], Iptr>
+    CsMatViewI<'a, N, I, Iptr>
 {
     /// Create a borrowed `CsMat` matrix from sliced data,
     /// checking their validity
@@ -626,7 +626,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         indptr: &'a [Iptr],
         indices: &'a [I],
         data: &'a [N],
-    ) -> Result<CsMatViewI<'a, N, I, Iptr>, SprsError> {
+    ) -> Result<Self, SprsError> {
         Self::new_checked(storage, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
@@ -646,7 +646,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         indptr: *const Iptr,
         indices: *const I,
         data: *const N,
-    ) -> CsMatViewI<'a, N, I, Iptr> {
+    ) -> Self {
         let (nrows, ncols) = shape;
         let outer = match storage {
             CSR => nrows,
