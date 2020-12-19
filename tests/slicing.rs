@@ -21,8 +21,7 @@ fn slice_outer_mut() {
     use sprs::CsMat;
     let size = 11;
     let mut csr: CsMat<f64> = CsMat::eye(size);
-    let mut csr_mut_view = csr.view_mut();
-    let mut sliced = csr_mut_view.slice_outer(2..7);
+    let mut sliced = csr.slice_outer_mut(2..7);
     sliced.scale(2.);
     let mut iter = sliced.into_iter();
     assert_eq!(iter.next().unwrap(), (&2., (0, 2)));
@@ -52,7 +51,7 @@ fn slice_outer_other_ranges() {
     use sprs::CsMat;
     let size = 11;
     let csr: CsMat<f64> = CsMat::eye(size);
-    let sliced = csr.view().slice_outer(..5);
+    let sliced = csr.slice_outer(..5);
     let mut iter = sliced.into_iter();
     assert_eq!(iter.next().unwrap(), (&1., (0, 0)));
     assert_eq!(iter.next().unwrap(), (&1., (1, 1)));
@@ -61,12 +60,12 @@ fn slice_outer_other_ranges() {
     assert_eq!(iter.next().unwrap(), (&1., (4, 4)));
     assert!(iter.next().is_none());
 
-    let sliced = csr.view().slice_outer(9..);
+    let sliced = csr.slice_outer(9..);
     let mut iter = sliced.into_iter();
     assert_eq!(iter.next().unwrap(), (&1., (0, 9)));
     assert_eq!(iter.next().unwrap(), (&1., (1, 10)));
     assert!(iter.next().is_none());
 
-    let sliced = csr.view().slice_outer(..);
+    let sliced = csr.slice_outer(..);
     assert_eq!(sliced, csr.view());
 }

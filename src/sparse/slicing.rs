@@ -2,18 +2,36 @@
 //! We're using a sealed trait to enable using ranges for an idiomatic API.
 
 use crate::range::Range;
+use crate::{CsMatBase, CsMatViewI, CsMatViewMutI, SpIndex};
+use std::ops::{Deref, DerefMut};
 
-impl<N, I, Iptr> crate::CsMatI<N, I, Iptr>
+impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
+    CsMatBase<N, I, IptrStorage, IStorage, DStorage, Iptr>
 where
-    I: crate::SpIndex,
-    Iptr: crate::SpIndex,
+    IptrStorage: Deref<Target = [Iptr]>,
+    IStorage: Deref<Target = [I]>,
+    DStorage: Deref<Target = [N]>,
 {
     /// Slice the outer dimension of the matrix according to the specified
     /// range.
-    pub fn slice_outer<S>(&self, range: S) -> crate::CsMatViewI<N, I, Iptr>
-    where
-        S: Range,
-    {
+    pub fn slice_outer<S: Range>(&self, range: S) -> CsMatViewI<N, I, Iptr> {
+        self.view().slice_outer_rbr(range)
+    }
+}
+
+impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
+    CsMatBase<N, I, IptrStorage, IStorage, DStorage, Iptr>
+where
+    IptrStorage: Deref<Target = [Iptr]>,
+    IStorage: Deref<Target = [I]>,
+    DStorage: DerefMut<Target = [N]>,
+{
+    /// Slice the outer dimension of the matrix according to the specified
+    /// range.
+    pub fn slice_outer_mut<S: Range>(
+        &mut self,
+        range: S,
+    ) -> CsMatViewMutI<N, I, Iptr> {
         let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         if end < start {
@@ -24,13 +42,13 @@ where
             crate::CSR => ((end - start), self.ncols),
             crate::CSC => (self.nrows, (end - start)),
         };
-        crate::CsMatViewI {
+        CsMatViewMutI {
             nrows,
             ncols,
             storage: self.storage,
             indptr: self.indptr.middle_slice(range),
             indices: &self.indices[outer_inds_slice.clone()],
-            data: &self.data[outer_inds_slice],
+            data: &mut self.data[outer_inds_slice],
         }
     }
 }
@@ -42,7 +60,10 @@ where
 {
     /// Slice the outer dimension of the matrix according to the specified
     /// range.
-    pub fn slice_outer<S>(&self, range: S) -> crate::CsMatViewI<'a, N, I, Iptr>
+    pub fn slice_outer_rbr<S>(
+        &self,
+        range: S,
+    ) -> crate::CsMatViewI<'a, N, I, Iptr>
     where
         S: Range,
     {
@@ -67,41 +88,6 @@ where
     }
 }
 
-impl<'a, N, I, Iptr> crate::CsMatViewMutI<'a, N, I, Iptr>
-where
-    I: crate::SpIndex,
-    Iptr: crate::SpIndex,
-{
-    /// Slice the outer dimension of the matrix according to the specified
-    /// range.
-    pub fn slice_outer<S>(
-        &mut self,
-        range: S,
-    ) -> crate::CsMatViewMutI<N, I, Iptr>
-    where
-        S: Range,
-    {
-        let start = range.start();
-        let end = range.end().unwrap_or_else(|| self.outer_dims());
-        if end < start {
-            panic!("Invalid view");
-        }
-        let outer_inds_slice = self.indptr.outer_inds_slice(start, end);
-        let (nrows, ncols) = match self.storage() {
-            crate::CSR => ((end - start), self.ncols),
-            crate::CSC => (self.nrows, (end - start)),
-        };
-        crate::CsMatViewMutI {
-            nrows,
-            ncols,
-            storage: self.storage,
-            indptr: self.indptr.middle_slice(range),
-            indices: &self.indices[outer_inds_slice.clone()],
-            data: &mut self.data[outer_inds_slice],
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::CsMat;
@@ -110,7 +96,7 @@ mod tests {
     fn slice_outer() {
         let size = 11;
         let csr: CsMat<f64> = CsMat::eye(size);
-        let sliced = csr.view().slice_outer(2..7);
+        let sliced = csr.slice_outer(2..7);
         let mut iter = sliced.into_iter();
         assert_eq!(iter.next().unwrap(), (&1., (0, 2)));
         assert_eq!(iter.next().unwrap(), (&1., (1, 3)));

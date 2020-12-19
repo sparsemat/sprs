@@ -1194,7 +1194,7 @@ where
             } else {
                 block_size
             };
-            self.view().slice_outer(i..i + count)
+            self.view().slice_outer_rbr(i..i + count)
         })
     }
 
