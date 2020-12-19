@@ -2,6 +2,11 @@
 Changelog
 =========
 
+- 0.9.3
+  - mitigate bugs in ``middle_outer_views``, that will require breaking changes
+    in 0.10 to be fully fixed.
+  - Add scalar mul for {u,i}{8,16}
+  - Add CsMatBase::diag
 - 0.9.2
     - Fix a crash on matrix products with 0 rows.
 - 0.9.1
