@@ -79,6 +79,7 @@ pub mod errors;
 pub mod indexing;
 pub mod io;
 pub mod num_kinds;
+mod range;
 mod sparse;
 pub mod stack;
 

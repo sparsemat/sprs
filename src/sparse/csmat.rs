@@ -667,6 +667,15 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     /// Get a view into count contiguous outer dimensions, starting from i.
     ///
     /// eg this gets the rows from i to i + count in a CSR matrix
+    ///
+    /// This function is now deprecated, as using an index and a count is not
+    /// ergonomic. The replacement, `slice_outer`, leverages the
+    /// `std::ops::Range` family of types, which is better integrated into the
+    /// ecosystem.
+    #[deprecated(
+        since = "0.10.0",
+        note = "Please use the `slice_outer` method instead"
+    )]
     pub fn middle_outer_views(
         &self,
         i: usize,
@@ -682,7 +691,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
             storage: self.storage,
             nrows,
             ncols,
-            indptr: self.indptr.middle_slice(i, iend),
+            indptr: self.indptr.middle_slice_rbr(i..iend),
             indices: &self.indices[data_range.clone()],
             data: &self.data[data_range],
         }
@@ -1185,7 +1194,7 @@ where
             } else {
                 block_size
             };
-            self.view().middle_outer_views(i, count)
+            self.view().slice_outer_rbr(i..i + count)
         })
     }
 
@@ -1517,6 +1526,18 @@ where
                 data: yield_data,
             }
         })
+    }
+
+    /// Return a mutable view into the current matrix
+    pub fn view_mut(&mut self) -> CsMatViewMutI<N, I, Iptr> {
+        CsMatViewMutI {
+            storage: self.storage,
+            nrows: self.nrows,
+            ncols: self.ncols,
+            indptr: crate::IndPtrView::new_trusted(self.indptr.raw_storage()),
+            indices: &self.indices[..],
+            data: &mut self.data[..],
+        }
     }
 }
 
@@ -2544,11 +2565,13 @@ mod test {
     fn middle_outer_views() {
         let size = 11;
         let csr: CsMat<f64> = CsMat::eye(size);
+        #[allow(deprecated)]
         let v = csr.view().middle_outer_views(1, 3);
         assert_eq!(v.shape(), (3, size));
         assert_eq!(v.nnz(), 3);
 
         let csc = csr.to_other_storage();
+        #[allow(deprecated)]
         let v = csc.view().middle_outer_views(1, 3);
         assert_eq!(v.shape(), (size, 3));
         assert_eq!(v.nnz(), 3);

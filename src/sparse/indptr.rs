@@ -82,6 +82,12 @@ where
         IndPtrBase { storage }
     }
 
+    pub fn view(&self) -> IndPtrView<Iptr> {
+        IndPtrView {
+            storage: &self.storage[..],
+        }
+    }
+
     /// The length of the underlying storage
     pub fn len(&self) -> usize {
         self.storage.len()
@@ -348,6 +354,15 @@ where
         // larger than the first, and that both can be represented as an usize
         self.storage.last().map(|i| *i - offset).unwrap_or(zero)
     }
+
+    /// Slice this indptr to include only the outer dimensions in the range
+    /// `start..end`.
+    pub(crate) fn middle_slice(
+        &self,
+        range: impl crate::range::Range,
+    ) -> IndPtrView<Iptr> {
+        self.view().middle_slice_rbr(range)
+    }
 }
 
 impl<Iptr: SpIndex> IndPtr<Iptr> {
@@ -387,11 +402,12 @@ impl<'a, Iptr: SpIndex> IndPtrView<'a, Iptr> {
     /// Slice this indptr to include only the outer dimensions in the range
     /// `start..end`. Reborrows to get the actual lifetime of the data wrapped
     /// in this view
-    pub(crate) fn middle_slice(
+    pub(crate) fn middle_slice_rbr(
         &self,
-        start: usize,
-        end: usize,
+        range: impl crate::range::Range,
     ) -> IndPtrView<'a, Iptr> {
+        let start = range.start();
+        let end = range.end().unwrap_or_else(|| self.outer_dims());
         IndPtrView {
             storage: &self.storage[start..=end],
         }

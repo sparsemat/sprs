@@ -40,3 +40,16 @@ using ``rustfmt`` on the latest stable Rust channel:
   cargo fmt --all
 
 .. _rustfmt: https://github.com/rust-lang-nursery/rustfmt
+
+Reborrowing
+===========
+
+Some methods return views of their containers, eg ``CsMatBase::slice_outer``
+returns a ``CsMatViewI``. However, in certain situations, mostly when
+implementing iterators, we are calling these kind of methods on a view, and
+need to take the lifetime of the view, not the lifetime of ``self`` in the
+method call. To deal with this issue, the method should in fact be implemented
+on the view type (on ``CsMatViewI`` in the example), with a ``_rbr`` suffix (
+``CsMatViewI::slice_outer_rbr`` in the example), and the implementation on the
+base type should simply call the view version (in the example, it should call
+``self.view().slice_outer_rbr(range)``).

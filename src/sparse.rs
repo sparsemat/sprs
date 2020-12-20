@@ -418,6 +418,7 @@ pub mod kronecker;
 pub mod linalg;
 pub mod permutation;
 pub mod prod;
+pub mod slicing;
 pub mod smmp;
 pub mod special_mats;
 pub mod symmetric;

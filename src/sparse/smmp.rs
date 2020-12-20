@@ -304,7 +304,7 @@ where
         } else {
             l_rows
         };
-        lhs_chunks.push(lhs.middle_outer_views(start, stop - start));
+        lhs_chunks.push(lhs.slice_outer(start..stop));
         res_indptr_chunks.push(vec![Iptr::zero(); stop - start + 1]);
         res_indices_chunks
             .push(Vec::with_capacity(lhs.nnz() + rhs.nnz() / chunk_size));
@@ -366,8 +366,7 @@ where
     for (row, nnz) in res_indptr.iter().enumerate() {
         let nnz = nnz.index();
         if nnz - split_nnz > chunk_size && row > 0 {
-            lhs_chunks
-                .push(lhs.middle_outer_views(split_row, row - 1 - split_row));
+            lhs_chunks.push(lhs.slice_outer(split_row..row - 1));
 
             res_indptr_chunks.push(&res_indptr[split_row..row]);
 
@@ -386,7 +385,7 @@ where
         }
         prev_nnz = nnz;
     }
-    lhs_chunks.push(lhs.middle_outer_views(split_row, lhs.rows() - split_row));
+    lhs_chunks.push(lhs.slice_outer(split_row..lhs.rows()));
     res_indptr_chunks.push(&res_indptr[split_row..]);
     res_indices_chunks.push(res_indices_rem);
     res_data_chunks.push(res_data_rem);
