@@ -77,6 +77,7 @@ assert_eq!(a, b.to_csc());
 pub mod array_backend;
 pub mod errors;
 pub mod indexing;
+#[cfg(not(miri))]
 pub mod io;
 pub mod num_kinds;
 mod range;
