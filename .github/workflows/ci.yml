@@ -218,3 +218,20 @@ jobs:
       run: |
           cd suitesparse_bindings/sprs_suitesparse_ldl
           cargo test --features suitesparse_ldl_sys/static
+  miri:
+    name: Miri
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with: {submodules: false}
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          profile: minimal
+          components: miri
+    - name: Run test
+      run: |
+          cargo miri test --no-default-features --features alga,approx,serde
