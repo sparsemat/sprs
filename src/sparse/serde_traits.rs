@@ -1,6 +1,33 @@
 use super::*;
-pub(crate) use serde::{Deserialize, Serialize};
+pub(crate) use serde::ser::SerializeStruct;
+pub(crate) use serde::{Deserialize, Serialize, Serializer};
 use std::convert::TryFrom;
+use std::ops::Deref;
+
+impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage> Serialize
+    for CsMatBase<N, I, IptrStorage, IStorage, DStorage, Iptr>
+where
+    Iptr: Serialize,
+    I: Serialize,
+    N: Serialize,
+    IptrStorage: Deref<Target = [Iptr]>,
+    IStorage: Deref<Target = [I]>,
+    DStorage: Deref<Target = [N]>,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("CsMatBase", 6)?;
+        state.serialize_field("storage", &self.storage)?;
+        state.serialize_field("nrows", &self.nrows)?;
+        state.serialize_field("ncols", &self.ncols)?;
+        state.serialize_field("indptr", &self.indptr.raw_storage())?;
+        state.serialize_field("indices", &self.indices[..])?;
+        state.serialize_field("data", &self.data[..])?;
+        state.end()
+    }
+}
 
 #[derive(Deserialize)]
 pub(crate) struct CsVecBaseShadow<IStorage, DStorage, N, I: SpIndex = usize>

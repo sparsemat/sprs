@@ -1,5 +1,6 @@
 #[cfg(feature = "serde")]
-fn main() {
+#[test]
+fn serialize() {
     use sprs::{CsMat, CsVecI};
     let v = CsVecI::new(5, vec![0_i32, 2, 4], vec![1., 2., 3.]);
     let serialized = bincode::serialize(&v.view()).unwrap();

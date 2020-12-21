@@ -84,7 +84,7 @@ pub use self::csmat::CompressedStorage;
 /// [`bmat`]: fn.bmat.html
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize))]
 #[cfg_attr(
     feature = "serde",
     serde(
