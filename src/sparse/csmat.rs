@@ -1508,22 +1508,29 @@ where
     /// This iterator yields mutable sparse vector views for each outer
     /// dimension. Only the non-zero values can be modified, the
     /// structure is kept immutable.
-    pub fn outer_iterator_mut(
-        &mut self,
-    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<N, I>>
-           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<N, I>>
-           + '_ {
+    pub fn outer_iterator_mut<'a>(
+        &'a mut self,
+    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<'a, N, I>>
+           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<'a, N, I>>
+           + 'a {
         let inner_dim = self.inner_dims();
         let indices = &self.indices[..];
-        let mut data = &mut self.data[..];
+        let data_ptr: *mut N = self.data.as_mut_ptr();
         self.indptr.iter_outer_sz().map(move |range| {
-            let tmp = mem::replace(&mut data, &mut []);
-            let (yield_data, next) = tmp.split_at_mut(range.end - range.start);
-            data = next;
+            // # Safety
+            // * ranges always point to exclusive parts of data
+            // * lifetime bound to &mut self
+            let data: &mut [N] = unsafe {
+                std::slice::from_raw_parts_mut(
+                    data_ptr.add(range.start),
+                    range.end - range.start,
+                )
+            };
+
             CsVecViewMutI {
                 dim: inner_dim,
                 indices: &indices[range],
-                data: yield_data,
+                data,
             }
         })
     }
