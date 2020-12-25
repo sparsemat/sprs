@@ -1,4 +1,6 @@
+use crate::sparse::to_dense::assign_vector_to_dense;
 use crate::Ix1;
+use ndarray::Array;
 use ndarray::{self, ArrayBase};
 use std::cmp;
 use std::collections::HashSet;
@@ -645,6 +647,16 @@ where
             indices,
             data,
         })
+    }
+
+    /// Convert the sparse vector to a dense one
+    pub fn to_dense(&self) -> Array<N, Ix1>
+    where
+        N: Clone + Zero,
+    {
+        let mut res = Array::zeros(self.dim());
+        assign_vector_to_dense(res.view_mut(), self.view());
+        res
     }
 
     /// Iterate over the non zero values.
