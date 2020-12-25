@@ -32,6 +32,26 @@ pub fn assign_to_dense<N, I, Iptr>(
     }
 }
 
+/// Assign a sparse vector into a dense vector
+///
+/// The dense vector will not be zeroed prior to assignment,
+/// so existing values not corresponding to non-zeroes will be preserved.
+pub fn assign_vector_to_dense<N, I>(
+    mut array: ArrayViewMut<N, Ix1>,
+    spvec: CsVecViewI<N, I>,
+) where
+    N: Clone,
+    I: SpIndex,
+{
+    if spvec.dim() != array.len() {
+        panic!("Dimension mismatch");
+    }
+
+    for (ind, val) in spvec.iter() {
+        array[[ind]] = val.clone();
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::test_data::{mat1, mat3};
@@ -89,25 +109,5 @@ mod test {
 
         let dvec2 = spvec.to_dense();
         assert_eq!(dvec2, expected)
-    }
-}
-
-/// Assign a sparse vector into a dense vector
-///
-/// The dense vector will not be zeroed prior to assignment,
-/// so existing values not corresponding to non-zeroes will be preserved.
-pub fn assign_vector_to_dense<N, I>(
-    mut array: ArrayViewMut<N, Ix1>,
-    spvec: CsVecViewI<N, I>,
-) where
-    N: Clone,
-    I: SpIndex,
-{
-    if spvec.dim() != array.len() {
-        panic!("Dimension mismatch");
-    }
-
-    for (ind, val) in spvec.iter() {
-        array[[ind]] = val.clone();
     }
 }
