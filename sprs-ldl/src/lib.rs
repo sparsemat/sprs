@@ -56,7 +56,7 @@ use std::ops::IndexMut;
 
 use num_traits::Num;
 
-use sprs::errors::SprsError;
+use sprs::errors::{LinalgError, SingularMatrixInfo};
 use sprs::indexing::SpIndex;
 use sprs::linalg;
 use sprs::stack::DStack;
@@ -189,7 +189,7 @@ impl Ldl {
     pub fn numeric<N, I>(
         self,
         mat: CsMatViewI<N, I>,
-    ) -> Result<LdlNumeric<N, I>, SprsError>
+    ) -> Result<LdlNumeric<N, I>, LinalgError>
     where
         I: SpIndex,
         N: Copy + Num + PartialOrd,
@@ -203,7 +203,7 @@ impl Ldl {
     pub fn numeric_c<N, I>(
         self,
         mat: CsMatViewI<N, I>,
-    ) -> Result<LdlNumericC, SprsError>
+    ) -> Result<LdlNumericC, LinalgError>
     where
         I: SpIndex,
         N: Copy + Num + PartialOrd + Into<f64>,
@@ -215,7 +215,7 @@ impl Ldl {
     pub fn numeric_c_long<N, I>(
         self,
         mat: CsMatViewI<N, I>,
-    ) -> Result<LdlLongNumeric, SprsError>
+    ) -> Result<LdlLongNumeric, LinalgError>
     where
         I: SpIndex,
         N: Copy + Num + PartialOrd + Into<f64>,
@@ -299,7 +299,7 @@ impl<I: SpIndex> LdlSymbolic<I> {
     pub fn factor<N>(
         self,
         mat: CsMatViewI<N, I>,
-    ) -> Result<LdlNumeric<N, I>, SprsError>
+    ) -> Result<LdlNumeric<N, I>, LinalgError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -328,7 +328,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// # Panics
     ///
     /// * if mat is not symmetric
-    pub fn new(mat: CsMatViewI<N, I>) -> Result<Self, SprsError>
+    pub fn new(mat: CsMatViewI<N, I>) -> Result<Self, LinalgError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -349,7 +349,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
         mat: CsMatViewI<N, I>,
         perm: PermOwnedI<I>,
         check_symmetry: SymmetryCheck,
-    ) -> Result<Self, SprsError>
+    ) -> Result<Self, LinalgError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -360,7 +360,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     /// Update the decomposition with the given matrix. The matrix must
     /// have the same non-zero pattern as the original matrix, otherwise
     /// the result is unspecified.
-    pub fn update(&mut self, mat: CsMatViewI<N, I>) -> Result<(), SprsError>
+    pub fn update(&mut self, mat: CsMatViewI<N, I>) -> Result<(), LinalgError>
     where
         N: Copy + Num + PartialOrd,
     {
@@ -497,7 +497,7 @@ pub fn ldl_numeric<N, I, PStorage>(
     y_workspace: &mut [N],
     pattern_workspace: &mut DStack<I>,
     flag_workspace: &mut [I],
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     N: Clone + Copy + PartialEq + Num + PartialOrd,
     I: SpIndex,
@@ -569,9 +569,10 @@ where
             l_nz[i] += I::one();
         }
         if diag[k] == N::zero() {
-            // FIXME should return info on k
-            // but this would need breaking change in sprs error type
-            return Err(SprsError::SingularMatrix);
+            return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+                index: k,
+                reason: "diagonal element is a numeric 0",
+            }));
         }
     }
     Ok(())

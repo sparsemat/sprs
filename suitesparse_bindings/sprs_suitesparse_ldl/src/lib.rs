@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use num_traits::Num;
-use sprs::errors::SprsError;
+use sprs::errors::LinalgError;
 use sprs::{CsMatI, CsMatViewI, PermOwnedI, SpIndex};
 use suitesparse_ldl_sys::*;
 
@@ -150,7 +150,7 @@ macro_rules! ldl_impl {
             pub fn factor<N, I>(
                 self,
                 mat: CsMatViewI<N, I>,
-            ) -> Result<$Numeric, SprsError>
+            ) -> Result<$Numeric, LinalgError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -180,7 +180,7 @@ macro_rules! ldl_impl {
             /// # Panics
             ///
             /// * if mat is not symmetric
-            pub fn new<N, I>(mat: CsMatViewI<N, I>) -> Result<Self, SprsError>
+            pub fn new<N, I>(mat: CsMatViewI<N, I>) -> Result<Self, LinalgError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -202,7 +202,7 @@ macro_rules! ldl_impl {
                 mat: CsMatViewI<N, I>,
                 perm: PermOwnedI<I>,
                 check_perm: sprs::PermutationCheck,
-            ) -> Result<Self, SprsError>
+            ) -> Result<Self, LinalgError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -221,7 +221,7 @@ macro_rules! ldl_impl {
             pub fn update<N, I>(
                 &mut self,
                 mat: CsMatViewI<N, I>,
-            ) -> Result<(), SprsError>
+            ) -> Result<(), LinalgError>
             where
                 N: Clone + Into<f64>,
                 I: SpIndex,
@@ -254,9 +254,10 @@ macro_rules! ldl_impl {
                     )
                 };
                 if ldl_retcode != n {
-                    // FIXME should return the value of ldl_retcode
-                    // but this would need breaking change in sprs error type
-                    return Err(SprsError::SingularMatrix);
+                    return Err(LinalgError::ThirdPartyError(
+                        ldl_retcode as isize,
+                        "LDL exited with error code",
+                    ));
                 }
                 Ok(())
             }

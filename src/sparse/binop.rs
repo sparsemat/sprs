@@ -1,4 +1,6 @@
-///! Sparse matrix addition, subtraction
+//! Sparse matrix addition, subtraction
+
+use crate::errors::StructureError;
 use crate::indexing::SpIndex;
 use crate::sparse::compressed::SpMatView;
 use crate::sparse::csmat::CompressedStorage;
@@ -12,7 +14,6 @@ use ndarray::{
 use num_traits::Num;
 
 use crate::Ix2;
-use crate::SpRes;
 
 /// Sparse matrix addition, with matrices sharing the same storage type
 pub fn add_mat_same_storage<N, I, Iptr, Mat1, Mat2>(
@@ -318,7 +319,7 @@ pub fn csvec_binop<N, I, F>(
     mut lhs: CsVecViewI<N, I>,
     mut rhs: CsVecViewI<N, I>,
     binop: F,
-) -> SpRes<CsVecI<N, I>>
+) -> Result<CsVecI<N, I>, StructureError>
 where
     N: Num,
     F: Fn(&N, &N) -> N,

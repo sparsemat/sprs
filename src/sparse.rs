@@ -1,5 +1,5 @@
 use crate::array_backend::Array2;
-use crate::errors::SprsError;
+use crate::errors::StructureError;
 use crate::indexing::SpIndex;
 use crate::IndPtrBase;
 use std::ops::Deref;
@@ -301,21 +301,22 @@ pub(crate) mod utils {
         outer: usize,
         indptr: &[Iptr],
         indices: &[I],
-    ) -> Result<(), SprsError> {
-        let indptr = crate::IndPtrView::new(indptr)?;
+    ) -> Result<(), StructureError> {
+        let indptr =
+            crate::IndPtrView::new_checked(indptr).map_err(|(_, e)| e)?;
         if indptr.len() != outer + 1 {
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::SizeMismatch(
                 "Indptr length does not match dimension",
             ));
         }
         // Make sure Iptr and I can represent all types for this size
         if I::from(inner).is_none() {
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::OutOfRange(
                 "Index type not large enough for this matrix",
             ));
         }
         if Iptr::from(outer + 1).is_none() {
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::OutOfRange(
                 "Iptr type not large enough for this matrix",
             ));
         }
@@ -323,14 +324,14 @@ pub(crate) mod utils {
         // this could happen if index is negative for sized types
         for i in indices.iter() {
             if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
+                return Err(StructureError::OutOfRange(
                     "Indices value out of range of usize",
                 ));
             }
         }
         let nnz = indices.len();
         if nnz != indptr.nnz() {
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::SizeMismatch(
                 "Indices length and inpdtr's nnz do not match",
             ));
         }
@@ -340,12 +341,12 @@ pub(crate) mod utils {
             let indices = &indices[range];
             // Indices must be monotonically increasing
             if !sorted_indices(indices) {
-                return Err(SprsError::NonSortedIndices);
+                return Err(StructureError::Unsorted("Indices are not sorted"));
             }
             // Last index (which is the largest) must be in bounds
             if let Some(i) = indices.last() {
                 if i.to_usize().unwrap() >= inner {
-                    return Err(SprsError::IllegalArguments(
+                    return Err(StructureError::OutOfRange(
                         "Indice is larger than inner dimension",
                     ));
                 }
