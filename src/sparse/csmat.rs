@@ -1517,11 +1517,11 @@ where
     /// This iterator yields mutable sparse vector views for each outer
     /// dimension. Only the non-zero values can be modified, the
     /// structure is kept immutable.
-    pub fn outer_iterator_mut<'a>(
-        &'a mut self,
-    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<'a, N, I>>
-           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<'a, N, I>>
-           + 'a {
+    pub fn outer_iterator_mut(
+        &mut self,
+    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<N, I>>
+           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<N, I>>
+           + '_ {
         let inner_dim = self.inner_dims();
         let indices = &self.indices[..];
         let data_ptr: *mut N = self.data.as_mut_ptr();
