@@ -1,4 +1,4 @@
-use sprs::errors::SprsError;
+use sprs::errors::LinalgError;
 use sprs::{CsStructureI, CsStructureViewI, PermOwnedI, SpIndex};
 use suitesparse_camd_sys::*;
 
@@ -19,16 +19,14 @@ const MAX_INT32: usize = std::u32::MAX as usize;
 /// This function will error if the passed matrix is not square.
 pub fn try_camd<I, Iptr>(
     mat: CsStructureViewI<I, Iptr>,
-) -> Result<PermOwnedI<I>, SprsError>
+) -> Result<PermOwnedI<I>, LinalgError>
 where
     I: SpIndex,
     Iptr: SpIndex,
 {
     let n = mat.rows();
     if n != mat.cols() {
-        return Err(SprsError::IllegalArguments(
-            "Input to camd must be square",
-        ));
+        return Err(LinalgError::NonSquareMatrix);
     }
     let mut control = [0.; CAMD_CONTROL];
     let mut info = [0.; CAMD_INFO];
@@ -74,7 +72,7 @@ where
     // CsMat invariants guarantee sorted and non duplicate indices so this
     // should not happen.
     if camd_res != CAMD_OK {
-        return Err(SprsError::NonSortedIndices);
+        panic!("CsMat invariants have been broken");
     }
     Ok(PermOwnedI::new(perm))
 }

@@ -47,7 +47,7 @@ where
     IStorage: Deref<Target = [I]>,
     DStorage: Deref<Target = [N]>,
 {
-    type Error = SprsError;
+    type Error = StructureError;
     fn try_from(
         val: CsVecBaseShadow<IStorage, DStorage, N, I>,
     ) -> Result<Self, Self::Error> {
@@ -81,7 +81,7 @@ where
     IptrStorage: Deref<Target = [Iptr]>,
     DStorage: Deref<Target = [N]>,
 {
-    type Error = SprsError;
+    type Error = StructureError;
     fn try_from(
         val: CsMatBaseShadow<N, I, IptrStorage, IndStorage, DStorage, Iptr>,
     ) -> Result<Self, Self::Error> {
@@ -113,11 +113,11 @@ impl<Iptr: SpIndex, Storage> TryFrom<IndPtrBaseShadow<Iptr, Storage>>
 where
     Storage: Deref<Target = [Iptr]>,
 {
-    type Error = SprsError;
+    type Error = StructureError;
     fn try_from(
         val: IndPtrBaseShadow<Iptr, Storage>,
     ) -> Result<Self, Self::Error> {
         let IndPtrBaseShadow { storage } = val;
-        Self::new(storage)
+        Self::new_checked(storage).map_err(|(_, e)| e)
     }
 }

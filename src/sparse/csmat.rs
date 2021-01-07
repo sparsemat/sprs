@@ -25,7 +25,7 @@ use ndarray::{self, Array, ArrayBase, ShapeBuilder};
 use crate::array_backend::Array2;
 use crate::indexing::SpIndex;
 
-use crate::errors::SprsError;
+use crate::errors::StructureError;
 use crate::sparse::binop;
 use crate::sparse::compressed::SpMatView;
 use crate::sparse::permutation::PermViewI;
@@ -150,7 +150,7 @@ where
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, (IptrStorage, IStorage, DStorage, SprsError)> {
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)> {
         let (nrows, ncols) = shape;
         let (inner, outer) = match storage {
             CSR => (ncols, nrows),
@@ -161,7 +161,7 @@ where
                 indptr,
                 indices,
                 data,
-                SprsError::IllegalArguments(
+                StructureError::SizeMismatch(
                     "data and indices have different sizes",
                 ),
             ));
@@ -198,7 +198,7 @@ where
         indptr: IptrStorage,
         mut indices: IStorage,
         mut data: DStorage,
-    ) -> Result<Self, (IptrStorage, IStorage, DStorage, SprsError)>
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
         N: Copy,
     {
@@ -212,7 +212,7 @@ where
                 indptr,
                 indices,
                 data,
-                SprsError::IllegalArguments(
+                StructureError::SizeMismatch(
                     "data and indices have different sizes",
                 ),
             ));
@@ -356,7 +356,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<Self, SprsError>
+    ) -> Result<Self, StructureError>
     where
         N: Copy,
     {
@@ -398,7 +398,7 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indptr: Vec<Iptr>,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<Self, SprsError>
+    ) -> Result<Self, StructureError>
     where
         N: Copy,
     {
@@ -626,7 +626,7 @@ impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
         indptr: &'a [Iptr],
         indices: &'a [I],
         data: &'a [N],
-    ) -> Result<Self, SprsError> {
+    ) -> Result<Self, StructureError> {
         Self::new_checked(storage, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
@@ -1281,12 +1281,12 @@ where
     ///   indices and indptr would take more space than the addressable memory
     /// * indices is sorted for each outer slice
     /// * indices are lower than `inner_dims()`
-    pub fn check_compressed_structure(&self) -> Result<(), SprsError> {
+    pub fn check_compressed_structure(&self) -> Result<(), StructureError> {
         let inner = self.inner_dims();
         let outer = self.outer_dims();
 
         if self.indices.len() != self.data.len() {
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::SizeMismatch(
                 "Indices and data lengths do not match",
             ));
         }
@@ -1517,11 +1517,11 @@ where
     /// This iterator yields mutable sparse vector views for each outer
     /// dimension. Only the non-zero values can be modified, the
     /// structure is kept immutable.
-    pub fn outer_iterator_mut<'a>(
-        &'a mut self,
-    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<'a, N, I>>
-           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<'a, N, I>>
-           + 'a {
+    pub fn outer_iterator_mut(
+        &mut self,
+    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<N, I>>
+           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<N, I>>
+           + '_ {
         let inner_dim = self.inner_dims();
         let indices = &self.indices[..];
         let data_ptr: *mut N = self.data.as_mut_ptr();
@@ -2312,7 +2312,7 @@ where
 #[cfg(test)]
 mod test {
     use super::CompressedStorage::{CSC, CSR};
-    use crate::errors::SprsError;
+    use crate::errors::StructureErrorKind;
     use crate::sparse::{CsMat, CsMatI, CsMatView, CsVec};
     use crate::test_data::{mat1, mat1_csc, mat1_times_2};
     use ndarray::{arr2, Array};
@@ -2407,8 +2407,10 @@ mod test {
         let data_ok: &[f64] = &[1., 1., 1.];
         let indptr_fail3: &[usize] = &[0, 2, 1, 3];
         assert_eq!(
-            CsMatView::new_view(CSR, (3, 3), indptr_fail3, indices_ok, data_ok),
-            Err(SprsError::UnsortedIndptr)
+            CsMatView::new_view(CSR, (3, 3), indptr_fail3, indices_ok, data_ok)
+                .unwrap_err()
+                .kind(),
+            StructureErrorKind::Unsorted
         );
     }
 
@@ -2422,8 +2424,10 @@ mod test {
             0.88132896, 0.72527863,
         ];
         assert_eq!(
-            CsMatView::new_view(CSR, (5, 5), indptr, indices, data),
-            Err(SprsError::NonSortedIndices)
+            CsMatView::new_view(CSR, (5, 5), indptr, indices, data)
+                .unwrap_err()
+                .kind(),
+            StructureErrorKind::Unsorted
         );
     }
 

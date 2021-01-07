@@ -31,7 +31,7 @@ use std::slice::{self, Iter, IterMut};
 use num_traits::{Float, Num, Signed, Zero};
 
 use crate::array_backend::Array2;
-use crate::errors::SprsError;
+use crate::errors::StructureError;
 use crate::indexing::SpIndex;
 use crate::sparse::csmat::CompressedStorage::{CSC, CSR};
 use crate::sparse::permutation::PermViewI;
@@ -506,13 +506,13 @@ impl<N, I: SpIndex> CsVecI<N, I> {
         n: usize,
         indices: Vec<I>,
         data: Vec<N>,
-    ) -> Result<Self, SprsError>
+    ) -> Result<Self, StructureError>
     where
         N: Copy,
     {
         let v = Self::new_(n, indices, data);
         match v {
-            Err((mut indices, mut data, SprsError::NonSortedIndices)) => {
+            Err((mut indices, mut data, StructureError::Unsorted(_))) => {
                 let mut buf = Vec::with_capacity(indices.len());
                 utils::sort_indices_data_slices(
                     &mut indices[..],
@@ -600,19 +600,19 @@ where
         n: usize,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, (IStorage, DStorage, SprsError)> {
+    ) -> Result<Self, (IStorage, DStorage, StructureError)> {
         if I::from(n).is_none() {
             return Err((
                 indices,
                 data,
-                SprsError::IllegalArguments("Index size is too small"),
+                StructureError::OutOfRange("Index size is too small"),
             ));
         }
         if indices.len() != data.len() {
             return Err((
                 indices,
                 data,
-                SprsError::IllegalArguments(
+                StructureError::SizeMismatch(
                     "indices and data do not have compatible lengths",
                 ),
             ));
@@ -622,21 +622,25 @@ where
                 return Err((
                     indices,
                     data,
-                    SprsError::IllegalArguments(
+                    StructureError::OutOfRange(
                         "index can not be converted to usize",
                     ),
                 ));
             }
         }
         if !utils::sorted_indices(indices.as_ref()) {
-            return Err((indices, data, SprsError::NonSortedIndices));
+            return Err((
+                indices,
+                data,
+                StructureError::Unsorted("Unsorted indices"),
+            ));
         }
         if let Some(i) = indices.last() {
             if i.to_usize().unwrap() >= n {
                 return Err((
                     indices,
                     data,
-                    SprsError::IllegalArguments(
+                    StructureError::SizeMismatch(
                         "indices larger than vector size",
                     ),
                 ));
@@ -722,13 +726,13 @@ where
     /// Check the sparse structure, namely that:
     /// - indices is sorted
     /// - indices are lower than dims()
-    pub fn check_structure(&self) -> Result<(), SprsError> {
+    pub fn check_structure(&self) -> Result<(), StructureError> {
         // Make sure indices can be converted to usize
         for i in self.indices.iter() {
             i.index();
         }
         if !utils::sorted_indices(&self.indices) {
-            return Err(SprsError::NonSortedIndices);
+            return Err(StructureError::Unsorted("Unsorted indices"));
         }
 
         if self.dim == 0 && self.indices.len() == 0 && self.data.len() == 0 {
@@ -742,7 +746,7 @@ where
             .unwrap_or(&I::zero())
             .index_unchecked();
         if max_ind >= self.dim {
-            return Err(SprsError::IllegalArguments("Out of bounds index"));
+            return Err(StructureError::OutOfRange("Out of bounds index"));
         }
 
         Ok(())
@@ -1081,7 +1085,7 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
         n: usize,
         indices: &'a [I],
         data: &'a [N],
-    ) -> Result<Self, SprsError> {
+    ) -> Result<Self, StructureError> {
         Self::new_(n, indices, data).map_err(|(_, _, e)| e)
     }
 

@@ -5,7 +5,7 @@
 
 #[cfg(feature = "serde")]
 use super::serde_traits::IndPtrBaseShadow;
-use crate::errors::SprsError;
+use crate::errors::StructureError;
 use crate::indexing::SpIndex;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -34,10 +34,12 @@ where
     Iptr: SpIndex,
     Storage: Deref<Target = [Iptr]>,
 {
-    pub(crate) fn check_structure(storage: &Storage) -> Result<(), SprsError> {
+    pub(crate) fn check_structure(
+        storage: &Storage,
+    ) -> Result<(), StructureError> {
         for i in storage.iter() {
             if i.try_index().is_none() {
-                return Err(SprsError::IllegalArguments(
+                return Err(StructureError::OutOfRange(
                     "Indptr value out of range of usize",
                 ));
             }
@@ -46,7 +48,7 @@ where
             .windows(2)
             .all(|x| x[0].index_unchecked() <= x[1].index_unchecked())
         {
-            return Err(SprsError::UnsortedIndptr);
+            return Err(StructureError::Unsorted("Unsorted indptr"));
         }
         if storage
             .last()
@@ -60,22 +62,26 @@ where
             // all available memory
             // This means we could have an isize, but in practice it's
             // easier to work with usize for indexing.
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::OutOfRange(
                 "An indptr value is larger than allowed",
             ));
         }
         if storage.len() == 0 {
             // An empty matrix has an inptr of size 1
-            return Err(SprsError::IllegalArguments(
+            return Err(StructureError::SizeMismatch(
                 "An indptr should have its len >= 1",
             ));
         }
         Ok(())
     }
 
-    pub fn new(storage: Storage) -> Result<Self, crate::errors::SprsError> {
-        IndPtrBase::check_structure(&storage)
-            .map(|_| IndPtrBase::new_trusted(storage))
+    pub fn new_checked(
+        storage: Storage,
+    ) -> Result<Self, (Storage, StructureError)> {
+        match IndPtrBase::check_structure(&storage) {
+            Ok(_) => Ok(IndPtrBase::new_trusted(storage)),
+            Err(e) => Err((storage, e)),
+        }
     }
 
     pub(crate) fn new_trusted(storage: Storage) -> Self {
@@ -440,29 +446,31 @@ mod tests {
     #[test]
     fn constructors() {
         let raw_valid = vec![0, 1, 2, 3];
-        assert!(IndPtr::new(raw_valid).is_ok());
+        assert!(IndPtr::new_checked(raw_valid).is_ok());
         let raw_valid = vec![0, 1, 2, 3];
-        assert!(IndPtrView::new(&raw_valid).is_ok());
+        assert!(IndPtrView::new_checked(&raw_valid).is_ok());
         // Indptr for an empty matrix
         let raw_valid = vec![0];
-        assert!(IndPtrView::new(&raw_valid).is_ok());
+        assert!(IndPtrView::new_checked(&raw_valid).is_ok());
         // Indptr for an empty matrix view
         let raw_valid = vec![1];
-        assert!(IndPtrView::new(&raw_valid).is_ok());
+        assert!(IndPtrView::new_checked(&raw_valid).is_ok());
 
         let raw_invalid = &[0, 2, 1];
         assert_eq!(
-            IndPtrView::new(raw_invalid).unwrap_err(),
-            crate::errors::SprsError::UnsortedIndptr
+            IndPtrView::new_checked(raw_invalid)
+                .map_err(|(_, e)| e.kind())
+                .unwrap_err(),
+            crate::errors::StructureErrorKind::Unsorted
         );
         let raw_invalid: &[usize] = &[];
-        assert!(IndPtrView::new(raw_invalid).is_err());
+        assert!(IndPtrView::new_checked(raw_invalid).is_err());
     }
 
     #[test]
     fn empty() {
-        assert!(IndPtrView::new(&[0]).unwrap().is_empty());
-        assert!(!IndPtrView::new(&[0, 1]).unwrap().is_empty());
+        assert!(IndPtrView::new_checked(&[0]).unwrap().is_empty());
+        assert!(!IndPtrView::new_checked(&[0, 1]).unwrap().is_empty());
         #[cfg(debug_assertions)]
         {
             #[should_panic]
@@ -476,32 +484,35 @@ mod tests {
 
     #[test]
     fn outer_dims() {
-        assert_eq!(IndPtrView::new(&[0]).unwrap().outer_dims(), 0);
-        assert_eq!(IndPtrView::new(&[0, 1]).unwrap().outer_dims(), 1);
-        assert_eq!(IndPtrView::new(&[2, 3, 5, 7]).unwrap().outer_dims(), 3);
+        assert_eq!(IndPtrView::new_checked(&[0]).unwrap().outer_dims(), 0);
+        assert_eq!(IndPtrView::new_checked(&[0, 1]).unwrap().outer_dims(), 1);
+        assert_eq!(
+            IndPtrView::new_checked(&[2, 3, 5, 7]).unwrap().outer_dims(),
+            3
+        );
     }
 
     #[test]
     fn is_proper() {
-        assert!(IndPtrView::new(&[0, 1]).unwrap().is_proper());
-        assert!(!IndPtrView::new(&[1, 2]).unwrap().is_proper());
+        assert!(IndPtrView::new_checked(&[0, 1]).unwrap().is_proper());
+        assert!(!IndPtrView::new_checked(&[1, 2]).unwrap().is_proper());
     }
 
     #[test]
     fn offset() {
-        assert_eq!(IndPtrView::new(&[0, 1]).unwrap().offset(), 0);
-        assert_eq!(IndPtrView::new(&[1, 2]).unwrap().offset(), 1);
+        assert_eq!(IndPtrView::new_checked(&[0, 1]).unwrap().offset(), 0);
+        assert_eq!(IndPtrView::new_checked(&[1, 2]).unwrap().offset(), 1);
     }
 
     #[test]
     fn nnz() {
-        assert_eq!(IndPtrView::new(&[0, 1]).unwrap().nnz(), 1);
-        assert_eq!(IndPtrView::new(&[1, 2]).unwrap().nnz(), 1);
+        assert_eq!(IndPtrView::new_checked(&[0, 1]).unwrap().nnz(), 1);
+        assert_eq!(IndPtrView::new_checked(&[1, 2]).unwrap().nnz(), 1);
     }
 
     #[test]
     fn outer_inds() {
-        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[0, 1, 3, 8]).unwrap();
         assert_eq!(iptr.outer_inds(0), 0..1);
         assert_eq!(iptr.outer_inds(1), 1..3);
         assert_eq!(iptr.outer_inds(2), 3..8);
@@ -511,7 +522,7 @@ mod tests {
 
     #[test]
     fn nnz_in_outer() {
-        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[0, 1, 3, 8]).unwrap();
         assert_eq!(iptr.nnz_in_outer(0), 1);
         assert_eq!(iptr.nnz_in_outer(1), 2);
         assert_eq!(iptr.nnz_in_outer(2), 5);
@@ -519,7 +530,7 @@ mod tests {
 
     #[test]
     fn outer_inds_slice() {
-        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[0, 1, 3, 8]).unwrap();
         assert_eq!(iptr.outer_inds_slice(0, 1), 0..1);
         assert_eq!(iptr.outer_inds_slice(0, 2), 0..3);
         assert_eq!(iptr.outer_inds_slice(1, 3), 1..8);
@@ -529,7 +540,7 @@ mod tests {
 
     #[test]
     fn iter_outer() {
-        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[0, 1, 3, 8]).unwrap();
         let mut iter = iptr.iter_outer();
         assert_eq!(iter.next().unwrap(), 0..1);
         assert_eq!(iter.next().unwrap(), 1..3);
@@ -539,7 +550,7 @@ mod tests {
 
     #[test]
     fn iter_outer_nnz_inds() {
-        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[0, 1, 3, 8]).unwrap();
         let mut iter = iptr.iter_outer_nnz_inds();
         assert_eq!(iter.next().unwrap(), 0);
         assert_eq!(iter.next().unwrap(), 1);
@@ -554,10 +565,10 @@ mod tests {
 
     #[test]
     fn compare_with_slices() {
-        let iptr = IndPtrView::new(&[0, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[0, 1, 3, 8]).unwrap();
         assert!(iptr == &[0, 1, 3, 8][..]);
         assert!(iptr == vec![0, 1, 3, 8]);
-        let iptr = IndPtrView::new(&[1, 1, 3, 8]).unwrap();
+        let iptr = IndPtrView::new_checked(&[1, 1, 3, 8]).unwrap();
         assert!(iptr == &[1, 1, 3, 8][..]);
     }
 }

@@ -1,4 +1,4 @@
-use crate::errors::SprsError;
+use crate::errors::{LinalgError, SingularMatrixInfo};
 use crate::indexing::SpIndex;
 use crate::sparse::vec;
 use crate::sparse::CsMatViewI;
@@ -36,7 +36,7 @@ fn check_solver_dimensions<N, I, Iptr, V: ?Sized>(
 pub fn lsolve_csr_dense_rhs<N, I, Iptr, V: ?Sized>(
     lower_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
@@ -69,7 +69,10 @@ where
             x = x - val * rhs[col_ind];
         }
         if diag_val == N::zero() {
-            return Err(SprsError::SingularMatrix);
+            return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+                index: row_ind,
+                reason: "diagonal element is 0",
+            }));
         }
         rhs[row_ind] = x / diag_val;
     }
@@ -89,7 +92,7 @@ where
 pub fn lsolve_csc_dense_rhs<N, I, Iptr, V: ?Sized>(
     lower_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
@@ -119,14 +122,17 @@ fn lspsolve_csc_process_col<N: Copy + Num, I, V: ?Sized>(
     col: CsVecViewI<N, I>,
     col_ind: usize,
     rhs: &mut V,
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     V: vec::VecDim<N> + IndexMut<usize, Output = N>,
     I: SpIndex,
 {
     if let Some(&diag_val) = col.get(col_ind) {
         if diag_val == N::zero() {
-            return Err(SprsError::SingularMatrix);
+            return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+                index: col_ind,
+                reason: "diagonal element is a numeric 0",
+            }));
         }
         let b = rhs[col_ind];
         let x = b / diag_val;
@@ -139,7 +145,10 @@ where
             rhs[row_ind] = b - val * x;
         }
     } else {
-        return Err(SprsError::SingularMatrix);
+        return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+            index: col_ind,
+            reason: "diagonal element is a structural 0",
+        }));
     }
     Ok(())
 }
@@ -157,7 +166,7 @@ where
 pub fn usolve_csc_dense_rhs<N, I, Iptr, V: ?Sized>(
     upper_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
@@ -180,7 +189,10 @@ where
     for (col_ind, col) in upper_tri_mat.outer_iterator().enumerate().rev() {
         if let Some(&diag_val) = col.get(col_ind) {
             if diag_val == N::zero() {
-                return Err(SprsError::SingularMatrix);
+                return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+                    index: col_ind,
+                    reason: "diagonal element is a numeric 0",
+                }));
             }
             let b = rhs[col_ind];
             let x = b / diag_val;
@@ -193,7 +205,10 @@ where
                 rhs[row_ind] = b - val * x;
             }
         } else {
-            return Err(SprsError::SingularMatrix);
+            return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+                index: col_ind,
+                reason: "diagonal element is a structural 0",
+            }));
         }
     }
 
@@ -210,7 +225,7 @@ where
 pub fn usolve_csr_dense_rhs<N, I, Iptr, V: ?Sized>(
     upper_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: &mut V,
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     N: Copy + Num,
     V: IndexMut<usize, Output = N> + vec::VecDim<N>,
@@ -242,7 +257,10 @@ where
             x = x - val * rhs[col_ind];
         }
         if diag_val == N::zero() {
-            return Err(SprsError::SingularMatrix);
+            return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
+                index: row_ind,
+                reason: "diagonal element is a numeric 0",
+            }));
         }
         rhs[row_ind] = x / diag_val;
     }
@@ -277,7 +295,7 @@ pub fn lsolve_csc_sparse_rhs<N, I, Iptr>(
     dstack: &mut DStack<StackVal<usize>>,
     x_workspace: &mut [N],
     visited: &mut [bool],
-) -> Result<(), SprsError>
+) -> Result<(), LinalgError>
 where
     N: Copy + Num,
     I: SpIndex,

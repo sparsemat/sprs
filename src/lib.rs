@@ -134,8 +134,6 @@ pub use crate::sparse::to_dense::assign_to_dense;
 /// columns.
 pub type Shape = (usize, usize); // FIXME: maybe we could use Ix2 here?
 
-pub type SpRes<T> = Result<T, errors::SprsError>;
-
 /// Configuration enum to ask for symmetry checks in algorithms
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum SymmetryCheck {
