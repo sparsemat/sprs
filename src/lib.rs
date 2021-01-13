@@ -26,7 +26,7 @@ It features a sparse matrix type, [**`CsMat`**](struct.CsMatBase.html), and a sp
 Matrix construction:
 
 ```rust
-use sprs::TriMat;
+use sprs::{CsMat, TriMat};
 
 let mut a = TriMat::new((4, 4));
 a.add_triplet(0, 0, 3.0_f64);
@@ -35,7 +35,7 @@ a.add_triplet(3, 0, -2.0);
 
 // This matrix type does not allow computations, and must to
 // converted to a compatible sparse type, using for example
-let b = a.to_csr();
+let b: CsMat<_> = a.to_csr();
 ```
 
 Constructing matrix using the more efficient direct sparse constructor

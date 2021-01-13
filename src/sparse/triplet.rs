@@ -257,7 +257,7 @@ where
     }
 
     /// Create a CSC matrix from this triplet matrix
-    pub fn to_csc(&self) -> CsMatI<N, I>
+    pub fn to_csc<Iptr: SpIndex>(&self) -> CsMatI<N, I, Iptr>
     where
         N: Clone + Num,
     {
@@ -265,7 +265,7 @@ where
     }
 
     /// Create a CSR matrix from this triplet matrix
-    pub fn to_csr(&self) -> CsMatI<N, I>
+    pub fn to_csr<Iptr: SpIndex>(&self) -> CsMatI<N, I, Iptr>
     where
         N: Clone + Num,
     {
