@@ -508,7 +508,7 @@ mod test {
     fn read_write_read_matrix_market_via_csc() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
-        let csc = mat.to_csc();
+        let csc: CsMat<_> = mat.to_csc();
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("simple_csc.mm");
         write_matrix_market(&save_path, &csc).unwrap();

@@ -3010,7 +3010,7 @@ mod test {
         m1.add_triplet(0, 1, 6);
         m1.add_triplet(0, 8, 5);
         m1.add_triplet(4, 2, 4);
-        let mut m1 = m1.to_csr();
+        let mut m1: CsMat<_> = m1.to_csr();
 
         m1 *= 2;
         for (&v, (j, i)) in m1.iter() {
@@ -3033,7 +3033,7 @@ mod test {
         m1.add_triplet(0, 1, 6);
         m1.add_triplet(0, 8, 5);
         m1.add_triplet(4, 2, 4);
-        let mut m1 = m1.to_csr();
+        let mut m1: CsMat<_> = m1.to_csr();
 
         m1 /= 2;
         for (&v, (j, i)) in m1.iter() {
@@ -3050,7 +3050,7 @@ mod test {
 
     #[test]
     fn issue_99() {
-        let a = crate::TriMat::<i32>::new((10, 1)).to_csc();
+        let a = crate::TriMat::<i32>::new((10, 1)).to_csc::<usize>();
         let b = crate::TriMat::<i32>::new((1, 9)).to_csr();
         let _c = &a * &b;
     }
@@ -3260,7 +3260,7 @@ mod approx_impls {
         fn different_shapes() {
             let mut m1 = TriMat::new((3, 2));
             m1.add_triplet(1, 1, 8_u8);
-            let m1 = m1.to_csr();
+            let m1: CsMat<_> = m1.to_csr();
             let mut m2 = TriMat::new((2, 3));
             m2.add_triplet(1, 1, 8_u8);
             let m2 = m2.to_csr();
@@ -3280,7 +3280,7 @@ mod approx_impls {
             m1.add_triplet(0, 8, 5_u8);
             m1.add_triplet(4, 2, 4_u8);
 
-            let m1 = m1.to_csr();
+            let m1: CsMat<_> = m1.to_csr();
             let m2 = m1.clone();
 
             ::approx::assert_abs_diff_eq!(m1, m2, epsilon = 0);
@@ -3299,7 +3299,7 @@ mod approx_impls {
             m1.add_triplet(0, 8, 5.0);
             m1.add_triplet(4, 2, 4.0);
 
-            let m1 = m1.to_csr();
+            let m1: CsMat<_> = m1.to_csr();
             let m2 = m1.clone();
 
             ::approx::assert_abs_diff_eq!(m1, m2);
@@ -3326,7 +3326,7 @@ mod approx_impls {
             m1.add_triplet(0, 1, 6.0);
             m1.add_triplet(0, 8, 5.0);
             m1.add_triplet(4, 2, 4.0);
-            let m1 = m1.to_csr();
+            let m1: CsMat<_> = m1.to_csr();
 
             let mut m2 = TriMat::new((6, 9));
             m2.add_triplet(1, 1, 8.0_f32);

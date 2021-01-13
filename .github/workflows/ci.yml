@@ -125,7 +125,7 @@ jobs:
       if: matrix.os == 'ubuntu-18.04'
 
     - name: Test (suitesparse integration)
-      run: cargo test -p sprs-ldl --features "sprs_suitesparse_ldl sprs_suitesparse_camd" -Zpackage-features
+      run: cargo test -p sprs-ldl --features "sprs-ldl/sprs_suitesparse_ldl sprs-ldl/sprs_suitesparse_camd"
       if: matrix.os == 'ubuntu-18.04' && matrix.build == 'nightly'
 
   benches:
