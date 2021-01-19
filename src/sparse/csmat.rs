@@ -1583,6 +1583,29 @@ where
     }
 }
 
+impl<'a, N, I, Iptr> CsMatViewMutI<'a, N, I, Iptr>
+where
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    pub(crate) fn new_trusted_mut_view(
+        storage: CompressedStorage,
+        shape: Shape,
+        indptr: &'a [Iptr],
+        indices: &'a [I],
+        data: &'a mut [N],
+    ) -> Self {
+        Self {
+            storage,
+            nrows: shape.0,
+            ncols: shape.1,
+            indptr: crate::IndPtrView::new_trusted(indptr),
+            indices,
+            data,
+        }
+    }
+}
+
 impl<N, I, Iptr, IptrStorage, IndStorage, DataStorage>
     CsMatBase<N, I, IptrStorage, IndStorage, DataStorage, Iptr>
 where
