@@ -1,19 +1,18 @@
+use crate::dense_vector::DenseVectorMut;
 use crate::errors::{LinalgError, SingularMatrixInfo};
 use crate::indexing::SpIndex;
-use crate::sparse::vec;
 use crate::sparse::CsMatViewI;
 use crate::sparse::CsVecViewI;
 use crate::stack::{self, DStack, StackVal};
 use num_traits::Num;
 /// Sparse triangular solves
-use std::ops::IndexMut;
 
-fn check_solver_dimensions<N, I, Iptr, V: ?Sized>(
+fn check_solver_dimensions<N, I, Iptr, V>(
     lower_tri_mat: &CsMatViewI<N, I, Iptr>,
     rhs: &V,
 ) where
     N: Copy + Num,
-    V: vec::VecDim<N>,
+    V: DenseVectorMut<N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -33,17 +32,17 @@ fn check_solver_dimensions<N, I, Iptr, V: ?Sized>(
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn lsolve_csr_dense_rhs<N, I, Iptr, V: ?Sized>(
+pub fn lsolve_csr_dense_rhs<N, I, Iptr, V>(
     lower_tri_mat: CsMatViewI<N, I, Iptr>,
-    rhs: &mut V,
+    mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num,
-    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    N: Copy + Num + std::ops::SubAssign,
+    V: DenseVectorMut<N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
-    check_solver_dimensions(&lower_tri_mat, rhs);
+    check_solver_dimensions(&lower_tri_mat, &rhs);
     if !lower_tri_mat.is_csr() {
         panic!("Storage mismatch");
     }
@@ -57,7 +56,7 @@ where
 
     for (row_ind, row) in lower_tri_mat.outer_iterator().enumerate() {
         let mut diag_val = N::zero();
-        let mut x = rhs[row_ind];
+        let mut x = *rhs.index(row_ind);
         for (col_ind, &val) in row.iter() {
             if col_ind == row_ind {
                 diag_val = val;
@@ -66,7 +65,7 @@ where
             if col_ind > row_ind {
                 continue;
             }
-            x = x - val * rhs[col_ind];
+            x -= val * *rhs.index(col_ind);
         }
         if diag_val == N::zero() {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -74,7 +73,7 @@ where
                 reason: "diagonal element is 0",
             }));
         }
-        rhs[row_ind] = x / diag_val;
+        *rhs.index_mut(row_ind) = x / diag_val;
     }
     Ok(())
 }
@@ -89,17 +88,17 @@ where
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn lsolve_csc_dense_rhs<N, I, Iptr, V: ?Sized>(
+pub fn lsolve_csc_dense_rhs<N, I, Iptr, V>(
     lower_tri_mat: CsMatViewI<N, I, Iptr>,
-    rhs: &mut V,
+    mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num,
-    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    N: Copy + Num + std::ops::SubAssign,
+    V: DenseVectorMut<N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
-    check_solver_dimensions(&lower_tri_mat, rhs);
+    check_solver_dimensions(&lower_tri_mat, &rhs);
     if !lower_tri_mat.is_csc() {
         panic!("Storage mismatch");
     }
@@ -113,18 +112,19 @@ where
     // L_1_1 x1 = b_1 - x0*l_1_0
 
     for (col_ind, col) in lower_tri_mat.outer_iterator().enumerate() {
-        lspsolve_csc_process_col(col, col_ind, rhs)?;
+        lspsolve_csc_process_col(col, col_ind, &mut rhs)?;
     }
     Ok(())
 }
 
-fn lspsolve_csc_process_col<N: Copy + Num, I, V: ?Sized>(
+fn lspsolve_csc_process_col<N, I, V>(
     col: CsVecViewI<N, I>,
     col_ind: usize,
     rhs: &mut V,
 ) -> Result<(), LinalgError>
 where
-    V: vec::VecDim<N> + IndexMut<usize, Output = N>,
+    N: Copy + Num + std::ops::SubAssign,
+    V: DenseVectorMut<N>,
     I: SpIndex,
 {
     if let Some(&diag_val) = col.get(col_ind) {
@@ -134,15 +134,14 @@ where
                 reason: "diagonal element is a numeric 0",
             }));
         }
-        let b = rhs[col_ind];
+        let b = *rhs.index(col_ind);
         let x = b / diag_val;
-        rhs[col_ind] = x;
+        *rhs.index_mut(col_ind) = x;
         for (row_ind, &val) in col.iter() {
             if row_ind <= col_ind {
                 continue;
             }
-            let b = rhs[row_ind];
-            rhs[row_ind] = b - val * x;
+            *rhs.index_mut(row_ind) -= val * x;
         }
     } else {
         return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -163,17 +162,17 @@ where
 /// is the diagonal element (thus actual sorted lower triangular matrices work
 /// best). Otherwise, logarithmic search for the diagonal element
 /// has to be performed for each column.
-pub fn usolve_csc_dense_rhs<N, I, Iptr, V: ?Sized>(
+pub fn usolve_csc_dense_rhs<N, I, Iptr, V>(
     upper_tri_mat: CsMatViewI<N, I, Iptr>,
-    rhs: &mut V,
+    mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num,
-    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    N: Copy + Num + std::ops::SubAssign,
+    V: DenseVectorMut<N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
-    check_solver_dimensions(&upper_tri_mat, rhs);
+    check_solver_dimensions(&upper_tri_mat, &rhs);
     if !upper_tri_mat.is_csc() {
         panic!("Storage mismatch");
     }
@@ -194,15 +193,14 @@ where
                     reason: "diagonal element is a numeric 0",
                 }));
             }
-            let b = rhs[col_ind];
+            let b = *rhs.index(col_ind);
             let x = b / diag_val;
-            rhs[col_ind] = x;
+            *rhs.index_mut(col_ind) = x;
             for (row_ind, &val) in col.iter() {
                 if row_ind >= col_ind {
                     continue;
                 }
-                let b = rhs[row_ind];
-                rhs[row_ind] = b - val * x;
+                *rhs.index_mut(row_ind) -= val * x;
             }
         } else {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -222,17 +220,17 @@ where
 ///
 /// This solve does not assume the input matrix to actually be
 /// triangular, instead it ignores the upper triangular part.
-pub fn usolve_csr_dense_rhs<N, I, Iptr, V: ?Sized>(
+pub fn usolve_csr_dense_rhs<N, I, Iptr, V>(
     upper_tri_mat: CsMatViewI<N, I, Iptr>,
-    rhs: &mut V,
+    mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num,
-    V: IndexMut<usize, Output = N> + vec::VecDim<N>,
+    N: Copy + Num + std::ops::SubAssign,
+    V: DenseVectorMut<N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
-    check_solver_dimensions(&upper_tri_mat, rhs);
+    check_solver_dimensions(&upper_tri_mat, &rhs);
     if !upper_tri_mat.is_csr() {
         panic!("Storage mismatch");
     }
@@ -245,7 +243,7 @@ where
     // x0 = (b_0 - u_0_1^T.x_1) / u_0_0
     for (row_ind, row) in upper_tri_mat.outer_iterator().enumerate().rev() {
         let mut diag_val = N::zero();
-        let mut x = rhs[row_ind];
+        let mut x = *rhs.index(row_ind);
         for (col_ind, &val) in row.iter() {
             if col_ind == row_ind {
                 diag_val = val;
@@ -254,7 +252,7 @@ where
             if col_ind < row_ind {
                 continue;
             }
-            x = x - val * rhs[col_ind];
+            x -= val * *rhs.index(col_ind);
         }
         if diag_val == N::zero() {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -262,7 +260,7 @@ where
                 reason: "diagonal element is a numeric 0",
             }));
         }
-        rhs[row_ind] = x / diag_val;
+        *rhs.index_mut(row_ind) = x / diag_val;
     }
     Ok(())
 }
@@ -289,15 +287,16 @@ where
 /// * if dstack is not empty
 /// * if `w_workspace` is not of length n
 ///
-pub fn lsolve_csc_sparse_rhs<N, I, Iptr>(
+pub fn lsolve_csc_sparse_rhs<N, I, Iptr, V>(
     lower_tri_mat: CsMatViewI<N, I, Iptr>,
     rhs: CsVecViewI<N, I>,
     dstack: &mut DStack<StackVal<usize>>,
-    x_workspace: &mut [N],
+    mut x_workspace: V,
     visited: &mut [bool],
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num,
+    N: Copy + Num + std::ops::SubAssign,
+    V: DenseVectorMut<N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -310,7 +309,7 @@ where
         dstack.is_left_empty() && dstack.is_right_empty(),
         "dstack should be empty"
     );
-    assert!(x_workspace.len() == n, "x should be of len n");
+    assert!(x_workspace.dim() == n, "x should be of len n");
 
     // the solve works out the sparsity of the solution using depth first
     // search on the matrix's graph
@@ -353,11 +352,11 @@ where
     }
 
     // solve for the non-zero values into dense workspace
-    rhs.scatter(x_workspace);
+    rhs.scatter(&mut x_workspace);
     for &ind in dstack.iter_right().map(stack::extract_stack_val) {
         println!("ind: {}", ind);
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
-        lspsolve_csc_process_col(col, ind, x_workspace)?;
+        lspsolve_csc_process_col(col, ind, &mut x_workspace)?;
     }
     Ok(())
 }
@@ -367,6 +366,7 @@ mod test {
 
     use crate::sparse::{CsMat, CsVec};
     use crate::stack::{self, DStack};
+    use ndarray::arr1;
     use std::collections::HashSet;
 
     #[test]
@@ -380,11 +380,11 @@ mod test {
             vec![0, 1, 0, 2],
             vec![1, 2, 1, 1],
         );
-        let b = vec![3, 2, 4];
+        let b = arr1(&[3, 2, 4]);
         let mut x = b.clone();
 
-        super::lsolve_csr_dense_rhs(l.view(), &mut x).unwrap();
-        assert_eq!(x, vec![3, 1, 1]);
+        super::lsolve_csr_dense_rhs(l.view(), x.view_mut()).unwrap();
+        assert_eq!(x, arr1(&[3, 1, 1]));
     }
 
     #[test]

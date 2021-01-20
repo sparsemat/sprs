@@ -75,6 +75,7 @@ assert_eq!(a, b.to_csc());
 */
 
 pub mod array_backend;
+mod dense_vector;
 pub mod errors;
 pub mod indexing;
 #[cfg(not(miri))]

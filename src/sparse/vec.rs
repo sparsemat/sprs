@@ -1,3 +1,4 @@
+use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::sparse::to_dense::assign_vector_to_dense;
 use crate::Ix1;
 use ndarray::Array;
@@ -341,67 +342,6 @@ where
     }
 
     fn index(self, idx: usize) -> &'a N {
-        &self[[idx]]
-    }
-}
-
-/// A trait for types representing dense vectors, useful for
-/// defining a fast sparse-dense dot product.
-pub trait DenseVector<N> {
-    /// The dimension of the vector
-    fn dim(&self) -> usize;
-
-    /// Random access to an element in the vector.
-    ///
-    /// # Panics
-    ///
-    /// If the index is out of bounds
-    fn index(&self, idx: usize) -> &N;
-}
-
-impl<'a, N: 'a> DenseVector<N> for &'a [N] {
-    fn dim(&self) -> usize {
-        self.len()
-    }
-
-    #[inline]
-    fn index(&self, idx: usize) -> &N {
-        &self[idx]
-    }
-}
-
-impl<N> DenseVector<N> for Vec<N> {
-    fn dim(&self) -> usize {
-        self.len()
-    }
-
-    #[inline]
-    fn index(&self, idx: usize) -> &N {
-        &self[idx]
-    }
-}
-
-impl<'a, N: 'a> DenseVector<N> for &'a Vec<N> {
-    fn dim(&self) -> usize {
-        self.len()
-    }
-
-    #[inline]
-    fn index(&self, idx: usize) -> &N {
-        &self[idx]
-    }
-}
-
-impl<N, S> DenseVector<N> for ArrayBase<S, Ix1>
-where
-    S: ndarray::Data<Elem = N>,
-{
-    fn dim(&self) -> usize {
-        self.shape()[0]
-    }
-
-    #[inline]
-    fn index(&self, idx: usize) -> &N {
         &self[[idx]]
     }
 }
@@ -1019,12 +959,12 @@ where
     }
 
     /// Fill a dense vector with our values
-    pub fn scatter(&self, out: &mut [N])
+    pub fn scatter<V: DenseVectorMut<N>>(&self, out: &mut V)
     where
         N: Clone,
     {
         for (ind, val) in self.iter() {
-            out[ind] = val.clone();
+            *out.index_mut(ind) = val.clone();
         }
     }
 
@@ -1911,6 +1851,17 @@ mod test {
         let mut vector = CsVec::new(4, vec![1, 2, 3], vec![1_i32, 3, 4]);
         vector /= 2;
         assert_eq!(vector, CsVec::new(4, vec![1, 2, 3], vec![0_i32, 1, 2]));
+    }
+
+    #[test]
+    fn scatter() {
+        let vector = CsVec::new(4, vec![1, 2, 3], vec![1_i32, 3, 4]);
+        let mut res = vec![0; 4];
+        vector.scatter(&mut res);
+        assert_eq!(res, &[0, 1, 3, 4]);
+        let mut res = Array::zeros(4);
+        vector.scatter(&mut res);
+        assert_eq!(res, ndarray::arr1(&[0, 1, 3, 4]));
     }
 
     #[cfg(feature = "approx")]
