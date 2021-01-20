@@ -4,7 +4,6 @@
 use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
-use crate::IndPtrView;
 use num_traits::Num;
 #[cfg(feature = "multi_thread")]
 use rayon::prelude::*;
@@ -79,40 +78,34 @@ pub fn thread_threading_strategy() -> ThreadingStrategy {
 /// `a_indptr.last().unwrap() + b_indptr.last.unwrap()` in `c_indices`.
 /// Therefore, to prevent this function from allocating, it is required
 /// to have reserved at least this amount of memory.
-#[allow(clippy::too_many_arguments)]
 pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
-    a_indptr: IndPtrView<Iptr>,
-    a_indices: &[I],
-    b_cols: usize,
-    b_indptr: IndPtrView<Iptr>,
-    b_indices: &[I],
+    a: CsStructureViewI<I, Iptr>,
+    b: CsStructureViewI<I, Iptr>,
     c_indptr: &mut [Iptr],
     // TODO look for litterature on the nnz of C to be able to have a slice here
     c_indices: &mut Vec<I>,
     seen: &mut [bool],
 ) {
-    assert!(a_indptr.len() == c_indptr.len());
-    let a_rows = a_indptr.len() - 1;
-    let b_rows = b_indptr.len() - 1;
-    let a_nnz = a_indptr.nnz();
-    let b_nnz = b_indptr.nnz();
+    assert!(a.indptr().len() == c_indptr.len());
+    let a_nnz = a.nnz();
+    let b_nnz = b.nnz();
     c_indices.clear();
     c_indices.reserve_exact(a_nnz + b_nnz);
 
-    let ind_len = a_rows.max(b_rows.max(b_cols));
-    assert!(seen.len() == ind_len);
+    assert_eq!(a.cols(), b.rows());
+    assert!(seen.len() == b.cols());
     for elt in seen.iter_mut() {
         *elt = false;
     }
 
     c_indptr[0] = Iptr::from_usize(0);
-    for (a_row, a_range) in a_indptr.iter_outer_sz().enumerate() {
+    for (a_row, a_range) in a.indptr().iter_outer_sz().enumerate() {
         let mut length = 0;
 
-        for &a_col in &a_indices[a_range] {
+        for &a_col in &a.indices()[a_range] {
             let b_row = a_col.index();
-            let b_range = b_indptr.outer_inds_sz(b_row);
-            for b_col in &b_indices[b_range] {
+            let b_range = b.indptr().outer_inds_sz(b_row);
+            for b_col in &b.indices()[b_range] {
                 let b_col = b_col.index();
                 if !seen[b_col] {
                     seen[b_col] = true;
@@ -151,51 +144,36 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
 /// (though some cases might go unnoticed).
 ///
 /// The parts for the C matrix should come from the `symbolic` function.
-#[allow(clippy::too_many_arguments)]
 pub fn numeric<
     Iptr: SpIndex,
     I: SpIndex,
     N: Num + Copy + std::ops::AddAssign,
 >(
-    a_indptr: IndPtrView<Iptr>,
-    a_indices: &[I],
-    a_data: &[N],
-    b_indptr: IndPtrView<Iptr>,
-    b_indices: &[I],
-    b_data: &[N],
-    c_indptr: &[Iptr],
-    c_indices: &[I],
-    c_data: &mut [N],
+    a: CsMatViewI<N, I, Iptr>,
+    b: CsMatViewI<N, I, Iptr>,
+    mut c: CsMatViewMutI<N, I, Iptr>,
     tmp: &mut [N],
 ) {
-    assert!(a_indptr.len() == c_indptr.len());
-    assert!(b_indices.len() == b_indptr.nnz());
-    assert!(b_data.len() == b_indptr.nnz());
+    assert_eq!(a.rows(), c.rows());
+    assert_eq!(a.cols(), b.rows());
+    assert_eq!(b.cols(), c.cols());
+    assert_eq!(tmp.len(), b.cols());
+    assert!(a.is_csr());
+    assert!(b.is_csr());
 
     for elt in tmp.iter_mut() {
         *elt = N::zero();
     }
-    for (a_row, a_range) in a_indptr.iter_outer_sz().enumerate() {
-        for a_cur in a_range {
-            let a_col = a_indices[a_cur].index();
-            let a_val = a_data[a_cur];
-            let b_row = a_col;
-            let b_range = b_indptr.outer_inds_sz(b_row);
-            for b_cur in b_range {
-                let b_col = b_indices[b_cur].index();
-                let b_val = b_data[b_cur];
-                tmp[b_col] += a_val * b_val;
+    for (a_row, mut c_row) in a.outer_iterator().zip(c.outer_iterator_mut()) {
+        for (a_col, a_val) in a_row.iter() {
+            let b_row = b.outer_view(a_col.index()).unwrap();
+            for (b_col, b_val) in b_row.iter() {
+                // TODO unsafe indexing
+                tmp[b_col.index()] += *a_val * *b_val;
             }
         }
-        let c_row = a_row;
-        let c_start = c_indptr[c_row].index();
-        let c_stop = c_indptr[c_row + 1].index();
-        for c_cur in c_start..c_stop {
-            // Handle split data. On non split data this is a no-op, but on
-            // split data this will compute the correct offset.
-            let c_cur = c_cur - c_indptr[0].index();
-            let c_col = c_indices[c_cur].index();
-            c_data[c_cur] = tmp[c_col];
+        for (c_col, c_val) in c_row.iter_mut() {
+            *c_val = tmp[c_col];
             tmp[c_col] = N::zero();
         }
     }
@@ -215,14 +193,10 @@ where
     I: SpIndex,
     Iptr: SpIndex,
 {
-    let l_rows = lhs.rows();
-    let l_cols = lhs.cols();
-    let r_rows = rhs.rows();
-    let r_cols = rhs.cols();
-    assert_eq!(l_cols, r_rows);
-    let workspace_len = l_rows.max(l_cols).max(r_cols);
+    assert_eq!(lhs.cols(), rhs.rows());
+    let workspace_len = rhs.cols();
     #[cfg(feature = "multi_thread")]
-    let nb_threads = std::cmp::min(l_rows.max(1), {
+    let nb_threads = std::cmp::min(lhs.rows().max(1), {
         use self::ThreadingStrategy::{Automatic, AutomaticPhysical};
         match thread_threading_strategy() {
             ThreadingStrategy::Fixed(nb_threads) => nb_threads,
@@ -277,15 +251,11 @@ where
     I: SpIndex,
     Iptr: SpIndex,
 {
-    let l_rows = lhs.rows();
-    let l_cols = lhs.cols();
-    let r_rows = rhs.rows();
-    let r_cols = rhs.cols();
-    let workspace_len = l_rows.max(l_cols).max(r_cols);
-    assert_eq!(l_cols, r_rows);
+    let workspace_len = rhs.cols();
+    assert_eq!(lhs.cols(), rhs.rows());
     assert!(seens.iter().all(|x| x.len() == workspace_len));
     assert!(tmps.iter().all(|x| x.len() == workspace_len));
-    let indptr_len = l_rows + 1;
+    let indptr_len = lhs.rows() + 1;
     let mut res_indices = Vec::new();
     let nb_threads = seens.len();
     assert!(nb_threads > 0);
@@ -302,7 +272,7 @@ where
         let stop = if chunk_id + 1 < nb_threads {
             (chunk_id + 1) * chunk_size
         } else {
-            l_rows
+            lhs.rows()
         };
         lhs_chunks.push(lhs.slice_outer(start..stop));
         res_indptr_chunks.push(vec![Iptr::zero(); stop - start + 1]);
@@ -327,11 +297,8 @@ where
             mut seen,
         )| {
             symbolic(
-                lhs_chunk.indptr(),
-                lhs_chunk.indices(),
-                r_cols,
-                rhs.indptr(),
-                rhs.indices(),
+                lhs_chunk.structure_view(),
+                rhs.structure_view(),
                 &mut res_indptr_chunk,
                 &mut res_indices_chunk,
                 &mut seen,
@@ -375,6 +342,8 @@ where
             res_indices_chunks.push(left);
             res_indices_rem = right;
 
+            // FIXME it would be a good idea to have split_outer_mut on
+            // CsMatViewMut
             let (left, right) = res_data_rem
                 .split_at_mut(prev_nnz - res_indptr[split_row].index());
             res_data_chunks.push(left);
@@ -411,18 +380,14 @@ where
             ),
             tmp,
         )| {
-            numeric(
-                lhs_chunk.indptr(),
-                lhs_chunk.indices(),
-                lhs_chunk.data(),
-                rhs.indptr(),
-                rhs.indices(),
-                rhs.data(),
+            let res_chunk = CsMatViewMutI::new_trusted_mut_view(
+                CSR,
+                (lhs_chunk.rows(), rhs.cols()),
                 res_indptr_chunk,
                 res_indices_chunk,
                 res_data_chunk,
-                tmp,
             );
+            numeric(lhs_chunk.view(), rhs.view(), res_chunk, tmp);
         },
     );
 
@@ -431,7 +396,7 @@ where
     // indices.
     CsMatI::new_trusted(
         CSR,
-        (l_rows, r_cols),
+        (lhs.rows(), rhs.cols()),
         res_indptr,
         res_indices,
         res_data,
@@ -465,11 +430,8 @@ mod test {
         let mut seen = [false; 5];
 
         super::symbolic(
-            a.indptr(),
-            a.indices(),
-            b.cols(),
-            b.indptr(),
-            b.indices(),
+            a.structure_view(),
+            b.structure_view(),
             &mut c_indptr,
             &mut c_indices,
             &mut seen,
@@ -477,18 +439,14 @@ mod test {
 
         let mut c_data = vec![0.; c_indices.len()];
         let mut tmp = [0.; 5];
-        super::numeric(
-            a.indptr(),
-            a.indices(),
-            a.data(),
-            b.indptr(),
-            b.indices(),
-            b.data(),
-            &c_indptr,
-            &c_indices,
-            &mut c_data,
-            &mut tmp,
+        let mut c = crate::CsMatViewMutI::new_trusted_mut_view(
+            crate::CSR,
+            (a.rows(), b.cols()),
+            &c_indptr[..],
+            &c_indices[..],
+            &mut c_data[..],
         );
+        super::numeric(a.view(), b.view(), c.view_mut(), &mut tmp);
         assert_eq!(exp.indptr(), &c_indptr[..]);
         assert_eq!(exp.indices(), &c_indices[..]);
         assert_eq!(exp.data(), &c_data[..]);
