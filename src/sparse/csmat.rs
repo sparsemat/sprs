@@ -183,6 +183,32 @@ where
             }),
         }
     }
+
+    /// Create a new `CSR` sparse matrix from owned data
+    ///
+    /// See `new_csc` for the `CSC` equivalent
+    pub fn new(
+        shape: (usize, usize),
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, StructureError> {
+        Self::new_checked(CompressedStorage::CSR, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
+    }
+
+    /// Create a new `CSC` sparse matrix from owned data
+    ///
+    /// See `new` for the `CSR` equivalent
+    pub fn new_csc(
+        shape: (usize, usize),
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, StructureError> {
+        Self::new_checked(CompressedStorage::CSC, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
+    }
 }
 
 impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
@@ -248,6 +274,37 @@ where
                 data,
             }),
         }
+    }
+
+    /// Try create an owned CSR matrix from moved data.
+    ///
+    /// An owned CSC matrix can be created with `new_sorted_csc()`.
+    ///
+    /// If necessary, the indices will be sorted in place.
+    pub fn new_sorted(
+        shape: Shape,
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, StructureError>
+    where
+        N: Copy,
+    {
+        Self::new_sorted_checked(CSR, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
+    }
+
+    pub fn new_sorted_csc(
+        shape: Shape,
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, StructureError>
+    where
+        N: Copy,
+    {
+        Self::new_sorted_checked(CSC, shape, indptr, indices, data)
+            .map_err(|(_, _, _, e)| e)
     }
 }
 
@@ -344,90 +401,6 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     pub fn reserve_nnz_exact(&mut self, nnz_lim: usize) {
         self.indices.reserve_exact(nnz_lim);
         self.data.reserve_exact(nnz_lim);
-    }
-
-    /// Try create an owned CSR matrix from moved data.
-    ///
-    /// An owned CSC matrix can be created with `try_new_csc()`.
-    ///
-    /// If necessary, the indices will be sorted in place.
-    pub fn try_new(
-        shape: Shape,
-        indptr: Vec<Iptr>,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Result<Self, StructureError>
-    where
-        N: Copy,
-    {
-        Self::new_sorted_checked(CSR, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
-    }
-
-    /// Create an owned CSR matrix from moved data.
-    ///
-    /// An owned CSC matrix can be created with `new_csc()`.
-    ///
-    /// If necessary, the indices will be sorted in place.
-    ///
-    /// # Panics
-    ///
-    /// - if `indptr` does not correspond to the number of rows.
-    /// - if `indices` and `data` don't have exactly `indptr[rows]` elements.
-    /// - if `indices` contains values greater or equal to the number of
-    ///   columns.
-    pub fn new(
-        shape: Shape,
-        indptr: Vec<Iptr>,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Self
-    where
-        N: Copy,
-    {
-        Self::try_new(shape, indptr, indices, data).unwrap()
-    }
-
-    /// Try create an owned CSC matrix from moved data.
-    ///
-    /// An owned CSC matrix can be created with `new_csc()`.
-    ///
-    /// If necessary, the indices will be sorted in place.
-    pub fn try_new_csc(
-        shape: Shape,
-        indptr: Vec<Iptr>,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Result<Self, StructureError>
-    where
-        N: Copy,
-    {
-        Self::new_sorted_checked(CSC, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
-    }
-
-    /// Create an owned CSC matrix from moved data.
-    ///
-    /// An owned CSC matrix can be created with `new_csc()`.
-    ///
-    /// If necessary, the indices will be sorted in place.
-    ///
-    /// # Panics
-    ///
-    /// - if `indptr` does not correspond to the number of rows.
-    /// - if `indices` and `data` don't have exactly `indptr[rows]` elements.
-    /// - if `indices` contains values greater or equal to the number of
-    ///   columns.
-    pub fn new_csc(
-        shape: Shape,
-        indptr: Vec<Iptr>,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Self
-    where
-        N: Copy,
-    {
-        Self::try_new_csc(shape, indptr, indices, data).unwrap()
     }
 
     pub(crate) fn new_trusted(
@@ -1634,7 +1607,7 @@ where
     /// let mut mat = CsMat::new_csc((3, 3),
     ///                                   vec![0, 1, 3, 4],
     ///                                   vec![1, 0, 2, 2],
-    ///                                   vec![1.; 4]);
+    ///                                   vec![1.; 4]).unwrap();
     ///
     /// // | 1 2   |
     /// // | 1     |
@@ -2543,7 +2516,8 @@ mod test {
             vec![0, 3, 4, 6],
             vec![0, 2, 4, 3, 0, 2],
             vec![1., 2., 1., 1., 3., 1.],
-        );
+        )
+        .unwrap();
 
         assert_eq!(m_sparse, expected_output);
     }
@@ -2567,7 +2541,8 @@ mod test {
             vec![0, 2, 2, 4, 5, 6],
             vec![0, 2, 0, 2, 1, 0],
             vec![1., 3., 2., 1., 1., 1.],
-        );
+        )
+        .unwrap();
 
         assert_eq!(m_sparse, expected_output);
     }
@@ -2578,7 +2553,9 @@ mod test {
         let indices_sorted = &[1, 2, 3, 2, 3, 4, 4];
         let indices_shuffled = vec![1, 3, 2, 2, 3, 4, 4];
         let mut data: Vec<i32> = (0..7).collect();
-        let m = CsMat::new((5, 5), indptr, indices_shuffled, data.clone());
+        let m =
+            CsMat::new_sorted((5, 5), indptr, indices_shuffled, data.clone())
+                .unwrap();
         assert_eq!(m.indices(), indices_sorted);
         data.swap(1, 2);
         assert_eq!(m.data(), &data[..]);
@@ -2674,7 +2651,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1., 2., 3., 4.],
-        );
+        )
+        .unwrap();
         assert_eq!(mat[[1, 0]], 1.);
         assert_eq!(mat[[0, 1]], 2.);
         assert_eq!(mat[[2, 1]], 3.);
@@ -2693,7 +2671,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        );
+        )
+        .unwrap();
 
         *mat.get_mut(2, 1).unwrap() = 3.;
 
@@ -2702,7 +2681,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1., 1., 3., 1.],
-        );
+        )
+        .unwrap();
 
         assert_eq!(mat, exp);
 
@@ -2712,7 +2692,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1., 1., 3., 5.],
-        );
+        )
+        .unwrap();
 
         assert_eq!(mat, exp);
     }
@@ -2727,7 +2708,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        );
+        )
+        .unwrap();
 
         let mut res = mat.map(|&x| x + 2.);
         let expected = CsMat::new_csc(
@@ -2735,7 +2717,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![3.; 4],
-        );
+        )
+        .unwrap();
         assert_eq!(res, expected);
 
         res.map_inplace(|&x| x / 3.);
@@ -2758,7 +2741,8 @@ mod test {
         mat.insert(2, 2, 1.);
 
         let expected =
-            CsMat::new((3, 3), vec![0, 1, 2, 4], vec![1, 0, 1, 2], vec![1.; 4]);
+            CsMat::new((3, 3), vec![0, 1, 2, 4], vec![1, 0, 1, 2], vec![1.; 4])
+                .unwrap();
         assert_eq!(mat, expected);
 
         // | 2 1 0 |
@@ -2772,7 +2756,8 @@ mod test {
             vec![0, 2, 3, 5],
             vec![0, 1, 0, 1, 2],
             vec![2., 1., 1., 1., 1.],
-        );
+        )
+        .unwrap();
         assert_eq!(mat, expected);
 
         // | 2 1 0 |
@@ -2786,7 +2771,8 @@ mod test {
             vec![0, 2, 3, 5],
             vec![0, 1, 0, 1, 2],
             vec![2., 1., 3., 1., 1.],
-        );
+        )
+        .unwrap();
         assert_eq!(mat, expected);
     }
 
@@ -2810,7 +2796,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        );
+        )
+        .unwrap();
 
         for mut col_vec in mat.outer_iterator_mut() {
             for (row_ind, val) in col_vec.iter_mut() {
@@ -2823,7 +2810,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![2., 1., 3., 3.],
-        );
+        )
+        .unwrap();
         assert_eq!(mat, expected);
     }
 
@@ -2835,7 +2823,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        );
+        )
+        .unwrap();
 
         // we panic because we forget to modify the last index, which gets
         // pushed in the same col as its predecessor, yet has the same value
@@ -2859,7 +2848,8 @@ mod test {
             vec![0u32, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        );
+        )
+        .unwrap();
         let mat_: CsMatI<f32, usize, u32> = mat.to_other_types();
         assert_eq!(mat_.indptr(), &[0, 1, 3, 4][..]);
         assert_eq!(mat_.data(), &[1.0f32, 1., 1., 1.]);
@@ -2872,7 +2862,8 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        );
+        )
+        .unwrap();
         let mut iter = mat.iter();
         assert_eq!(iter.next(), Some((&1., (1, 0))));
         assert_eq!(iter.next(), Some((&1., (0, 1))));
@@ -2893,7 +2884,8 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        );
+        )
+        .unwrap();
 
         let degrees = mat.degrees();
         assert_eq!(&degrees, &[2, 0, 1, 2, 1],);
@@ -2911,7 +2903,8 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        );
+        )
+        .unwrap();
 
         let diag = mat.diag();
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
@@ -2938,7 +2931,8 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        );
+        )
+        .unwrap();
 
         let mut diags = mat.diag_iter_mut().collect::<Vec<_>>();
         diags[4].as_mut().map(|x| **x *= 3);
@@ -2959,7 +2953,8 @@ mod test {
             vec![0, 3, 4, 5, 8, 10, 12],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4, 0, 2],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1, 3, 1],
-        );
+        )
+        .unwrap();
 
         let diag = mat.diag();
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
@@ -2989,7 +2984,8 @@ mod test {
             vec![0, 2, 4],
             vec![0, 1, 0, 1],
             vec![2.0, 0.0, 0.0, 2.0],
-        );
+        )
+        .unwrap();
 
         let onehot = mat.to_inner_onehot();
 
@@ -2999,12 +2995,14 @@ mod test {
 
     #[test]
     fn onehot_sparse_csc() {
-        let mat = CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![2.0]);
+        let mat = CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![2.0])
+            .unwrap();
 
         let onehot = mat.to_inner_onehot();
 
         let expected =
-            CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![1.0]);
+            CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![1.0])
+                .unwrap();
 
         assert!(onehot.is_csc());
         assert_eq!(expected, onehot);
@@ -3017,7 +3015,8 @@ mod test {
             vec![0, 2, 3],
             vec![0, 1, 1],
             vec![2.0, std::f64::NAN, 2.0],
-        );
+        )
+        .unwrap();
 
         let onehot = mat.to_inner_onehot();
 

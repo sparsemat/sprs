@@ -526,7 +526,8 @@ mod test {
             vec![0, 1, 3, 4, 6, 8],
             vec![0, 1, 3, 2, 1, 4, 3, 4],
             vec![1., 10.5, 2.505e2, 1.5e-2, 2.505e2, 3.332e1, 3.332e1, 1.2e1],
-        );
+        )
+        .unwrap();
         assert_eq!(csc, expected);
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
@@ -553,7 +554,8 @@ mod test {
             vec![0, 2, 4, 6, 8, 10],
             vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
             vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4],
-        );
+        )
+        .unwrap();
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
         write_matrix_market_sym(&save_path, &mat, SymmetryMode::Symmetric)
@@ -569,7 +571,8 @@ mod test {
             vec![0, 2, 4, 6, 8, 10],
             vec![1, 4, 0, 2, 1, 3, 2, 4, 0, 3],
             vec![2, 1, 2, 3, 3, 5, 5, 4, 1, 4],
-        );
+        )
+        .unwrap();
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("skew_symmetric.mm");
         write_matrix_market_sym(&save_path, &mat, SymmetryMode::SkewSymmetric)
@@ -585,7 +588,8 @@ mod test {
             vec![0, 2, 4, 6, 8, 10],
             vec![0, 3, 0, 2, 1, 3, 2, 4, 0, 3],
             vec![2, -1, 2, 3, 3, 5, 5, 4, 1, 4],
-        );
+        )
+        .unwrap();
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("general.mm");
         write_matrix_market_sym(&save_path, &mat, SymmetryMode::General)

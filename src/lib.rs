@@ -67,7 +67,7 @@ let eye = CsMat::eye(3);
 let a = CsMat::new_csc((3, 3),
                        vec![0, 2, 4, 5],
                        vec![0, 1, 0, 2, 2],
-                       vec![1., 2., 3., 4., 5.]);
+                       vec![1., 2., 3., 4., 5.]).unwrap();
 let b = &eye * &a;
 assert_eq!(a, b.to_csc());
 ```
@@ -184,7 +184,8 @@ mod test {
             vec![0, 2, 3, 3],
             vec![1, 2, 0],
             vec![0.1, 0.2, 0.3],
-        );
+        )
+        .unwrap();
         let view = mat.view();
         let mut iter = view.iter();
         assert_eq!(iter.next(), Some((&0.1, (0, 1))));

@@ -47,7 +47,7 @@ pub fn kronecker_product<
                 indptr.push(element_count);
             }
         }
-        let mut mat = CsMatBase::new(shape, indptr, indices, values);
+        let mut mat = CsMatBase::new(shape, indptr, indices, values).unwrap();
         debug_assert_eq!(mat.nnz(), nnz);
         if was_csc {
             mat.transpose_mut()

@@ -439,6 +439,7 @@ mod test {
 
         let mut c_data = vec![0.; c_indices.len()];
         let mut tmp = [0.; 5];
+        // TODO: Can use new()
         let mut c = crate::CsMatViewMutI::new_trusted_mut_view(
             crate::CSR,
             (a.rows(), b.cols()),
@@ -463,13 +464,14 @@ mod test {
     #[test]
     fn mul_zero_rows() {
         // See https://github.com/vbarrielle/sprs/issues/239
-        let a = crate::CsMat::new((0, 11), vec![0], vec![], vec![]);
+        let a = crate::CsMat::new((0, 11), vec![0], vec![], vec![]).unwrap();
         let b = crate::CsMat::new(
             (11, 11),
             vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             vec![],
             vec![],
-        );
+        )
+        .unwrap();
         let c: crate::CsMat<f64> = &a * &b;
         assert_eq!(c.rows(), 0);
         assert_eq!(c.cols(), 11);

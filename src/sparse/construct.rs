@@ -172,7 +172,7 @@ mod test {
         let data = vec![
             3., 4., 2., 5., 5., 8., 7., 6., 7., 3., 3., 8., 9., 2., 4., 4., 4.,
         ];
-        CsMat::new((10, 5), indptr, indices, data)
+        CsMat::new((10, 5), indptr, indices, data).unwrap()
     }
 
     #[test]
@@ -273,7 +273,8 @@ mod test {
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
             vec![1.; 9],
-        );
+        )
+        .unwrap();
         assert_eq!(c, expected);
     }
 
@@ -296,7 +297,8 @@ mod test {
                 3., 4., 6., 7., 3., 3., 2., 5., 8., 9., 5., 8., 2., 4., 7., 4.,
                 4., 6., 7., 3., 3., 8., 9., 2., 4., 4., 4.,
             ],
-        );
+        )
+        .unwrap();
         assert_eq!(c, expected);
 
         let d = mat3();
@@ -316,7 +318,8 @@ mod test {
                 3., 4., 3., 4., 2., 5., 2., 5., 5., 5., 8., 8., 7., 7., 6., 8.,
                 7., 4., 3., 2., 4., 9., 4., 3.,
             ],
-        );
+        )
+        .unwrap();
         assert_eq!(f, expected);
     }
 }

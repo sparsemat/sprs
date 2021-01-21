@@ -59,7 +59,7 @@ where
             indices.push(I::from_usize(vert_ind));
         }
     }
-    CsMatI::new((nb_vertices, nb_vertices), indptr, indices, data)
+    CsMatI::new((nb_vertices, nb_vertices), indptr, indices, data).unwrap()
 }
 
 #[cfg(test)]
@@ -103,7 +103,7 @@ mod test {
                  x, 2., x,
                  x, x, x, 4., x,
                  x, x, x, 3.,],
-        );
+        ).unwrap();
         let lap_mat = super::tri_mesh_graph_laplacian(6, triangles.view());
         assert_eq!(lap_mat, expected);
     }

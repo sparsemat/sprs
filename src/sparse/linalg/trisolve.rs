@@ -379,7 +379,8 @@ mod test {
             vec![0, 1, 2, 4],
             vec![0, 1, 0, 2],
             vec![1, 2, 1, 1],
-        );
+        )
+        .unwrap();
         let b = vec![3, 2, 4];
         let mut x = b.clone();
 
@@ -397,7 +398,8 @@ mod test {
             vec![0, 2, 3, 4],
             vec![0, 1, 1, 2],
             vec![1, 1, 2, 3],
-        );
+        )
+        .unwrap();
         let b = vec![3, 5, 3];
         let mut x = b.clone();
 
@@ -415,7 +417,8 @@ mod test {
             vec![0, 1, 2, 4],
             vec![0, 1, 0, 2],
             vec![1, 2, 1, 3],
-        );
+        )
+        .unwrap();
         let b = vec![4, 2, 3];
         let mut x = b.clone();
 
@@ -433,7 +436,8 @@ mod test {
             vec![0, 2, 4, 5],
             vec![0, 1, 1, 2, 2],
             vec![1, 1, 5, 3, 1],
-        );
+        )
+        .unwrap();
         let b = vec![4, 8, 1];
         let mut x = b.clone();
 
@@ -453,7 +457,8 @@ mod test {
             vec![0, 2, 5, 6, 8, 9],
             vec![0, 1, 1, 2, 4, 2, 3, 4, 4],
             vec![1, 1, 2, 3, 2, 3, 7, 3, 5],
-        );
+        )
+        .unwrap();
         let b = CsVec::new(5, vec![1, 2, 4], vec![4, 9, 9]);
         let mut xw = vec![1; 5]; // inital values should not matter
         let mut visited = vec![false; 5]; // inital values matter here
@@ -490,7 +495,8 @@ mod test {
             vec![0, 2, 4, 6, 7, 9, 10, 11],
             vec![0, 2, 1, 6, 2, 5, 3, 4, 6, 5, 6],
             vec![1, 1, 2, 3, 3, 1, 7, 5, 2, 1, 2],
-        );
+        )
+        .unwrap();
         let b = CsVec::new(7, vec![0, 2, 3, 5], vec![1, 7, 7, 3]);
         let mut dstack = DStack::with_capacity(2 * 7);
         let mut xw = vec![1; 7]; // inital values should not matter

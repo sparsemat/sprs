@@ -81,7 +81,7 @@ where
         indices[start..end].sort_unstable();
     }
 
-    CsMatI::new(shape, indptr, indices, data)
+    CsMatI::new(shape, indptr, indices, data).unwrap()
 }
 
 /// Convenient wrapper for the common case of sampling a matrix with standard
