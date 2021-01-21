@@ -303,9 +303,9 @@ where
         }
     }
 
-    /// Try create an owned CSR matrix from moved data.
+    /// Try create an owned `CSR` matrix from moved data.
     ///
-    /// An owned CSC matrix can be created with `new_sorted_csc()`.
+    /// An owned `CSC` matrix can be created with `new_sorted_csc()`.
     ///
     /// If necessary, the indices will be sorted in place.
     pub fn new_sorted(
@@ -321,6 +321,11 @@ where
             .map_err(|(_, _, _, e)| e)
     }
 
+    /// Create an owned `CSC` matrix from moved data.
+    ///
+    /// And owned `CSR` matrix an be created with `new_sorted()`.
+    ///
+    /// If necessary, the indices will be sorted in place.
     pub fn new_sorted_csc(
         shape: Shape,
         indptr: IptrStorage,
