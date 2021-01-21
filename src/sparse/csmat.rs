@@ -209,6 +209,33 @@ where
         Self::new_checked(CompressedStorage::CSC, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
     }
+
+    /// Create a `CsMat` matrix from raw data,
+    /// without checking their validity
+    ///
+    /// # Safety
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by
+    /// [`check_compressed_structure`](Self::check_compressed_structure) are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_unchecked(
+        storage: CompressedStorage,
+        shape: Shape,
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Self {
+        let (nrows, ncols) = shape;
+        Self {
+            storage,
+            nrows,
+            ncols,
+            indptr: crate::IndPtrBase::new_trusted(indptr),
+            indices,
+            data,
+        }
+    }
 }
 
 impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
@@ -410,10 +437,11 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         indices: Vec<I>,
         data: Vec<N>,
     ) -> Self {
+        let (nrows, ncols) = shape;
         Self {
             storage,
-            nrows: shape.0,
-            ncols: shape.1,
+            nrows,
+            ncols,
             indptr: crate::IndPtr::new_trusted(indptr),
             indices,
             data,
@@ -591,52 +619,6 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
 impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
     CsMatViewI<'a, N, I, Iptr>
 {
-    /// Create a borrowed `CsMat` matrix from sliced data,
-    /// checking their validity
-    pub fn new_view(
-        storage: CompressedStorage,
-        shape: Shape,
-        indptr: &'a [Iptr],
-        indices: &'a [I],
-        data: &'a [N],
-    ) -> Result<Self, StructureError> {
-        Self::new_checked(storage, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
-    }
-
-    /// Create a borrowed `CsMat` matrix from raw data,
-    /// without checking their validity
-    ///
-    /// # Safety
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by
-    /// [`check_compressed_structure`](Self::check_compressed_structure) are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_view_raw(
-        storage: CompressedStorage,
-        shape: Shape,
-        indptr: *const Iptr,
-        indices: *const I,
-        data: *const N,
-    ) -> Self {
-        let (nrows, ncols) = shape;
-        let outer = match storage {
-            CSR => nrows,
-            CSC => ncols,
-        };
-        let indptr = slice::from_raw_parts(indptr, outer + 1);
-        let nnz = (*indptr.get_unchecked(outer)).index_unchecked();
-        CsMatViewI {
-            storage,
-            nrows,
-            ncols,
-            indptr: crate::IndPtrView::new_trusted(indptr),
-            indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts(data, nnz),
-        }
-    }
-
     /// Get a view into count contiguous outer dimensions, starting from i.
     ///
     /// eg this gets the rows from i to i + count in a CSR matrix
@@ -2307,7 +2289,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::CompressedStorage::{CSC, CSR};
+    use super::CompressedStorage::CSR;
     use crate::errors::StructureErrorKind;
     use crate::sparse::{CsMat, CsMatI, CsMatView, CsVec};
     use crate::test_data::{mat1, mat1_csc, mat1_times_2};
@@ -2326,8 +2308,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_ok: &[f64] = &[1., 1., 1.];
-        let m =
-            CsMatView::new_view(CSR, (3, 3), indptr_ok, indices_ok, data_ok);
+        let m = CsMatView::new((3, 3), indptr_ok, indices_ok, data_ok);
         assert!(m.is_ok());
     }
 
@@ -2337,8 +2318,7 @@ mod test {
         let indptr_fail1: &[usize] = &[0, 1, 2];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_ok: &[f64] = &[1., 1., 1.];
-        let res =
-            CsMatView::new_view(CSR, (3, 3), indptr_fail1, indices_ok, data_ok);
+        let res = CsMatView::new((3, 3), indptr_fail1, indices_ok, data_ok);
         res.unwrap(); // unreachable
     }
 
@@ -2348,8 +2328,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let data_ok: &[f64] = &[1., 1., 1.];
         let indices_fail2: &[usize] = &[0, 1, 4];
-        let res =
-            CsMatView::new_view(CSR, (3, 3), indptr_ok, indices_fail2, data_ok);
+        let res = CsMatView::new((3, 3), indptr_ok, indices_fail2, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2359,8 +2338,7 @@ mod test {
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_ok: &[f64] = &[1., 1., 1.];
         let indptr_fail2: &[usize] = &[0, 1, 2, 4];
-        let res =
-            CsMatView::new_view(CSR, (3, 3), indptr_fail2, indices_ok, data_ok);
+        let res = CsMatView::new((3, 3), indptr_fail2, indices_ok, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2370,8 +2348,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let data_ok: &[f64] = &[1., 1., 1.];
         let indices_fail1: &[usize] = &[0, 1];
-        let res =
-            CsMatView::new_view(CSR, (3, 3), indptr_ok, indices_fail1, data_ok);
+        let res = CsMatView::new((3, 3), indptr_ok, indices_fail1, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2381,8 +2358,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_fail1: &[f64] = &[1., 1., 1., 1.];
-        let res =
-            CsMatView::new_view(CSR, (3, 3), indptr_ok, indices_ok, data_fail1);
+        let res = CsMatView::new((3, 3), indptr_ok, indices_ok, data_fail1);
         res.unwrap(); //unreachable
     }
 
@@ -2392,8 +2368,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_fail2: &[f64] = &[1., 1.];
-        let res =
-            CsMatView::new_view(CSR, (3, 3), indptr_ok, indices_ok, data_fail2);
+        let res = CsMatView::new((3, 3), indptr_ok, indices_ok, data_fail2);
         res.unwrap(); //unreachable
     }
 
@@ -2403,7 +2378,7 @@ mod test {
         let data_ok: &[f64] = &[1., 1., 1.];
         let indptr_fail3: &[usize] = &[0, 2, 1, 3];
         assert_eq!(
-            CsMatView::new_view(CSR, (3, 3), indptr_fail3, indices_ok, data_ok)
+            CsMatView::new((3, 3), indptr_fail3, indices_ok, data_ok)
                 .unwrap_err()
                 .kind(),
             StructureErrorKind::Unsorted
@@ -2420,7 +2395,7 @@ mod test {
             0.88132896, 0.72527863,
         ];
         assert_eq!(
-            CsMatView::new_view(CSR, (5, 5), indptr, indices, data)
+            CsMatView::new((5, 5), indptr, indices, data)
                 .unwrap_err()
                 .kind(),
             StructureErrorKind::Unsorted
@@ -2435,22 +2410,10 @@ mod test {
             0.05734571, 0.15543348, 0.75628258, 0.83054515, 0.71851547,
             0.46202352,
         ];
-        assert!(CsMatView::new_view(
-            CSR,
-            (3, 4),
-            indptr_ok,
-            indices_ok,
-            data_ok
-        )
-        .is_ok());
-        assert!(CsMatView::new_view(
-            CSC,
-            (4, 3),
-            indptr_ok,
-            indices_ok,
-            data_ok
-        )
-        .is_ok());
+        assert!(CsMatView::new((3, 4), indptr_ok, indices_ok, data_ok).is_ok());
+        assert!(
+            CsMatView::new_csc((4, 3), indptr_ok, indices_ok, data_ok).is_ok()
+        );
     }
 
     #[test]
@@ -2462,8 +2425,7 @@ mod test {
             0.05734571, 0.15543348, 0.75628258, 0.83054515, 0.71851547,
             0.46202352,
         ];
-        let res =
-            CsMatView::new_view(CSC, (3, 4), indptr_ok, indices_ok, data_ok);
+        let res = CsMatView::new_csc((3, 4), indptr_ok, indices_ok, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2472,14 +2434,9 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok: Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMatView::new_view(
-            CSR,
-            (3, 3),
-            &indptr_ok,
-            &indices_ok,
-            &data_ok
-        )
-        .is_ok());
+        assert!(
+            CsMatView::new((3, 3), &indptr_ok, &indices_ok, &data_ok).is_ok()
+        );
     }
 
     #[test]
@@ -2569,7 +2526,7 @@ mod test {
             0.75672424, 0.1649078, 0.30140296, 0.10358244, 0.6283315,
             0.39244208, 0.57202407,
         ];
-        assert!(CsMatView::new_view(CSR, (5, 5), indptr, indices, data).is_ok());
+        assert!(CsMatView::new((5, 5), indptr, indices, data).is_ok());
     }
 
     #[test]

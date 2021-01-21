@@ -321,7 +321,6 @@ pub fn csr_mulacc_dense_colmaj<'a, N1, N2, NOut, I, Iptr>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::sparse::csmat::CompressedStorage::{CSC, CSR};
     use crate::sparse::{CsMat, CsMatView, CsVec};
     use crate::test_data::{
         mat1, mat1_csc, mat1_csc_matprod_mat4, mat1_matprod_mat2,
@@ -353,8 +352,7 @@ mod test {
             0.88132896, 0.72527863,
         ];
 
-        let mat =
-            CsMatView::new_view(CSC, (5, 5), indptr, indices, data).unwrap();
+        let mat = CsMatView::new_csc((5, 5), indptr, indices, data).unwrap();
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csc(mat, &vector, &mut res_vec);
@@ -379,8 +377,7 @@ mod test {
             0.39244208, 0.57202407,
         ];
 
-        let mat =
-            CsMatView::new_view(CSR, (5, 5), indptr, indices, data).unwrap();
+        let mat = CsMatView::new((5, 5), indptr, indices, data).unwrap();
         let slice: &[f64] = &[0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csr(mat, slice, &mut res_vec);

@@ -439,14 +439,13 @@ mod test {
 
         let mut c_data = vec![0.; c_indices.len()];
         let mut tmp = [0.; 5];
-        // TODO: Can use new()
-        let mut c = crate::CsMatViewMutI::new_trusted_mut_view(
-            crate::CSR,
+        let mut c = crate::CsMatViewMutI::new(
             (a.rows(), b.cols()),
             &c_indptr[..],
             &c_indices[..],
             &mut c_data[..],
-        );
+        )
+        .unwrap();
         super::numeric(a.view(), b.view(), c.view_mut(), &mut tmp);
         assert_eq!(exp.indptr(), &c_indptr[..]);
         assert_eq!(exp.indices(), &c_indices[..]);
