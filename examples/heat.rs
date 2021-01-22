@@ -76,7 +76,7 @@ fn grid_laplacian(shape: (usize, usize)) -> sprs::CsMat<f64> {
 
     indptr.push(cumsum);
 
-    sprs::CsMat::new((nb_vert, nb_vert), indptr, indices, data).unwrap()
+    sprs::CsMat::new((nb_vert, nb_vert), indptr, indices, data)
 }
 
 /// Set a dirichlet boundary condition

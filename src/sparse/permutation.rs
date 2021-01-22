@@ -326,7 +326,6 @@ where
             CsMatI::new_csc(mat.shape(), indptr, indices, data)
         }
     }
-    .unwrap()
 }
 
 #[cfg(test)]
@@ -359,8 +358,7 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        )
-        .unwrap();
+        );
 
         let perm = super::PermOwned::new(vec![2, 1, 3, 0, 4]);
         // expected matrix PA
@@ -380,8 +378,7 @@ mod test {
             vec![0, 1, 2, 5, 8, 10],
             vec![2, 1, 0, 2, 3, 2, 3, 4, 3, 4],
             vec![1, 2, 1, 1, 3, 3, 1, 1, 1, 1],
-        )
-        .unwrap();
+        );
         let papt = super::transform_mat_papt(mat.view(), perm.view());
         assert_eq!(expected_papt, papt);
     }

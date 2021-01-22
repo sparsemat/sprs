@@ -357,8 +357,7 @@ mod test {
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
-        )
-        .unwrap();
+        );
         assert_eq!(csc, expected);
     }
 
@@ -385,8 +384,7 @@ mod test {
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
-        )
-        .unwrap();
+        );
 
         let csc = triplet_mat.to_csc();
         assert_eq!(csc, expected);
@@ -420,8 +418,7 @@ mod test {
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
-        )
-        .unwrap();
+        );
         assert_eq!(csc, expected);
         assert_eq!(csr, expected.to_csr());
     }
@@ -447,8 +444,7 @@ mod test {
             vec![0, 2, 4, 5, 8],
             vec![0, 1, 0, 4, 3, 2, 3, 4],
             vec![1, 3, 2, 7, 5, 4, 6, 8],
-        )
-        .unwrap();
+        );
 
         assert_eq!(csc, expected);
         assert_eq!(csr, expected.to_csr());
@@ -475,8 +471,7 @@ mod test {
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 0., 6.],
-        )
-        .unwrap();
+        );
         assert_eq!(csc, expected);
         assert_eq!(csr, expected.to_csr());
     }
@@ -507,8 +502,7 @@ mod test {
             vec![0, 2, 3, 4, 6],
             vec![0, 1, 0, 3, 2, 3],
             vec![1., 3., 2., 5., 4., 6.],
-        )
-        .unwrap();
+        );
 
         assert_eq!(csc, expected);
         assert_eq!(csr, expected.to_csr());
@@ -564,8 +558,7 @@ mod test {
                 1, 1, 1, 1, 1, 1, 2, 9, 3, 5, 6, 1, 4, 7, 3, 8, 2, 2, 2, 2, 2,
                 2,
             ],
-        )
-        .unwrap();
+        );
 
         assert_eq!(csc, expected);
 
@@ -623,8 +616,7 @@ mod test {
             vec![0, 5, 6, 6, 8, 9, 11, 11, 11, 16],
             vec![0, 2, 3, 4, 5, 2, 2, 4, 0, 3, 5, 0, 2, 3, 4, 5],
             vec![1, 1, 1, 1, 1, 2, 3, 5, 6, 4, 7, 2, 2, 2, 2, 2],
-        )
-        .unwrap();
+        );
 
         assert_eq!(csc, expected);
 

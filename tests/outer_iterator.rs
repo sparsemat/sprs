@@ -11,8 +11,7 @@ fn outer_iterator() {
         vec![0, 3, 4, 5, 8, 10],
         vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
         vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-    )
-    .unwrap();
+    );
 
     let mut iter = mat.outer_iterator_mut();
 

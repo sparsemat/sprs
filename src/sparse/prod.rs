@@ -352,7 +352,7 @@ mod test {
             0.88132896, 0.72527863,
         ];
 
-        let mat = CsMatView::new_csc((5, 5), indptr, indices, data).unwrap();
+        let mat = CsMatView::new_csc((5, 5), indptr, indices, data);
         let vector = vec![0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csc(mat, &vector, &mut res_vec);
@@ -377,7 +377,7 @@ mod test {
             0.39244208, 0.57202407,
         ];
 
-        let mat = CsMatView::new((5, 5), indptr, indices, data).unwrap();
+        let mat = CsMatView::new((5, 5), indptr, indices, data);
         let slice: &[f64] = &[0.1, 0.2, -0.1, 0.3, 0.9];
         let mut res_vec = vec![0., 0., 0., 0., 0.];
         mul_acc_mat_vec_csr(mat, slice, &mut res_vec);

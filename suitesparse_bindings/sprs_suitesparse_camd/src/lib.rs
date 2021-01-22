@@ -106,8 +106,7 @@ mod tests {
             vec![0, 2, 4, 6, 8],
             vec![0, 3, 1, 2, 1, 2, 0, 3],
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
-        )
-        .unwrap();
+        );
         let res = super::try_camd(mat.structure_view());
         assert!(res.is_ok());
     }

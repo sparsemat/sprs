@@ -615,7 +615,7 @@ mod test {
                  x, x, 2.,
                  x, x, 3., x,
                  x, x, x, 3.],
-        ).unwrap();
+        );
         lap_mat
     }
 

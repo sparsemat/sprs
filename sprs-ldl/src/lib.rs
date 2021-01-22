@@ -627,7 +627,7 @@ mod test {
             0.53, 1.2, 0.16, 1.3, 0.56, 0.09, 1.6, 0.11, 0.13, 0.52, 0.11, 1.4,
             0.01, 0.53, 0.56, 3.1,
         ];
-        CsMat::new_csc((10, 10), indptr, indices, data).unwrap()
+        CsMat::new_csc((10, 10), indptr, indices, data)
     }
 
     fn test_vec1() -> Vec<f64> {
@@ -774,8 +774,7 @@ mod test {
             &expected_lp,
             &expected_li,
             &expected_lx,
-        )
-        .unwrap();
+        );
         super::ldl_lsolve(&l, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
         linalg::diag_solve(&expected_d, &mut x);
@@ -814,8 +813,7 @@ mod test {
             vec![0, 2, 4, 6, 8],
             vec![0, 3, 1, 2, 1, 2, 0, 3],
             vec![1, 2, 21, 6, 6, 2, 2, 8],
-        )
-        .unwrap();
+        );
 
         let perm = Permutation::new(vec![0, 2, 1, 3]);
 
@@ -838,8 +836,7 @@ mod test {
             vec![0, 2, 4, 6, 8],
             vec![0, 3, 1, 2, 1, 2, 0, 3],
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
-        )
-        .unwrap();
+        );
 
         let b = vec![9., 60., 18., 34.];
         let x0 = vec![1., 2., 3., 4.];
@@ -861,8 +858,7 @@ mod test {
             vec![0, 2, 4, 6, 8],
             vec![0, 3, 1, 2, 1, 2, 0, 3],
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
-        )
-        .unwrap();
+        );
 
         let b = vec![9., 60., 18., 34.];
         let x0 = vec![1., 2., 3., 4.];

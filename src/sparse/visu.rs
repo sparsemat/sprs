@@ -102,8 +102,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
         let expected_str = "| x |\n\
                             |x  |\n\
                             | xx|\n";
@@ -118,8 +117,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
         let expected_arr = arr2(&[[255, 0, 255], [0, 255, 255], [255, 0, 0]]);
         let nnz_arr = nnz_image(mat.view());
         assert_eq!(expected_arr, nnz_arr);

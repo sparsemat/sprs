@@ -192,9 +192,10 @@ where
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, StructureError> {
+    ) -> Self {
         Self::new_checked(CompressedStorage::CSR, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
+            .unwrap()
     }
 
     /// Create a new `CSC` sparse matrix from owned data
@@ -205,9 +206,34 @@ where
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, StructureError> {
+    ) -> Self {
         Self::new_checked(CompressedStorage::CSC, shape, indptr, indices, data)
             .map_err(|(_, _, _, e)| e)
+            .unwrap()
+    }
+
+    /// Try to create a new `CSR` sparse matrix from owned data
+    ///
+    /// See `try_new_csc` for the `CSC` equivalent
+    pub fn try_new(
+        shape: (usize, usize),
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)> {
+        Self::new_checked(CompressedStorage::CSR, shape, indptr, indices, data)
+    }
+
+    /// Try to create a new `CSC` sparse matrix from owned data
+    ///
+    /// See `new` for the `CSR` equivalent
+    pub fn try_new_csc(
+        shape: (usize, usize),
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)> {
+        Self::new_checked(CompressedStorage::CSC, shape, indptr, indices, data)
     }
 
     /// Create a `CsMat` matrix from raw data,
@@ -1594,7 +1620,7 @@ where
     /// let mut mat = CsMat::new_csc((3, 3),
     ///                                   vec![0, 1, 3, 4],
     ///                                   vec![1, 0, 2, 2],
-    ///                                   vec![1.; 4]).unwrap();
+    ///                                   vec![1.; 4]);
     ///
     /// // | 1 2   |
     /// // | 1     |
@@ -2313,7 +2339,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_ok: &[f64] = &[1., 1., 1.];
-        let m = CsMatView::new((3, 3), indptr_ok, indices_ok, data_ok);
+        let m = CsMatView::try_new((3, 3), indptr_ok, indices_ok, data_ok);
         assert!(m.is_ok());
     }
 
@@ -2323,7 +2349,7 @@ mod test {
         let indptr_fail1: &[usize] = &[0, 1, 2];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_ok: &[f64] = &[1., 1., 1.];
-        let res = CsMatView::new((3, 3), indptr_fail1, indices_ok, data_ok);
+        let res = CsMatView::try_new((3, 3), indptr_fail1, indices_ok, data_ok);
         res.unwrap(); // unreachable
     }
 
@@ -2333,7 +2359,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let data_ok: &[f64] = &[1., 1., 1.];
         let indices_fail2: &[usize] = &[0, 1, 4];
-        let res = CsMatView::new((3, 3), indptr_ok, indices_fail2, data_ok);
+        let res = CsMatView::try_new((3, 3), indptr_ok, indices_fail2, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2343,7 +2369,7 @@ mod test {
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_ok: &[f64] = &[1., 1., 1.];
         let indptr_fail2: &[usize] = &[0, 1, 2, 4];
-        let res = CsMatView::new((3, 3), indptr_fail2, indices_ok, data_ok);
+        let res = CsMatView::try_new((3, 3), indptr_fail2, indices_ok, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2353,7 +2379,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let data_ok: &[f64] = &[1., 1., 1.];
         let indices_fail1: &[usize] = &[0, 1];
-        let res = CsMatView::new((3, 3), indptr_ok, indices_fail1, data_ok);
+        let res = CsMatView::try_new((3, 3), indptr_ok, indices_fail1, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2363,7 +2389,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_fail1: &[f64] = &[1., 1., 1., 1.];
-        let res = CsMatView::new((3, 3), indptr_ok, indices_ok, data_fail1);
+        let res = CsMatView::try_new((3, 3), indptr_ok, indices_ok, data_fail1);
         res.unwrap(); //unreachable
     }
 
@@ -2373,7 +2399,7 @@ mod test {
         let indptr_ok: &[usize] = &[0, 1, 2, 3];
         let indices_ok: &[usize] = &[0, 1, 2];
         let data_fail2: &[f64] = &[1., 1.];
-        let res = CsMatView::new((3, 3), indptr_ok, indices_ok, data_fail2);
+        let res = CsMatView::try_new((3, 3), indptr_ok, indices_ok, data_fail2);
         res.unwrap(); //unreachable
     }
 
@@ -2383,8 +2409,9 @@ mod test {
         let data_ok: &[f64] = &[1., 1., 1.];
         let indptr_fail3: &[usize] = &[0, 2, 1, 3];
         assert_eq!(
-            CsMatView::new((3, 3), indptr_fail3, indices_ok, data_ok)
+            CsMatView::try_new((3, 3), indptr_fail3, indices_ok, data_ok)
                 .unwrap_err()
+                .3
                 .kind(),
             StructureErrorKind::Unsorted
         );
@@ -2400,8 +2427,9 @@ mod test {
             0.88132896, 0.72527863,
         ];
         assert_eq!(
-            CsMatView::new((5, 5), indptr, indices, data)
+            CsMatView::try_new((5, 5), indptr, indices, data)
                 .unwrap_err()
+                .3
                 .kind(),
             StructureErrorKind::Unsorted
         );
@@ -2415,9 +2443,12 @@ mod test {
             0.05734571, 0.15543348, 0.75628258, 0.83054515, 0.71851547,
             0.46202352,
         ];
-        assert!(CsMatView::new((3, 4), indptr_ok, indices_ok, data_ok).is_ok());
         assert!(
-            CsMatView::new_csc((4, 3), indptr_ok, indices_ok, data_ok).is_ok()
+            CsMatView::try_new((3, 4), indptr_ok, indices_ok, data_ok).is_ok()
+        );
+        assert!(
+            CsMatView::try_new_csc((4, 3), indptr_ok, indices_ok, data_ok)
+                .is_ok()
         );
     }
 
@@ -2430,7 +2461,8 @@ mod test {
             0.05734571, 0.15543348, 0.75628258, 0.83054515, 0.71851547,
             0.46202352,
         ];
-        let res = CsMatView::new_csc((3, 4), indptr_ok, indices_ok, data_ok);
+        let res =
+            CsMatView::try_new_csc((3, 4), indptr_ok, indices_ok, data_ok);
         res.unwrap(); //unreachable
     }
 
@@ -2440,7 +2472,8 @@ mod test {
         let indices_ok = vec![0, 1, 2];
         let data_ok: Vec<f64> = vec![1., 1., 1.];
         assert!(
-            CsMatView::new((3, 3), &indptr_ok, &indices_ok, &data_ok).is_ok()
+            CsMatView::try_new((3, 3), &indptr_ok, &indices_ok, &data_ok)
+                .is_ok()
         );
     }
 
@@ -2478,8 +2511,7 @@ mod test {
             vec![0, 3, 4, 6],
             vec![0, 2, 4, 3, 0, 2],
             vec![1., 2., 1., 1., 3., 1.],
-        )
-        .unwrap();
+        );
 
         assert_eq!(m_sparse, expected_output);
     }
@@ -2503,8 +2535,7 @@ mod test {
             vec![0, 2, 2, 4, 5, 6],
             vec![0, 2, 0, 2, 1, 0],
             vec![1., 3., 2., 1., 1., 1.],
-        )
-        .unwrap();
+        );
 
         assert_eq!(m_sparse, expected_output);
     }
@@ -2531,7 +2562,7 @@ mod test {
             0.75672424, 0.1649078, 0.30140296, 0.10358244, 0.6283315,
             0.39244208, 0.57202407,
         ];
-        assert!(CsMatView::new((5, 5), indptr, indices, data).is_ok());
+        assert!(CsMatView::try_new((5, 5), indptr, indices, data).is_ok());
     }
 
     #[test]
@@ -2613,8 +2644,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1., 2., 3., 4.],
-        )
-        .unwrap();
+        );
         assert_eq!(mat[[1, 0]], 1.);
         assert_eq!(mat[[0, 1]], 2.);
         assert_eq!(mat[[2, 1]], 3.);
@@ -2633,8 +2663,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
 
         *mat.get_mut(2, 1).unwrap() = 3.;
 
@@ -2643,8 +2672,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1., 1., 3., 1.],
-        )
-        .unwrap();
+        );
 
         assert_eq!(mat, exp);
 
@@ -2654,8 +2682,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1., 1., 3., 5.],
-        )
-        .unwrap();
+        );
 
         assert_eq!(mat, exp);
     }
@@ -2670,8 +2697,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
 
         let mut res = mat.map(|&x| x + 2.);
         let expected = CsMat::new_csc(
@@ -2679,8 +2705,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![3.; 4],
-        )
-        .unwrap();
+        );
         assert_eq!(res, expected);
 
         res.map_inplace(|&x| x / 3.);
@@ -2703,8 +2728,7 @@ mod test {
         mat.insert(2, 2, 1.);
 
         let expected =
-            CsMat::new((3, 3), vec![0, 1, 2, 4], vec![1, 0, 1, 2], vec![1.; 4])
-                .unwrap();
+            CsMat::new((3, 3), vec![0, 1, 2, 4], vec![1, 0, 1, 2], vec![1.; 4]);
         assert_eq!(mat, expected);
 
         // | 2 1 0 |
@@ -2718,8 +2742,7 @@ mod test {
             vec![0, 2, 3, 5],
             vec![0, 1, 0, 1, 2],
             vec![2., 1., 1., 1., 1.],
-        )
-        .unwrap();
+        );
         assert_eq!(mat, expected);
 
         // | 2 1 0 |
@@ -2733,8 +2756,7 @@ mod test {
             vec![0, 2, 3, 5],
             vec![0, 1, 0, 1, 2],
             vec![2., 1., 3., 1., 1.],
-        )
-        .unwrap();
+        );
         assert_eq!(mat, expected);
     }
 
@@ -2758,8 +2780,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
 
         for mut col_vec in mat.outer_iterator_mut() {
             for (row_ind, val) in col_vec.iter_mut() {
@@ -2772,8 +2793,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![2., 1., 3., 3.],
-        )
-        .unwrap();
+        );
         assert_eq!(mat, expected);
     }
 
@@ -2785,8 +2805,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
 
         // we panic because we forget to modify the last index, which gets
         // pushed in the same col as its predecessor, yet has the same value
@@ -2810,8 +2829,7 @@ mod test {
             vec![0u32, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
         let mat_: CsMatI<f32, usize, u32> = mat.to_other_types();
         assert_eq!(mat_.indptr(), &[0, 1, 3, 4][..]);
         assert_eq!(mat_.data(), &[1.0f32, 1., 1., 1.]);
@@ -2824,8 +2842,7 @@ mod test {
             vec![0, 1, 3, 4],
             vec![1, 0, 2, 2],
             vec![1.; 4],
-        )
-        .unwrap();
+        );
         let mut iter = mat.iter();
         assert_eq!(iter.next(), Some((&1., (1, 0))));
         assert_eq!(iter.next(), Some((&1., (0, 1))));
@@ -2846,8 +2863,7 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        )
-        .unwrap();
+        );
 
         let degrees = mat.degrees();
         assert_eq!(&degrees, &[2, 0, 1, 2, 1],);
@@ -2865,8 +2881,7 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        )
-        .unwrap();
+        );
 
         let diag = mat.diag();
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
@@ -2893,8 +2908,7 @@ mod test {
             vec![0, 3, 4, 5, 8, 10],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
-        )
-        .unwrap();
+        );
 
         let mut diags = mat.diag_iter_mut().collect::<Vec<_>>();
         diags[4].as_mut().map(|x| **x *= 3);
@@ -2915,8 +2929,7 @@ mod test {
             vec![0, 3, 4, 5, 8, 10, 12],
             vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4, 0, 2],
             vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1, 3, 1],
-        )
-        .unwrap();
+        );
 
         let diag = mat.diag();
         let expected = CsVec::new(5, vec![0, 1, 3, 4], vec![1, 2, 1, 1]);
@@ -2946,8 +2959,7 @@ mod test {
             vec![0, 2, 4],
             vec![0, 1, 0, 1],
             vec![2.0, 0.0, 0.0, 2.0],
-        )
-        .unwrap();
+        );
 
         let onehot = mat.to_inner_onehot();
 
@@ -2957,14 +2969,12 @@ mod test {
 
     #[test]
     fn onehot_sparse_csc() {
-        let mat = CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![2.0])
-            .unwrap();
+        let mat = CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![2.0]);
 
         let onehot = mat.to_inner_onehot();
 
         let expected =
-            CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![1.0])
-                .unwrap();
+            CsMat::new_csc((2, 3), vec![0, 0, 1, 1], vec![1], vec![1.0]);
 
         assert!(onehot.is_csc());
         assert_eq!(expected, onehot);
@@ -2977,8 +2987,7 @@ mod test {
             vec![0, 2, 3],
             vec![0, 1, 1],
             vec![2.0, std::f64::NAN, 2.0],
-        )
-        .unwrap();
+        );
 
         let onehot = mat.to_inner_onehot();
 

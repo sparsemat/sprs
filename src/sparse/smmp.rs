@@ -444,8 +444,7 @@ mod test {
             &c_indptr[..],
             &c_indices[..],
             &mut c_data[..],
-        )
-        .unwrap();
+        );
         super::numeric(a.view(), b.view(), c.view_mut(), &mut tmp);
         assert_eq!(exp.indptr(), &c_indptr[..]);
         assert_eq!(exp.indices(), &c_indices[..]);
@@ -463,14 +462,13 @@ mod test {
     #[test]
     fn mul_zero_rows() {
         // See https://github.com/vbarrielle/sprs/issues/239
-        let a = crate::CsMat::new((0, 11), vec![0], vec![], vec![]).unwrap();
+        let a = crate::CsMat::new((0, 11), vec![0], vec![], vec![]);
         let b = crate::CsMat::new(
             (11, 11),
             vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             vec![],
             vec![],
-        )
-        .unwrap();
+        );
         let c: crate::CsMat<f64> = &a * &b;
         assert_eq!(c.rows(), 0);
         assert_eq!(c.cols(), 11);
