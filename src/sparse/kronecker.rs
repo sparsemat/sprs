@@ -19,6 +19,7 @@ pub fn kronecker_product<
     mut a: CsMatViewI<N, I, Iptr>,
     mut b: CsMatViewI<N, I, Iptr>,
 ) -> CsMatI<N, I, Iptr> {
+    use crate::CompressedStorage::CSR;
     if a.storage() == b.storage() {
         let was_csc = a.is_csc();
         if was_csc {
@@ -47,7 +48,8 @@ pub fn kronecker_product<
                 indptr.push(element_count);
             }
         }
-        let mut mat = CsMatBase::new(shape, indptr, indices, values);
+        let mut mat =
+            CsMatBase::new_trusted(CSR, shape, indptr, indices, values);
         debug_assert_eq!(mat.nnz(), nnz);
         if was_csc {
             mat.transpose_mut()
