@@ -281,7 +281,7 @@ where
         }
     }
 
-    /// Internal analog to new_unchecked which is not marked as `unsafe` as
+    /// Internal analog to `new_unchecked` which is not marked as `unsafe` as
     /// we should always construct valid matrices internally
     pub(crate) fn new_trusted(
         storage: CompressedStorage,

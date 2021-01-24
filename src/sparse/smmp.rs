@@ -440,6 +440,7 @@ mod test {
         let mut c_data = vec![0.; c_indices.len()];
         let mut tmp = [0.; 5];
         let mut c = crate::CsMatViewMutI::new_trusted(
+            crate::CompressedStorage::CSR,
             (a.rows(), b.cols()),
             &c_indptr[..],
             &c_indices[..],
