@@ -184,9 +184,27 @@ where
         }
     }
 
-    /// Create a new `CSR` sparse matrix from owned data
+    /// Create a new `CSR` sparse matrix
     ///
     /// See `new_csc` for the `CSC` equivalent
+    ///
+    /// This constructor can be used to construct all
+    /// sparse matrix types.
+    /// By using the type aliases one helps constrain the resulting type,
+    /// as shown below
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use sprs::*;
+    /// // This creates an owned matrix
+    /// let owned_matrix = CsMat::new((2, 2), vec![0, 1, 1], vec![1], vec![4_u8]);
+    /// // This creates a matrix which only borrows the elements
+    /// let borrow_matrix = CsMatView::new((2, 2), &[0, 1, 1], &[1], &[4_u8]);
+    /// // A combination of storage types may also be used for a
+    /// // general sparse matrix
+    /// let mixed_matrix = CsMatBase::new((2, 2), &[0, 1, 1] as &[_], vec![1_i64].into_boxed_slice(), vec![4_u8]);
+    /// ```
     pub fn new(
         shape: (usize, usize),
         indptr: IptrStorage,
@@ -198,7 +216,7 @@ where
             .unwrap()
     }
 
-    /// Create a new `CSC` sparse matrix from owned data
+    /// Create a new `CSC` sparse matrix
     ///
     /// See `new` for the `CSR` equivalent
     pub fn new_csc(
@@ -212,7 +230,7 @@ where
             .unwrap()
     }
 
-    /// Try to create a new `CSR` sparse matrix from owned data
+    /// Try to create a new `CSR` sparse matrix
     ///
     /// See `try_new_csc` for the `CSC` equivalent
     pub fn try_new(
@@ -224,7 +242,7 @@ where
         Self::new_checked(CompressedStorage::CSR, shape, indptr, indices, data)
     }
 
-    /// Try to create a new `CSC` sparse matrix from owned data
+    /// Try to create a new `CSC` sparse matrix
     ///
     /// See `new` for the `CSR` equivalent
     pub fn try_new_csc(
