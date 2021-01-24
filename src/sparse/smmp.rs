@@ -380,7 +380,7 @@ where
             ),
             tmp,
         )| {
-            let res_chunk = CsMatViewMutI::new_trusted_mut_view(
+            let res_chunk = CsMatViewMutI::new_trusted(
                 CSR,
                 (lhs_chunk.rows(), rhs.cols()),
                 res_indptr_chunk,

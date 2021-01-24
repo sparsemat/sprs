@@ -280,6 +280,26 @@ where
             data,
         }
     }
+
+    /// Internal analog to new_unchecked which is not marked as `unsafe` as
+    /// we should always construct valid matrices internally
+    pub(crate) fn new_trusted(
+        storage: CompressedStorage,
+        shape: Shape,
+        indptr: IptrStorage,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Self {
+        let (nrows, ncols) = shape;
+        Self {
+            storage,
+            nrows,
+            ncols,
+            indptr: crate::IndPtrBase::new_trusted(indptr),
+            indices,
+            data,
+        }
+    }
 }
 
 impl<N, I: SpIndex, Iptr: SpIndex, IptrStorage, IStorage, DStorage>
@@ -477,24 +497,6 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     pub fn reserve_nnz_exact(&mut self, nnz_lim: usize) {
         self.indices.reserve_exact(nnz_lim);
         self.data.reserve_exact(nnz_lim);
-    }
-
-    pub(crate) fn new_trusted(
-        storage: CompressedStorage,
-        shape: Shape,
-        indptr: Vec<Iptr>,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Self {
-        let (nrows, ncols) = shape;
-        Self {
-            storage,
-            nrows,
-            ncols,
-            indptr: crate::IndPtr::new_trusted(indptr),
-            indices,
-            data,
-        }
     }
 
     /// Create a CSR matrix from a dense matrix, ignoring elements lower than `epsilon`.
@@ -1584,29 +1586,6 @@ where
                 None
             }
         })
-    }
-}
-
-impl<'a, N, I, Iptr> CsMatViewMutI<'a, N, I, Iptr>
-where
-    I: SpIndex,
-    Iptr: SpIndex,
-{
-    pub(crate) fn new_trusted_mut_view(
-        storage: CompressedStorage,
-        shape: Shape,
-        indptr: &'a [Iptr],
-        indices: &'a [I],
-        data: &'a mut [N],
-    ) -> Self {
-        Self {
-            storage,
-            nrows: shape.0,
-            ncols: shape.1,
-            indptr: crate::IndPtrView::new_trusted(indptr),
-            indices,
-            data,
-        }
     }
 }
 
