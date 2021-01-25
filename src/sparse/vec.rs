@@ -616,7 +616,7 @@ where
     /// Creates a sparse vector
     ///
     /// Will sort indices and data if necessary
-    pub fn new_sorted(
+    pub fn new_from_unsorted(
         n: usize,
         indices: IStorage,
         data: DStorage,
