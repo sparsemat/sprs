@@ -16,13 +16,12 @@ use std::default::Default;
 use std::iter::{Enumerate, Zip};
 use std::mem;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Sub};
-use std::slice::{self, Iter};
+use std::slice::Iter;
 
 use crate::{Ix1, Ix2, Shape};
 use ndarray::linalg::Dot;
 use ndarray::{self, Array, ArrayBase, ShapeBuilder};
 
-use crate::array_backend::Array2;
 use crate::indexing::SpIndex;
 
 use crate::errors::StructureError;
@@ -309,7 +308,7 @@ where
     IStorage: DerefMut<Target = [I]>,
     DStorage: DerefMut<Target = [N]>,
 {
-    fn new_sorted_checked(
+    fn new_from_unsorted_checked(
         storage: CompressedStorage,
         shape: (usize, usize),
         indptr: IptrStorage,
@@ -369,38 +368,36 @@ where
 
     /// Try create a `CSR` matrix which acts as an owner of its data.
     ///
-    /// A `CSC` matrix can be created with `new_sorted_csc()`.
+    /// A `CSC` matrix can be created with `new_from_unsorted_csc()`.
     ///
     /// If necessary, the indices will be sorted in place.
-    pub fn new_sorted(
+    pub fn new_from_unsorted(
         shape: Shape,
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, StructureError>
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
         N: Copy,
     {
-        Self::new_sorted_checked(CSR, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
+        Self::new_from_unsorted_checked(CSR, shape, indptr, indices, data)
     }
 
     /// Try create a `CSC` matrix which acts as an owner of its data.
     ///
-    /// A `CSR` matrix can be created with `new_sorted_csr()`.
+    /// A `CSR` matrix can be created with `new_from_unsorted_csr()`.
     ///
     /// If necessary, the indices will be sorted in place.
-    pub fn new_sorted_csc(
+    pub fn new_from_unsorted_csc(
         shape: Shape,
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, StructureError>
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
         N: Copy,
     {
-        Self::new_sorted_checked(CSC, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
+        Self::new_from_unsorted_checked(CSC, shape, indptr, indices, data)
     }
 }
 
@@ -1076,10 +1073,12 @@ where
     ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewI<N, I>>
            + std::iter::ExactSizeIterator<Item = CsVecViewI<N, I>>
            + '_ {
-        self.indptr.iter_outer_sz().map(move |range| CsVecViewI {
-            dim: self.inner_dims(),
-            indices: &self.indices[range.clone()],
-            data: &self.data[range],
+        self.indptr.iter_outer_sz().map(move |range| {
+            CsVecViewI::new_trusted(
+                self.inner_dims(),
+                &self.indices[range.clone()],
+                &self.data[range],
+            )
         })
     }
 
@@ -1100,11 +1099,7 @@ where
             let indices = &self.indices[range.clone()];
             let data = &self.data[range];
             // CsMat invariants imply CsVec invariants
-            let vec = CsVecBase {
-                dim: self.inner_dims(),
-                indices,
-                data,
-            };
+            let vec = CsVecBase::new_trusted(self.inner_dims(), indices, data);
             (outer_ind_perm, vec)
         })
     }
@@ -1147,11 +1142,11 @@ where
         }
         let range = self.indptr.outer_inds_sz(i);
         // CsMat invariants imply CsVec invariants
-        Some(CsVecViewI {
-            dim: self.inner_dims(),
-            indices: &self.indices[range.clone()],
-            data: &self.data[range],
-        })
+        Some(CsVecViewI::new_trusted(
+            self.inner_dims(),
+            &self.indices[range.clone()],
+            &self.data[range],
+        ))
     }
 
     /// Get the diagonal of a sparse matrix
@@ -1176,11 +1171,7 @@ where
         }
         data_vec.shrink_to_fit();
         index_vec.shrink_to_fit();
-        CsVecI {
-            dim: smallest_dim,
-            indices: index_vec,
-            data: data_vec,
-        }
+        CsVecI::new_trusted(smallest_dim, index_vec, data_vec)
     }
 
     /// Iteration over all entries on the diagonal
@@ -1449,11 +1440,11 @@ where
         }
         let range = self.indptr.outer_inds_sz(i);
         // CsMat invariants imply CsVec invariants
-        Some(CsVecBase {
-            dim: self.inner_dims(),
-            indices: &self.indices[range.clone()],
-            data: &mut self.data[range],
-        })
+        Some(CsVecBase::new_trusted(
+            self.inner_dims(),
+            &self.indices[range.clone()],
+            &mut self.data[range],
+        ))
     }
 
     /// Get a mutable reference to the element located at row i and column j.
@@ -1542,11 +1533,7 @@ where
                 )
             };
 
-            CsVecViewMutI {
-                dim: inner_dim,
-                indices: &indices[range],
-                data,
-            }
+            CsVecViewMutI::new_trusted(inner_dim, &indices[range], data)
         })
     }
 
@@ -1748,41 +1735,6 @@ pub mod raw {
         let mut last = Iptr::zero();
         for iptr in indptr.iter_mut() {
             swap(iptr, &mut last);
-        }
-    }
-}
-
-impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
-    CsMatBase<N, I, Vec<Iptr>, &'a [I], &'a [N], Iptr>
-{
-    /// Create a borrowed row or column `CsMat` matrix from raw data,
-    /// without checking their validity
-    ///
-    /// # Safety
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by
-    /// [`check_compressed_structure`](Self::check_compressed_structure) are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_vecview_raw(
-        storage: CompressedStorage,
-        nrows: usize,
-        ncols: usize,
-        indptr: *const Iptr,
-        indices: *const I,
-        data: *const N,
-    ) -> CsMatVecView_<'a, N, I, Iptr> {
-        let indptr = slice::from_raw_parts(indptr, 2);
-        let nnz = indptr[1].index_unchecked();
-        CsMatVecView_ {
-            storage,
-            nrows,
-            ncols,
-            indptr: crate::IndPtrBase::new_trusted(Array2 {
-                data: [indptr[0], indptr[1]],
-            }),
-            indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts(data, nnz),
         }
     }
 }
@@ -2479,8 +2431,7 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok: Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::new_sorted_checked(
-            CSR,
+        assert!(CsMat::new_from_unsorted(
             (3, 3),
             indptr_ok,
             indices_ok,
@@ -2543,9 +2494,13 @@ mod test {
         let indices_sorted = &[1, 2, 3, 2, 3, 4, 4];
         let indices_shuffled = vec![1, 3, 2, 2, 3, 4, 4];
         let mut data: Vec<i32> = (0..7).collect();
-        let m =
-            CsMat::new_sorted((5, 5), indptr, indices_shuffled, data.clone())
-                .unwrap();
+        let m = CsMat::new_from_unsorted(
+            (5, 5),
+            indptr,
+            indices_shuffled,
+            data.clone(),
+        )
+        .unwrap();
         assert_eq!(m.indices(), indices_sorted);
         data.swap(1, 2);
         assert_eq!(m.data(), &data[..]);

@@ -26,7 +26,7 @@ use std::hash::Hash;
 use std::iter::{Enumerate, FilterMap, IntoIterator, Peekable, Sum, Zip};
 use std::marker::PhantomData;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub};
-use std::slice::{self, Iter, IterMut};
+use std::slice::{Iter, IterMut};
 
 use num_traits::{Float, Num, Signed, Zero};
 
@@ -486,31 +486,145 @@ where
     }
 }
 
-/// # Methods operating on owning sparse vectors
-impl<N, I: SpIndex> CsVecI<N, I> {
-    /// Create an owning `CsVec` from vector data.
+/// # Constructor methods
+impl<N, I: SpIndex, DStorage, IStorage> CsVecBase<IStorage, DStorage, N, I>
+where
+    DStorage: std::ops::Deref<Target = [N]>,
+    IStorage: std::ops::Deref<Target = [I]>,
+{
+    /// Create a sparse vector
     ///
     /// # Panics
     ///
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
-    pub fn new(n: usize, indices: Vec<I>, data: Vec<N>) -> Self
-    where
-        N: Copy,
-    {
-        Self::try_new(n, indices, data).unwrap()
+    /// - if indices are out of order
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use sprs::*;
+    /// // Creating a sparse owned vector
+    /// let owned = CsVec::new(10, vec![0, 4], vec![-4, 2]);
+    /// // Creating a sparse borrowing vector with `I = u16`
+    /// let borrow = CsVecViewI::new(10, &[0_u16, 4], &[-4, 2]);
+    /// // Creating a general sparse vector with different storage types
+    /// let mixed = CsVecBase::new(10, &[0_u64, 4] as &[_], vec![-4, 2]);
+    /// ```
+    pub fn new(n: usize, indices: IStorage, data: DStorage) -> Self {
+        Self::try_new(n, indices, data)
+            .map_err(|(_, _, e)| e)
+            .unwrap()
     }
 
-    /// Try create an owning `CsVec` from vector data.
+    /// Try create a sparse vector from the given buffers
+    ///
+    /// Will return the buffers along with the error if
+    /// conversion is illegal
     pub fn try_new(
         n: usize,
-        indices: Vec<I>,
-        data: Vec<N>,
-    ) -> Result<Self, StructureError>
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, (IStorage, DStorage, StructureError)> {
+        if I::from(n).is_none() {
+            return Err((
+                indices,
+                data,
+                StructureError::OutOfRange("Index size is too small"),
+            ));
+        }
+        if indices.len() != data.len() {
+            return Err((
+                indices,
+                data,
+                StructureError::SizeMismatch(
+                    "indices and data do not have compatible lengths",
+                ),
+            ));
+        }
+        for i in indices.iter() {
+            if i.to_usize().is_none() {
+                return Err((
+                    indices,
+                    data,
+                    StructureError::OutOfRange(
+                        "index can not be converted to usize",
+                    ),
+                ));
+            }
+        }
+        if !utils::sorted_indices(indices.as_ref()) {
+            return Err((
+                indices,
+                data,
+                StructureError::Unsorted("Unsorted indices"),
+            ));
+        }
+        if let Some(i) = indices.last() {
+            if i.to_usize().unwrap() >= n {
+                return Err((
+                    indices,
+                    data,
+                    StructureError::SizeMismatch(
+                        "indices larger than vector size",
+                    ),
+                ));
+            }
+        }
+        Ok(Self::new_trusted(n, indices, data))
+    }
+
+    /// Internal version of `new_unchecked` where we guarantee the invariants
+    /// ourselves
+    pub(crate) fn new_trusted(
+        n: usize,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Self {
+        Self {
+            dim: n,
+            indices,
+            data,
+        }
+    }
+
+    /// Create a `CsVec` without checking the structure
+    ///
+    /// # Safety
+    ///
+    /// This is unsafe because algorithms are free to assume
+    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced.
+    /// For instance, non out-of-bounds indices can be relied upon to
+    /// perform unchecked slice access.
+    pub unsafe fn new_uncheked(
+        n: usize,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Self {
+        Self {
+            dim: n,
+            indices,
+            data,
+        }
+    }
+}
+
+impl<N, I: SpIndex, DStorage, IStorage> CsVecBase<IStorage, DStorage, N, I>
+where
+    DStorage: std::ops::DerefMut<Target = [N]>,
+    IStorage: std::ops::DerefMut<Target = [I]>,
+{
+    /// Creates a sparse vector
+    ///
+    /// Will sort indices and data if necessary
+    pub fn new_from_unsorted(
+        n: usize,
+        indices: IStorage,
+        data: DStorage,
+    ) -> Result<Self, (IStorage, DStorage, StructureError)>
     where
         N: Copy,
     {
-        let v = Self::new_(n, indices, data);
+        let v = Self::try_new(n, indices, data);
         match v {
             Err((mut indices, mut data, StructureError::Unsorted(_))) => {
                 let mut buf = Vec::with_capacity(indices.len());
@@ -519,20 +633,18 @@ impl<N, I: SpIndex> CsVecI<N, I> {
                     &mut data[..],
                     &mut buf,
                 );
-                Self::new_(n, indices, data)
+                Self::try_new(n, indices, data)
             }
             v => v,
         }
-        .map_err(|(_, _, e)| e)
     }
+}
 
+/// # Methods operating on owning sparse vectors
+impl<N, I: SpIndex> CsVecI<N, I> {
     /// Create an empty `CsVec`, which can be used for incremental construction
     pub fn empty(dim: usize) -> Self {
-        Self {
-            dim,
-            indices: Vec::new(),
-            data: Vec::new(),
-        }
+        Self::new_trusted(dim, vec![], vec![])
     }
 
     /// Append an element to the sparse vector. Used for incremental
@@ -585,72 +697,7 @@ where
 {
     /// Get a view of this vector.
     pub fn view(&self) -> CsVecViewI<N, I> {
-        CsVecViewI {
-            dim: self.dim,
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
-    }
-
-    /// Try to create a new vector from the given buffers
-    ///
-    /// Will return the buffers along with the error if
-    /// conversion is illegal
-    pub(crate) fn new_(
-        n: usize,
-        indices: IStorage,
-        data: DStorage,
-    ) -> Result<Self, (IStorage, DStorage, StructureError)> {
-        if I::from(n).is_none() {
-            return Err((
-                indices,
-                data,
-                StructureError::OutOfRange("Index size is too small"),
-            ));
-        }
-        if indices.len() != data.len() {
-            return Err((
-                indices,
-                data,
-                StructureError::SizeMismatch(
-                    "indices and data do not have compatible lengths",
-                ),
-            ));
-        }
-        for i in indices.iter() {
-            if i.to_usize().is_none() {
-                return Err((
-                    indices,
-                    data,
-                    StructureError::OutOfRange(
-                        "index can not be converted to usize",
-                    ),
-                ));
-            }
-        }
-        if !utils::sorted_indices(indices.as_ref()) {
-            return Err((
-                indices,
-                data,
-                StructureError::Unsorted("Unsorted indices"),
-            ));
-        }
-        if let Some(i) = indices.last() {
-            if i.to_usize().unwrap() >= n {
-                return Err((
-                    indices,
-                    data,
-                    StructureError::SizeMismatch(
-                        "indices larger than vector size",
-                    ),
-                ));
-            }
-        }
-        Ok(Self {
-            dim: n,
-            indices,
-            data,
-        })
+        CsVecViewI::new_trusted(self.dim, &self.indices[..], &self.data)
     }
 
     /// Convert the sparse vector to a dense one
@@ -724,8 +771,8 @@ where
     }
 
     /// Check the sparse structure, namely that:
-    /// - indices is sorted
-    /// - indices are lower than dims()
+    /// - indices are sorted
+    /// - all indices are less than dims()
     pub fn check_structure(&self) -> Result<(), StructureError> {
         // Make sure indices can be converted to usize
         for i in self.indices.iter() {
@@ -757,11 +804,7 @@ where
     where
         N: Clone,
     {
-        CsVecI {
-            dim: self.dim,
-            indices: self.indices.to_vec(),
-            data: self.data.to_vec(),
-        }
+        CsVecI::new_trusted(self.dim, self.indices.to_vec(), self.data.to_vec())
     }
 
     /// Clone the vector with another integer type for its indices
@@ -780,11 +823,7 @@ where
             .map(|i| I2::from_usize(i.index_unchecked()))
             .collect();
         let data = self.data.iter().cloned().collect();
-        CsVecI {
-            dim: self.dim,
-            indices,
-            data,
-        }
+        CsVecI::new_trusted(self.dim, indices, data)
     }
 
     /// View this vector as a matrix with only one row.
@@ -1028,11 +1067,11 @@ where
     }
 
     pub fn view_mut(&mut self) -> CsVecViewMutI<N, I> {
-        CsVecViewMutI {
-            dim: self.dim,
-            indices: &self.indices[..],
-            data: &mut self.data[..],
-        }
+        CsVecViewMutI::new_trusted(
+            self.dim,
+            &self.indices[..],
+            &mut self.data[..],
+        )
     }
 
     /// Access element at given index, with logarithmic complexity
@@ -1080,15 +1119,6 @@ where
 
 /// # Methods propagating the lifetime of a `CsVecViewI`.
 impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
-    /// Create a borrowed `CsVec` over slice data.
-    pub fn new_view(
-        n: usize,
-        indices: &'a [I],
-        data: &'a [N],
-    ) -> Result<Self, StructureError> {
-        Self::new_(n, indices, data).map_err(|(_, _, e)| e)
-    }
-
     /// Access element at given index, with logarithmic complexity
     ///
     /// Re-borrowing version of `at()`.
@@ -1103,56 +1133,6 @@ impl<'a, N: 'a, I: 'a + SpIndex> CsVecViewI<'a, N, I> {
     fn iter_rbr(&self) -> VectorIterator<'a, N, I> {
         VectorIterator {
             ind_data: self.indices.iter().zip(self.data.iter()),
-        }
-    }
-
-    /// Create a borrowed `CsVec` over slice data without checking the structure
-    ///
-    /// # Safety
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_view_raw(
-        n: usize,
-        nnz: usize,
-        indices: *const I,
-        data: *const N,
-    ) -> Self {
-        Self {
-            dim: n,
-            indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts(data, nnz),
-        }
-    }
-}
-
-/// # Methods propagating the lifetome of a `CsVecViewMutI`.
-impl<'a, N, I> CsVecViewMutI<'a, N, I>
-where
-    N: 'a,
-    I: 'a + SpIndex,
-{
-    /// Create a borrowed [`CsVec`](CsMatBase) over slice data without checking the structure
-    ///
-    /// # Safety
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by [`check_structure`](CsVecBase::check_structure) are enforced, and
-    /// because the lifetime of the pointers is unconstrained.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    /// For safety, lifetime of the resulting vector should match the lifetime
-    /// of the input pointers.
-    pub unsafe fn new_view_mut_raw(
-        n: usize,
-        nnz: usize,
-        indices: *const I,
-        data: *mut N,
-    ) -> Self {
-        Self {
-            dim: n,
-            indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts_mut(data, nnz),
         }
     }
 }
@@ -1413,11 +1393,11 @@ mod alga_impls {
         I: SpIndex,
     {
         fn two_sided_inverse(&self) -> Self {
-            Self {
-                data: self.data.iter().map(|x| -*x).collect(),
-                indices: self.indices.clone(),
-                dim: self.dim,
-            }
+            Self::new_trusted(
+                self.dim,
+                self.indices.clone(),
+                self.data.iter().map(|x| -*x).collect(),
+            )
         }
     }
 
