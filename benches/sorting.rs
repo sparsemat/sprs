@@ -35,7 +35,7 @@ fn create_csmat_from_unsorted(bench: &mut Bencher) {
         let mut rng = rand::rngs::SmallRng::seed_from_u64(42);
         indices.shuffle(&mut rng);
         let values = values.clone();
-        let _v = CsVec::new(N, indices, values);
+        let _v = CsVec::new_sorted(N, indices, values).unwrap();
     });
 }
 
