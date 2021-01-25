@@ -1740,41 +1740,6 @@ pub mod raw {
     }
 }
 
-impl<'a, N: 'a, I: 'a + SpIndex, Iptr: 'a + SpIndex>
-    CsMatBase<N, I, Vec<Iptr>, &'a [I], &'a [N], Iptr>
-{
-    /// Create a borrowed row or column `CsMat` matrix from raw data,
-    /// without checking their validity
-    ///
-    /// # Safety
-    /// This is unsafe because algorithms are free to assume
-    /// that properties guaranteed by
-    /// [`check_compressed_structure`](Self::check_compressed_structure) are enforced.
-    /// For instance, non out-of-bounds indices can be relied upon to
-    /// perform unchecked slice access.
-    pub unsafe fn new_vecview_raw(
-        storage: CompressedStorage,
-        nrows: usize,
-        ncols: usize,
-        indptr: *const Iptr,
-        indices: *const I,
-        data: *const N,
-    ) -> CsMatVecView_<'a, N, I, Iptr> {
-        let indptr = slice::from_raw_parts(indptr, 2);
-        let nnz = indptr[1].index_unchecked();
-        CsMatVecView_ {
-            storage,
-            nrows,
-            ncols,
-            indptr: crate::IndPtrBase::new_trusted(Array2 {
-                data: [indptr[0], indptr[1]],
-            }),
-            indices: slice::from_raw_parts(indices, nnz),
-            data: slice::from_raw_parts(data, nnz),
-        }
-    }
-}
-
 impl<'a, 'b, N, I, Iptr, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
     Add<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>
