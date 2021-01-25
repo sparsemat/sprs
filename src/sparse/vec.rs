@@ -486,6 +486,7 @@ where
     }
 }
 
+/// # Constructor methods
 impl<N, I: SpIndex, DStorage, IStorage> CsVecBase<IStorage, DStorage, N, I>
 where
     DStorage: std::ops::Deref<Target = [N]>,
@@ -555,6 +556,17 @@ where
     /// - if `indices` and `data` lengths differ
     /// - if the vector contains out of bounds indices
     /// - if indices are out of order
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use sprs::*;
+    /// // Creating a sparse owned vector
+    /// let owned = CsVec::new(10, vec![0, 4], vec![-4, 2]);
+    /// // Creating a sparse borrowing vector with `I = u16`
+    /// let borrow = CsVecViewI::new(10, &[0_u16, 4], &[-4, 2]);
+    /// // Creating a general sparse vector with different storage types
+    /// let mixed = CsVecBase::new(10, &[0_u64, 4] as &[_], vec![-4, 2]);
+    /// ```
     pub fn new(n: usize, indices: IStorage, data: DStorage) -> Self {
         Self::try_new(n, indices, data)
             .map_err(|(_, _, e)| e)
@@ -768,8 +780,8 @@ where
     }
 
     /// Check the sparse structure, namely that:
-    /// - indices is sorted
-    /// - indices are lower than dims()
+    /// - indices are sorted
+    /// - all indices are less than dims()
     pub fn check_structure(&self) -> Result<(), StructureError> {
         // Make sure indices can be converted to usize
         for i in self.indices.iter() {
