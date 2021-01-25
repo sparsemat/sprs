@@ -309,7 +309,7 @@ where
     IStorage: DerefMut<Target = [I]>,
     DStorage: DerefMut<Target = [N]>,
 {
-    fn new_sorted_checked(
+    fn new_from_unsorted_checked(
         storage: CompressedStorage,
         shape: (usize, usize),
         indptr: IptrStorage,
@@ -369,38 +369,36 @@ where
 
     /// Try create a `CSR` matrix which acts as an owner of its data.
     ///
-    /// A `CSC` matrix can be created with `new_sorted_csc()`.
+    /// A `CSC` matrix can be created with `new_from_unsorted_csc()`.
     ///
     /// If necessary, the indices will be sorted in place.
-    pub fn new_sorted(
+    pub fn new_from_unsorted(
         shape: Shape,
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, StructureError>
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
         N: Copy,
     {
-        Self::new_sorted_checked(CSR, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
+        Self::new_from_unsorted_checked(CSR, shape, indptr, indices, data)
     }
 
     /// Try create a `CSC` matrix which acts as an owner of its data.
     ///
-    /// A `CSR` matrix can be created with `new_sorted_csr()`.
+    /// A `CSR` matrix can be created with `new_from_unsorted_csr()`.
     ///
     /// If necessary, the indices will be sorted in place.
-    pub fn new_sorted_csc(
+    pub fn new_from_unsorted_csc(
         shape: Shape,
         indptr: IptrStorage,
         indices: IStorage,
         data: DStorage,
-    ) -> Result<Self, StructureError>
+    ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
         N: Copy,
     {
-        Self::new_sorted_checked(CSC, shape, indptr, indices, data)
-            .map_err(|(_, _, _, e)| e)
+        Self::new_from_unsorted_checked(CSC, shape, indptr, indices, data)
     }
 }
 
