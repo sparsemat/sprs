@@ -1076,10 +1076,12 @@ where
     ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewI<N, I>>
            + std::iter::ExactSizeIterator<Item = CsVecViewI<N, I>>
            + '_ {
-        self.indptr.iter_outer_sz().map(move |range| CsVecViewI {
-            dim: self.inner_dims(),
-            indices: &self.indices[range.clone()],
-            data: &self.data[range],
+        self.indptr.iter_outer_sz().map(move |range| {
+            CsVecViewI::new_trusted(
+                self.inner_dims(),
+                &self.indices[range.clone()],
+                &self.data[range],
+            )
         })
     }
 
@@ -1100,11 +1102,7 @@ where
             let indices = &self.indices[range.clone()];
             let data = &self.data[range];
             // CsMat invariants imply CsVec invariants
-            let vec = CsVecBase {
-                dim: self.inner_dims(),
-                indices,
-                data,
-            };
+            let vec = CsVecBase::new_trusted(self.inner_dims(), indices, data);
             (outer_ind_perm, vec)
         })
     }
@@ -1147,11 +1145,11 @@ where
         }
         let range = self.indptr.outer_inds_sz(i);
         // CsMat invariants imply CsVec invariants
-        Some(CsVecViewI {
-            dim: self.inner_dims(),
-            indices: &self.indices[range.clone()],
-            data: &self.data[range],
-        })
+        Some(CsVecViewI::new_trusted(
+            self.inner_dims(),
+            &self.indices[range.clone()],
+            &self.data[range],
+        ))
     }
 
     /// Get the diagonal of a sparse matrix
@@ -1176,11 +1174,7 @@ where
         }
         data_vec.shrink_to_fit();
         index_vec.shrink_to_fit();
-        CsVecI {
-            dim: smallest_dim,
-            indices: index_vec,
-            data: data_vec,
-        }
+        CsVecI::new_trusted(smallest_dim, index_vec, data_vec)
     }
 
     /// Iteration over all entries on the diagonal
@@ -1449,11 +1443,11 @@ where
         }
         let range = self.indptr.outer_inds_sz(i);
         // CsMat invariants imply CsVec invariants
-        Some(CsVecBase {
-            dim: self.inner_dims(),
-            indices: &self.indices[range.clone()],
-            data: &mut self.data[range],
-        })
+        Some(CsVecBase::new_trusted(
+            self.inner_dims(),
+            &self.indices[range.clone()],
+            &mut self.data[range],
+        ))
     }
 
     /// Get a mutable reference to the element located at row i and column j.
@@ -1542,11 +1536,7 @@ where
                 )
             };
 
-            CsVecViewMutI {
-                dim: inner_dim,
-                indices: &indices[range],
-                data,
-            }
+            CsVecViewMutI::new_trusted(inner_dim, &indices[range], data)
         })
     }
 

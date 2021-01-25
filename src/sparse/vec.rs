@@ -545,11 +545,7 @@ where
                 ));
             }
         }
-        Ok(Self {
-            dim: n,
-            indices,
-            data,
-        })
+        Ok(Self::new_trusted(n, indices, data))
     }
 
     /// Create a sparse vector
@@ -645,11 +641,7 @@ where
 impl<N, I: SpIndex> CsVecI<N, I> {
     /// Create an empty `CsVec`, which can be used for incremental construction
     pub fn empty(dim: usize) -> Self {
-        Self {
-            dim,
-            indices: Vec::new(),
-            data: Vec::new(),
-        }
+        Self::new_trusted(dim, vec![], vec![])
     }
 
     /// Append an element to the sparse vector. Used for incremental
@@ -702,11 +694,7 @@ where
 {
     /// Get a view of this vector.
     pub fn view(&self) -> CsVecViewI<N, I> {
-        CsVecViewI {
-            dim: self.dim,
-            indices: &self.indices[..],
-            data: &self.data[..],
-        }
+        CsVecViewI::new_trusted(self.dim, &self.indices[..], &self.data)
     }
 
     /// Convert the sparse vector to a dense one
@@ -813,11 +801,7 @@ where
     where
         N: Clone,
     {
-        CsVecI {
-            dim: self.dim,
-            indices: self.indices.to_vec(),
-            data: self.data.to_vec(),
-        }
+        CsVecI::new_trusted(self.dim, self.indices.to_vec(), self.data.to_vec())
     }
 
     /// Clone the vector with another integer type for its indices
@@ -836,11 +820,7 @@ where
             .map(|i| I2::from_usize(i.index_unchecked()))
             .collect();
         let data = self.data.iter().cloned().collect();
-        CsVecI {
-            dim: self.dim,
-            indices,
-            data,
-        }
+        CsVecI::new_trusted(self.dim, indices, data)
     }
 
     /// View this vector as a matrix with only one row.
@@ -1084,11 +1064,11 @@ where
     }
 
     pub fn view_mut(&mut self) -> CsVecViewMutI<N, I> {
-        CsVecViewMutI {
-            dim: self.dim,
-            indices: &self.indices[..],
-            data: &mut self.data[..],
-        }
+        CsVecViewMutI::new_trusted(
+            self.dim,
+            &self.indices[..],
+            &mut self.data[..],
+        )
     }
 
     /// Access element at given index, with logarithmic complexity
@@ -1410,11 +1390,11 @@ mod alga_impls {
         I: SpIndex,
     {
         fn two_sided_inverse(&self) -> Self {
-            Self {
-                data: self.data.iter().map(|x| -*x).collect(),
-                indices: self.indices.clone(),
-                dim: self.dim,
-            }
+            Self::new_trusted(
+                self.dim,
+                self.indices.clone(),
+                self.data.iter().map(|x| -*x).collect(),
+            )
         }
     }
 
