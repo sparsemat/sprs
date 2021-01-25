@@ -492,11 +492,35 @@ where
     DStorage: std::ops::Deref<Target = [N]>,
     IStorage: std::ops::Deref<Target = [I]>,
 {
-    /// Try to create a new vector from the given buffers
+    /// Create a sparse vector
+    ///
+    /// # Panics
+    ///
+    /// - if `indices` and `data` lengths differ
+    /// - if the vector contains out of bounds indices
+    /// - if indices are out of order
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use sprs::*;
+    /// // Creating a sparse owned vector
+    /// let owned = CsVec::new(10, vec![0, 4], vec![-4, 2]);
+    /// // Creating a sparse borrowing vector with `I = u16`
+    /// let borrow = CsVecViewI::new(10, &[0_u16, 4], &[-4, 2]);
+    /// // Creating a general sparse vector with different storage types
+    /// let mixed = CsVecBase::new(10, &[0_u64, 4] as &[_], vec![-4, 2]);
+    /// ```
+    pub fn new(n: usize, indices: IStorage, data: DStorage) -> Self {
+        Self::try_new(n, indices, data)
+            .map_err(|(_, _, e)| e)
+            .unwrap()
+    }
+
+    /// Try create a sparse vector from the given buffers
     ///
     /// Will return the buffers along with the error if
     /// conversion is illegal
-    pub(crate) fn new_(
+    pub fn try_new(
         n: usize,
         indices: IStorage,
         data: DStorage,
@@ -547,39 +571,6 @@ where
             }
         }
         Ok(Self::new_trusted(n, indices, data))
-    }
-
-    /// Create a sparse vector
-    ///
-    /// # Panics
-    ///
-    /// - if `indices` and `data` lengths differ
-    /// - if the vector contains out of bounds indices
-    /// - if indices are out of order
-    ///
-    /// # Examples
-    /// ```rust
-    /// # use sprs::*;
-    /// // Creating a sparse owned vector
-    /// let owned = CsVec::new(10, vec![0, 4], vec![-4, 2]);
-    /// // Creating a sparse borrowing vector with `I = u16`
-    /// let borrow = CsVecViewI::new(10, &[0_u16, 4], &[-4, 2]);
-    /// // Creating a general sparse vector with different storage types
-    /// let mixed = CsVecBase::new(10, &[0_u64, 4] as &[_], vec![-4, 2]);
-    /// ```
-    pub fn new(n: usize, indices: IStorage, data: DStorage) -> Self {
-        Self::try_new(n, indices, data)
-            .map_err(|(_, _, e)| e)
-            .unwrap()
-    }
-
-    /// Try create a sparse vector
-    pub fn try_new(
-        n: usize,
-        indices: IStorage,
-        data: DStorage,
-    ) -> Result<Self, (IStorage, DStorage, StructureError)> {
-        Self::new_(n, indices, data)
     }
 
     /// Internal version of `new_unchecked` where we guarantee the invariants
@@ -633,7 +624,7 @@ where
     where
         N: Copy,
     {
-        let v = Self::new_(n, indices, data);
+        let v = Self::try_new(n, indices, data);
         match v {
             Err((mut indices, mut data, StructureError::Unsorted(_))) => {
                 let mut buf = Vec::with_capacity(indices.len());
@@ -642,7 +633,7 @@ where
                     &mut data[..],
                     &mut buf,
                 );
-                Self::new_(n, indices, data)
+                Self::try_new(n, indices, data)
             }
             v => v,
         }
