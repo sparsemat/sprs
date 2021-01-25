@@ -16,13 +16,12 @@ use std::default::Default;
 use std::iter::{Enumerate, Zip};
 use std::mem;
 use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Sub};
-use std::slice::{self, Iter};
+use std::slice::Iter;
 
 use crate::{Ix1, Ix2, Shape};
 use ndarray::linalg::Dot;
 use ndarray::{self, Array, ArrayBase, ShapeBuilder};
 
-use crate::array_backend::Array2;
 use crate::indexing::SpIndex;
 
 use crate::errors::StructureError;
@@ -2432,8 +2431,7 @@ mod test {
         let indptr_ok = vec![0, 1, 2, 3];
         let indices_ok = vec![0, 1, 2];
         let data_ok: Vec<f64> = vec![1., 1., 1.];
-        assert!(CsMat::new_sorted_checked(
-            CSR,
+        assert!(CsMat::new_from_unsorted(
             (3, 3),
             indptr_ok,
             indices_ok,
@@ -2496,9 +2494,13 @@ mod test {
         let indices_sorted = &[1, 2, 3, 2, 3, 4, 4];
         let indices_shuffled = vec![1, 3, 2, 2, 3, 4, 4];
         let mut data: Vec<i32> = (0..7).collect();
-        let m =
-            CsMat::new_sorted((5, 5), indptr, indices_shuffled, data.clone())
-                .unwrap();
+        let m = CsMat::new_from_unsorted(
+            (5, 5),
+            indptr,
+            indices_shuffled,
+            data.clone(),
+        )
+        .unwrap();
         assert_eq!(m.indices(), indices_sorted);
         data.swap(1, 2);
         assert_eq!(m.data(), &data[..]);
