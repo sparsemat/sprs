@@ -380,7 +380,7 @@ where
             ),
             tmp,
         )| {
-            let res_chunk = CsMatViewMutI::new_trusted_mut_view(
+            let res_chunk = CsMatViewMutI::new_trusted(
                 CSR,
                 (lhs_chunk.rows(), rhs.cols()),
                 res_indptr_chunk,
@@ -439,8 +439,8 @@ mod test {
 
         let mut c_data = vec![0.; c_indices.len()];
         let mut tmp = [0.; 5];
-        let mut c = crate::CsMatViewMutI::new_trusted_mut_view(
-            crate::CSR,
+        let mut c = crate::CsMatViewMutI::new_trusted(
+            crate::CompressedStorage::CSR,
             (a.rows(), b.cols()),
             &c_indptr[..],
             &c_indices[..],

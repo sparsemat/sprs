@@ -401,16 +401,15 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
 
     /// The L factor of the LDL^T decomposition
     pub fn l(&self) -> CsMatViewI<N, I> {
+        use std::slice::from_raw_parts;
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm
         unsafe {
-            CsMatViewI::new_view_raw(
-                sprs::CSC,
-                (n, n),
-                self.symbolic.colptr.as_ptr(),
-                self.l_indices.as_ptr(),
-                self.l_data.as_ptr(),
-            )
+            let indptr = from_raw_parts(self.symbolic.colptr.as_ptr(), n + 1);
+            let nnz = indptr[n].index();
+            let indices = from_raw_parts(self.l_indices.as_ptr(), nnz);
+            let data = from_raw_parts(self.l_data.as_ptr(), nnz);
+            CsMatViewI::new_unchecked(sprs::CSC, (n, n), indptr, indices, data)
         }
     }
 
@@ -770,14 +769,12 @@ mod test {
         let b = test_vec1();
         let mut x = b.clone();
         let n = b.len();
-        let l = CsMatView::new_view(
-            sprs::CSC,
+        let l = CsMatView::new_csc(
             (n, n),
             &expected_lp,
             &expected_li,
             &expected_lx,
-        )
-        .unwrap();
+        );
         super::ldl_lsolve(&l, &mut x);
         assert_eq!(&x, &expected_lsolve_res1());
         linalg::diag_solve(&expected_d, &mut x);

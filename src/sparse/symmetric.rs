@@ -36,7 +36,6 @@ where
 #[cfg(test)]
 mod test {
     use super::is_symmetric;
-    use crate::sparse::csmat::CompressedStorage::CSR;
     use crate::sparse::CsMatView;
 
     #[test]
@@ -52,8 +51,7 @@ mod test {
             0.01, 0.53, 0.56, 3.1,
         ];
 
-        let a =
-            CsMatView::new_view(CSR, (10, 10), indptr, indices, data).unwrap();
+        let a = CsMatView::new((10, 10), indptr, indices, data);
 
         assert!(is_symmetric(&a));
     }
