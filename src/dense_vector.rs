@@ -15,6 +15,17 @@ pub trait DenseVector<N> {
     fn index(&self, idx: usize) -> &N;
 }
 
+impl<N> DenseVector<N> for [N] {
+    fn dim(&self) -> usize {
+        self.len()
+    }
+
+    #[inline(always)]
+    fn index(&self, idx: usize) -> &N {
+        &self[idx]
+    }
+}
+
 impl<'a, N: 'a> DenseVector<N> for &'a [N] {
     fn dim(&self) -> usize {
         self.len()
@@ -91,6 +102,13 @@ pub trait DenseVectorMut<N>: DenseVector<N> {
     ///
     /// If the index is out of bounds
     fn index_mut(&mut self, idx: usize) -> &mut N;
+}
+
+impl<'a, N: 'a> DenseVectorMut<N> for [N] {
+    #[inline(always)]
+    fn index_mut(&mut self, idx: usize) -> &mut N {
+        &mut self[idx]
+    }
 }
 
 impl<'a, N: 'a> DenseVectorMut<N> for &'a mut [N] {

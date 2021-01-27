@@ -959,9 +959,10 @@ where
     }
 
     /// Fill a dense vector with our values
-    pub fn scatter<V: DenseVectorMut<N>>(&self, out: &mut V)
+    pub fn scatter<V>(&self, out: &mut V)
     where
         N: Clone,
+        V: DenseVectorMut<N> + ?Sized,
     {
         for (ind, val) in self.iter() {
             *out.index_mut(ind) = val.clone();
@@ -1862,6 +1863,9 @@ mod test {
         let mut res = Array::zeros(4);
         vector.scatter(&mut res);
         assert_eq!(res, ndarray::arr1(&[0, 1, 3, 4]));
+        let res: &mut [i32] = &mut [0; 4];
+        vector.scatter(res);
+        assert_eq!(res, &[0, 1, 3, 4]);
     }
 
     #[cfg(feature = "approx")]

@@ -1,4 +1,4 @@
-use crate::dense_vector::DenseVectorMut;
+use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::errors::{LinalgError, SingularMatrixInfo};
 use crate::indexing::SpIndex;
 use crate::sparse::CsMatViewI;
@@ -12,7 +12,7 @@ fn check_solver_dimensions<N, I, Iptr, V>(
     rhs: &V,
 ) where
     N: Copy + Num,
-    V: DenseVectorMut<N>,
+    V: DenseVector<N> + ?Sized,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -403,6 +403,10 @@ mod test {
 
         super::lsolve_csc_dense_rhs(l.view(), &mut x).unwrap();
         assert_eq!(x, vec![3, 1, 1]);
+
+        let x: &mut [i32] = &mut [3, 5, 3];
+        super::lsolve_csc_dense_rhs(l.view(), &mut x[..]).unwrap();
+        assert_eq!(x, &[3, 1, 1]);
     }
 
     #[test]
