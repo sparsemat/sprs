@@ -55,8 +55,8 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes>(
     N: Num + Copy + std::ops::AddAssign,
     I: SpIndex,
     Iptr: SpIndex,
-    V: DenseVector<N>,
-    VRes: DenseVectorMut<N>,
+    V: DenseVector<Scalar = N>,
+    VRes: DenseVectorMut<Scalar = N>,
 {
     let mat = mat.view();
     if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
@@ -85,8 +85,8 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
     N: Num + Copy + std::ops::AddAssign,
     I: SpIndex,
     Iptr: SpIndex,
-    V: DenseVector<N>,
-    VRes: DenseVectorMut<N>,
+    V: DenseVector<Scalar = N>,
+    VRes: DenseVectorMut<Scalar = N>,
 {
     if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
         panic!("Dimension mismatch");

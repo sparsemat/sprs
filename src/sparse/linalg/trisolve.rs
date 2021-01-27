@@ -12,7 +12,7 @@ fn check_solver_dimensions<N, I, Iptr, V>(
     rhs: &V,
 ) where
     N: Copy + Num,
-    V: DenseVector<N> + ?Sized,
+    V: DenseVector<Scalar = N> + ?Sized,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -38,7 +38,7 @@ pub fn lsolve_csr_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Copy + Num + std::ops::SubAssign,
-    V: DenseVectorMut<N>,
+    V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -94,7 +94,7 @@ pub fn lsolve_csc_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Copy + Num + std::ops::SubAssign,
-    V: DenseVectorMut<N>,
+    V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -124,7 +124,7 @@ fn lspsolve_csc_process_col<N, I, V>(
 ) -> Result<(), LinalgError>
 where
     N: Copy + Num + std::ops::SubAssign,
-    V: DenseVectorMut<N>,
+    V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
 {
     if let Some(&diag_val) = col.get(col_ind) {
@@ -168,7 +168,7 @@ pub fn usolve_csc_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Copy + Num + std::ops::SubAssign,
-    V: DenseVectorMut<N>,
+    V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -226,7 +226,7 @@ pub fn usolve_csr_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Copy + Num + std::ops::SubAssign,
-    V: DenseVectorMut<N>,
+    V: DenseVectorMut + DenseVector<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -296,7 +296,7 @@ pub fn lsolve_csc_sparse_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Copy + Num + std::ops::SubAssign,
-    V: DenseVectorMut<N>,
+    V: DenseVectorMut + DenseVector<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {

@@ -897,7 +897,7 @@ where
     /// If the dimension of the vectors do not match.
     pub fn dot_dense<T>(&self, rhs: T) -> N
     where
-        T: DenseVector<N>,
+        T: DenseVector<Scalar = N>,
         N: Num + Copy + Sum,
     {
         assert_eq!(self.dim(), rhs.dim());
@@ -962,7 +962,7 @@ where
     pub fn scatter<V>(&self, out: &mut V)
     where
         N: Clone,
-        V: DenseVectorMut<N> + ?Sized,
+        V: DenseVectorMut<Scalar = N> + ?Sized,
     {
         for (ind, val) in self.iter() {
             *out.index_mut(ind) = val.clone();
