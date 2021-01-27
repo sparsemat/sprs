@@ -3,6 +3,7 @@
 /// Both the permutation matrices and its inverse are stored
 use std::ops::{Deref, Mul};
 
+use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::indexing::SpIndex;
 use crate::sparse::{CompressedStorage, CsMatI, CsMatViewI};
 
@@ -251,25 +252,43 @@ where
     }
 }
 
-impl<'a, 'b, N, I, IndStorage> Mul<&'a [N]> for &'b Permutation<I, IndStorage>
+impl<'b, V, I, IndStorage> Mul<V> for &'b Permutation<I, IndStorage>
 where
     IndStorage: 'b + Deref<Target = [I]>,
-    N: 'a + Copy,
+    V: DenseVector,
+    <V as DenseVector>::Owned:
+        DenseVectorMut + DenseVector<Scalar = <V as DenseVector>::Scalar>,
+    <V as DenseVector>::Scalar: Clone,
     I: SpIndex,
 {
-    type Output = Vec<N>;
-    fn mul(self, rhs: &'a [N]) -> Vec<N> {
-        assert_eq!(self.dim, rhs.len());
-        let mut res = rhs.to_vec();
+    type Output = V::Owned;
+    fn mul(self, rhs: V) -> Self::Output {
+        assert_eq!(self.dim, rhs.dim());
+        let mut res = rhs.to_owned();
         match self.storage {
             Identity => res,
             FinitePerm { perm: ref p, .. } => {
-                for (pi, r) in p.iter().zip(res.iter_mut()) {
-                    *r = rhs[pi.index_unchecked()];
+                for (i, pi) in p.iter().enumerate() {
+                    *res.index_mut(i) = rhs.index(pi.index_unchecked()).clone();
                 }
                 res
             }
         }
+    }
+}
+
+impl<V, I, IndStorage> Mul<V> for Permutation<I, IndStorage>
+where
+    IndStorage: Deref<Target = [I]>,
+    V: DenseVector,
+    <V as DenseVector>::Owned:
+        DenseVectorMut + DenseVector<Scalar = <V as DenseVector>::Scalar>,
+    <V as DenseVector>::Scalar: Clone,
+    I: SpIndex,
+{
+    type Output = V::Owned;
+    fn mul(self, rhs: V) -> Self::Output {
+        &self * rhs
     }
 }
 
@@ -344,6 +363,10 @@ mod test {
 
         let y = &p * &x;
         assert_eq!(&y, &[2, 1, 3, 5, 4]);
+
+        let x = ndarray::arr1(&[5, 1, 2, 3, 4]);
+        let y = p.view() * x.view();
+        assert_eq!(y, ndarray::arr1(&[2, 1, 3, 5, 4]));
     }
 
     #[test]
