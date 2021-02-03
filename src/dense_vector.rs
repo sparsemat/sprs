@@ -186,6 +186,58 @@ where
     }
 }
 
+impl<'a, N, S> DenseVector for &'a ArrayBase<S, Ix1>
+where
+    S: ndarray::Data<Elem = N>,
+    N: 'a + Zero + Clone,
+{
+    type Owned = ndarray::Array<N, Ix1>;
+    type Scalar = N;
+
+    fn dim(&self) -> usize {
+        self.shape()[0]
+    }
+
+    #[inline(always)]
+    fn index(&self, idx: usize) -> &N {
+        &self[[idx]]
+    }
+
+    fn zeros(dim: usize) -> Self::Owned {
+        ndarray::Array::zeros(dim)
+    }
+
+    fn to_owned(&self) -> Self::Owned {
+        ArrayBase::to_owned(self)
+    }
+}
+
+impl<'a, N, S> DenseVector for &'a mut ArrayBase<S, Ix1>
+where
+    S: ndarray::Data<Elem = N>,
+    N: 'a + Zero + Clone,
+{
+    type Owned = ndarray::Array<N, Ix1>;
+    type Scalar = N;
+
+    fn dim(&self) -> usize {
+        self.shape()[0]
+    }
+
+    #[inline(always)]
+    fn index(&self, idx: usize) -> &N {
+        &self[[idx]]
+    }
+
+    fn zeros(dim: usize) -> Self::Owned {
+        ndarray::Array::zeros(dim)
+    }
+
+    fn to_owned(&self) -> Self::Owned {
+        ArrayBase::to_owned(self)
+    }
+}
+
 /// Trait for dense vectors that can be modified, useful for expressing
 /// algorithms which compute a resulting dense vector, such as solvers.
 ///
@@ -239,6 +291,17 @@ where
     }
 }
 
+impl<'a, N, S> DenseVectorMut for &'a mut ArrayBase<S, Ix1>
+where
+    S: ndarray::DataMut<Elem = N>,
+    N: 'a + Zero + Clone,
+{
+    #[inline(always)]
+    fn index_mut(&mut self, idx: usize) -> &mut N {
+        &mut self[[idx]]
+    }
+}
+
 mod seal {
     pub trait Sealed {}
 
@@ -250,6 +313,14 @@ mod seal {
     impl<'a, N: 'a> Sealed for &'a mut Vec<N> {}
     impl<N, S: ndarray::Data<Elem = N>> Sealed
         for ndarray::ArrayBase<S, crate::Ix1>
+    {
+    }
+    impl<'a, N: 'a, S: ndarray::Data<Elem = N>> Sealed
+        for &'a ndarray::ArrayBase<S, crate::Ix1>
+    {
+    }
+    impl<'a, N: 'a, S: ndarray::Data<Elem = N>> Sealed
+        for &'a mut ndarray::ArrayBase<S, crate::Ix1>
     {
     }
 }
