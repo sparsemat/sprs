@@ -101,6 +101,8 @@ pub use crate::sparse::{
     TriMatIter, TriMatView, TriMatViewI, TriMatViewMut, TriMatViewMutI,
 };
 
+pub use crate::dense_vector::{DenseVector, DenseVectorMut};
+
 pub use crate::sparse::symmetric::is_symmetric;
 
 pub use crate::sparse::permutation::{

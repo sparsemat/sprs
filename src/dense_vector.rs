@@ -4,7 +4,10 @@ use num_traits::identities::Zero;
 
 /// A trait for types representing dense vectors, useful for expressing
 /// algorithms such as sparse-dense dot product, or linear solves.
-pub trait DenseVector {
+///
+/// This trait is sealed, and cannot be implemented outside of the `sprs`
+/// crate.
+pub trait DenseVector: seal::Sealed {
     type Owned;
     type Scalar;
 
@@ -183,6 +186,11 @@ where
     }
 }
 
+/// Trait for dense vectors that can be modified, useful for expressing
+/// algorithms which compute a resulting dense vector, such as solvers.
+///
+/// This trait is sealed, and cannot be implemented outside of the `sprs`
+/// crate.
 pub trait DenseVectorMut: DenseVector {
     /// Random mutable access to an element in the vector.
     ///
@@ -228,5 +236,20 @@ where
     #[inline(always)]
     fn index_mut(&mut self, idx: usize) -> &mut N {
         &mut self[[idx]]
+    }
+}
+
+mod seal {
+    pub trait Sealed {}
+
+    impl<N> Sealed for [N] {}
+    impl<'a, N: 'a> Sealed for &'a [N] {}
+    impl<'a, N: 'a> Sealed for &'a mut [N] {}
+    impl<N> Sealed for Vec<N> {}
+    impl<'a, N: 'a> Sealed for &'a Vec<N> {}
+    impl<'a, N: 'a> Sealed for &'a mut Vec<N> {}
+    impl<N, S: ndarray::Data<Elem = N>> Sealed
+        for ndarray::ArrayBase<S, crate::Ix1>
+    {
     }
 }
