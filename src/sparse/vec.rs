@@ -2,7 +2,6 @@ use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::sparse::to_dense::assign_vector_to_dense;
 use crate::Ix1;
 use ndarray::Array;
-use ndarray::{self, ArrayBase};
 use std::cmp;
 use std::collections::HashSet;
 use std::convert::AsRef;
@@ -281,68 +280,48 @@ where
     }
 }
 
-impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a [N] {
-    type IterType = Enumerate<Iter<'a, N>>;
-
-    fn dim(&self) -> usize {
-        self.len()
-    }
-
-    fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
-        self.iter().enumerate()
-    }
-
-    fn is_dense(&self) -> bool {
-        true
-    }
-
-    fn index(self, idx: usize) -> &'a N {
-        &self[idx]
-    }
-}
-
-impl<'a, N: 'a> IntoSparseVecIter<'a, N> for &'a Vec<N> {
-    type IterType = Enumerate<Iter<'a, N>>;
-
-    fn dim(&self) -> usize {
-        self.len()
-    }
-
-    fn into_sparse_vec_iter(self) -> Enumerate<Iter<'a, N>> {
-        self.iter().enumerate()
-    }
-
-    fn is_dense(&self) -> bool {
-        true
-    }
-
-    fn index(self, idx: usize) -> &'a N {
-        &self[idx]
-    }
-}
-
-impl<'a, N: 'a, S> IntoSparseVecIter<'a, N> for &'a ArrayBase<S, Ix1>
+impl<'a, N: 'a, V: ?Sized> IntoSparseVecIter<'a, N> for &'a V
 where
-    S: ndarray::Data<Elem = N>,
+    V: DenseVector<Scalar = N>,
 {
-    type IterType = Enumerate<ndarray::iter::Iter<'a, N, Ix1>>;
+    // FIXME we want
+    // type IterType = impl Iterator<Item=(usize, &'a N)>
+    #[allow(clippy::type_complexity)]
+    type IterType = std::iter::Map<
+        std::iter::Zip<std::iter::Repeat<Self>, std::ops::Range<usize>>,
+        fn((&'a V, usize)) -> (usize, &'a N),
+    >;
 
-    fn dim(&self) -> usize {
-        self.shape()[0]
+    #[inline(always)]
+    fn into_sparse_vec_iter(self) -> Self::IterType {
+        let n = DenseVector::dim(self);
+        // FIXME since it's not possible to have an existential type as an
+        // associated type yet, I'm using a trick to send the necessary
+        // context to a plain function, which enables specifying the type
+        // Needless to say, this needs to go when it's no longer necessary
+        #[inline(always)]
+        fn hack_instead_of_closure<N, V: ?Sized>(vi: (&V, usize)) -> (usize, &N)
+        where
+            V: DenseVector<Scalar = N>,
+        {
+            (vi.1, vi.0.index(vi.1))
+        }
+        std::iter::repeat(self)
+            .zip(0..n)
+            .map(hack_instead_of_closure)
     }
 
-    fn into_sparse_vec_iter(
-        self,
-    ) -> Enumerate<ndarray::iter::Iter<'a, N, Ix1>> {
-        self.iter().enumerate()
+    fn dim(&self) -> usize {
+        DenseVector::dim(*self)
     }
 
     fn is_dense(&self) -> bool {
         true
     }
 
+    #[inline(always)]
     fn index(self, idx: usize) -> &'a N {
-        &self[[idx]]
+        DenseVector::index(self, idx)
     }
 }
 
@@ -959,6 +938,10 @@ where
     }
 
     /// Fill a dense vector with our values
+    // FIXME I'm uneasy with this &mut V, can't I get rid of it with more
+    // trait magic? I would probably need to define what a mutable view is...
+    // But it's valuable. But I cannot find a way with the current trait system.
+    // Would probably require something link existential lifetimes.
     pub fn scatter<V>(&self, out: &mut V)
     where
         N: Clone,
