@@ -75,6 +75,7 @@ assert_eq!(a, b.to_csc());
 */
 
 pub mod array_backend;
+mod dense_vector;
 pub mod errors;
 pub mod indexing;
 #[cfg(not(miri))]
@@ -99,6 +100,8 @@ pub use crate::sparse::{
     CsVecViewMut, CsVecViewMutI, SparseMat, TriMat, TriMatBase, TriMatI,
     TriMatIter, TriMatView, TriMatViewI, TriMatViewMut, TriMatViewMutI,
 };
+
+pub use crate::dense_vector::{DenseVector, DenseVectorMut};
 
 pub use crate::sparse::symmetric::is_symmetric;
 

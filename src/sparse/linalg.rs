@@ -1,9 +1,9 @@
+use crate::{DenseVector, DenseVectorMut};
 ///! Sparse linear algebra
 ///!
 ///! This module contains solvers for sparse linear systems. Currently
 ///! there are solver for sparse triangular systems and symmetric systems.
 use num_traits::Num;
-use std::iter::IntoIterator;
 
 pub mod etree;
 pub mod ordering;
@@ -12,13 +12,15 @@ pub mod trisolve;
 pub use self::ordering::reverse_cuthill_mckee;
 
 /// Diagonal solve
-pub fn diag_solve<'a, N, I1, I2>(diag: I1, x: I2)
+pub fn diag_solve<'a, N, V1, V2>(diag: V1, mut x: V2)
 where
-    N: 'a + Copy + Num,
-    I1: IntoIterator<Item = &'a N>,
-    I2: IntoIterator<Item = &'a mut N>,
+    N: 'a + Copy + Num + std::ops::DivAssign,
+    V1: DenseVector<Scalar = N>,
+    V2: DenseVectorMut + DenseVector<Scalar = N>,
 {
-    for (xv, dv) in x.into_iter().zip(diag.into_iter()) {
-        *xv = *xv / *dv;
+    let n = x.dim();
+    assert_eq!(diag.dim(), n);
+    for i in 0..n {
+        *x.index_mut(i) /= *diag.index(i);
     }
 }

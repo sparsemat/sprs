@@ -1,8 +1,8 @@
+use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::indexing::SpIndex;
 use crate::sparse::compressed::SpMatView;
 ///! Sparse matrix product
 use crate::sparse::prelude::*;
-use crate::sparse::vec::DenseVector;
 use crate::Ix2;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
 use num_traits::Num;
@@ -47,18 +47,19 @@ where
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csc<N, I, Iptr, V>(
+pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes>(
     mat: CsMatViewI<N, I, Iptr>,
     in_vec: V,
-    res_vec: &mut [N],
+    mut res_vec: VRes,
 ) where
-    N: Num + Copy,
+    N: Num + Copy + std::ops::AddAssign,
     I: SpIndex,
     Iptr: SpIndex,
-    V: DenseVector<N>,
+    V: DenseVector<Scalar = N>,
+    VRes: DenseVectorMut<Scalar = N>,
 {
     let mat = mat.view();
-    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.len() {
+    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
         panic!("Dimension mismatch");
     }
     if !mat.is_csc() {
@@ -69,24 +70,25 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V>(
         let multiplier = in_vec.index(col_ind);
         for (row_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            res_vec[row_ind] = res_vec[row_ind] + *multiplier * value;
+            *res_vec.index_mut(row_ind) += *multiplier * value;
         }
     }
 }
 
 /// Multiply a sparse CSR matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
+pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
     mat: CsMatViewI<N, I, Iptr>,
     in_vec: V,
-    res_vec: &mut [N],
+    mut res_vec: VRes,
 ) where
-    N: Num + Copy,
+    N: Num + Copy + std::ops::AddAssign,
     I: SpIndex,
     Iptr: SpIndex,
-    V: DenseVector<N>,
+    V: DenseVector<Scalar = N>,
+    VRes: DenseVectorMut<Scalar = N>,
 {
-    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.len() {
+    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
         panic!("Dimension mismatch");
     }
     if !mat.is_csr() {
@@ -94,13 +96,10 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V>(
     }
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
-        // this unwrap is ok because we did the check before to ensure
-        // mat.row() == res_vec.len() and now the row_ind is within the
-        // range of [0, mat.row). So it should be safe.
-        let tv = res_vec.get_mut(row_ind).unwrap();
+        let tv = res_vec.index_mut(row_ind);
         for (col_ind, &value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            *tv = *tv + *in_vec.index(col_ind) * value;
+            *tv += *in_vec.index(col_ind) * value;
         }
     }
 }
@@ -328,7 +327,7 @@ mod test {
         mat_dense2,
     };
     use ndarray::linalg::Dot;
-    use ndarray::{arr2, s, Array, Array2, Dimension, ShapeBuilder};
+    use ndarray::{arr1, arr2, s, Array, Array2, Dimension, ShapeBuilder};
 
     #[test]
     fn test_csvec_dot_by_binary_search() {
@@ -369,6 +368,31 @@ mod test {
     }
 
     #[test]
+    fn mul_csc_vec_ndarray() {
+        let indptr: &[usize] = &[0, 2, 4, 5, 6, 7];
+        let indices: &[usize] = &[2, 3, 3, 4, 2, 1, 3];
+        let data: &[f64] = &[
+            0.35310881, 0.42380633, 0.28035896, 0.58082095, 0.53350123,
+            0.88132896, 0.72527863,
+        ];
+
+        let mat = CsMatView::new_csc((5, 5), indptr, indices, data);
+        let vector = arr1(&[0.1f64, 0.2, -0.1, 0.3, 0.9]);
+        let mut res_vec = Array::zeros(5);
+        mul_acc_mat_vec_csc(mat, vector, res_vec.view_mut());
+
+        let expected_output =
+            vec![0., 0.26439869, -0.01803924, 0.75120319, 0.11616419];
+
+        let epsilon = 1e-7; // TODO: get better values and increase precision
+
+        assert!(res_vec
+            .iter()
+            .zip(expected_output.iter())
+            .all(|(x, y)| (*x - *y).abs() < epsilon));
+    }
+
+    #[test]
     fn mul_csr_vec() {
         let indptr: &[usize] = &[0, 3, 3, 5, 6, 7];
         let indices: &[usize] = &[1, 2, 3, 2, 3, 4, 4];
@@ -384,6 +408,31 @@ mod test {
 
         let expected_output =
             vec![0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
+
+        let epsilon = 1e-7; // TODO: get better values and increase precision
+
+        assert!(res_vec
+            .iter()
+            .zip(expected_output.iter())
+            .all(|(x, y)| (*x - *y).abs() < epsilon));
+    }
+
+    #[test]
+    fn mul_csr_vec_ndarray() {
+        let indptr: &[usize] = &[0, 3, 3, 5, 6, 7];
+        let indices: &[usize] = &[1, 2, 3, 2, 3, 4, 4];
+        let data: &[f64] = &[
+            0.75672424, 0.1649078, 0.30140296, 0.10358244, 0.6283315,
+            0.39244208, 0.57202407,
+        ];
+
+        let mat = CsMatView::new((5, 5), indptr, indices, data);
+        let vec = arr1(&[0.1f64, 0.2, -0.1, 0.3, 0.9]);
+        let mut res_vec = Array::zeros(5);
+        mul_acc_mat_vec_csr(mat, vec.view(), res_vec.view_mut());
+
+        let expected_output =
+            [0.22527496, 0., 0.17814121, 0.35319787, 0.51482166];
 
         let epsilon = 1e-7; // TODO: get better values and increase precision
 
