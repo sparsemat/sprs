@@ -76,6 +76,7 @@ assert_eq!(a, b.to_csc());
 
 pub mod array_backend;
 mod dense_vector;
+mod mul_acc;
 pub mod errors;
 pub mod indexing;
 #[cfg(not(miri))]
@@ -102,6 +103,7 @@ pub use crate::sparse::{
 };
 
 pub use crate::dense_vector::{DenseVector, DenseVectorMut};
+pub use crate::mul_acc::MulAcc;
 
 pub use crate::sparse::symmetric::is_symmetric;
 
