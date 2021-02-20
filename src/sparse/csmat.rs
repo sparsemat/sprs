@@ -15,7 +15,7 @@ use std::cmp;
 use std::default::Default;
 use std::iter::{Enumerate, Zip};
 use std::mem;
-use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Sub};
+use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, MulAssign};
 use std::slice::Iter;
 
 use crate::{Ix1, Ix2, Shape};
@@ -26,7 +26,6 @@ use crate::indexing::SpIndex;
 
 use crate::errors::StructureError;
 use crate::sparse::binop;
-use crate::sparse::compressed::SpMatView;
 use crate::sparse::permutation::PermViewI;
 use crate::sparse::prelude::*;
 use crate::sparse::prod;
@@ -316,7 +315,7 @@ where
         mut data: DStorage,
     ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
-        N: Copy,
+        N: Clone,
     {
         let (nrows, ncols) = shape;
         let (inner, outer) = match storage {
@@ -378,7 +377,7 @@ where
         data: DStorage,
     ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
-        N: Copy,
+        N: Clone,
     {
         Self::new_from_unsorted_checked(CSR, shape, indptr, indices, data)
     }
@@ -395,7 +394,7 @@ where
         data: DStorage,
     ) -> Result<Self, (IptrStorage, IStorage, DStorage, StructureError)>
     where
-        N: Copy,
+        N: Clone,
     {
         Self::new_from_unsorted_checked(CSC, shape, indptr, indices, data)
     }
@@ -937,7 +936,7 @@ where
     /// for one-hot compression.
     pub fn to_inner_onehot(&self) -> CsMatI<N, I, Iptr>
     where
-        N: Copy + Clone + Float + PartialOrd,
+        N: Clone + Float + PartialOrd,
     {
         let mut indptr_counter = 0_usize;
         let mut indptr: Vec<Iptr> = Vec::with_capacity(self.indptr.len());
@@ -1076,6 +1075,7 @@ where
         self.indptr.iter_outer_sz().map(move |range| {
             CsVecViewI::new_trusted(
                 self.inner_dims(),
+                // TODO: unsafe slice indexing
                 &self.indices[range.clone()],
                 &self.data[range],
             )
@@ -1144,6 +1144,7 @@ where
         // CsMat invariants imply CsVec invariants
         Some(CsVecViewI::new_trusted(
             self.inner_dims(),
+            // TODO: unsafe slice indexing
             &self.indices[range.clone()],
             &self.data[range],
         ))
@@ -1425,10 +1426,10 @@ where
     /// Sparse matrix self-multiplication by a scalar
     pub fn scale(&mut self, val: N)
     where
-        N: Num + Copy,
+        for<'r> N: MulAssign<&'r N>,
     {
         for data in self.data_mut() {
-            *data = *data * val;
+            *data *= &val;
         }
     }
 
@@ -1739,93 +1740,6 @@ pub mod raw {
     }
 }
 
-impl<'a, 'b, N, I, Iptr, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
-    Add<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
-    for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>
-where
-    N: 'a + Copy + Num + Default,
-    I: 'a + SpIndex,
-    Iptr: 'a + SpIndex,
-    IpStorage: 'a + Deref<Target = [Iptr]>,
-    IStorage: 'a + Deref<Target = [I]>,
-    DStorage: 'a + Deref<Target = [N]>,
-    IpS2: 'a + Deref<Target = [Iptr]>,
-    IS2: 'a + Deref<Target = [I]>,
-    DS2: 'a + Deref<Target = [N]>,
-{
-    type Output = CsMatI<N, I, Iptr>;
-
-    fn add(
-        self,
-        rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>,
-    ) -> CsMatI<N, I, Iptr> {
-        if self.storage() != rhs.view().storage() {
-            return binop::add_mat_same_storage(
-                self,
-                &rhs.view().to_other_storage(),
-            );
-        }
-        binop::add_mat_same_storage(self, rhs)
-    }
-}
-
-impl<'a, 'b, N, I, Iptr, IpStorage, IStorage, DStorage, Mat> Sub<&'b Mat>
-    for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>
-where
-    N: 'a + Copy + Num + Default,
-    I: 'a + SpIndex,
-    Iptr: 'a + SpIndex,
-    IpStorage: 'a + Deref<Target = [Iptr]>,
-    IStorage: 'a + Deref<Target = [I]>,
-    DStorage: 'a + Deref<Target = [N]>,
-    Mat: SpMatView<N, I, Iptr>,
-{
-    type Output = CsMatI<N, I, Iptr>;
-
-    fn sub(self, rhs: &'b Mat) -> CsMatI<N, I, Iptr> {
-        if self.storage() != rhs.view().storage() {
-            return binop::sub_mat_same_storage(
-                self,
-                &rhs.view().to_other_storage(),
-            );
-        }
-        binop::sub_mat_same_storage(self, rhs)
-    }
-}
-
-macro_rules! sparse_scalar_mul {
-    ($scalar: ident) => {
-        impl<'a, I, Iptr, IpStorage, IStorage, DStorage> Mul<$scalar>
-            for &'a CsMatBase<$scalar, I, IpStorage, IStorage, DStorage, Iptr>
-        where
-            I: 'a + SpIndex,
-            Iptr: 'a + SpIndex,
-            IpStorage: 'a + Deref<Target = [Iptr]>,
-            IStorage: 'a + Deref<Target = [I]>,
-            DStorage: 'a + Deref<Target = [$scalar]>,
-        {
-            type Output = CsMatI<$scalar, I, Iptr>;
-
-            fn mul(self, rhs: $scalar) -> Self::Output {
-                binop::scalar_mul_mat(self, rhs)
-            }
-        }
-    };
-}
-
-sparse_scalar_mul!(u8);
-sparse_scalar_mul!(i8);
-sparse_scalar_mul!(u16);
-sparse_scalar_mul!(i16);
-sparse_scalar_mul!(u32);
-sparse_scalar_mul!(i32);
-sparse_scalar_mul!(u64);
-sparse_scalar_mul!(i64);
-sparse_scalar_mul!(isize);
-sparse_scalar_mul!(usize);
-sparse_scalar_mul!(f32);
-sparse_scalar_mul!(f64);
-
 impl<'a, I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::MulAssign<T>
     for CsMatBase<T, I, IpStorage, IStorage, DStorage, Iptr>
 where
@@ -1864,7 +1778,7 @@ impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IpS2, IS2, DS2>
     Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
-    N: 'a + Copy + Num + Default + std::ops::AddAssign + Send + Sync,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero + Default + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS1: 'a + Deref<Target = [Iptr]>,
@@ -1941,7 +1855,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Mul<&'b ArrayBase<DS2, Ix2>>
     for &'a CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Copy + Num + Default,
+    N: 'a + crate::MulAcc + num_traits::Zero + Clone,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -2002,7 +1916,7 @@ where
 impl<'a, 'b, N, I, IpS, IS, DS, DS2> Dot<CsMatBase<N, I, IpS, IS, DS>>
     for ArrayBase<DS2, Ix2>
 where
-    N: 'a + Copy + Num + Default + std::fmt::Debug,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero + std::fmt::Debug,
     I: 'a + SpIndex,
     IpS: 'a + Deref<Target = [I]>,
     IS: 'a + Deref<Target = [I]>,
@@ -2053,7 +1967,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix2>>
     for CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Copy + Num + Default,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -2071,7 +1985,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Mul<&'b ArrayBase<DS2, Ix1>>
     for &'a CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Copy + Num + Default,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -2112,7 +2026,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix1>>
     for CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Copy + Num + Default,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,

@@ -11,7 +11,6 @@ fn check_solver_dimensions<N, I, Iptr, V>(
     lower_tri_mat: &CsMatViewI<N, I, Iptr>,
     rhs: &V,
 ) where
-    N: Copy + Num,
     V: DenseVector<Scalar = N> + ?Sized,
     I: SpIndex,
     Iptr: SpIndex,
@@ -37,7 +36,8 @@ pub fn lsolve_csr_dense_rhs<N, I, Iptr, V>(
     mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num + std::ops::SubAssign,
+    N: Clone + Num + std::ops::SubAssign,
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
@@ -56,16 +56,16 @@ where
 
     for (row_ind, row) in lower_tri_mat.outer_iterator().enumerate() {
         let mut diag_val = N::zero();
-        let mut x = *rhs.index(row_ind);
-        for (col_ind, &val) in row.iter() {
+        let mut x = rhs.index(row_ind).clone();
+        for (col_ind, val) in row.iter() {
             if col_ind == row_ind {
-                diag_val = val;
+                diag_val = val.clone();
                 continue;
             }
             if col_ind > row_ind {
                 continue;
             }
-            x -= val * *rhs.index(col_ind);
+            x -= val * rhs.index(col_ind);
         }
         if diag_val == N::zero() {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -93,7 +93,9 @@ pub fn lsolve_csc_dense_rhs<N, I, Iptr, V>(
     mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num + std::ops::SubAssign,
+    N: Clone + Num + std::ops::SubAssign,
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
@@ -123,25 +125,27 @@ fn lspsolve_csc_process_col<N, I, V>(
     rhs: &mut V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num + std::ops::SubAssign,
+    N: Clone + Num + std::ops::SubAssign,
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
 {
-    if let Some(&diag_val) = col.get(col_ind) {
-        if diag_val == N::zero() {
+    if let Some(diag_val) = col.get(col_ind) {
+        if *diag_val == N::zero() {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
                 index: col_ind,
                 reason: "diagonal element is a numeric 0",
             }));
         }
-        let b = *rhs.index(col_ind);
+        let b = rhs.index(col_ind);
         let x = b / diag_val;
-        *rhs.index_mut(col_ind) = x;
-        for (row_ind, &val) in col.iter() {
+        *rhs.index_mut(col_ind) = x.clone();
+        for (row_ind, val) in col.iter() {
             if row_ind <= col_ind {
                 continue;
             }
-            *rhs.index_mut(row_ind) -= val * x;
+            *rhs.index_mut(row_ind) -= val * &x;
         }
     } else {
         return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -167,7 +171,9 @@ pub fn usolve_csc_dense_rhs<N, I, Iptr, V>(
     mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num + std::ops::SubAssign,
+    N: Clone + Num + std::ops::SubAssign,
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
@@ -186,21 +192,21 @@ where
     // U_0_0 x0 = b_0 - x1*u_0_1
 
     for (col_ind, col) in upper_tri_mat.outer_iterator().enumerate().rev() {
-        if let Some(&diag_val) = col.get(col_ind) {
-            if diag_val == N::zero() {
+        if let Some(diag_val) = col.get(col_ind) {
+            if *diag_val == N::zero() {
                 return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
                     index: col_ind,
                     reason: "diagonal element is a numeric 0",
                 }));
             }
-            let b = *rhs.index(col_ind);
+            let b = rhs.index(col_ind);
             let x = b / diag_val;
-            *rhs.index_mut(col_ind) = x;
-            for (row_ind, &val) in col.iter() {
+            *rhs.index_mut(col_ind) = x.clone();
+            for (row_ind, val) in col.iter() {
                 if row_ind >= col_ind {
                     continue;
                 }
-                *rhs.index_mut(row_ind) -= val * x;
+                *rhs.index_mut(row_ind) -= val * &x;
             }
         } else {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -225,7 +231,9 @@ pub fn usolve_csr_dense_rhs<N, I, Iptr, V>(
     mut rhs: V,
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num + std::ops::SubAssign,
+    N: Clone + Num + std::ops::SubAssign,
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut + DenseVector<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
@@ -243,16 +251,16 @@ where
     // x0 = (b_0 - u_0_1^T.x_1) / u_0_0
     for (row_ind, row) in upper_tri_mat.outer_iterator().enumerate().rev() {
         let mut diag_val = N::zero();
-        let mut x = *rhs.index(row_ind);
-        for (col_ind, &val) in row.iter() {
+        let mut x = rhs.index(row_ind).clone();
+        for (col_ind, val) in row.iter() {
             if col_ind == row_ind {
-                diag_val = val;
+                diag_val = val.clone();
                 continue;
             }
             if col_ind < row_ind {
                 continue;
             }
-            x -= val * *rhs.index(col_ind);
+            x -= val * rhs.index(col_ind);
         }
         if diag_val == N::zero() {
             return Err(LinalgError::SingularMatrix(SingularMatrixInfo {
@@ -295,7 +303,9 @@ pub fn lsolve_csc_sparse_rhs<N, I, Iptr, V>(
     visited: &mut [bool],
 ) -> Result<(), LinalgError>
 where
-    N: Copy + Num + std::ops::SubAssign,
+    N: Clone + Num + std::ops::SubAssign,
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut + DenseVector<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,

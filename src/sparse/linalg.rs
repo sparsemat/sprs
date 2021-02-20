@@ -14,13 +14,14 @@ pub use self::ordering::reverse_cuthill_mckee;
 /// Diagonal solve
 pub fn diag_solve<'a, N, V1, V2>(diag: V1, mut x: V2)
 where
-    N: 'a + Copy + Num + std::ops::DivAssign,
+    N: 'a + Clone + Num + std::ops::DivAssign,
+    for<'r> N: std::ops::DivAssign<&'r N>,
     V1: DenseVector<Scalar = N>,
     V2: DenseVectorMut + DenseVector<Scalar = N>,
 {
     let n = x.dim();
     assert_eq!(diag.dim(), n);
     for i in 0..n {
-        *x.index_mut(i) /= *diag.index(i);
+        *x.index_mut(i) /= diag.index(i);
     }
 }

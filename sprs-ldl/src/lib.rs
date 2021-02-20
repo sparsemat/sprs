@@ -390,6 +390,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     ) -> <<V as DenseVector>::Owned as DenseVector>::Owned
     where
         N: 'a + Copy + Num + std::ops::SubAssign + std::ops::DivAssign,
+        N: for<'r> std::ops::DivAssign<&'r N>,
         V: DenseVector<Scalar = N>,
         <V as DenseVector>::Owned: DenseVectorMut + DenseVector<Scalar = N>,
         for<'b> &'b <V as DenseVector>::Owned: DenseVector<Scalar = N>,

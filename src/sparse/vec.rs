@@ -541,7 +541,7 @@ where
         data: DStorage,
     ) -> Result<Self, (IStorage, DStorage, StructureError)>
     where
-        N: Copy,
+        N: Clone,
     {
         let v = Self::try_new(n, indices, data);
         match v {
@@ -829,7 +829,7 @@ where
     /// ```
     pub fn dot<'b, T: IntoSparseVecIter<'b, N>>(&'b self, rhs: T) -> N
     where
-        N: 'b + Num + Copy + Sum,
+        N: 'b + crate::MulAcc + num_traits::Zero,
         I: 'b,
         <T as IntoSparseVecIter<'b, N>>::IterType:
             Iterator<Item = (usize, &'b N)>,
@@ -837,9 +837,11 @@ where
     {
         assert_eq!(self.dim(), rhs.dim());
         if rhs.is_dense() {
-            self.iter()
-                .map(|(idx, val)| *val * *rhs.index(idx.index_unchecked()))
-                .sum()
+            let mut sum = N::zero();
+            self.iter().for_each(|(idx, val)| {
+                sum.mul_acc(val, rhs.index(idx.index_unchecked()))
+            });
+            sum
         } else {
             let mut lhs_iter = self.iter();
             let mut rhs_iter = rhs.into_sparse_vec_iter();
@@ -850,7 +852,7 @@ where
                 let (left_ind, left_val) = left_nnz.unwrap();
                 let (right_ind, right_val) = right_nnz.unwrap();
                 if left_ind == right_ind {
-                    sum = sum + *left_val * *right_val;
+                    sum.mul_acc(left_val, right_val);
                 }
                 if left_ind <= right_ind {
                     left_nnz = lhs_iter.next();
@@ -874,29 +876,32 @@ where
     /// # Panics
     ///
     /// If the dimension of the vectors do not match.
-    pub fn dot_dense<T>(&self, rhs: T) -> N
+    pub fn dot_dense<V>(&self, rhs: V) -> N
     where
-        T: DenseVector<Scalar = N>,
-        N: Num + Copy + Sum,
+        V: DenseVector<Scalar = N>,
+        N: Sum,
+        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
     {
         assert_eq!(self.dim(), rhs.dim());
         self.iter()
-            .map(|(idx, val)| *val * *rhs.index(idx.index_unchecked()))
+            .map(|(idx, val)| val * rhs.index(idx.index_unchecked()))
             .sum()
     }
 
     /// Compute the squared L2-norm.
     pub fn squared_l2_norm(&self) -> N
     where
-        N: Num + Copy + Sum,
+        N: Sum,
+        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
     {
-        self.data.iter().map(|x| *x * *x).sum()
+        self.data.iter().map(|x| x * x).sum()
     }
 
     /// Compute the L2-norm.
     pub fn l2_norm(&self) -> N
     where
         N: Float + Sum,
+        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
     {
         self.squared_l2_norm().sqrt()
     }
@@ -1032,6 +1037,7 @@ where
     pub fn unit_normalize(&mut self)
     where
         N: Float + Sum,
+        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
     {
         let norm_sq = self.squared_l2_norm();
         if norm_sq > N::zero() {
@@ -1065,7 +1071,7 @@ impl<'a, 'b, N, I, Iptr, IS1, DS1, IpS2, IS2, DS2>
     Mul<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: 'a + Copy + Num + Default + std::ops::AddAssign + Send + Sync,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero + Default + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IS1: 'a + Deref<Target = [I]>,
@@ -1085,7 +1091,13 @@ impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2>
     Mul<&'b CsVecBase<IS2, DS2, N, I>>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
-    N: Copy + Num + Default + Sum + std::ops::AddAssign + Send + Sync,
+    N: Clone
+        + crate::MulAcc
+        + num_traits::Zero
+        + PartialEq
+        + Default
+        + Send
+        + Sync,
     I: SpIndex,
     Iptr: SpIndex,
     IpS1: Deref<Target = [Iptr]>,
@@ -1108,7 +1120,7 @@ where
 impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
     for CsVecBase<IS1, DS1, N, I>
 where
-    N: Copy + Num,
+    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1125,7 +1137,7 @@ where
 impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2, N, I>>
     for CsVecBase<IS1, DS1, N, I>
 where
-    N: Copy + Num,
+    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1142,7 +1154,7 @@ where
 impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: Copy + Num,
+    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1159,7 +1171,7 @@ where
 impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2, N, I>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: Copy + Num,
+    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1169,14 +1181,19 @@ where
     type Output = CsVecI<N, I>;
 
     fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
-        binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x + y).unwrap()
+        binop::csvec_binop(self.view(), rhs.view(), |x, y| {
+            let mut res = x.clone();
+            res += y;
+            res
+        })
+        .unwrap()
     }
 }
 
 impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2, N, I>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: Copy + Num,
+    N: Num + Clone + for<'r> std::ops::SubAssign<&'r N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1186,16 +1203,21 @@ where
     type Output = CsVecI<N, I>;
 
     fn sub(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
-        binop::csvec_binop(self.view(), rhs.view(), |&x, &y| x - y).unwrap()
+        binop::csvec_binop(self.view(), rhs.view(), |x, y| {
+            let mut res = x.clone();
+            res -= y;
+            res
+        })
+        .unwrap()
     }
 }
 
-impl<N: Num + Copy + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
+impl<N: Num + Clone + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
     type Output = Self;
 
     fn neg(mut self) -> Self::Output {
         for value in &mut self.data {
-            *value = -*value;
+            *value = -value.clone();
         }
         self
     }
@@ -1277,7 +1299,11 @@ where
     }
 }
 
-impl<N: Num + Copy, I: SpIndex> Zero for CsVecI<N, I> {
+impl<N, I> Zero for CsVecI<N, I>
+where
+    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+    I: SpIndex,
+{
     fn zero() -> Self {
         Self::new(0, vec![], vec![])
     }
@@ -1293,55 +1319,79 @@ mod alga_impls {
     use super::*;
     use alga::general::*;
 
-    impl<N: Clone + Copy + Num, I: Clone + SpIndex> AbstractMagma<Additive>
-        for CsVecI<N, I>
+    impl<N, I> AbstractMagma<Additive> for CsVecI<N, I>
+    where
+        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+        I: SpIndex,
     {
         fn operate(&self, right: &Self) -> Self {
             self + right
         }
     }
 
-    impl<N: Copy + Num, I: SpIndex> Identity<Additive> for CsVecI<N, I> {
+    impl<N, I> Identity<Additive> for CsVecI<N, I>
+    where
+        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+        I: SpIndex,
+    {
         fn identity() -> Self {
             Self::zero()
         }
     }
 
-    impl<N: Copy + Num, I: SpIndex> AbstractSemigroup<Additive> for CsVecI<N, I> {}
+    impl<N, I> AbstractSemigroup<Additive> for CsVecI<N, I>
+    where
+        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+        I: SpIndex,
+    {
+    }
 
-    impl<N: Copy + Num, I: SpIndex> AbstractMonoid<Additive> for CsVecI<N, I> {}
+    impl<N, I> AbstractMonoid<Additive> for CsVecI<N, I>
+    where
+        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N>,
+        I: SpIndex,
+    {
+    }
 
     impl<N, I> TwoSidedInverse<Additive> for CsVecI<N, I>
     where
-        N: Clone + Neg<Output = N> + Copy + Num,
+        N: Clone + Neg<Output = N> + Num,
         I: SpIndex,
     {
         fn two_sided_inverse(&self) -> Self {
             Self::new_trusted(
                 self.dim,
                 self.indices.clone(),
-                self.data.iter().map(|x| -*x).collect(),
+                self.data.iter().map(|x| -x.clone()).collect(),
             )
         }
     }
 
-    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex>
-        AbstractQuasigroup<Additive> for CsVecI<N, I>
+    impl<N, I> AbstractQuasigroup<Additive> for CsVecI<N, I>
+    where
+        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        I: SpIndex,
     {
     }
 
-    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex> AbstractLoop<Additive>
-        for CsVecI<N, I>
+    impl<N, I> AbstractLoop<Additive> for CsVecI<N, I>
+    where
+        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        I: SpIndex,
     {
     }
 
-    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex> AbstractGroup<Additive>
-        for CsVecI<N, I>
+    impl<N, I> AbstractGroup<Additive> for CsVecI<N, I>
+    where
+        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        I: SpIndex,
     {
     }
 
-    impl<N: Copy + Num + Neg<Output = N>, I: SpIndex>
-        AbstractGroupAbelian<Additive> for CsVecI<N, I>
+    impl<N, I> AbstractGroupAbelian<Additive> for CsVecI<N, I>
+    where
+        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        I: SpIndex,
     {
     }
 

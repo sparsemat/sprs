@@ -76,11 +76,11 @@ assert_eq!(a, b.to_csc());
 
 pub mod array_backend;
 mod dense_vector;
-mod mul_acc;
 pub mod errors;
 pub mod indexing;
 #[cfg(not(miri))]
 pub mod io;
+mod mul_acc;
 pub mod num_kinds;
 mod range;
 mod sparse;

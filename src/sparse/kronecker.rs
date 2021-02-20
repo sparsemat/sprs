@@ -11,14 +11,13 @@ use crate::sparse::prelude::*;
 ///
 /// * if indices are out of bounds for its type
 #[must_use]
-pub fn kronecker_product<
-    N: num_traits::Num + Copy + Default,
-    I: SpIndex,
-    Iptr: SpIndex,
->(
+pub fn kronecker_product<N: Clone + Default, I: SpIndex, Iptr: SpIndex>(
     mut a: CsMatViewI<N, I, Iptr>,
     mut b: CsMatViewI<N, I, Iptr>,
-) -> CsMatI<N, I, Iptr> {
+) -> CsMatI<N, I, Iptr>
+where
+    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+{
     use crate::CompressedStorage::CSR;
     if a.storage() == b.storage() {
         let was_csc = a.is_csc();
@@ -38,8 +37,8 @@ pub fn kronecker_product<
         indptr.push(element_count);
         for a in a.outer_iterator() {
             for b in b.outer_iterator() {
-                for (ai, &a) in a.iter() {
-                    for (bi, &b) in b.iter() {
+                for (ai, a) in a.iter() {
+                    for (bi, b) in b.iter() {
                         indices.push(I::from(ai * b_shape.1 + bi).unwrap());
                         element_count += Iptr::one();
                         values.push(a * b);

@@ -29,7 +29,7 @@ impl<I: Default> Default for StackVal<I> {
 
 impl<I> DStack<I>
 where
-    I: Copy,
+    I: Clone,
 {
     /// Create a new double stacked suited for containing at most n elements
     pub fn with_capacity(n: usize) -> Self
@@ -80,7 +80,7 @@ where
     pub fn pop_left(&mut self) -> Option<I> {
         match self.left_head {
             Some(left_head) => {
-                let res = self.stacks[left_head];
+                let res = self.stacks[left_head].clone();
                 self.left_head = if left_head > 0 {
                     Some(left_head - 1)
                 } else {
@@ -97,7 +97,7 @@ where
         if self.right_head >= self.stacks.len() {
             None
         } else {
-            let res = self.stacks[self.right_head];
+            let res = self.stacks[self.right_head].clone();
             self.right_head += 1;
             Some(res)
         }

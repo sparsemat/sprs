@@ -6,7 +6,6 @@ use crate::sparse::prelude::*;
 use crate::Ix2;
 use ndarray::{ArrayView, ArrayViewMut, Axis};
 use num_traits::Num;
-use std::iter::Sum;
 
 /// Compute the dot product of two sparse vectors, using binary search to find matching indices.
 ///
@@ -17,7 +16,7 @@ pub fn csvec_dot_by_binary_search<N, I>(
 ) -> N
 where
     I: SpIndex,
-    N: Num + Copy,
+    N: crate::MulAcc + num_traits::Zero,
 {
     let (mut idx1, mut val1, mut idx2, mut val2) = if vec1.nnz() < vec2.nnz() {
         (vec1.indices(), vec1.data(), vec2.indices(), vec2.data())
@@ -35,7 +34,7 @@ where
             Err(i) => (false, i),
         };
         if found {
-            sum = sum + val1[0] * val2[i];
+            sum.mul_acc(&val1[0], &val2[i]);
         }
         idx1 = &idx1[1..];
         val1 = &val1[1..];
@@ -52,7 +51,7 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes>(
     in_vec: V,
     mut res_vec: VRes,
 ) where
-    N: Num + Copy + std::ops::AddAssign,
+    N: crate::MulAcc,
     I: SpIndex,
     Iptr: SpIndex,
     V: DenseVector<Scalar = N>,
@@ -68,9 +67,9 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes>(
 
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
         let multiplier = in_vec.index(col_ind);
-        for (row_ind, &value) in vec.iter() {
+        for (row_ind, value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            *res_vec.index_mut(row_ind) += *multiplier * value;
+            res_vec.index_mut(row_ind).mul_acc(multiplier, value);
         }
     }
 }
@@ -82,7 +81,7 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
     in_vec: V,
     mut res_vec: VRes,
 ) where
-    N: Num + Copy + std::ops::AddAssign,
+    N: crate::MulAcc,
     I: SpIndex,
     Iptr: SpIndex,
     V: DenseVector<Scalar = N>,
@@ -97,9 +96,9 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
         let tv = res_vec.index_mut(row_ind);
-        for (col_ind, &value) in vec.iter() {
+        for (col_ind, value) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            *tv += *in_vec.index(col_ind) * value;
+            tv.mul_acc(in_vec.index(col_ind), value);
         }
     }
 }
@@ -107,7 +106,7 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
 /// Allocate the appropriate workspace for a CSR-CSR product
 pub fn workspace_csr<N, I, Iptr, Mat1, Mat2>(_: &Mat1, rhs: &Mat2) -> Vec<N>
 where
-    N: Copy + Num,
+    N: Clone + Num,
     I: SpIndex,
     Iptr: SpIndex,
     Mat1: SpMatView<N, I, Iptr>,
@@ -120,7 +119,7 @@ where
 /// Allocate the appropriate workspace for a CSC-CSC product
 pub fn workspace_csc<N, I, Iptr, Mat1, Mat2>(lhs: &Mat1, _: &Mat2) -> Vec<N>
 where
-    N: Copy + Num,
+    N: Clone + Num,
     I: SpIndex,
     Iptr: SpIndex,
     Mat1: SpMatView<N, I, Iptr>,
@@ -136,7 +135,7 @@ pub fn csr_mul_csvec<N, I, Iptr>(
     rhs: CsVecViewI<N, I>,
 ) -> CsVecI<N, I>
 where
-    N: Copy + Num + Sum,
+    N: crate::MulAcc + num_traits::Zero + PartialEq + Clone,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -159,15 +158,12 @@ where
 /// CSR-dense rowmaj multiplication
 ///
 /// Performs better if rhs has a decent number of colums.
-pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, NOut, I, Iptr>(
-    lhs: CsMatViewI<N1, I, Iptr>,
-    rhs: ArrayView<N2, Ix2>,
-    mut out: ArrayViewMut<'a, NOut, Ix2>,
+pub fn csr_mulacc_dense_rowmaj<'a, N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: ArrayView<N, Ix2>,
+    mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N1: 'a + Num + Copy,
-    N2: 'a + Num + Copy,
-    NOut: 'a + Num + Copy,
-    N1: std::ops::Mul<N2, Output = NOut>,
+    N: 'a + crate::MulAcc,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -187,12 +183,11 @@ pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, NOut, I, Iptr>(
     let axis0 = Axis(0);
     for (line, mut oline) in lhs.outer_iterator().zip(out.axis_iter_mut(axis0))
     {
-        for (col_ind, &lval) in line.iter() {
+        for (col_ind, lval) in line.iter() {
             let rline = rhs.row(col_ind);
             // TODO: call an axpy primitive to benefit from vectorisation?
-            for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
-                let prev = *oval;
-                *oval = prev + lval * rval;
+            for (oval, rval) in oline.iter_mut().zip(rline.iter()) {
+                oval.mul_acc(lval, rval);
             }
         }
     }
@@ -201,15 +196,12 @@ pub fn csr_mulacc_dense_rowmaj<'a, N1, N2, NOut, I, Iptr>(
 /// CSC-dense rowmaj multiplication
 ///
 /// Performs better if rhs has a decent number of colums.
-pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, NOut, I, Iptr>(
-    lhs: CsMatViewI<N1, I, Iptr>,
-    rhs: ArrayView<N2, Ix2>,
-    mut out: ArrayViewMut<'a, NOut, Ix2>,
+pub fn csc_mulacc_dense_rowmaj<'a, N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: ArrayView<N, Ix2>,
+    mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N1: 'a + Num + Copy,
-    N2: 'a + Num + Copy,
-    NOut: 'a + Num + Copy,
-    N1: std::ops::Mul<N2, Output = NOut>,
+    N: 'a + crate::MulAcc,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -227,11 +219,10 @@ pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, NOut, I, Iptr>(
     }
 
     for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
-        for (orow, &lval) in lcol.iter() {
+        for (orow, lval) in lcol.iter() {
             let mut oline = out.row_mut(orow);
-            for (oval, &rval) in oline.iter_mut().zip(rline.iter()) {
-                let prev = *oval;
-                *oval = prev + lval * rval;
+            for (oval, rval) in oline.iter_mut().zip(rline.iter()) {
+                oval.mul_acc(lval, rval);
             }
         }
     }
@@ -240,15 +231,12 @@ pub fn csc_mulacc_dense_rowmaj<'a, N1, N2, NOut, I, Iptr>(
 /// CSC-dense colmaj multiplication
 ///
 /// Performs better if rhs has few columns.
-pub fn csc_mulacc_dense_colmaj<'a, N1, N2, NOut, I, Iptr>(
-    lhs: CsMatViewI<N1, I, Iptr>,
-    rhs: ArrayView<N2, Ix2>,
-    mut out: ArrayViewMut<'a, NOut, Ix2>,
+pub fn csc_mulacc_dense_colmaj<'a, N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: ArrayView<N, Ix2>,
+    mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N1: 'a + Num + Copy,
-    N2: 'a + Num + Copy,
-    NOut: 'a + Num + Copy,
-    N1: std::ops::Mul<N2, Output = NOut>,
+    N: 'a + crate::MulAcc,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -268,10 +256,9 @@ pub fn csc_mulacc_dense_colmaj<'a, N1, N2, NOut, I, Iptr>(
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (rrow, lcol) in lhs.outer_iterator().enumerate() {
-            let rval = rcol[[rrow]];
-            for (orow, &lval) in lcol.iter() {
-                let prev = ocol[[orow]];
-                ocol[[orow]] = prev + lval * rval;
+            let rval = &rcol[[rrow]];
+            for (orow, lval) in lcol.iter() {
+                ocol[[orow]].mul_acc(lval, rval);
             }
         }
     }
@@ -280,15 +267,12 @@ pub fn csc_mulacc_dense_colmaj<'a, N1, N2, NOut, I, Iptr>(
 /// CSR-dense colmaj multiplication
 ///
 /// Performs better if rhs has few columns.
-pub fn csr_mulacc_dense_colmaj<'a, N1, N2, NOut, I, Iptr>(
-    lhs: CsMatViewI<N1, I, Iptr>,
-    rhs: ArrayView<N2, Ix2>,
-    mut out: ArrayViewMut<'a, NOut, Ix2>,
+pub fn csr_mulacc_dense_colmaj<'a, N, I, Iptr>(
+    lhs: CsMatViewI<N, I, Iptr>,
+    rhs: ArrayView<N, Ix2>,
+    mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N1: 'a + Num + Copy,
-    N2: 'a + Num + Copy,
-    NOut: 'a + Num + Copy,
-    N1: std::ops::Mul<N2, Output = NOut>,
+    N: 'a + crate::MulAcc,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -307,12 +291,11 @@ pub fn csr_mulacc_dense_colmaj<'a, N1, N2, NOut, I, Iptr>(
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (orow, lrow) in lhs.outer_iterator().enumerate() {
-            let mut prev = ocol[[orow]];
-            for (rrow, &lval) in lrow.iter() {
-                let rval = rcol[[rrow]];
-                prev = prev + lval * rval;
+            let oval = &mut ocol[[orow]];
+            for (rrow, lval) in lrow.iter() {
+                let rval = &rcol[[rrow]];
+                oval.mul_acc(lval, rval);
             }
-            ocol[[orow]] = prev;
         }
     }
 }
