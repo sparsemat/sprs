@@ -367,7 +367,7 @@ pub(crate) mod utils {
         true
     }
 
-    pub fn sort_indices_data_slices<N: Copy, I: SpIndex>(
+    pub fn sort_indices_data_slices<N: Clone, I: SpIndex>(
         indices: &mut [I],
         data: &mut [N],
         buf: &mut Vec<(I, N)>,
@@ -379,13 +379,15 @@ pub(crate) mod utils {
         buf.clear();
         buf.reserve_exact(len);
         for (i, v) in indices.iter().zip(data.iter()) {
-            buf.push((*i, *v));
+            buf.push((*i, v.clone()));
         }
 
         buf.sort_unstable_by_key(|x| x.0);
 
-        for (&(i, x), (ind, v)) in
-            buf.iter().zip(indices.iter_mut().zip(data.iter_mut()))
+        for ((i, x), (ind, v)) in buf
+            .iter()
+            .cloned()
+            .zip(indices.iter_mut().zip(data.iter_mut()))
         {
             *ind = i;
             *v = x;

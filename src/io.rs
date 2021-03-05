@@ -270,7 +270,7 @@ pub fn write_matrix_market<'a, N, I, M, P>(
 ) -> Result<(), io::Error>
 where
     I: 'a + SpIndex + fmt::Display,
-    N: 'a + PrimitiveKind + Copy + fmt::Display,
+    N: 'a + PrimitiveKind + fmt::Display,
     M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
     P: AsRef<Path>,
 {
@@ -319,7 +319,7 @@ pub fn write_matrix_market_sym<'a, N, I, M, P>(
 ) -> Result<(), io::Error>
 where
     I: 'a + SpIndex + fmt::Display,
-    N: 'a + PrimitiveKind + Copy + fmt::Display,
+    N: 'a + PrimitiveKind + fmt::Display,
     M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
     P: AsRef<Path>,
 {

@@ -4,7 +4,6 @@
 use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 use crate::sparse::CompressedStorage::CSR;
-use num_traits::Num;
 #[cfg(feature = "multi_thread")]
 use rayon::prelude::*;
 
@@ -102,6 +101,10 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
     for (a_row, a_range) in a.indptr().iter_outer_sz().enumerate() {
         let mut length = 0;
 
+        // FIXME are iterators possible here?
+        // TODO benchmark unsafe indexing here. It's possible to get
+        // a subslice using get(a_range). It should also be possible to use
+        // index_unchecked and from_usize_unchecked
         for &a_col in &a.indices()[a_range] {
             let b_row = a_col.index();
             let b_range = b.indptr().outer_inds_sz(b_row);
@@ -147,7 +150,7 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
 pub fn numeric<
     Iptr: SpIndex,
     I: SpIndex,
-    N: Num + Copy + std::ops::AddAssign,
+    N: crate::MulAcc + num_traits::Zero,
 >(
     a: CsMatViewI<N, I, Iptr>,
     b: CsMatViewI<N, I, Iptr>,
@@ -166,15 +169,18 @@ pub fn numeric<
     }
     for (a_row, mut c_row) in a.outer_iterator().zip(c.outer_iterator_mut()) {
         for (a_col, a_val) in a_row.iter() {
+            // TODO unchecked index
             let b_row = b.outer_view(a_col.index()).unwrap();
             for (b_col, b_val) in b_row.iter() {
                 // TODO unsafe indexing
-                tmp[b_col.index()] += *a_val * *b_val;
+                tmp[b_col.index()].mul_acc(a_val, b_val);
             }
         }
         for (c_col, c_val) in c_row.iter_mut() {
-            *c_val = tmp[c_col];
-            tmp[c_col] = N::zero();
+            // TODO unsafe indexing
+            let mut val = N::zero();
+            std::mem::swap(&mut val, &mut tmp[c_col]);
+            *c_val = val;
         }
     }
 }
@@ -189,7 +195,7 @@ pub fn mul_csr_csr<N, I, Iptr>(
     rhs: CsMatViewI<N, I, Iptr>,
 ) -> CsMatI<N, I, Iptr>
 where
-    N: Num + Copy + std::ops::AddAssign + Send + Sync,
+    N: crate::MulAcc + num_traits::Zero + Clone + Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -247,7 +253,7 @@ pub fn mul_csr_csr_with_workspace<N, I, Iptr>(
     tmps: &mut [Box<[N]>],
 ) -> CsMatI<N, I, Iptr>
 where
-    N: Num + Copy + std::ops::AddAssign + Send + Sync,
+    N: crate::MulAcc + num_traits::Zero + Clone + Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -498,5 +504,47 @@ mod test {
         let b = crate::CsMat::<f32>::zero((100, 10)).to_csc();
 
         let _ = &a * &b;
+    }
+
+    #[test]
+    fn mul_complex() {
+        use num_complex::Complex32;
+        // | 0  1 0   0  |
+        // | 0  0 0   0  |
+        // | i  0 0  1+i |
+        // | 0  0 2i  0  |
+        let a = crate::CsMat::new(
+            (4, 4),
+            vec![0, 1, 1, 3, 4],
+            vec![1, 0, 3, 2],
+            vec![
+                Complex32::new(1., 0.),
+                Complex32::new(0., 1.),
+                Complex32::new(1., 1.),
+                Complex32::new(0., 2.),
+            ],
+        );
+        //                 | 0  1 0      0  |
+        //                 | 0  0 0      0  |
+        //                 | i  0 0     1+i |
+        //                 | 0  0 2i     0  |
+        //
+        // | 0  1 0   0  | | 0  0   0    0  |
+        // | 0  0 0   0  | | 0  0   0    0  |
+        // | i  0 0  1+i | | 0  i -2+2i  0  |
+        // | 0  0 2i  0  | |-2  0   0  -2+2i|
+        let expected = crate::CsMat::new(
+            (4, 4),
+            vec![0, 0, 0, 2, 4],
+            vec![1, 2, 0, 3],
+            vec![
+                Complex32::new(0., 1.),
+                Complex32::new(-2., 2.),
+                Complex32::new(-2., 0.),
+                Complex32::new(-2., 2.),
+            ],
+        );
+        let b = &a * &a;
+        assert_eq!(b, expected);
     }
 }

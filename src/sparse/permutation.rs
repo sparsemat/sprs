@@ -298,7 +298,7 @@ pub fn transform_mat_papt<N, I, Iptr>(
     perm: PermViewI<I>,
 ) -> CsMatI<N, I, Iptr>
 where
-    N: Copy + ::std::fmt::Debug,
+    N: Clone + ::std::fmt::Debug,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -328,12 +328,12 @@ where
         tmp.clear();
         let outer = mat.outer_view(in_outer.index()).unwrap();
         for (ind, val) in outer.indices().iter().zip(outer.data()) {
-            tmp.push((p_[ind.index()], *val))
+            tmp.push((p_[ind.index()], val.clone()))
         }
         tmp.sort_by_key(|(ind, _)| *ind);
         for (ind, val) in &tmp {
             indices.push(*ind);
-            data.push(*val);
+            data.push(val.clone());
         }
     }
 
