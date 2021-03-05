@@ -1,5 +1,41 @@
 use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
+use num_complex::{Complex32, Complex64};
+
+/// Trait for types that are valid to compute a Kronecker product.
+/// This includes all classic scalar types, but can be extended to matrices
+/// as well, which will enable computing the kronecker product of sparse
+/// by block matrices.
+pub trait Kronecker<B = Self> {
+    type Output;
+    fn kron(&self, b: &B) -> <Self as Kronecker<B>>::Output;
+}
+
+macro_rules! scalar_kronecker {
+    ($scalar: ident) => {
+        impl Kronecker for $scalar {
+            type Output = Self;
+            fn kron(&self, b: &Self) -> Self::Output {
+                self * b
+            }
+        }
+    };
+}
+
+scalar_kronecker!(u8);
+scalar_kronecker!(i8);
+scalar_kronecker!(u16);
+scalar_kronecker!(i16);
+scalar_kronecker!(u32);
+scalar_kronecker!(i32);
+scalar_kronecker!(u64);
+scalar_kronecker!(i64);
+scalar_kronecker!(isize);
+scalar_kronecker!(usize);
+scalar_kronecker!(f32);
+scalar_kronecker!(f64);
+scalar_kronecker!(Complex32);
+scalar_kronecker!(Complex64);
 
 /// Compute the Kronecker product between two matrices
 ///
@@ -11,12 +47,15 @@ use crate::sparse::prelude::*;
 ///
 /// * if indices are out of bounds for its type
 #[must_use]
-pub fn kronecker_product<N: Clone + Default, I: SpIndex, Iptr: SpIndex>(
-    mut a: CsMatViewI<N, I, Iptr>,
-    mut b: CsMatViewI<N, I, Iptr>,
-) -> CsMatI<N, I, Iptr>
+pub fn kronecker_product<Nin, Nout, I, Iptr>(
+    mut a: CsMatViewI<Nin, I, Iptr>,
+    mut b: CsMatViewI<Nin, I, Iptr>,
+) -> CsMatI<Nout, I, Iptr>
 where
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    Nin: Clone + Default + Kronecker<Output = Nout>,
+    Nout: Clone + Default,
+    I: SpIndex,
+    Iptr: SpIndex,
 {
     use crate::CompressedStorage::CSR;
     if a.storage() == b.storage() {
@@ -41,7 +80,7 @@ where
                     for (bi, b) in b.iter() {
                         indices.push(I::from(ai * b_shape.1 + bi).unwrap());
                         element_count += Iptr::one();
-                        values.push(a * b);
+                        values.push(a.kron(b));
                     }
                 }
                 indptr.push(element_count);
