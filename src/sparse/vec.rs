@@ -1901,6 +1901,33 @@ mod test {
         assert_eq!(res, &[0, 1, 3, 4]);
     }
 
+    #[test]
+    fn add_sub_complex() {
+        use num_complex::Complex32;
+        let vector = CsVec::new(
+            4,
+            vec![1, 2, 3],
+            vec![
+                Complex32::new(0., 1.),
+                Complex32::new(3., 1.),
+                Complex32::new(4., 0.),
+            ],
+        );
+        let doubled = &vector + &vector;
+        let expected = CsVec::new(
+            4,
+            vec![1, 2, 3],
+            vec![
+                Complex32::new(0., 2.),
+                Complex32::new(6., 2.),
+                Complex32::new(8., 0.),
+            ],
+        );
+        assert_eq!(doubled, expected);
+        let subtracted = &doubled - &vector;
+        assert_eq!(subtracted, vector);
+    }
+
     #[cfg(feature = "approx")]
     mod approx {
         use crate::*;

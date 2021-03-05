@@ -505,4 +505,46 @@ mod test {
 
         let _ = &a * &b;
     }
+
+    #[test]
+    fn mul_complex() {
+        use num_complex::Complex32;
+        // | 0  1 0   0  |
+        // | 0  0 0   0  |
+        // | i  0 0  1+i |
+        // | 0  0 2i  0  |
+        let a = crate::CsMat::new(
+            (4, 4),
+            vec![0, 1, 1, 3, 4],
+            vec![1, 0, 3, 2],
+            vec![
+                Complex32::new(1., 0.),
+                Complex32::new(0., 1.),
+                Complex32::new(1., 1.),
+                Complex32::new(0., 2.),
+            ],
+        );
+        //                 | 0  1 0      0  |
+        //                 | 0  0 0      0  |
+        //                 | i  0 0     1+i |
+        //                 | 0  0 2i     0  |
+        //
+        // | 0  1 0   0  | | 0  0   0    0  |
+        // | 0  0 0   0  | | 0  0   0    0  |
+        // | i  0 0  1+i | | 0  i -2+2i  0  |
+        // | 0  0 2i  0  | |-2  0   0  -2+2i|
+        let expected = crate::CsMat::new(
+            (4, 4),
+            vec![0, 0, 0, 2, 4],
+            vec![1, 2, 0, 3],
+            vec![
+                Complex32::new(0., 1.),
+                Complex32::new(-2., 2.),
+                Complex32::new(-2., 0.),
+                Complex32::new(-2., 2.),
+            ],
+        );
+        let b = &a * &a;
+        assert_eq!(b, expected);
+    }
 }
