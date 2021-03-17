@@ -10,7 +10,7 @@ version = "0.10.0"
 path = ".."
 
 [dependencies.sprs-rand]
-version = "0.2.0"
+version = "0.3.0"
 path = "../sprs-rand"
 
 [dependencies.plotters]

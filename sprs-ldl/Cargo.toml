@@ -22,12 +22,12 @@ version = "0.10.0"
 path = ".."
 
 [dependencies.sprs_suitesparse_ldl]
-version = "0.6.0"
+version = "0.7.0"
 path = "../suitesparse_bindings/sprs_suitesparse_ldl"
 optional = true
 
 [dependencies.sprs_suitesparse_camd]
-version = "0.1.0"
+version = "0.2.0"
 path = "../suitesparse_bindings/sprs_suitesparse_camd"
 optional = true
 
