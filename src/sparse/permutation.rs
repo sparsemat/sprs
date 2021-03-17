@@ -292,6 +292,53 @@ where
     }
 }
 
+impl<'a, N, I, Iptr, IndStorage> Mul<&'a Permutation<I, IndStorage>>
+    for CsMatViewI<'a, N, I, Iptr>
+where
+    N: Clone + Default,
+    I: SpIndex,
+    Iptr: SpIndex,
+    IndStorage: Deref<Target = [I]>,
+{
+    type Output = CsMatI<N, I, Iptr>;
+    fn mul(self, perm: &'a Permutation<I, IndStorage>) -> CsMatI<N, I, Iptr> {
+        assert!(self.cols() == perm.dim());
+        if perm.is_identity() || self.rows() == 0 {
+            return self.to_owned();
+        }
+        let mul_csc = |mat: CsMatViewI<_, _, _>| {
+            let mut indptr = Vec::with_capacity(mat.indptr().len());
+            let mut indices = Vec::with_capacity(mat.indices().len());
+            let mut data = Vec::with_capacity(mat.data().len());
+            let (_, pinv) = match perm.view().storage {
+                Identity => unreachable!(),
+                FinitePerm {
+                    perm: p,
+                    perm_inv: p_,
+                } => (p, p_),
+            };
+            let mut nnz = Iptr::zero();
+            indptr.push(nnz);
+            for in_outer in pinv.iter() {
+                nnz += mat.indptr().nnz_in_outer(in_outer.index());
+                indptr.push(nnz);
+                let outer = mat.outer_view(in_outer.index()).unwrap();
+                indices.extend(outer.indices().iter().cloned());
+                data.extend(outer.data().iter().cloned());
+            }
+            CsMatI::new_csc(mat.shape(), indptr, indices, data)
+        };
+        if self.is_csc() {
+            mul_csc(self.view())
+        } else {
+            let res_csc = mul_csc(self.to_other_storage().view());
+            // Question: should we respect the input storage, or always return
+            // CSC?
+            res_csc.to_other_storage()
+        }
+    }
+}
+
 /// Compute the square matrix resulting from the product P * A * P^T
 pub fn transform_mat_papt<N, I, Iptr>(
     mat: CsMatViewI<N, I, Iptr>,
@@ -409,6 +456,52 @@ mod test {
         let x = ndarray::arr1(&[5, 1, 2, 3, 4]);
         let y = p.view() * x.view();
         assert_eq!(y, ndarray::arr1(&[2, 1, 3, 5, 4]));
+    }
+
+    #[test]
+    fn mat_perm_mul() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+        // | 0 0 1 0 0 |
+        // | 0 1 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 1 0 0 0 0 |
+        // | 0 0 0 0 1 |
+        let perm = super::PermOwned::new(vec![2, 1, 3, 0, 4]);
+        // expected matrix AP
+        //                | 0 0 1 0 0 |
+        //                | 0 1 0 0 0 |
+        //                | 0 0 0 1 0 |
+        //                | 1 0 0 0 0 |
+        //                | 0 0 0 0 1 |
+        //
+        // | 1 0 0 3 1 |  | 3 0 1 0 1 |
+        // | 0 2 0 0 0 |  | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |  | 1 0 0 0 0 |
+        // | 3 0 1 1 0 |  | 1 0 3 1 0 |
+        // | 1 0 0 0 1 |  | 0 0 1 0 1 |
+        let expected = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 7, 8, 10],
+            vec![0, 2, 3, 1, 0, 3, 4, 3, 0, 4],
+            vec![3, 1, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+        let res = mat.view() * &perm;
+        assert_eq!(res, expected);
+
+        let mat = mat.to_csr();
+        let expected = expected.to_csr();
+        let res = mat.view() * &perm;
+        assert_eq!(res, expected);
     }
 
     #[test]

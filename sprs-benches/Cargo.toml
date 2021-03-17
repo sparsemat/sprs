@@ -9,6 +9,11 @@ publish = false
 version = "0.10.0"
 path = ".."
 
+[dependencies.sprs-ldl]
+version = "0.8.0"
+path = "../sprs-ldl"
+features = ["sprs_suitesparse_ldl", "sprs_suitesparse_camd"]
+
 [dependencies.sprs-rand]
 version = "0.3.0"
 path = "../sprs-rand"

@@ -5,6 +5,7 @@ use crate::{DenseVector, DenseVectorMut};
 ///! there are solver for sparse triangular systems and symmetric systems.
 use num_traits::Num;
 
+pub mod constraint;
 pub mod etree;
 pub mod ordering;
 pub mod trisolve;
