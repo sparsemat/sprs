@@ -2,7 +2,7 @@
 
 name = "sprs-ldl"
 description = "Sparse cholesky factorization"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Vincent Barrielle"]
 edition = "2018"
 
@@ -18,16 +18,16 @@ num-traits = "0.2.0"
 
 
 [dependencies.sprs]
-version = "0.9.0"
+version = "0.10.0"
 path = ".."
 
 [dependencies.sprs_suitesparse_ldl]
-version = "0.6.0"
+version = "0.7.0"
 path = "../suitesparse_bindings/sprs_suitesparse_ldl"
 optional = true
 
 [dependencies.sprs_suitesparse_camd]
-version = "0.1.0"
+version = "0.2.0"
 path = "../suitesparse_bindings/sprs_suitesparse_camd"
 optional = true
 

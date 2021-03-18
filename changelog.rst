@@ -2,6 +2,23 @@
 Changelog
 =========
 
+- 0.10.0
+  - support more scalar types for scalar/matrix multiplication
+  - refactor the handling of ``CsMatBase``'s ``indptr`` member to be able to
+    express correct slicing views over the outer dimension **breaking change**
+  - refactor slicing to get a nicer API **breaking change**
+  - use more clippy lints to get more idiomatic code
+  - add a ``diag`` method to ``CsMatBase``
+  - fix a bug in ``CsMatViewMut::outer_iterator_mut``
+  - add ``CsVecBase::to_dense``
+  - split the error type between structural and linalg errors **breaking change**
+  - allow specification of the ``Iptr`` type when converting from a triplet
+    matrix to a compressed matrix **breaking change**
+  - refactor matrix constructors for consistency **breaking change**
+  - support generic dense vectors in solvers, {matrix,permutation}/vector
+    multiplication. Technically a **breaking change**, but should not be in
+    practice
+  - remove need for `Copy` bound in most places
 - 0.9.3
   - mitigate bugs in ``middle_outer_views``, that will require breaking changes
     in 0.10 to be fully fixed.
