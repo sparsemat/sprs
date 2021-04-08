@@ -32,4 +32,4 @@ path = "../suitesparse_bindings/sprs_suitesparse_camd"
 optional = true
 
 [dev-dependencies]
-ndarray = ">=0.11.0,<0.15"
+ndarray = ">=0.11.0,<0.16"
