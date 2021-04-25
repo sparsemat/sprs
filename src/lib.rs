@@ -73,12 +73,12 @@ assert_eq!(a, b.to_csc());
 ```
 
 */
+#![allow(clippy::redundant_slicing)]
 
 pub mod array_backend;
 mod dense_vector;
 pub mod errors;
 pub mod indexing;
-#[cfg(not(miri))]
 pub mod io;
 mod mul_acc;
 pub mod num_kinds;
@@ -161,6 +161,7 @@ pub use PermutationCheck::*;
 pub enum FillInReduction {
     NoReduction,
     ReverseCuthillMcKee,
+    #[allow(clippy::upper_case_acronyms)]
     CAMDSuiteSparse,
 }
 

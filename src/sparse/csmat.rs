@@ -37,6 +37,7 @@ use crate::sparse::vec;
 /// Describe the storage of a `CsMat`
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[allow(clippy::upper_case_acronyms)]
 pub enum CompressedStorage {
     /// Compressed row storage
     CSR,

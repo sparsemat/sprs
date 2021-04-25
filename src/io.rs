@@ -422,6 +422,7 @@ mod test {
     };
     use crate::CsMat;
     use tempfile::tempdir;
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn simple_matrix_market_read() {
         let path = "data/matrix_market/simple.mm";
@@ -438,6 +439,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn simple_matrix_market_read_from_bufread() {
         let path = "data/matrix_market/simple.mm";
         let f = std::fs::File::open(path).unwrap();
@@ -457,6 +459,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn int_matrix_market_read() {
         let path = "data/matrix_market/simple_int.mm";
         let mat = read_matrix_market::<i32, usize, _>(path).unwrap();
@@ -477,6 +480,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn matrix_market_read_fail_too_many_in_entry() {
         let path = "data/matrix_market/bad_files/too_many_elems_in_entry.mm";
         let res = read_matrix_market::<f64, i32, _>(path);
@@ -484,6 +488,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn matrix_market_read_fail_not_enough_entries() {
         let path = "data/matrix_market/bad_files/not_enough_entries.mm";
         let res = read_matrix_market::<f64, i32, _>(path);
@@ -491,6 +496,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn read_write_read_matrix_market() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
@@ -505,6 +511,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn read_write_read_matrix_market_via_csc() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
@@ -517,6 +524,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn read_symmetric_matrix_market() {
         let path = "data/matrix_market/symmetric.mm";
         let mat = read_matrix_market::<f64, usize, _>(path).unwrap();
@@ -537,6 +545,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     /// Test whether the seek and replace strategy in the symmetric write
     /// works.
     fn tricky_symmetric_matrix_market() {
@@ -563,6 +572,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn skew_symmetric_matrix_market() {
         let mat = CsMat::new(
             (5, 5),
@@ -579,6 +589,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn general_matrix_via_symmetric_save() {
         let mat = CsMat::new(
             (5, 5),

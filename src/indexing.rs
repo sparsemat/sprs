@@ -62,6 +62,7 @@ impl SpIndex for usize {
     }
 
     #[inline(always)]
+    #[allow(clippy::wrong_self_convention)]
     fn from_usize(ind: usize) -> Self {
         ind
     }
@@ -72,6 +73,7 @@ impl SpIndex for usize {
     }
 
     #[inline(always)]
+    #[allow(clippy::wrong_self_convention)]
     fn from_usize_unchecked(ind: usize) -> Self {
         ind
     }
