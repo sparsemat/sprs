@@ -89,12 +89,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIterator<'a, N, I> {
     type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        match self.ind_data.next() {
-            None => None,
-            Some((inner_ind, data)) => {
-                Some((inner_ind.index_unchecked(), data))
-            }
-        }
+        self.ind_data
+            .next()
+            .map(|(inner_ind, data)| (inner_ind.index_unchecked(), data))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -123,12 +120,9 @@ impl<'a, N: 'a, I: 'a + SpIndex> Iterator for VectorIteratorMut<'a, N, I> {
     type Item = (usize, &'a mut N);
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        match self.ind_data.next() {
-            None => None,
-            Some((inner_ind, data)) => {
-                Some((inner_ind.index_unchecked(), data))
-            }
-        }
+        self.ind_data
+            .next()
+            .map(|(inner_ind, data)| (inner_ind.index_unchecked(), data))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
