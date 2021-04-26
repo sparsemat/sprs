@@ -70,15 +70,15 @@ where
 
 /// Multiply a sparse CSC matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes>(
-    mat: CsMatViewI<N, I, Iptr>,
+pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes, A, B>(
+    mat: CsMatViewI<A, I, Iptr>,
     in_vec: V,
     mut res_vec: VRes,
 ) where
-    N: crate::MulAcc,
+    N: crate::MulAcc<A, B>,
     I: SpIndex,
     Iptr: SpIndex,
-    V: DenseVector<Scalar = N>,
+    V: DenseVector<Scalar = B>,
     VRes: DenseVectorMut<Scalar = N>,
 {
     let mat = mat.view();
@@ -90,25 +90,25 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes>(
     }
 
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
-        let multiplier = in_vec.index(col_ind);
-        for (row_ind, value) in vec.iter() {
+        let vec_elem = in_vec.index(col_ind);
+        for (row_ind, mtx_elem) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            res_vec.index_mut(row_ind).mul_acc(multiplier, value);
+            res_vec.index_mut(row_ind).mul_acc(mtx_elem, vec_elem);
         }
     }
 }
 
 /// Multiply a sparse CSR matrix with a dense vector and accumulate the result
 /// into another dense vector
-pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
-    mat: CsMatViewI<N, I, Iptr>,
+pub fn mul_acc_mat_vec_csr<N, A, B, I, Iptr, V, VRes>(
+    mat: CsMatViewI<A, I, Iptr>,
     in_vec: V,
     mut res_vec: VRes,
 ) where
-    N: crate::MulAcc,
+    N: crate::MulAcc<A, B>,
     I: SpIndex,
     Iptr: SpIndex,
-    V: DenseVector<Scalar = N>,
+    V: DenseVector<Scalar = B>,
     VRes: DenseVectorMut<Scalar = N>,
 {
     if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
@@ -120,9 +120,9 @@ pub fn mul_acc_mat_vec_csr<N, I, Iptr, V, VRes>(
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
         let tv = res_vec.index_mut(row_ind);
-        for (col_ind, value) in vec.iter() {
+        for (col_ind, mtx_elem) in vec.iter() {
             // TODO: unsafe access to value? needs bench
-            tv.mul_acc(in_vec.index(col_ind), value);
+            tv.mul_acc(mtx_elem, in_vec.index(col_ind));
         }
     }
 }
@@ -396,7 +396,7 @@ mod test {
         assert!(res_vec
             .iter()
             .zip(expected_output.iter())
-            .all(|(x, y)| (*x - *y).abs() < epsilon));
+            .all(|(x, y): (&f64, &f64)| (*x - *y).abs() < epsilon));
     }
 
     #[test]
@@ -446,7 +446,7 @@ mod test {
         assert!(res_vec
             .iter()
             .zip(expected_output.iter())
-            .all(|(x, y)| (*x - *y).abs() < epsilon));
+            .all(|(x, y): (&f64, &f64)| (*x - *y).abs() < epsilon));
     }
 
     #[test]
