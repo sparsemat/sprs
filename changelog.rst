@@ -2,6 +2,9 @@
 Changelog
 =========
 
+- Unreleased
+  - ``MulAcc`` is generalised to allow different output types from input
+
 - 0.10.0
   - support more scalar types for scalar/matrix multiplication
   - refactor the handling of ``CsMatBase``'s ``indptr`` member to be able to
