@@ -154,17 +154,20 @@ where
 }
 
 /// CSR-vector multiplication
-pub fn csr_mul_csvec<N, I, Iptr>(
-    lhs: CsMatViewI<N, I, Iptr>,
-    rhs: CsVecViewI<N, I>,
+pub fn csr_mul_csvec<N, A, B, I, Iptr>(
+    lhs: CsMatViewI<A, I, Iptr>,
+    rhs: CsVecViewI<B, I>,
 ) -> CsVecI<N, I>
 where
-    N: crate::MulAcc + num_traits::Zero + PartialEq + Clone,
+    N: crate::MulAcc<A, B> + num_traits::Zero + PartialEq + Clone,
+    A: Copy + num_traits::Zero,
+    B: Copy + num_traits::Zero,
     I: SpIndex,
     Iptr: SpIndex,
 {
     if rhs.dim == 0 {
-        return rhs.to_owned();
+        // create an empty sparse vector of correct dimension
+        return CsVecI::<N, I>::empty(0);
     }
     if lhs.cols() != rhs.dim() {
         panic!("Dimension mismatch");
