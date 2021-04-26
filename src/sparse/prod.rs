@@ -10,19 +10,43 @@ use num_traits::Num;
 /// Compute the dot product of two sparse vectors, using binary search to find matching indices.
 ///
 /// Runs in O(MlogN) time, where M and N are the number of non-zero entries in each vector.
-pub fn csvec_dot_by_binary_search<N, I>(
-    vec1: CsVecViewI<N, I>,
-    vec2: CsVecViewI<N, I>,
+pub fn csvec_dot_by_binary_search<N, I, A, B>(
+    vec1: CsVecViewI<A, I>,
+    vec2: CsVecViewI<B, I>,
 ) -> N
 where
     I: SpIndex,
-    N: crate::MulAcc + num_traits::Zero,
+    N: crate::MulAcc<A, B> + num_traits::Zero,
 {
-    let (mut idx1, mut val1, mut idx2, mut val2) = if vec1.nnz() < vec2.nnz() {
-        (vec1.indices(), vec1.data(), vec2.indices(), vec2.data())
+    // Check vec1.nnz<vec2.nnz
+    // Reverse the dot product vec1 and vec2, but preserve possibly non-commutative MulAcc
+    // through a lamba.
+    if vec1.nnz() > vec2.nnz() {
+        csvec_dot_by_binary_search_impl(vec2, vec1, |acc: &mut N, a, b| {
+            acc.mul_acc(b, a)
+        })
     } else {
-        (vec2.indices(), vec2.data(), vec1.indices(), vec1.data())
-    };
+        csvec_dot_by_binary_search_impl(vec1, vec2, |acc: &mut N, a, b| {
+            acc.mul_acc(a, b)
+        })
+    }
+}
+
+/// Inner routine of `csvec_dot_by_binary_search`, removes need for commutative `MulAcc`
+pub(crate) fn csvec_dot_by_binary_search_impl<N, I, A, B, F>(
+    vec1: CsVecViewI<A, I>,
+    vec2: CsVecViewI<B, I>,
+    mul_acc: F,
+) -> N
+where
+    F: Fn(&mut N, &A, &B),
+    I: SpIndex,
+    N: num_traits::Zero,
+{
+    assert!(vec1.nnz() <= vec2.nnz());
+    // vec1.nnz is smaller
+    let (mut idx1, mut val1, mut idx2, mut val2) =
+        (vec1.indices(), vec1.data(), vec2.indices(), vec2.data());
 
     let mut sum = N::zero();
     while !idx1.is_empty() && !idx2.is_empty() {
@@ -34,7 +58,7 @@ where
             Err(i) => (false, i),
         };
         if found {
-            sum.mul_acc(&val1[0], &val2[i]);
+            mul_acc(&mut sum, &val1[0], &val2[i]);
         }
         idx1 = &idx1[1..];
         val1 = &val1[1..];

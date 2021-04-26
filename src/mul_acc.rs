@@ -12,16 +12,19 @@
 /// to provide the most performant implementation. For instance, we could have
 /// a default implementation for numeric types that are `Clone`, but it would
 /// make possibly unnecessary copies.
-pub trait MulAcc {
+pub trait MulAcc<A = Self, B = A> {
     /// Multiply and accumulate in this variable, formally `*self += a * b`.
-    fn mul_acc(&mut self, a: &Self, b: &Self);
+    fn mul_acc(&mut self, a: &A, b: &B);
 }
 
-impl<N> MulAcc for N
+/// Default for types which supports `mul_add`
+impl<N, A, B> MulAcc<A, B> for N
 where
-    N: Copy + num_traits::MulAdd<Output = N>,
+    N: Copy,
+    B: Copy,
+    A: num_traits::MulAdd<B, N, Output = N> + Copy,
 {
-    fn mul_acc(&mut self, a: &Self, b: &Self) {
+    fn mul_acc(&mut self, a: &A, b: &B) {
         *self = a.mul_add(*b, *self);
     }
 }
@@ -37,5 +40,23 @@ mod tests {
         let c = 3.;
         a.mul_acc(&b, &c);
         assert_eq!(a, 7.);
+    }
+
+    #[derive(Debug, Copy, Clone, Default)]
+    struct Wrapped<T: Default + Copy + std::fmt::Debug>(T);
+
+    impl MulAcc<Wrapped<i8>, Wrapped<i16>> for Wrapped<i32> {
+        fn mul_acc(&mut self, a: &Wrapped<i8>, b: &Wrapped<i16>) {
+            self.0 = self.0 + a.0 as i32 * b.0 as i32;
+        }
+    }
+
+    #[test]
+    fn mul_acc_mixed_param_sizes() {
+        let mut a = Wrapped::<i32>(0x40000007i32);
+        let b = Wrapped::<i8>(0x20i8);
+        let c = Wrapped::<i16>(0x3000i16);
+        a.mul_acc(&b, &c);
+        assert_eq!(a.0, 0x40060007i32);
     }
 }
