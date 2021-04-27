@@ -6,7 +6,7 @@ fn sparse_dense_dotprod_default(bench: &mut Bencher) {
     let w = Array::range(0., 10., 0.00001);
     let x = CsVec::new(1000000, vec![0, 200000, 800000], vec![1., 2., 3.]);
     bench.iter(|| {
-        x.dot(&w);
+        let _: f64 = x.dot(&w);
     });
 }
 
@@ -14,7 +14,7 @@ fn sparse_dense_dotprod_specialized(bench: &mut Bencher) {
     let w = Array::range(0., 10., 0.00001);
     let x = CsVec::new(1000000, vec![0, 200000, 800000], vec![1., 2., 3.]);
     bench.iter(|| {
-        x.dot_dense(w.view());
+        let _: f64 = x.dot_dense(w.view());
     });
 }
 
@@ -43,7 +43,7 @@ fn sparse_dense_vec_matprod_specialized(bench: &mut Bencher) {
     let cols = w.shape()[0];
     let w_reshape = w.view().into_shape((1, cols)).unwrap();
     let w_t = w_reshape.t();
-    let mut res = Array2::zeros((rows, 1).f());
+    let mut res = Array2::<f64>::zeros((rows, 1).f());
     bench.iter(|| {
         sprs::prod::csr_mulacc_dense_colmaj(
             a.view(),
