@@ -1107,7 +1107,7 @@ where
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         } else {
-            (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
+            self.mul(&rhs.col_view()).outer_view(0).unwrap().to_owned()
         }
     }
 }

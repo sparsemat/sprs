@@ -150,10 +150,12 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
 pub fn numeric<
     Iptr: SpIndex,
     I: SpIndex,
-    N: crate::MulAcc + num_traits::Zero,
+    A: num_traits::Zero,
+    B: num_traits::Zero,
+    N: crate::MulAcc<A, B> + num_traits::Zero,
 >(
-    a: CsMatViewI<N, I, Iptr>,
-    b: CsMatViewI<N, I, Iptr>,
+    a: CsMatViewI<A, I, Iptr>,
+    b: CsMatViewI<B, I, Iptr>,
     mut c: CsMatViewMutI<N, I, Iptr>,
     tmp: &mut [N],
 ) {
@@ -190,12 +192,14 @@ pub fn numeric<
 /// # Panics
 ///
 /// - if `lhs.cols() != rhs.rows()`.
-pub fn mul_csr_csr<N, I, Iptr>(
-    lhs: CsMatViewI<N, I, Iptr>,
-    rhs: CsMatViewI<N, I, Iptr>,
+pub fn mul_csr_csr<N, A, B, I, Iptr>(
+    lhs: CsMatViewI<A, I, Iptr>,
+    rhs: CsMatViewI<B, I, Iptr>,
 ) -> CsMatI<N, I, Iptr>
 where
-    N: crate::MulAcc + num_traits::Zero + Clone + Send + Sync,
+    N: crate::MulAcc<A, B> + num_traits::Zero + Clone + Send + Sync,
+    A: num_traits::Zero + Send + Clone + Sync,
+    B: num_traits::Zero + Send + Clone + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -246,14 +250,16 @@ where
 /// - if `tmps.len() == 0`
 /// - if `seens[i].len() != lhs.cols().max(lhs.rows()).max(rhs.cols())`
 /// - if `tmps[i].len() != lhs.cols().max(lhs.rows()).max(rhs.cols())`
-pub fn mul_csr_csr_with_workspace<N, I, Iptr>(
-    lhs: CsMatViewI<N, I, Iptr>,
-    rhs: CsMatViewI<N, I, Iptr>,
+pub fn mul_csr_csr_with_workspace<N, A, B, I, Iptr>(
+    lhs: CsMatViewI<A, I, Iptr>,
+    rhs: CsMatViewI<B, I, Iptr>,
     seens: &mut [Box<[bool]>],
     tmps: &mut [Box<[N]>],
 ) -> CsMatI<N, I, Iptr>
 where
-    N: crate::MulAcc + num_traits::Zero + Clone + Send + Sync,
+    N: crate::MulAcc<A, B> + num_traits::Zero + Clone + Send + Sync,
+    A: num_traits::Zero + Clone + Send + Sync,
+    B: num_traits::Zero + Clone + Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
