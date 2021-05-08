@@ -166,21 +166,19 @@ pub fn csr_mul_csvec<N, A, B, I, Iptr>(
 ) -> CsVecI<N, I>
 where
     N: crate::MulAcc<A, B> + num_traits::Zero + PartialEq + Clone,
-    A: Copy + num_traits::Zero,
-    B: Copy + num_traits::Zero,
     I: SpIndex,
     Iptr: SpIndex,
 {
     if rhs.dim == 0 {
         // create an empty sparse vector of correct dimension
-        return CsVecI::<N, I>::empty(0);
+        return CsVecI::empty(0);
     }
     if lhs.cols() != rhs.dim() {
         panic!("Dimension mismatch");
     }
     let mut res = CsVecI::empty(lhs.rows());
     for (row_ind, lvec) in lhs.outer_iterator().enumerate() {
-        let val = lvec.dot(&rhs);
+        let val = lvec.dot_acc(&rhs);
         if val != N::zero() {
             res.append(row_ind, val);
         }
@@ -197,8 +195,6 @@ pub fn csr_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
     N: 'a + crate::MulAcc<A, B>,
-    A: 'a,
-    B: 'a,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -237,8 +233,6 @@ pub fn csc_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
     N: 'a + crate::MulAcc<A, B>,
-    A: 'a,
-    B: 'a,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -274,8 +268,6 @@ pub fn csc_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
     N: 'a + crate::MulAcc<A, B>,
-    A: 'a,
-    B: 'a,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -312,8 +304,6 @@ pub fn csr_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
     N: 'a + crate::MulAcc<A, B>,
-    A: 'a,
-    B: 'a,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -402,7 +392,7 @@ mod test {
 
         let mat = CsMatView::new_csc((5, 5), indptr, indices, data);
         let vector = arr1(&[0.1f64, 0.2, -0.1, 0.3, 0.9]);
-        let mut res_vec = Array::zeros(5);
+        let mut res_vec = Array::<f64, _>::zeros(5);
         mul_acc_mat_vec_csc(mat, vector, res_vec.view_mut());
 
         let expected_output =
@@ -413,7 +403,7 @@ mod test {
         assert!(res_vec
             .iter()
             .zip(expected_output.iter())
-            .all(|(x, y): (&f64, &f64)| (*x - *y).abs() < epsilon));
+            .all(|(x, y)| (*x - *y).abs() < epsilon));
     }
 
     #[test]
@@ -452,7 +442,7 @@ mod test {
 
         let mat = CsMatView::new((5, 5), indptr, indices, data);
         let vec = arr1(&[0.1f64, 0.2, -0.1, 0.3, 0.9]);
-        let mut res_vec = Array::zeros(5);
+        let mut res_vec = Array::<f64, _>::zeros(5);
         mul_acc_mat_vec_csr(mat, vec.view(), res_vec.view_mut());
 
         let expected_output =
@@ -463,7 +453,7 @@ mod test {
         assert!(res_vec
             .iter()
             .zip(expected_output.iter())
-            .all(|(x, y): (&f64, &f64)| (*x - *y).abs() < epsilon));
+            .all(|(x, y)| (*x - *y).abs() < epsilon));
     }
 
     #[test]

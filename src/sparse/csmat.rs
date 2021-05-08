@@ -1799,7 +1799,11 @@ where
     }
 }
 
-/// multiply `CsMatBase<A>` with `CsMatBase<B>` with any types satisfying `N:MulAcc<A,B>`
+/// Multiply two sparse matrices.
+
+/// This function is generic over `MulAcc`, and supports accumulating
+/// into a different output type. This is not the default for `Mul`,
+/// as type inference fails for intermediaries
 pub fn csmat_mul_csmat<
     'a,
     'b,

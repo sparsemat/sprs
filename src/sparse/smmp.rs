@@ -150,8 +150,8 @@ pub fn symbolic<Iptr: SpIndex, I: SpIndex>(
 pub fn numeric<
     Iptr: SpIndex,
     I: SpIndex,
-    A: num_traits::Zero,
-    B: num_traits::Zero,
+    A,
+    B,
     N: crate::MulAcc<A, B> + num_traits::Zero,
 >(
     a: CsMatViewI<A, I, Iptr>,
@@ -198,8 +198,8 @@ pub fn mul_csr_csr<N, A, B, I, Iptr>(
 ) -> CsMatI<N, I, Iptr>
 where
     N: crate::MulAcc<A, B> + num_traits::Zero + Clone + Send + Sync,
-    A: num_traits::Zero + Send + Clone + Sync,
-    B: num_traits::Zero + Send + Clone + Sync,
+    A: Send + Sync,
+    B: Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {
@@ -258,8 +258,8 @@ pub fn mul_csr_csr_with_workspace<N, A, B, I, Iptr>(
 ) -> CsMatI<N, I, Iptr>
 where
     N: crate::MulAcc<A, B> + num_traits::Zero + Clone + Send + Sync,
-    A: num_traits::Zero + Clone + Send + Sync,
-    B: num_traits::Zero + Clone + Send + Sync,
+    A: Send + Sync,
+    B: Send + Sync,
     I: SpIndex,
     Iptr: SpIndex,
 {

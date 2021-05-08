@@ -821,25 +821,43 @@ where
     /// assert_eq!(4., v1.dot(&v1));
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
-    pub fn dot<'b, T: IntoSparseVecIter<'b, X>, X, Y>(&'b self, rhs: T) -> Y
+    pub fn dot<'b, T: IntoSparseVecIter<'b, N>>(&'b self, rhs: T) -> N
     where
-        Y: 'b + crate::MulAcc<N, X> + num_traits::Zero,
-        X: 'b + Copy + num_traits::Zero,
-        <T as IntoSparseVecIter<'b, X>>::IterType:
-            Iterator<Item = (usize, &'b X)>,
+        N: 'b + crate::MulAcc + num_traits::Zero,
+        I: 'b,
+        <T as IntoSparseVecIter<'b, N>>::IterType:
+            Iterator<Item = (usize, &'b N)>,
+        T: Copy, // T is supposed to be a reference type
+    {
+        self.dot_acc(rhs)
+    }
+
+    /// Sparse vector dot product into accumulator.
+    ///
+    /// The right-hand-side can be any type
+    /// that can be interpreted as a sparse vector (hence sparse vectors, std
+    /// vectors and slices, and ndarray's dense vectors work).
+    /// The output type can be any type supporting `MulAcc`.
+    pub fn dot_acc<'b, T: IntoSparseVecIter<'b, M>, M, Acc>(
+        &'b self,
+        rhs: T,
+    ) -> Acc
+    where
+        Acc: 'b + crate::MulAcc<N, M> + num_traits::Zero,
+        M: 'b,
+        <T as IntoSparseVecIter<'b, M>>::IterType:
+            Iterator<Item = (usize, &'b M)>,
         T: Copy, // T is supposed to be a reference type
     {
         assert_eq!(self.dim(), rhs.dim());
+        let mut sum = Acc::zero();
         if rhs.is_dense() {
-            let mut sum = Y::zero();
             self.iter().for_each(|(idx, val)| {
                 sum.mul_acc(val, rhs.index(idx.index_unchecked()))
             });
-            sum
         } else {
             let mut lhs_iter = self.iter();
             let mut rhs_iter = rhs.into_sparse_vec_iter();
-            let mut sum = Y::zero();
             let mut left_nnz = lhs_iter.next();
             let mut right_nnz = rhs_iter.next();
             while left_nnz.is_some() && right_nnz.is_some() {
@@ -855,8 +873,8 @@ where
                     right_nnz = rhs_iter.next();
                 }
             }
-            sum
         }
+        sum
     }
 
     /// Sparse-dense vector dot product. The right-hand-side can be any type
@@ -1086,7 +1104,6 @@ impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2>
     for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
     N: Clone
-        + Copy
         + crate::MulAcc
         + num_traits::Zero
         + PartialEq
@@ -1645,7 +1662,7 @@ mod test {
     fn dot_product_panics() {
         let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
         let vec2 = CsVec::new(9, vec![1, 3, 5, 7], vec![2.; 4]);
-        let _res: f32 = vec1.dot(&vec2);
+        vec1.dot(&vec2);
     }
 
     #[test]
@@ -1653,7 +1670,7 @@ mod test {
     fn dot_product_panics2() {
         let vec1 = CsVec::new(8, vec![0, 2, 4, 6], vec![1.; 4]);
         let dense_vec = vec![0., 1., 2., 3., 4., 5., 6., 7., 8.];
-        let _res: f32 = vec1.dot(&dense_vec);
+        vec1.dot(&dense_vec);
     }
 
     #[test]
@@ -1667,22 +1684,10 @@ mod test {
         assert_eq!(0., v.squared_l2_norm());
 
         let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0, 1, 4, 5, 7]);
-        assert_eq!(
-            {
-                let x: i32 = v.dot(&v);
-                x
-            },
-            v.squared_l2_norm()
-        );
+        assert_eq!(v.dot(&v), v.squared_l2_norm());
 
         let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0., 1., 4., 5., 7.]);
-        assert_eq!(
-            {
-                let x: f32 = v.dot(&v);
-                x
-            },
-            v.squared_l2_norm()
-        );
+        assert_eq!(v.dot(&v), v.squared_l2_norm());
     }
 
     #[test]
@@ -1691,13 +1696,7 @@ mod test {
         assert_eq!(0., v.l2_norm());
 
         let v = test_vec1();
-        assert_eq!(
-            {
-                let x: f64 = v.dot(&v);
-                x.sqrt()
-            },
-            v.l2_norm()
-        );
+        assert_eq!(v.dot(&v).sqrt(), v.l2_norm());
     }
 
     #[test]

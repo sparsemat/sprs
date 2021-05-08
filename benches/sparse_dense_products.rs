@@ -6,7 +6,7 @@ fn sparse_dense_dotprod_default(bench: &mut Bencher) {
     let w = Array::range(0., 10., 0.00001);
     let x = CsVec::new(1000000, vec![0, 200000, 800000], vec![1., 2., 3.]);
     bench.iter(|| {
-        let _: f64 = x.dot(&w);
+        x.dot(&w);
     });
 }
 
@@ -14,7 +14,7 @@ fn sparse_dense_dotprod_specialized(bench: &mut Bencher) {
     let w = Array::range(0., 10., 0.00001);
     let x = CsVec::new(1000000, vec![0, 200000, 800000], vec![1., 2., 3.]);
     bench.iter(|| {
-        let _: f64 = x.dot_dense(w.view());
+        x.dot_dense(w.view());
     });
 }
 
