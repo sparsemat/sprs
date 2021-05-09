@@ -1795,24 +1795,67 @@ where
         self,
         rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>,
     ) -> CsMatI<N, I, Iptr> {
-        match (self.storage(), rhs.storage()) {
-            (CSR, CSR) => smmp::mul_csr_csr(self.view(), rhs.view()),
-            (CSR, CSC) => {
-                let rhs_csr = rhs.to_other_storage();
-                smmp::mul_csr_csr(self.view(), rhs_csr.view())
-            }
-            (CSC, CSR) => {
-                let rhs_csc = rhs.to_other_storage();
-                smmp::mul_csr_csr(
-                    rhs_csc.transpose_view(),
-                    self.transpose_view(),
-                )
+        csmat_mul_csmat(self, rhs)
+    }
+}
+
+/// Multiply two sparse matrices.
+
+/// This function is generic over `MulAcc`, and supports accumulating
+/// into a different output type. This is not the default for `Mul`,
+/// as type inference fails for intermediaries
+pub fn csmat_mul_csmat<
+    'a,
+    'b,
+    N,
+    A,
+    B,
+    I,
+    Iptr,
+    IpS1,
+    IS1,
+    DS1,
+    IpS2,
+    IS2,
+    DS2,
+>(
+    lhs: &'a CsMatBase<A, I, IpS1, IS1, DS1, Iptr>,
+    rhs: &'b CsMatBase<B, I, IpS2, IS2, DS2, Iptr>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: 'a
+        + Clone
+        + crate::MulAcc<A, B>
+        + crate::MulAcc<B, A>
+        + num_traits::Zero
+        + Default
+        + Send
+        + Sync,
+    A: 'a + Clone + num_traits::Zero + Default + Send + Sync,
+    B: 'a + Clone + num_traits::Zero + Default + Send + Sync,
+    I: 'a + SpIndex,
+    Iptr: 'a + SpIndex,
+    IpS1: 'a + Deref<Target = [Iptr]>,
+    IS1: 'a + Deref<Target = [I]>,
+    DS1: 'a + Deref<Target = [A]>,
+    IpS2: 'b + Deref<Target = [Iptr]>,
+    IS2: 'b + Deref<Target = [I]>,
+    DS2: 'b + Deref<Target = [B]>,
+{
+    match (lhs.storage(), rhs.storage()) {
+        (CSR, CSR) => smmp::mul_csr_csr(lhs.view(), rhs.view()),
+        (CSR, CSC) => {
+            let rhs_csr = rhs.to_other_storage();
+            smmp::mul_csr_csr(lhs.view(), rhs_csr.view())
+        }
+        (CSC, CSR) => {
+            let rhs_csc = rhs.to_other_storage();
+            smmp::mul_csr_csr(rhs_csc.transpose_view(), lhs.transpose_view())
                 .transpose_into()
-            }
-            (CSC, CSC) => {
-                smmp::mul_csr_csr(rhs.transpose_view(), self.transpose_view())
-                    .transpose_into()
-            }
+        }
+        (CSC, CSC) => {
+            smmp::mul_csr_csr(rhs.transpose_view(), lhs.transpose_view())
+                .transpose_into()
         }
     }
 }

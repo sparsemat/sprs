@@ -829,17 +829,35 @@ where
             Iterator<Item = (usize, &'b N)>,
         T: Copy, // T is supposed to be a reference type
     {
+        self.dot_acc(rhs)
+    }
+
+    /// Sparse vector dot product into accumulator.
+    ///
+    /// The right-hand-side can be any type
+    /// that can be interpreted as a sparse vector (hence sparse vectors, std
+    /// vectors and slices, and ndarray's dense vectors work).
+    /// The output type can be any type supporting `MulAcc`.
+    pub fn dot_acc<'b, T: IntoSparseVecIter<'b, M>, M, Acc>(
+        &'b self,
+        rhs: T,
+    ) -> Acc
+    where
+        Acc: 'b + crate::MulAcc<N, M> + num_traits::Zero,
+        M: 'b,
+        <T as IntoSparseVecIter<'b, M>>::IterType:
+            Iterator<Item = (usize, &'b M)>,
+        T: Copy, // T is supposed to be a reference type
+    {
         assert_eq!(self.dim(), rhs.dim());
+        let mut sum = Acc::zero();
         if rhs.is_dense() {
-            let mut sum = N::zero();
             self.iter().for_each(|(idx, val)| {
                 sum.mul_acc(val, rhs.index(idx.index_unchecked()))
             });
-            sum
         } else {
             let mut lhs_iter = self.iter();
             let mut rhs_iter = rhs.into_sparse_vec_iter();
-            let mut sum = N::zero();
             let mut left_nnz = lhs_iter.next();
             let mut right_nnz = rhs_iter.next();
             while left_nnz.is_some() && right_nnz.is_some() {
@@ -855,8 +873,8 @@ where
                     right_nnz = rhs_iter.next();
                 }
             }
-            sum
         }
+        sum
     }
 
     /// Sparse-dense vector dot product. The right-hand-side can be any type
@@ -1106,7 +1124,7 @@ where
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         } else {
-            (self * &rhs.col_view()).outer_view(0).unwrap().to_owned()
+            self.mul(&rhs.col_view()).outer_view(0).unwrap().to_owned()
         }
     }
 }

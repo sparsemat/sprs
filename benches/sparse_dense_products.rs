@@ -43,7 +43,7 @@ fn sparse_dense_vec_matprod_specialized(bench: &mut Bencher) {
     let cols = w.shape()[0];
     let w_reshape = w.view().into_shape((1, cols)).unwrap();
     let w_t = w_reshape.t();
-    let mut res = Array2::zeros((rows, 1).f());
+    let mut res = Array2::<f64>::zeros((rows, 1).f());
     bench.iter(|| {
         sprs::prod::csr_mulacc_dense_colmaj(
             a.view(),
