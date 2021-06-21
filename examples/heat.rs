@@ -109,7 +109,7 @@ fn gauss_seidel(
 ) -> Result<(usize, f64), f64> {
     assert!(mat.rows() == mat.cols());
     assert!(mat.rows() == x.shape()[0]);
-    let mut error = (&mat * &x - rhs).scalar_sum().sqrt();
+    let mut error = (&mat * &x - rhs).sum().sqrt();
     for it in 0..max_iter {
         for (row_ind, vec) in mat.outer_iterator().enumerate() {
             let mut sigma = 0.;
@@ -128,7 +128,7 @@ fn gauss_seidel(
             x[[row_ind]] = (cur_rhs - sigma) / diag;
         }
 
-        error = (&mat * &x - rhs).scalar_sum().sqrt();
+        error = (&mat * &x - rhs).sum().sqrt();
         // error corresponds to the state before iteration, but
         // that shouldn't be a problem
         if error < eps {

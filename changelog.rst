@@ -4,6 +4,7 @@ Changelog
 
 - Unreleased
   - ``MulAcc`` is generalised to allow different output types from input
+  - Bump `ndarray` to `0.15`. This requires a bump in MSRV to `1.49`
 
 - 0.10.0
   - support more scalar types for scalar/matrix multiplication
