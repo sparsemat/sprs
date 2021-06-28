@@ -1094,7 +1094,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2, Iptr>) -> CsVecI<N, I> {
+    fn mul(self, rhs: &CsMatBase<N, I, IpS2, IS2, DS2, Iptr>) -> Self::Output {
         (&self.row_view() * rhs).outer_view(0).unwrap().to_owned()
     }
 }
@@ -1120,7 +1120,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn mul(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
+    fn mul(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
         if self.is_csr() {
             prod::csr_mul_csvec(self.view(), rhs.view())
         } else {
@@ -1132,7 +1132,8 @@ where
 impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
     for CsVecBase<IS1, DS1, N, I>
 where
-    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+    N: Num,
+    for<'r> &'r N: std::ops::Add<Output = N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1141,7 +1142,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
+    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> Self::Output {
         &self + &rhs
     }
 }
@@ -1149,7 +1150,8 @@ where
 impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2, N, I>>
     for CsVecBase<IS1, DS1, N, I>
 where
-    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+    N: Num,
+    for<'r> &'r N: std::ops::Add<Output = N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1158,7 +1160,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
+    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
         &self + rhs
     }
 }
@@ -1166,7 +1168,8 @@ where
 impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+    N: Num,
+    for<'r> &'r N: std::ops::Add<Output = N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1175,7 +1178,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
+    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> Self::Output {
         self + &rhs
     }
 }
@@ -1183,7 +1186,8 @@ where
 impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2, N, I>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+    N: Num,
+    for<'r> &'r N: std::ops::Add<Output = N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1192,13 +1196,8 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
-        binop::csvec_binop(self.view(), rhs.view(), |x, y| {
-            let mut res = x.clone();
-            res += y;
-            res
-        })
-        .unwrap()
+    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
+        binop::csvec_binop(self.view(), rhs.view(), |x, y| x + y).unwrap()
     }
 }
 
@@ -1214,7 +1213,7 @@ where
 {
     type Output = CsVecI<N, I>;
 
-    fn sub(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> CsVecI<N, I> {
+    fn sub(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
         binop::csvec_binop(self.view(), rhs.view(), |x, y| {
             let mut res = x.clone();
             res -= y;
@@ -1313,7 +1312,8 @@ where
 
 impl<N, I> Zero for CsVecI<N, I>
 where
-    N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+    N: Num + Clone,
+    for<'r> &'r N: std::ops::Add<Output = N>,
     I: SpIndex,
 {
     fn zero() -> Self {
@@ -1333,7 +1333,8 @@ mod alga_impls {
 
     impl<N, I> AbstractMagma<Additive> for CsVecI<N, I>
     where
-        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+        N: Num + Clone,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
         fn operate(&self, right: &Self) -> Self {
@@ -1343,7 +1344,8 @@ mod alga_impls {
 
     impl<N, I> Identity<Additive> for CsVecI<N, I>
     where
-        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+        N: Num + Clone,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
         fn identity() -> Self {
@@ -1353,14 +1355,16 @@ mod alga_impls {
 
     impl<N, I> AbstractSemigroup<Additive> for CsVecI<N, I>
     where
-        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N>,
+        N: Num + Clone,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
     }
 
     impl<N, I> AbstractMonoid<Additive> for CsVecI<N, I>
     where
-        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N>,
+        N: Num + Copy,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
     }
@@ -1381,28 +1385,32 @@ mod alga_impls {
 
     impl<N, I> AbstractQuasigroup<Additive> for CsVecI<N, I>
     where
-        N: Num + Clone + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        N: Num + Clone + Neg<Output = N>,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
     }
 
     impl<N, I> AbstractLoop<Additive> for CsVecI<N, I>
     where
-        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        N: Num + Copy + Neg<Output = N>,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
     }
 
     impl<N, I> AbstractGroup<Additive> for CsVecI<N, I>
     where
-        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        N: Num + Copy + Neg<Output = N>,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
     }
 
     impl<N, I> AbstractGroupAbelian<Additive> for CsVecI<N, I>
     where
-        N: Num + Copy + for<'r> std::ops::AddAssign<&'r N> + Neg<Output = N>,
+        N: Num + Copy + Neg<Output = N>,
+        for<'r> &'r N: std::ops::Add<Output = N>,
         I: SpIndex,
     {
     }
