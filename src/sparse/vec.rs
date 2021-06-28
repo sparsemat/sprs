@@ -1204,7 +1204,8 @@ where
 impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2, N, I>>
     for &'a CsVecBase<IS1, DS1, N, I>
 where
-    N: Num + Clone + for<'r> std::ops::SubAssign<&'r N>,
+    N: Num,
+    for<'r> &'r N: std::ops::Sub<Output = N>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [N]>,
@@ -1214,16 +1215,15 @@ where
     type Output = CsVecI<N, I>;
 
     fn sub(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
-        binop::csvec_binop(self.view(), rhs.view(), |x, y| {
-            let mut res = x.clone();
-            res -= y;
-            res
-        })
-        .unwrap()
+        binop::csvec_binop(self.view(), rhs.view(), |x, y| x - y).unwrap()
     }
 }
 
-impl<N: Num + Clone + Neg<Output = N>, I: SpIndex> Neg for CsVecI<N, I> {
+impl<N, I> Neg for CsVecI<N, I>
+where
+    N: Num + Clone + Neg<Output = N>,
+    I: SpIndex,
+{
     type Output = Self;
 
     fn neg(mut self) -> Self::Output {
