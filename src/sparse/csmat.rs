@@ -1864,6 +1864,7 @@ impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Add<&'b ArrayBase<DS2, Ix2>>
     for &'a CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
     N: 'a + Copy + Num + Default,
+    for<'r> &'r N: Mul<Output = N>,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -1876,20 +1877,21 @@ where
     fn add(self, rhs: &'b ArrayBase<DS2, Ix2>) -> Array<N, Ix2> {
         let is_standard_layout =
             utils::fastest_axis(rhs.view()) == ndarray::Axis(1);
+        let neuter_element = N::one();
         match (self.storage(), is_standard_layout) {
             (CSR, true) | (CSC, false) => binop::add_dense_mat_same_ordering(
                 self,
                 rhs,
-                N::one(),
-                N::one(),
+                neuter_element,
+                neuter_element,
             ),
             (CSR, false) | (CSC, true) => {
                 let lhs = self.to_other_storage();
                 binop::add_dense_mat_same_ordering(
                     &lhs,
                     rhs,
-                    N::one(),
-                    N::one(),
+                    neuter_element,
+                    neuter_element,
                 )
             }
         }
