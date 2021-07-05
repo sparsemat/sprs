@@ -17,27 +17,42 @@ use num_traits::Num;
 
 use crate::Ix2;
 
-impl<'a, 'b, N, I, Iptr, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
-    Add<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
-    for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>
+impl<
+        'a,
+        'b,
+        Lhs,
+        Rhs,
+        Res,
+        I,
+        Iptr,
+        IpStorage,
+        IStorage,
+        DStorage,
+        IpS2,
+        IS2,
+        DS2,
+    > Add<&'b CsMatBase<Rhs, I, IpS2, IS2, DS2, Iptr>>
+    for &'a CsMatBase<Lhs, I, IpStorage, IStorage, DStorage, Iptr>
 where
-    N: num_traits::Zero + PartialEq + Clone + Default,
-    for<'r> &'r N: Add<&'r N, Output = N>,
+    Lhs: num_traits::Zero + PartialEq + Clone + Default,
+    Rhs: num_traits::Zero + PartialEq + Clone + Default,
+    Res: num_traits::Zero + PartialEq + Clone,
+    for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpStorage: 'a + Deref<Target = [Iptr]>,
     IStorage: 'a + Deref<Target = [I]>,
-    DStorage: 'a + Deref<Target = [N]>,
-    IpS2: 'a + Deref<Target = [Iptr]>,
-    IS2: 'a + Deref<Target = [I]>,
-    DS2: 'a + Deref<Target = [N]>,
+    DStorage: 'a + Deref<Target = [Lhs]>,
+    IpS2: 'b + Deref<Target = [Iptr]>,
+    IS2: 'b + Deref<Target = [I]>,
+    DS2: 'b + Deref<Target = [Rhs]>,
 {
-    type Output = CsMatI<N, I, Iptr>;
+    type Output = CsMatI<Res, I, Iptr>;
 
     fn add(
         self,
-        rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>,
-    ) -> CsMatI<N, I, Iptr> {
+        rhs: &'b CsMatBase<Rhs, I, IpS2, IS2, DS2, Iptr>,
+    ) -> Self::Output {
         if self.storage() != rhs.view().storage() {
             return csmat_binop(
                 self.view(),
@@ -49,27 +64,42 @@ where
     }
 }
 
-impl<'a, 'b, N, I, Iptr, IpStorage, IStorage, DStorage, IpS2, IS2, DS2>
-    Sub<&'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>>
-    for &'a CsMatBase<N, I, IpStorage, IStorage, DStorage, Iptr>
+impl<
+        'a,
+        'b,
+        Lhs,
+        Rhs,
+        Res,
+        I,
+        Iptr,
+        IpStorage,
+        IStorage,
+        DStorage,
+        IpS2,
+        IS2,
+        DS2,
+    > Sub<&'b CsMatBase<Rhs, I, IpS2, IS2, DS2, Iptr>>
+    for &'a CsMatBase<Lhs, I, IpStorage, IStorage, DStorage, Iptr>
 where
-    N: num_traits::Zero + PartialEq + Clone + Default,
-    for<'r> &'r N: Sub<&'r N, Output = N>,
+    Lhs: num_traits::Zero + PartialEq + Clone + Default,
+    Rhs: num_traits::Zero + PartialEq + Clone + Default,
+    Res: num_traits::Zero + PartialEq + Clone + Default,
+    for<'r> &'r Lhs: Sub<&'r Rhs, Output = Res>,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpStorage: 'a + Deref<Target = [Iptr]>,
     IStorage: 'a + Deref<Target = [I]>,
-    DStorage: 'a + Deref<Target = [N]>,
+    DStorage: 'a + Deref<Target = [Lhs]>,
     IpS2: 'a + Deref<Target = [Iptr]>,
     IS2: 'a + Deref<Target = [I]>,
-    DS2: 'a + Deref<Target = [N]>,
+    DS2: 'a + Deref<Target = [Rhs]>,
 {
-    type Output = CsMatI<N, I, Iptr>;
+    type Output = CsMatI<Res, I, Iptr>;
 
     fn sub(
         self,
-        rhs: &'b CsMatBase<N, I, IpS2, IS2, DS2, Iptr>,
-    ) -> CsMatI<N, I, Iptr> {
+        rhs: &'b CsMatBase<Rhs, I, IpS2, IS2, DS2, Iptr>,
+    ) -> Self::Output {
         if self.storage() != rhs.view().storage() {
             return csmat_binop(
                 self.view(),
@@ -82,17 +112,19 @@ where
 }
 
 /// Sparse matrix scalar multiplication, with same storage type
-pub fn mul_mat_same_storage<N, I, Iptr, Mat1, Mat2>(
+pub fn mul_mat_same_storage<Lhs, Rhs, Res, I, Iptr, Mat1, Mat2>(
     lhs: &Mat1,
     rhs: &Mat2,
-) -> CsMatI<N, I, Iptr>
+) -> CsMatI<Res, I, Iptr>
 where
-    N: num_traits::Zero + PartialEq + Clone,
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+    Lhs: num_traits::Zero + PartialEq + Clone,
+    Rhs: num_traits::Zero + PartialEq + Clone,
+    Res: num_traits::Zero + PartialEq + Clone,
+    for<'r> &'r Lhs: std::ops::Mul<&'r Rhs, Output = Res>,
     I: SpIndex,
     Iptr: SpIndex,
-    Mat1: SpMatView<N, I, Iptr>,
-    Mat2: SpMatView<N, I, Iptr>,
+    Mat1: SpMatView<Lhs, I, Iptr>,
+    Mat2: SpMatView<Rhs, I, Iptr>,
 {
     csmat_binop(lhs.view(), rhs.view(), |x, y| x * y)
 }
@@ -141,16 +173,18 @@ sparse_scalar_mul!(f64);
 ///
 /// - on incompatible dimensions
 /// - on incomatible storage
-pub fn csmat_binop<N, I, Iptr, F>(
-    lhs: CsMatViewI<N, I, Iptr>,
-    rhs: CsMatViewI<N, I, Iptr>,
+pub fn csmat_binop<Lhs, Rhs, Res, I, Iptr, F>(
+    lhs: CsMatViewI<Lhs, I, Iptr>,
+    rhs: CsMatViewI<Rhs, I, Iptr>,
     binop: F,
-) -> CsMatI<N, I, Iptr>
+) -> CsMatI<Res, I, Iptr>
 where
-    N: num_traits::Zero + PartialEq + Clone,
+    Lhs: num_traits::Zero + PartialEq + Clone,
+    Rhs: num_traits::Zero + PartialEq + Clone,
+    Res: num_traits::Zero + PartialEq + Clone,
     I: SpIndex,
     Iptr: SpIndex,
-    F: Fn(&N, &N) -> N,
+    F: Fn(&Lhs, &Rhs) -> Res,
 {
     let nrows = lhs.rows();
     let ncols = lhs.cols();
@@ -165,7 +199,7 @@ where
     let max_nnz = lhs.nnz() + rhs.nnz();
     let mut out_indptr = vec![Iptr::zero(); lhs.outer_dims() + 1];
     let mut out_indices = vec![I::zero(); max_nnz];
-    let mut out_data = vec![N::zero(); max_nnz];
+    let mut out_data = vec![Res::zero(); max_nnz];
 
     let nnz = csmat_binop_same_storage_raw(
         lhs,
@@ -191,19 +225,21 @@ where
 /// sharing the same storage. The output arrays are assumed to be preallocated
 ///
 /// Returns the nnz count
-pub fn csmat_binop_same_storage_raw<N, I, Iptr, F>(
-    lhs: CsMatViewI<N, I, Iptr>,
-    rhs: CsMatViewI<N, I, Iptr>,
+pub fn csmat_binop_same_storage_raw<Lhs, Rhs, Res, I, Iptr, F>(
+    lhs: CsMatViewI<Lhs, I, Iptr>,
+    rhs: CsMatViewI<Rhs, I, Iptr>,
     binop: F,
     out_indptr: &mut [Iptr],
     out_indices: &mut [I],
-    out_data: &mut [N],
+    out_data: &mut [Res],
 ) -> usize
 where
-    N: num_traits::Zero + PartialEq,
+    Lhs: num_traits::Zero + PartialEq,
+    Rhs: num_traits::Zero + PartialEq,
+    Res: num_traits::Zero + PartialEq,
     I: SpIndex,
     Iptr: SpIndex,
-    F: Fn(&N, &N) -> N,
+    F: Fn(&Lhs, &Rhs) -> Res,
 {
     assert_eq!(lhs.cols(), rhs.cols());
     assert_eq!(lhs.rows(), rhs.rows());
@@ -218,11 +254,11 @@ where
     for (dim, (lv, rv)) in iter {
         for elem in lv.iter().nnz_or_zip(rv.iter()) {
             let (ind, binop_val) = match elem {
-                Left((ind, val)) => (ind, binop(val, &N::zero())),
-                Right((ind, val)) => (ind, binop(&N::zero(), val)),
+                Left((ind, val)) => (ind, binop(val, &Rhs::zero())),
+                Right((ind, val)) => (ind, binop(&Lhs::zero(), val)),
                 Both((ind, lval, rval)) => (ind, binop(lval, rval)),
             };
-            if binop_val != N::zero() {
+            if binop_val != Res::zero() {
                 out_indices[nnz] = I::from_usize_unchecked(ind);
                 out_data[nnz] = binop_val;
                 nnz += 1;
@@ -239,18 +275,35 @@ where
 /// The matrices must have the same ordering, a `CSR` matrix must be
 /// added with a matrix with `C`-like ordering, a `CSC` matrix
 /// must be added with a matrix with `F`-like ordering.
-pub fn add_dense_mat_same_ordering<N, I, Iptr, Mat, D>(
+pub fn add_dense_mat_same_ordering<
+    Lhs,
+    Rhs,
+    Res,
+    Alpha,
+    Beta,
+    ByProd1,
+    ByProd2,
+    I,
+    Iptr,
+    Mat,
+    D,
+>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
-    alpha: N,
-    beta: N,
-) -> Array<N, Ix2>
+    alpha: Alpha,
+    beta: Beta,
+) -> Array<Res, Ix2>
 where
-    N: Num + Copy,
+    Mat: SpMatView<Lhs, I, Iptr>,
+    D: ndarray::Data<Elem = Rhs>,
+    Lhs: Num,
+    Rhs: Num,
+    Res: Num + Copy,
+    for<'r> &'r Alpha: Mul<&'r Lhs, Output = ByProd1>,
+    for<'r> &'r Beta: Mul<&'r Rhs, Output = ByProd2>,
+    ByProd1: Add<ByProd2, Output = Res>,
     I: SpIndex,
     Iptr: SpIndex,
-    Mat: SpMatView<N, I, Iptr>,
-    D: ndarray::Data<Elem = N>,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let is_clike_layout = super::utils::fastest_axis(rhs.view()) == Axis(1);
@@ -262,7 +315,7 @@ where
     csmat_binop_dense_raw(
         lhs.view(),
         rhs.view(),
-        |&x, &y| alpha * x + beta * y,
+        |x, y| &alpha * x + &beta * y,
         res.view_mut(),
     );
     res
@@ -274,17 +327,31 @@ where
 /// The matrices must have the same ordering, a `CSR` matrix must be
 /// multiplied with a matrix with `C`-like ordering, a `CSC` matrix
 /// must be multiplied with a matrix with `F`-like ordering.
-pub fn mul_dense_mat_same_ordering<N, I, Iptr, Mat, D>(
+pub fn mul_dense_mat_same_ordering<
+    Lhs,
+    Rhs,
+    Res,
+    Alpha,
+    ByProd,
+    I,
+    Iptr,
+    Mat,
+    D,
+>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
-    alpha: N,
-) -> Array<N, Ix2>
+    alpha: Alpha,
+) -> Array<Res, Ix2>
 where
-    N: Num + Copy,
+    Lhs: Num,
+    Rhs: Num,
+    Res: Num + Clone,
+    Alpha: Copy + for<'r> Mul<&'r Lhs, Output = ByProd>,
+    ByProd: for<'r> Mul<&'r Rhs, Output = Res>,
     I: SpIndex,
     Iptr: SpIndex,
-    Mat: SpMatView<N, I, Iptr>,
-    D: ndarray::Data<Elem = N>,
+    Mat: SpMatView<Lhs, I, Iptr>,
+    D: ndarray::Data<Elem = Rhs>,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let is_clike_layout = super::utils::fastest_axis(rhs.view()) == Axis(1);
@@ -296,7 +363,7 @@ where
     csmat_binop_dense_raw(
         lhs.view(),
         rhs.view(),
-        |&x, &y| alpha * x * y,
+        |x, y| alpha * x * y,
         res.view_mut(),
     );
     res
@@ -313,16 +380,18 @@ where
 /// `lhs = CSR` with `rhs` and `out` with `Axis(1)` as the fastest dimension,
 /// or
 /// `lhs = CSC` with `rhs` and `out` with `Axis(0)` as the fastest dimension,
-pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
-    lhs: CsMatViewI<'a, N, I, Iptr>,
-    rhs: ArrayView<'a, N, Ix2>,
+pub fn csmat_binop_dense_raw<'a, Lhs, Rhs, Res, I, Iptr, F>(
+    lhs: CsMatViewI<'a, Lhs, I, Iptr>,
+    rhs: ArrayView<'a, Rhs, Ix2>,
     binop: F,
-    mut out: ArrayViewMut<'a, N, Ix2>,
+    mut out: ArrayViewMut<'a, Res, Ix2>,
 ) where
-    N: 'a + Num,
+    Lhs: 'a + Num,
+    Rhs: 'a + Num,
+    Res: Num,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
-    F: Fn(&N, &N) -> N,
+    F: Fn(&Lhs, &Rhs) -> Res,
 {
     if lhs.cols() != rhs.shape()[1]
         || lhs.cols() != out.shape()[1]
@@ -351,11 +420,11 @@ pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
             .iter_mut()
             .zip(rrow.iter().enumerate().nnz_or_zip(lrow.iter()))
         {
-            let (oval, lr_elems) = items;
-            let binop_val = match lr_elems {
-                Left((_, val)) => binop(val, &N::zero()),
-                Right((_, val)) => binop(&N::zero(), val),
-                Both((_, lval, rval)) => binop(lval, rval),
+            let (oval, rl_elems) = items;
+            let binop_val = match rl_elems {
+                Left((_, val)) => binop(&Lhs::zero(), val),
+                Right((_, val)) => binop(val, &Rhs::zero()),
+                Both((_, rval, lval)) => binop(lval, rval),
             };
             *oval = binop_val;
         }
@@ -369,14 +438,15 @@ pub fn csmat_binop_dense_raw<'a, N, I, Iptr, F>(
 /// to zero when e.g. only `lhs` has a non-zero at a given location).
 ///
 /// The function thus has a correct behavior iff `binop(0, 0) == 0`.
-pub fn csvec_binop<N, I, F>(
-    mut lhs: CsVecViewI<N, I>,
-    mut rhs: CsVecViewI<N, I>,
+pub fn csvec_binop<Lhs, Rhs, Res, I, F>(
+    mut lhs: CsVecViewI<Lhs, I>,
+    mut rhs: CsVecViewI<Rhs, I>,
     binop: F,
-) -> Result<CsVecI<N, I>, StructureError>
+) -> Result<CsVecI<Res, I>, StructureError>
 where
-    N: Num,
-    F: Fn(&N, &N) -> N,
+    Lhs: Num,
+    Rhs: Num,
+    F: Fn(&Lhs, &Rhs) -> Res,
     I: SpIndex,
 {
     csvec_fix_zeros(&mut lhs, &mut rhs);
@@ -388,8 +458,8 @@ where
     res.reserve_exact(max_nnz);
     for elem in lhs.iter().nnz_or_zip(rhs.iter()) {
         let (ind, binop_val) = match elem {
-            Left((ind, val)) => (ind, binop(val, &N::zero())),
-            Right((ind, val)) => (ind, binop(&N::zero(), val)),
+            Left((ind, val)) => (ind, binop(val, &Rhs::zero())),
+            Right((ind, val)) => (ind, binop(&Lhs::zero(), val)),
             Both((ind, lval, rval)) => (ind, binop(lval, rval)),
         };
         res.append(ind, binop_val);
@@ -397,9 +467,9 @@ where
     Ok(res)
 }
 
-fn csvec_fix_zeros<N, I: SpIndex>(
-    lhs: &mut CsVecViewI<N, I>,
-    rhs: &mut CsVecViewI<N, I>,
+fn csvec_fix_zeros<Lhs, Rhs, I: SpIndex>(
+    lhs: &mut CsVecViewI<Lhs, I>,
+    rhs: &mut CsVecViewI<Rhs, I>,
 ) {
     if rhs.dim() == 0 {
         rhs.dim = lhs.dim;
@@ -530,8 +600,8 @@ mod test {
 
     #[test]
     fn csr_add_dense_rowmaj() {
-        let a = Array::zeros((3, 3));
-        let b = CsMat::eye(3);
+        let a = Array::<f32, ndarray::Dim<[usize; 2]>>::zeros((3, 3));
+        let b = CsMat::<f32>::eye(3);
 
         let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.);
 
@@ -561,7 +631,7 @@ mod test {
     #[test]
     fn csr_mul_dense_rowmaj() {
         let a = Array::from_elem((3, 3), 1.);
-        let b = CsMat::eye(3);
+        let b = CsMat::<f64>::eye(3);
 
         let c = super::mul_dense_mat_same_ordering(&b, &a, 1.);
 
@@ -576,7 +646,7 @@ mod test {
         // with the same fastest axis as input
         let a = Array::from_elem((6, 6), 1.0);
         let a = a.slice(ndarray::s![..;2, ..;2]);
-        let b = CsMat::eye(3);
+        let b = CsMat::<f64>::eye(3);
 
         let c = super::mul_dense_mat_same_ordering(&b, &a, 1.0);
         assert!(c.is_standard_layout());
@@ -587,7 +657,7 @@ mod test {
         use ndarray::ShapeBuilder;
         let a = Array::from_elem((6, 6).f(), 1.0);
         let a = a.slice(ndarray::s![..;2, ..;2]);
-        let b = CsMat::eye_csc(3);
+        let b = CsMat::<f64>::eye_csc(3);
 
         let c = super::mul_dense_mat_same_ordering(&b, &a, 1.0);
         assert!(c.t().is_standard_layout());
@@ -605,7 +675,7 @@ mod test {
         super::csmat_binop_dense_raw(
             csr.view(),
             a.view(),
-            |_, _| 0.0,
+            |_: &f32, _: &f32| 0.0,
             out.view_mut(),
         );
 
@@ -615,7 +685,7 @@ mod test {
         super::csmat_binop_dense_raw(
             csc.view(),
             a.view(),
-            |_, _| 0.0,
+            |_: &f32, _: &f32| 0.0,
             out.view_mut(),
         );
     }
@@ -632,7 +702,7 @@ mod test {
         super::csmat_binop_dense_raw(
             csr.view(),
             a.view(),
-            |_, _| 0.0,
+            |_: &f32, _: &f32| 0.0,
             out.view_mut(),
         );
 
@@ -643,7 +713,7 @@ mod test {
         super::csmat_binop_dense_raw(
             csc.view(),
             a.view(),
-            |_, _| 0.0,
+            |_: &f32, _: &f32| 0.0,
             out.view_mut(),
         );
     }

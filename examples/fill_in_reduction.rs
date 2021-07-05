@@ -33,7 +33,13 @@ fn small_lap_mat() -> sprs::CsMat<f64> {
 }
 
 fn lap_mat_from_obj(path: &str) -> Result<sprs::CsMat<f64>, tobj::LoadError> {
-    let (objects, _materials) = tobj::load_obj(&Path::new(path), true)?;
+    let (objects, _materials) = tobj::load_obj(
+        &Path::new(path),
+        &tobj::LoadOptions {
+            triangulate: true,
+            ..Default::default()
+        },
+    )?;
     for obj in objects {
         let nb_triangles = obj.mesh.indices.len() / 3;
         let nb_vertices = obj.mesh.positions.len() / 3;
