@@ -25,7 +25,9 @@ use std::hash::Hash;
 /// ```
 use std::iter::{Enumerate, FilterMap, IntoIterator, Peekable, Sum, Zip};
 use std::marker::PhantomData;
-use std::ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub};
+use std::ops::{
+    Add, Deref, DerefMut, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub,
+};
 use std::slice::{Iter, IterMut};
 
 use num_traits::{Float, Num, Signed, Zero};
@@ -892,7 +894,7 @@ where
     where
         V: DenseVector<Scalar = N>,
         N: Sum,
-        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+        for<'r> &'r N: Mul<&'r N, Output = N>,
     {
         assert_eq!(self.dim(), rhs.dim());
         self.iter()
@@ -904,7 +906,7 @@ where
     pub fn squared_l2_norm(&self) -> N
     where
         N: Sum,
-        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+        for<'r> &'r N: Mul<&'r N, Output = N>,
     {
         self.data.iter().map(|x| x * x).sum()
     }
@@ -913,7 +915,7 @@ where
     pub fn l2_norm(&self) -> N
     where
         N: Float + Sum,
-        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+        for<'r> &'r N: Mul<&'r N, Output = N>,
     {
         self.squared_l2_norm().sqrt()
     }
@@ -1049,7 +1051,7 @@ where
     pub fn unit_normalize(&mut self)
     where
         N: Float + Sum,
-        for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
+        for<'r> &'r N: Mul<&'r N, Output = N>,
     {
         let norm_sq = self.squared_l2_norm();
         if norm_sq > N::zero() {
@@ -1134,7 +1136,7 @@ impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
 where
     Lhs: Num,
     Rhs: Num,
-    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
+    for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [Lhs]>,
@@ -1153,7 +1155,7 @@ impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
 where
     Lhs: Num,
     Rhs: Num,
-    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
+    for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [Lhs]>,
@@ -1172,7 +1174,7 @@ impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
 where
     Lhs: Num,
     Rhs: Num,
-    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
+    for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [Lhs]>,
@@ -1191,7 +1193,7 @@ impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
 where
     Lhs: Num,
     Rhs: Num,
-    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
+    for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [Lhs]>,
@@ -1210,7 +1212,7 @@ impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
 where
     Lhs: Num,
     Rhs: Num,
-    for<'r> &'r Lhs: std::ops::Sub<&'r Rhs, Output = Res>,
+    for<'r> &'r Lhs: Sub<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
     DS1: Deref<Target = [Lhs]>,
@@ -1239,10 +1241,10 @@ where
     }
 }
 
-impl<N, I, IStorage, DStorage> std::ops::MulAssign<N>
+impl<N, I, IStorage, DStorage> MulAssign<N>
     for CsVecBase<IStorage, DStorage, N, I>
 where
-    N: Clone + std::ops::MulAssign<N>,
+    N: Clone + MulAssign<N>,
     I: SpIndex,
     IStorage: Deref<Target = [I]>,
     DStorage: DerefMut<Target = [N]>,
@@ -1254,10 +1256,10 @@ where
     }
 }
 
-impl<N, I, IStorage, DStorage> std::ops::DivAssign<N>
+impl<N, I, IStorage, DStorage> DivAssign<N>
     for CsVecBase<IStorage, DStorage, N, I>
 where
-    N: Clone + std::ops::DivAssign<N>,
+    N: Clone + DivAssign<N>,
     I: SpIndex,
     IStorage: Deref<Target = [I]>,
     DStorage: DerefMut<Target = [N]>,
@@ -1318,7 +1320,7 @@ where
 impl<N, I> Zero for CsVecI<N, I>
 where
     N: Num + Clone,
-    for<'r> &'r N: std::ops::Add<Output = N>,
+    for<'r> &'r N: Add<Output = N>,
     I: SpIndex,
 {
     fn zero() -> Self {
@@ -1339,7 +1341,7 @@ mod alga_impls {
     impl<N, I> AbstractMagma<Additive> for CsVecI<N, I>
     where
         N: Num + Clone,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
         fn operate(&self, right: &Self) -> Self {
@@ -1350,7 +1352,7 @@ mod alga_impls {
     impl<N, I> Identity<Additive> for CsVecI<N, I>
     where
         N: Num + Clone,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
         fn identity() -> Self {
@@ -1361,7 +1363,7 @@ mod alga_impls {
     impl<N, I> AbstractSemigroup<Additive> for CsVecI<N, I>
     where
         N: Num + Clone,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
     }
@@ -1369,7 +1371,7 @@ mod alga_impls {
     impl<N, I> AbstractMonoid<Additive> for CsVecI<N, I>
     where
         N: Num + Copy,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
     }
@@ -1391,7 +1393,7 @@ mod alga_impls {
     impl<N, I> AbstractQuasigroup<Additive> for CsVecI<N, I>
     where
         N: Num + Clone + Neg<Output = N>,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
     }
@@ -1399,7 +1401,7 @@ mod alga_impls {
     impl<N, I> AbstractLoop<Additive> for CsVecI<N, I>
     where
         N: Num + Copy + Neg<Output = N>,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
     }
@@ -1407,7 +1409,7 @@ mod alga_impls {
     impl<N, I> AbstractGroup<Additive> for CsVecI<N, I>
     where
         N: Num + Copy + Neg<Output = N>,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
     }
@@ -1415,7 +1417,7 @@ mod alga_impls {
     impl<N, I> AbstractGroupAbelian<Additive> for CsVecI<N, I>
     where
         N: Num + Copy + Neg<Output = N>,
-        for<'r> &'r N: std::ops::Add<Output = N>,
+        for<'r> &'r N: Add<Output = N>,
         I: SpIndex,
     {
     }
