@@ -275,22 +275,35 @@ where
 /// The matrices must have the same ordering, a `CSR` matrix must be
 /// added with a matrix with `C`-like ordering, a `CSC` matrix
 /// must be added with a matrix with `F`-like ordering.
-pub fn add_dense_mat_same_ordering<Lhs, Rhs, Res, I, Iptr, Mat, D>(
+pub fn add_dense_mat_same_ordering<
+    Lhs,
+    Rhs,
+    Res,
+    Alpha,
+    Beta,
+    ByProd1,
+    ByProd2,
+    I,
+    Iptr,
+    Mat,
+    D,
+>(
     lhs: &Mat,
     rhs: &ArrayBase<D, Ix2>,
-    alpha: Lhs,
-    beta: Rhs,
+    alpha: Alpha,
+    beta: Beta,
 ) -> Array<Res, Ix2>
 where
-    Lhs: Num + Add<Rhs, Output = Res>,
-    Rhs: Num,
-    Res: Num + Copy,
-    for<'r> &'r Lhs: Mul<Output = Lhs>,
-    for<'r> &'r Rhs: Mul<Output = Rhs>,
-    I: SpIndex,
-    Iptr: SpIndex,
     Mat: SpMatView<Lhs, I, Iptr>,
     D: ndarray::Data<Elem = Rhs>,
+    Lhs: Num,
+    Rhs: Num,
+    Res: Num + Copy,
+    for<'r> &'r Alpha: Mul<&'r Lhs, Output = ByProd1>,
+    for<'r> &'r Beta: Mul<&'r Rhs, Output = ByProd2>,
+    ByProd1: Add<ByProd2, Output = Res>,
+    I: SpIndex,
+    Iptr: SpIndex,
 {
     let shape = (rhs.shape()[0], rhs.shape()[1]);
     let is_clike_layout = super::utils::fastest_axis(rhs.view()) == Axis(1);
@@ -587,8 +600,8 @@ mod test {
 
     #[test]
     fn csr_add_dense_rowmaj() {
-        let a = Array::zeros((3, 3));
-        let b = CsMat::eye(3);
+        let a = Array::<f32, ndarray::Dim<[usize; 2]>>::zeros((3, 3));
+        let b = CsMat::<f32>::eye(3);
 
         let c = super::add_dense_mat_same_ordering(&b, &a, 1., 1.);
 

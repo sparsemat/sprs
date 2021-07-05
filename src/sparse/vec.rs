@@ -1129,92 +1129,97 @@ where
     }
 }
 
-impl<N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
-    for CsVecBase<IS1, DS1, N, I>
+impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
+    for CsVecBase<IS1, DS1, Lhs, I>
 where
-    N: Num,
-    for<'r> &'r N: std::ops::Add<Output = N>,
+    Lhs: Num,
+    Rhs: Num,
+    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
-    DS1: Deref<Target = [N]>,
+    DS1: Deref<Target = [Lhs]>,
     IS2: Deref<Target = [I]>,
-    DS2: Deref<Target = [N]>,
+    DS2: Deref<Target = [Rhs]>,
 {
-    type Output = CsVecI<N, I>;
+    type Output = CsVecI<Res, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> Self::Output {
+    fn add(self, rhs: CsVecBase<IS2, DS2, Rhs, I>) -> Self::Output {
         &self + &rhs
     }
 }
 
-impl<'a, N, I, IS1, DS1, IS2, DS2> Add<&'a CsVecBase<IS2, DS2, N, I>>
-    for CsVecBase<IS1, DS1, N, I>
+impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
+    Add<&'a CsVecBase<IS2, DS2, Rhs, I>> for CsVecBase<IS1, DS1, Lhs, I>
 where
-    N: Num,
-    for<'r> &'r N: std::ops::Add<Output = N>,
+    Lhs: Num,
+    Rhs: Num,
+    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
-    DS1: Deref<Target = [N]>,
+    DS1: Deref<Target = [Lhs]>,
     IS2: Deref<Target = [I]>,
-    DS2: Deref<Target = [N]>,
+    DS2: Deref<Target = [Rhs]>,
 {
-    type Output = CsVecI<N, I>;
+    type Output = CsVecI<Res, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
+    fn add(self, rhs: &CsVecBase<IS2, DS2, Rhs, I>) -> Self::Output {
         &self + rhs
     }
 }
 
-impl<'a, N, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, N, I>>
-    for &'a CsVecBase<IS1, DS1, N, I>
+impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
+    for &'a CsVecBase<IS1, DS1, Lhs, I>
 where
-    N: Num,
-    for<'r> &'r N: std::ops::Add<Output = N>,
+    Lhs: Num,
+    Rhs: Num,
+    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
-    DS1: Deref<Target = [N]>,
+    DS1: Deref<Target = [Lhs]>,
     IS2: Deref<Target = [I]>,
-    DS2: Deref<Target = [N]>,
+    DS2: Deref<Target = [Rhs]>,
 {
-    type Output = CsVecI<N, I>;
+    type Output = CsVecI<Res, I>;
 
-    fn add(self, rhs: CsVecBase<IS2, DS2, N, I>) -> Self::Output {
+    fn add(self, rhs: CsVecBase<IS2, DS2, Rhs, I>) -> Self::Output {
         self + &rhs
     }
 }
 
-impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Add<&'b CsVecBase<IS2, DS2, N, I>>
-    for &'a CsVecBase<IS1, DS1, N, I>
+impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
+    Add<&'b CsVecBase<IS2, DS2, Rhs, I>> for &'a CsVecBase<IS1, DS1, Lhs, I>
 where
-    N: Num,
-    for<'r> &'r N: std::ops::Add<Output = N>,
+    Lhs: Num,
+    Rhs: Num,
+    for<'r> &'r Lhs: std::ops::Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
-    DS1: Deref<Target = [N]>,
+    DS1: Deref<Target = [Lhs]>,
     IS2: Deref<Target = [I]>,
-    DS2: Deref<Target = [N]>,
+    DS2: Deref<Target = [Rhs]>,
 {
-    type Output = CsVecI<N, I>;
+    type Output = CsVecI<Res, I>;
 
-    fn add(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
+    fn add(self, rhs: &CsVecBase<IS2, DS2, Rhs, I>) -> Self::Output {
         binop::csvec_binop(self.view(), rhs.view(), |x, y| x + y).unwrap()
     }
 }
 
-impl<'a, 'b, N, I, IS1, DS1, IS2, DS2> Sub<&'b CsVecBase<IS2, DS2, N, I>>
-    for &'a CsVecBase<IS1, DS1, N, I>
+impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
+    Sub<&'b CsVecBase<IS2, DS2, Rhs, I>> for &'a CsVecBase<IS1, DS1, Lhs, I>
 where
-    N: Num,
-    for<'r> &'r N: std::ops::Sub<Output = N>,
+    Lhs: Num,
+    Rhs: Num,
+    for<'r> &'r Lhs: std::ops::Sub<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
-    DS1: Deref<Target = [N]>,
+    DS1: Deref<Target = [Lhs]>,
     IS2: Deref<Target = [I]>,
-    DS2: Deref<Target = [N]>,
+    DS2: Deref<Target = [Rhs]>,
 {
-    type Output = CsVecI<N, I>;
+    type Output = CsVecI<Res, I>;
 
-    fn sub(self, rhs: &CsVecBase<IS2, DS2, N, I>) -> Self::Output {
+    fn sub(self, rhs: &CsVecBase<IS2, DS2, Rhs, I>) -> Self::Output {
         binop::csvec_binop(self.view(), rhs.view(), |x, y| x - y).unwrap()
     }
 }
