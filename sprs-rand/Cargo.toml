@@ -1,7 +1,7 @@
 [package]
 name = "sprs-rand"
 description = "Random sparse matrix generation"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
@@ -13,5 +13,5 @@ rand_distr = "0.2.2"
 rand_pcg = "0.2.1"
 
 [dependencies.sprs]
-version = "0.10.0"
+version = "0.11.0"
 path = ".."

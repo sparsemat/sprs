@@ -3,6 +3,8 @@ Changelog
 =========
 
 - Unreleased
+
+- 0.11.0
   - ``MulAcc`` is generalised to allow different output types from input
   - Bump `ndarray` to `0.15`. This requires a bump in MSRV to `1.49`
 
