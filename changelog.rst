@@ -3,6 +3,7 @@ Changelog
 =========
 
 - Unreleased
+  - Fixed a compilation regression in csmat_binop
 
 - 0.11.0
   - ``MulAcc`` is generalised to allow different output types from input

@@ -57,10 +57,10 @@ where
             return csmat_binop(
                 self.view(),
                 rhs.to_other_storage().view(),
-                |x, y| x + y,
+                |x, y| x.add(y),
             );
         }
-        csmat_binop(self.view(), rhs.view(), |x, y| x + y)
+        csmat_binop(self.view(), rhs.view(), |x, y| x.add(y))
     }
 }
 
