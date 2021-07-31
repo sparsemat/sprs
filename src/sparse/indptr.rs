@@ -473,7 +473,6 @@ mod tests {
         assert!(!IndPtrView::new_checked(&[0, 1]).unwrap().is_empty());
         #[cfg(debug_assertions)]
         {
-            #[should_panic]
             assert!(IndPtrView::new_trusted(&[0]).is_empty());
         }
         #[cfg(not(debug_assertions))]
