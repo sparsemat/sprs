@@ -16,7 +16,7 @@ pub use self::csmat::CompressedStorage;
 /// This sparse matrix format is the preferred format for performing arithmetic
 /// operations. Constructing a sparse matrix directly in this format requires
 /// a deep knowledge of its internals. For easier matrix construction, the
-/// [triplet format](struct.TripletMatBase) is preferred.
+/// [triplet format](struct.TriMatBase.html) is preferred.
 ///
 /// The `CsMatBase` type is parameterized by the scalar type `N`, the indexing
 /// type `I`, the indexing storage backend types `IptrStorage` and `IndStorage`,
