@@ -17,17 +17,17 @@ where
     MatArray: AsRef<[CsMatViewI<'a, N, I, Iptr>]>,
 {
     let mats = mats.as_ref();
-    if mats.is_empty() {
-        panic!("Empty stacking list");
-    }
+    assert!(!mats.is_empty(), "Empty stacking list");
     let inner_dim = mats[0].inner_dims();
-    if !mats.iter().all(|x| x.inner_dims() == inner_dim) {
-        panic!("Dimension mismatch");
-    }
+    assert!(
+        mats.iter().all(|x| x.inner_dims() == inner_dim),
+        "Dimension mismatch"
+    );
     let storage_type = mats[0].storage();
-    if !mats.iter().all(|x| x.storage() == storage_type) {
-        panic!("Storage mismatch");
-    }
+    assert!(
+        mats.iter().all(|x| x.storage() == storage_type),
+        "Storage mismatch"
+    );
 
     let outer_dim = mats.iter().map(CsMatBase::outer_dims).sum::<usize>();
     let nnz = mats.iter().map(CsMatBase::nnz).sum::<usize>();
@@ -103,25 +103,24 @@ where
 {
     let mats = mats.as_ref();
     let super_rows = mats.len();
-    if super_rows == 0 {
-        panic!("Empty stacking list");
-    }
+    assert_ne!(super_rows, 0, "Empty stacking list");
     let super_cols = mats[0].as_ref().len();
-    if super_cols == 0 {
-        panic!("Empty stacking list");
-    }
+    assert_ne!(super_cols, 0, "Empty stacking list");
 
     // check input has matrix shape
-    if !mats.iter().all(|x| x.as_ref().len() == super_cols) {
-        panic!("Dimension mismatch");
-    }
+    assert!(
+        mats.iter().all(|x| x.as_ref().len() == super_cols),
+        "Dimension mismatch"
+    );
 
-    if mats.iter().any(|x| x.as_ref().iter().all(Option::is_none)) {
-        panic!("Empty bmat row");
-    }
-    if (0..super_cols).any(|j| mats.iter().all(|x| x.as_ref()[j].is_none())) {
-        panic!("Empty bmat col");
-    }
+    assert!(
+        !mats.iter().any(|x| x.as_ref().iter().all(Option::is_none)),
+        "Empty bmat row"
+    );
+    assert!(
+        !(0..super_cols).any(|j| mats.iter().all(|x| x.as_ref()[j].is_none())),
+        "Empty bmat col"
+    );
 
     // find out the shapes of the None elements
     let rows_per_row: Vec<_> = mats

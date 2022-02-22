@@ -226,7 +226,7 @@ where
     let nb_threads = 1;
     let mut tmps = Vec::with_capacity(nb_threads);
     for _ in 0..nb_threads {
-        tmps.push(vec![N::zero(); workspace_len].into_boxed_slice())
+        tmps.push(vec![N::zero(); workspace_len].into_boxed_slice());
     }
     let mut seens =
         vec![vec![false; workspace_len].into_boxed_slice(); nb_threads];
@@ -304,16 +304,13 @@ where
         .zip(res_indices_chunks.iter_mut())
         .zip(seens.iter_mut());
     iter.for_each(
-        |(
-            ((lhs_chunk, mut res_indptr_chunk), mut res_indices_chunk),
-            mut seen,
-        )| {
+        |(((lhs_chunk, res_indptr_chunk), res_indices_chunk), seen)| {
             symbolic(
                 lhs_chunk.structure_view(),
                 rhs.structure_view(),
-                &mut res_indptr_chunk,
-                &mut res_indices_chunk,
-                &mut seen,
+                res_indptr_chunk,
+                res_indices_chunk,
+                seen,
             );
         },
     );

@@ -95,7 +95,7 @@ impl<'a, N: 'a + Zero + Clone> DenseVector for &'a mut [N] {
 }
 
 impl<N: Zero + Clone> DenseVector for Vec<N> {
-    type Owned = Vec<N>;
+    type Owned = Self;
     type Scalar = N;
 
     fn dim(&self) -> usize {
@@ -112,7 +112,7 @@ impl<N: Zero + Clone> DenseVector for Vec<N> {
     }
 
     fn to_owned(&self) -> Self::Owned {
-        self.to_vec()
+        self.clone()
     }
 }
 
@@ -134,7 +134,7 @@ impl<'a, N: 'a + Zero + Clone> DenseVector for &'a Vec<N> {
     }
 
     fn to_owned(&self) -> Self::Owned {
-        self.to_vec()
+        (*self).clone()
     }
 }
 
@@ -156,7 +156,7 @@ impl<'a, N: 'a + Zero + Clone> DenseVector for &'a mut Vec<N> {
     }
 
     fn to_owned(&self) -> Self::Owned {
-        self.to_vec()
+        (**self).clone()
     }
 }
 

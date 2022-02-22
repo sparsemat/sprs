@@ -290,7 +290,6 @@ where
 
     #[inline(always)]
     fn into_sparse_vec_iter(self) -> Self::IterType {
-        let n = DenseVector::dim(self);
         // FIXME since it's not possible to have an existential type as an
         // associated type yet, I'm using a trick to send the necessary
         // context to a plain function, which enables specifying the type
@@ -302,6 +301,7 @@ where
         {
             (vi.1, vi.0.index(vi.1))
         }
+        let n = DenseVector::dim(self);
         std::iter::repeat(self)
             .zip(0..n)
             .map(hack_instead_of_closure)
@@ -576,7 +576,7 @@ impl<N, I: SpIndex> CsVecI<N, I> {
         match self.indices.last() {
             None => (),
             Some(&last_ind) => {
-                assert!(ind > last_ind.index_unchecked(), "unsorted append")
+                assert!(ind > last_ind.index_unchecked(), "unsorted append");
             }
         }
         assert!(ind <= self.dim, "out of bounds index");
@@ -855,7 +855,7 @@ where
         let mut sum = Acc::zero();
         if rhs.is_dense() {
             self.iter().for_each(|(idx, val)| {
-                sum.mul_acc(val, rhs.index(idx.index_unchecked()))
+                sum.mul_acc(val, rhs.index(idx.index_unchecked()));
             });
         } else {
             let mut lhs_iter = self.iter();
@@ -925,7 +925,7 @@ where
     where
         N: Signed + Sum,
     {
-        self.data.iter().map(|x| x.abs()).sum()
+        self.data.iter().map(Signed::abs).sum()
     }
 
     /// Compute the vector norm for the given order p.
@@ -1252,7 +1252,7 @@ where
     fn mul_assign(&mut self, rhs: N) {
         self.data_mut()
             .iter_mut()
-            .for_each(|v| v.mul_assign(rhs.clone()))
+            .for_each(|v| v.mul_assign(rhs.clone()));
     }
 }
 
@@ -1267,7 +1267,7 @@ where
     fn div_assign(&mut self, rhs: N) {
         self.data_mut()
             .iter_mut()
-            .for_each(|v| v.div_assign(rhs.clone()))
+            .for_each(|v| v.div_assign(rhs.clone()));
     }
 }
 
@@ -1328,7 +1328,7 @@ where
     }
 
     fn is_zero(&self) -> bool {
-        self.data.iter().all(|x| x.is_zero())
+        self.data.iter().all(Zero::is_zero)
     }
 }
 

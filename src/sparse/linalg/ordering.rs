@@ -207,7 +207,7 @@ pub mod start {
             let contender = rls[last_level_start_index..rls_len]
                 .iter()
                 .min_by_key(|i| degrees[i.index()])
-                .cloned()
+                .copied()
                 .unwrap();
 
             // Return the node of the last level with minimal degree along with
@@ -452,7 +452,7 @@ where
 
     let nb_vertices = mat.cols();
     let degrees = mat.degrees();
-    let max_neighbors = degrees.iter().max().cloned().unwrap_or(0);
+    let max_neighbors = degrees.iter().max().copied().unwrap_or(0);
 
     // This will be transformed into the actual `Ordering` in the end,
     // contains the permuntation and component delimeters.

@@ -1031,7 +1031,7 @@ where
         // types are valid if they are not null.
         let zst_data = unsafe {
             std::slice::from_raw_parts(
-                self.data.as_ptr() as *const (),
+                self.data.as_ptr().cast::<()>(),
                 self.data.len(),
             )
         };
@@ -1707,7 +1707,7 @@ pub mod raw {
         assert_eq!(indices.len(), mat.indices().len());
         assert_eq!(data.len(), mat.data().len());
 
-        assert!(indptr.iter().all(|x| x.is_zero()));
+        assert!(indptr.iter().all(num_traits::Zero::is_zero));
 
         for vec in mat.outer_iterator() {
             for (inner_dim, _) in vec.iter() {

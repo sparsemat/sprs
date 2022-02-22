@@ -23,11 +23,11 @@ where
     // through a lamba.
     if vec1.nnz() > vec2.nnz() {
         csvec_dot_by_binary_search_impl(vec2, vec1, |acc: &mut N, a, b| {
-            acc.mul_acc(b, a)
+            acc.mul_acc(b, a);
         })
     } else {
         csvec_dot_by_binary_search_impl(vec1, vec2, |acc: &mut N, a, b| {
-            acc.mul_acc(a, b)
+            acc.mul_acc(a, b);
         })
     }
 }
@@ -82,12 +82,11 @@ pub fn mul_acc_mat_vec_csc<N, I, Iptr, V, VRes, A, B>(
     VRes: DenseVectorMut<Scalar = N>,
 {
     let mat = mat.view();
-    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
-        panic!("Dimension mismatch");
-    }
-    if !mat.is_csc() {
-        panic!("Storage mismatch");
-    }
+    assert!(
+        mat.cols() == in_vec.dim() && mat.rows() == res_vec.dim(),
+        "Dimension mismatch"
+    );
+    assert!(mat.is_csc(), "Storage mismatch");
 
     for (col_ind, vec) in mat.outer_iterator().enumerate() {
         let vec_elem = in_vec.index(col_ind);
@@ -111,12 +110,11 @@ pub fn mul_acc_mat_vec_csr<N, A, B, I, Iptr, V, VRes>(
     V: DenseVector<Scalar = B>,
     VRes: DenseVectorMut<Scalar = N>,
 {
-    if mat.cols() != in_vec.dim() || mat.rows() != res_vec.dim() {
-        panic!("Dimension mismatch");
-    }
-    if !mat.is_csr() {
-        panic!("Storage mismatch");
-    }
+    assert!(
+        mat.cols() == in_vec.dim() && mat.rows() == res_vec.dim(),
+        "Dimension mismatch"
+    );
+    assert!(mat.is_csr(), "Storage mismatch");
 
     for (row_ind, vec) in mat.outer_iterator().enumerate() {
         let tv = res_vec.index_mut(row_ind);
@@ -173,9 +171,7 @@ where
         // create an empty sparse vector of correct dimension
         return CsVecI::empty(0);
     }
-    if lhs.cols() != rhs.dim() {
-        panic!("Dimension mismatch");
-    }
+    assert_eq!(lhs.cols(), rhs.dim(), "Dimension mismatch");
     let mut res = CsVecI::empty(lhs.rows());
     for (row_ind, lvec) in lhs.outer_iterator().enumerate() {
         let val = lvec.dot_acc(&rhs);
@@ -198,18 +194,10 @@ pub fn csr_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
-    if lhs.cols() != rhs.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if lhs.rows() != out.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if rhs.shape()[1] != out.shape()[1] {
-        panic!("Dimension mismatch");
-    }
-    if !lhs.is_csr() {
-        panic!("Storage mismatch");
-    }
+    assert_eq!(lhs.cols(), rhs.shape()[0], "Dimension mismatch");
+    assert_eq!(lhs.rows(), out.shape()[0], "Dimension mismatch");
+    assert_eq!(rhs.shape()[1], out.shape()[1], "Dimension mismatch");
+    assert!(lhs.is_csr(), "Storage mismatch");
 
     let axis0 = Axis(0);
     for (line, mut oline) in lhs.outer_iterator().zip(out.axis_iter_mut(axis0))
@@ -236,18 +224,10 @@ pub fn csc_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
-    if lhs.cols() != rhs.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if lhs.rows() != out.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if rhs.shape()[1] != out.shape()[1] {
-        panic!("Dimension mismatch");
-    }
-    if !lhs.is_csc() {
-        panic!("Storage mismatch");
-    }
+    assert_eq!(lhs.cols(), rhs.shape()[0], "Dimension mismatch");
+    assert_eq!(lhs.rows(), out.shape()[0], "Dimension mismatch");
+    assert_eq!(rhs.shape()[1], out.shape()[1], "Dimension mismatch");
+    assert!(lhs.is_csc(), "Storage mismatch");
 
     for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
         for (orow, lval) in lcol.iter() {
@@ -271,18 +251,10 @@ pub fn csc_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
-    if lhs.cols() != rhs.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if lhs.rows() != out.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if rhs.shape()[1] != out.shape()[1] {
-        panic!("Dimension mismatch");
-    }
-    if !lhs.is_csc() {
-        panic!("Storage mismatch");
-    }
+    assert_eq!(lhs.cols(), rhs.shape()[0], "Dimension mismatch");
+    assert_eq!(lhs.rows(), out.shape()[0], "Dimension mismatch");
+    assert_eq!(rhs.shape()[1], out.shape()[1], "Dimension mismatch");
+    assert!(lhs.is_csc(), "Storage mismatch");
 
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
@@ -307,18 +279,11 @@ pub fn csr_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
-    if lhs.cols() != rhs.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if lhs.rows() != out.shape()[0] {
-        panic!("Dimension mismatch");
-    }
-    if rhs.shape()[1] != out.shape()[1] {
-        panic!("Dimension mismatch");
-    }
-    if !lhs.is_csr() {
-        panic!("Storage mismatch");
-    }
+    assert_eq!(lhs.cols(), rhs.shape()[0], "Dimension mismatch");
+    assert_eq!(lhs.rows(), out.shape()[0], "Dimension mismatch");
+    assert_eq!(rhs.shape()[1], out.shape()[1], "Dimension mismatch");
+    assert!(lhs.is_csr(), "Storage mismatch");
+
     let axis1 = Axis(1);
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (orow, lrow) in lhs.outer_iterator().enumerate() {
