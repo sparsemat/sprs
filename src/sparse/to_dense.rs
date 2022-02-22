@@ -16,12 +16,8 @@ pub fn assign_to_dense<N, I, Iptr>(
     I: SpIndex,
     Iptr: SpIndex,
 {
-    if spmat.cols() != array.shape()[1] {
-        panic!("Dimension mismatch");
-    }
-    if spmat.rows() != array.shape()[0] {
-        panic!("Dimension mismatch");
-    }
+    assert_eq!(spmat.cols(), array.shape()[1], "Dimension mismatch");
+    assert_eq!(spmat.rows(), array.shape()[0], "Dimension mismatch");
     let outer_axis = if spmat.is_csr() { Axis(0) } else { Axis(1) };
 
     let iterator = spmat.outer_iterator().zip(array.axis_iter_mut(outer_axis));
@@ -43,9 +39,7 @@ pub fn assign_vector_to_dense<N, I>(
     N: Clone,
     I: SpIndex,
 {
-    if spvec.dim() != array.len() {
-        panic!("Dimension mismatch");
-    }
+    assert_eq!(spvec.dim(), array.len(), "Dimension mismatch");
 
     for (ind, val) in spvec.iter() {
         array[[ind]] = val.clone();

@@ -395,7 +395,7 @@ pub(crate) mod utils {
     }
     /// Return the axis which varies the fastest. For a
     /// `C`-style matrix this will be `Axis(1)`, for an
-    /// 'F`-style matrix this will be `Axis(0)`
+    /// `F`-style matrix this will be `Axis(0)`
     pub(crate) fn fastest_axis<T>(mat: ndarray::ArrayView2<T>) -> Axis {
         if mat.strides()[1] > mat.strides()[0] {
             Axis(0)

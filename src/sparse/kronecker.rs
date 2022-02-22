@@ -90,7 +90,7 @@ where
             CsMatBase::new_trusted(CSR, shape, indptr, indices, values);
         debug_assert_eq!(mat.nnz(), nnz);
         if was_csc {
-            mat.transpose_mut()
+            mat.transpose_mut();
         }
         mat
     } else {

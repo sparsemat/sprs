@@ -66,17 +66,17 @@ impl<I: SpIndex> PermOwnedI<I> {
     }
 }
 
-impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
-    pub fn reborrow(&self) -> PermViewI<'a, I> {
+impl<'a, I: SpIndex> PermViewI<'a, I> {
+    pub fn reborrow(&self) -> Self {
         match self.storage {
-            Identity => PermViewI {
+            Identity => Self {
                 dim: self.dim,
                 storage: Identity,
             },
             FinitePerm {
                 perm: p,
                 perm_inv: p_,
-            } => PermViewI {
+            } => Self {
                 dim: self.dim,
                 storage: FinitePerm {
                     perm: &p[..],
@@ -86,16 +86,16 @@ impl<'a, I: SpIndex> Permutation<I, &'a [I]> {
         }
     }
 
-    pub fn reborrow_inv(&self) -> PermViewI<'a, I> {
+    pub fn reborrow_inv(&self) -> Self {
         match self.storage {
-            Identity => PermViewI {
+            Identity => Self {
                 dim: self.dim,
                 storage: Identity,
             },
             FinitePerm {
                 perm: p,
                 perm_inv: p_,
-            } => PermViewI {
+            } => Self {
                 dim: self.dim,
                 storage: FinitePerm {
                     perm: &p_[..],
@@ -182,8 +182,8 @@ where
             } => PermOwnedI {
                 dim: self.dim,
                 storage: FinitePerm {
-                    perm: p.iter().cloned().collect(),
-                    perm_inv: p_.iter().cloned().collect(),
+                    perm: p.iter().copied().collect(),
+                    perm_inv: p_.iter().copied().collect(),
                 },
             },
         }
@@ -328,7 +328,7 @@ where
         tmp.clear();
         let outer = mat.outer_view(in_outer.index()).unwrap();
         for (ind, val) in outer.indices().iter().zip(outer.data()) {
-            tmp.push((p_[ind.index()], val.clone()))
+            tmp.push((p_[ind.index()], val.clone()));
         }
         tmp.sort_by_key(|(ind, _)| *ind);
         for (ind, val) in &tmp {

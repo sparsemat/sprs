@@ -16,12 +16,8 @@ fn check_solver_dimensions<N, I, Iptr, V>(
     Iptr: SpIndex,
 {
     let (cols, rows) = (lower_tri_mat.cols(), lower_tri_mat.rows());
-    if cols != rows {
-        panic!("Non square matrix passed to solver");
-    }
-    if cols != rhs.dim() {
-        panic!("Dimension mismatch");
-    }
+    assert_eq!(cols, rows, "Non square matrix passed to solver");
+    assert_eq!(cols, rhs.dim(), "Dimension mismatch");
 }
 
 /// Solve a sparse lower triangular matrix system, with a csr matrix
@@ -43,9 +39,7 @@ where
     Iptr: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, &rhs);
-    if !lower_tri_mat.is_csr() {
-        panic!("Storage mismatch");
-    }
+    assert!(lower_tri_mat.is_csr(), "Storage mismatch");
 
     // we base our algorithm on the following decomposition:
     // | L_0_0    0     | | x_0 |    | b_0 |
@@ -94,16 +88,14 @@ pub fn lsolve_csc_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Clone + Num + std::ops::SubAssign,
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
-    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
+    for<'r> &'r N:
+        std::ops::Mul<&'r N, Output = N> + std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
     check_solver_dimensions(&lower_tri_mat, &rhs);
-    if !lower_tri_mat.is_csc() {
-        panic!("Storage mismatch");
-    }
+    assert!(lower_tri_mat.is_csc(), "Storage mismatch");
 
     // we base our algorithm on the following decomposition:
     // |l_0_0    0    | |x_0|    |b_0|
@@ -126,8 +118,8 @@ fn lspsolve_csc_process_col<N, I, V>(
 ) -> Result<(), LinalgError>
 where
     N: Clone + Num + std::ops::SubAssign,
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
-    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
+    for<'r> &'r N:
+        std::ops::Mul<&'r N, Output = N> + std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
 {
@@ -172,16 +164,14 @@ pub fn usolve_csc_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Clone + Num + std::ops::SubAssign,
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
-    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
+    for<'r> &'r N:
+        std::ops::Mul<&'r N, Output = N> + std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, &rhs);
-    if !upper_tri_mat.is_csc() {
-        panic!("Storage mismatch");
-    }
+    assert!(upper_tri_mat.is_csc(), "Storage mismatch");
 
     // we base our algorithm on the following decomposition:
     // | U_0_0    u_0_1 | | x_0 |    | b_0 |
@@ -232,16 +222,14 @@ pub fn usolve_csr_dense_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Clone + Num + std::ops::SubAssign,
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
-    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
+    for<'r> &'r N:
+        std::ops::Mul<&'r N, Output = N> + std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut + DenseVector<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
     check_solver_dimensions(&upper_tri_mat, &rhs);
-    if !upper_tri_mat.is_csr() {
-        panic!("Storage mismatch");
-    }
+    assert!(upper_tri_mat.is_csr(), "Storage mismatch");
     // we base our algorithm on the following decomposition:
     // | u_0_0    u_0_1^T | | x_0 |    | b_0 |
     // |   0      U_1_1   | | x_1 |  = | b_1 |
@@ -304,15 +292,13 @@ pub fn lsolve_csc_sparse_rhs<N, I, Iptr, V>(
 ) -> Result<(), LinalgError>
 where
     N: Clone + Num + std::ops::SubAssign,
-    for<'r> &'r N: std::ops::Mul<&'r N, Output = N>,
-    for<'r> &'r N: std::ops::Div<&'r N, Output = N>,
+    for<'r> &'r N:
+        std::ops::Mul<&'r N, Output = N> + std::ops::Div<&'r N, Output = N>,
     V: DenseVectorMut + DenseVector<Scalar = N>,
     I: SpIndex,
     Iptr: SpIndex,
 {
-    if !lower_tri_mat.is_csc() {
-        panic!("Storage mismatch");
-    }
+    assert!(lower_tri_mat.is_csc(), "Storage mismatch");
     let n = lower_tri_mat.rows();
     assert!(dstack.capacity() >= 2 * n, "dstack cap should be 2*n");
     assert!(

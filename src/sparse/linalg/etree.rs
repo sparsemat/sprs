@@ -59,7 +59,7 @@ impl<S: DerefMut<Target = [Parent]>> Parents<S> {
     /// * if parent is out of bounds
     pub fn set_parent(&mut self, node: usize, parent: usize) {
         assert!(parent < self.nb_nodes(), "parent is out of bounds");
-        self.parents[node] = Some(parent)
+        self.parents[node] = Some(parent);
     }
 
     /// Set a node as a root.
@@ -90,10 +90,10 @@ impl<S: DerefMut<Target = [Parent]>> Parents<S> {
     }
 }
 
-impl Parents<Vec<Parent>> {
+impl ParentsOwned {
     /// Create a new tree with all nodes set as root
-    pub fn new(nb_nodes: usize) -> ParentsOwned {
-        ParentsOwned {
+    pub fn new(nb_nodes: usize) -> Self {
+        Self {
             parents: vec![None; nb_nodes],
         }
     }

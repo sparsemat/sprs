@@ -52,10 +52,9 @@ where
         }
         if storage
             .last()
-            .cloned()
+            .copied()
             .map(Iptr::index_unchecked)
-            .map(|i| i > usize::max_value() / 2)
-            .unwrap_or(false)
+            .map_or(false, |i| i > usize::max_value() / 2)
         {
             // We do not allow indptr values to be larger than half
             // the maximum value of an usize, as that would clearly exhaust
@@ -78,14 +77,14 @@ where
     pub fn new_checked(
         storage: Storage,
     ) -> Result<Self, (Storage, StructureError)> {
-        match IndPtrBase::check_structure(&storage) {
-            Ok(_) => Ok(IndPtrBase::new_trusted(storage)),
+        match Self::check_structure(&storage) {
+            Ok(_) => Ok(Self::new_trusted(storage)),
             Err(e) => Err((storage, e)),
         }
     }
 
     pub(crate) fn new_trusted(storage: Storage) -> Self {
-        IndPtrBase { storage }
+        Self { storage }
     }
 
     pub fn view(&self) -> IndPtrView<Iptr> {
@@ -121,10 +120,7 @@ where
     ///
     /// An empty matrix is considered non-proper.
     pub fn is_proper(&self) -> bool {
-        self.storage
-            .get(0)
-            .map(|i| *i == Iptr::zero())
-            .unwrap_or(false)
+        self.storage.get(0).map_or(false, |i| *i == Iptr::zero())
     }
 
     /// Return a view on the underlying slice if it is a proper `indptr` slice,
@@ -219,7 +215,7 @@ where
 
     fn offset(&self) -> Iptr {
         let zero = Iptr::zero();
-        self.storage.get(0).cloned().unwrap_or(zero)
+        self.storage.get(0).copied().unwrap_or(zero)
     }
 
     /// Iterate over the nonzeros represented by this indptr, yielding the
@@ -347,8 +343,7 @@ where
         self.storage
             .last()
             .map(|i| *i - offset)
-            .map(Iptr::index_unchecked)
-            .unwrap_or(0)
+            .map_or(0, Iptr::index_unchecked)
     }
 
     /// The number of nonzero elements described by this indptr, using the
@@ -358,7 +353,7 @@ where
         let zero = Iptr::zero();
         // index_unchecked validity: structure checks ensure that the last index
         // larger than the first, and that both can be represented as an usize
-        self.storage.last().map(|i| *i - offset).unwrap_or(zero)
+        self.storage.last().map_or(zero, |i| *i - offset)
     }
 
     /// Slice this indptr to include only the outer dimensions in the range
@@ -435,7 +430,7 @@ where
     IptrStorage2: Deref<Target = [Iptr]>,
 {
     fn eq(&self, other: &IptrStorage2) -> bool {
-        self.raw_storage() == other.deref()
+        self.raw_storage() == &**other
     }
 }
 

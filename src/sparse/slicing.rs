@@ -34,9 +34,8 @@ where
     ) -> CsMatViewMutI<N, I, Iptr> {
         let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
-        if end < start {
-            panic!("Invalid view");
-        }
+        assert!(end >= start, "Invalid view");
+
         let outer_inds_slice = self.indptr.outer_inds_slice(start, end);
         let (nrows, ncols) = match self.storage() {
             crate::CSR => ((end - start), self.ncols),
@@ -69,9 +68,8 @@ where
     {
         let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
-        if end < start {
-            panic!("Invalid view");
-        }
+        assert!(end >= start, "Invalid view");
+
         let outer_inds_slice = self.indptr.outer_inds_slice(start, end);
         let (nrows, ncols) = match self.storage() {
             crate::CSR => ((end - start), self.ncols),

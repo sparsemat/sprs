@@ -189,12 +189,11 @@ where
     let nrows = lhs.rows();
     let ncols = lhs.cols();
     let storage = lhs.storage();
-    if nrows != rhs.rows() || ncols != rhs.cols() {
-        panic!("Dimension mismatch");
-    }
-    if storage != rhs.storage() {
-        panic!("Storage mismatch");
-    }
+    assert!(
+        nrows == rhs.rows() && ncols == rhs.cols(),
+        "Dimension mismatch"
+    );
+    assert_eq!(storage, rhs.storage(), "Storage mismatch");
 
     let max_nnz = lhs.nnz() + rhs.nnz();
     let mut out_indptr = vec![Iptr::zero(); lhs.outer_dims() + 1];
@@ -450,9 +449,7 @@ where
     I: SpIndex,
 {
     csvec_fix_zeros(&mut lhs, &mut rhs);
-    if lhs.dim() != rhs.dim() {
-        panic!("Dimension mismatch");
-    }
+    assert_eq!(lhs.dim(), rhs.dim(), "Dimension mismatch");
     let mut res = CsVecI::empty(lhs.dim());
     let max_nnz = lhs.nnz() + rhs.nnz();
     res.reserve_exact(max_nnz);

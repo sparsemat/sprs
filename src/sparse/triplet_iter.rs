@@ -167,7 +167,7 @@ where
             if rec > 0 {
                 if rc[rec - 1].0 == rc[rec].0 && rc[rec - 1].1 == rc[rec].1 {
                     // got a duplicate - add the value in the current slot.
-                    rc[slot].2 = rc[slot].2.clone() + rc[rec].2.clone()
+                    rc[slot].2 = rc[slot].2.clone() + rc[rec].2.clone();
                 } else {
                     // new cell -- fill it out
                     slot += 1;
