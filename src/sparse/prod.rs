@@ -190,7 +190,9 @@ pub fn csr_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     rhs: ArrayView<B, Ix2>,
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N: 'a + crate::MulAcc<A, B>,
+    A: Send + Sync,
+    B: Send + Sync,
+    N: 'a + crate::MulAcc<A, B> + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -200,6 +202,21 @@ pub fn csr_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     assert!(lhs.is_csr(), "Storage mismatch");
 
     let axis0 = Axis(0);
+    #[cfg(feature = "multi_thread")]
+    for (line, mut oline) in lhs.outer_iterator().zip(out.axis_iter_mut(axis0))
+    {
+        for (col_ind, lval) in line.iter() {
+            let rline = rhs.row(col_ind);
+            // TODO: call an axpy primitive to benefit from vectorisation?
+            ndarray::Zip::from(&mut oline).and(rline).par_for_each(
+                |oval, rval| {
+                    oval.mul_acc(lval, rval);
+                },
+            );
+        }
+    }
+
+    #[cfg(not(feature = "multi_thread"))]
     for (line, mut oline) in lhs.outer_iterator().zip(out.axis_iter_mut(axis0))
     {
         for (col_ind, lval) in line.iter() {
@@ -220,7 +237,9 @@ pub fn csc_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     rhs: ArrayView<B, Ix2>,
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N: 'a + crate::MulAcc<A, B>,
+    A: Send + Sync,
+    B: Send + Sync,
+    N: 'a + crate::MulAcc<A, B> + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -229,6 +248,19 @@ pub fn csc_mulacc_dense_rowmaj<'a, N, A, B, I, Iptr>(
     assert_eq!(rhs.shape()[1], out.shape()[1], "Dimension mismatch");
     assert!(lhs.is_csc(), "Storage mismatch");
 
+    #[cfg(feature = "multi_thread")]
+    for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
+        for (orow, lval) in lcol.iter() {
+            let oline = out.row_mut(orow);
+            ndarray::Zip::from(oline)
+                .and(rline)
+                .par_for_each(|oval, rval| {
+                    oval.mul_acc(lval, rval);
+                });
+        }
+    }
+
+    #[cfg(not(feature = "multi_thread"))]
     for (lcol, rline) in lhs.outer_iterator().zip(rhs.outer_iter()) {
         for (orow, lval) in lcol.iter() {
             let mut oline = out.row_mut(orow);
@@ -247,7 +279,9 @@ pub fn csc_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     rhs: ArrayView<B, Ix2>,
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N: 'a + crate::MulAcc<A, B>,
+    A: Send + Sync,
+    B: Send + Sync,
+    N: 'a + crate::MulAcc<A, B> + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -257,6 +291,20 @@ pub fn csc_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     assert!(lhs.is_csc(), "Storage mismatch");
 
     let axis1 = Axis(1);
+    // NOTE: See csr_mulacc_dense_colmaj, same issue
+    #[cfg(feature = "multi_thread")]
+    ndarray::Zip::from(out.axis_iter_mut(axis1))
+        .and(rhs.axis_iter(axis1))
+        .par_for_each(|mut ocol, rcol| {
+            for (rrow, lcol) in lhs.outer_iterator().enumerate() {
+                let rval = &rcol[[rrow]];
+                for (orow, lval) in lcol.iter() {
+                    ocol[[orow]].mul_acc(lval, rval);
+                }
+            }
+        });
+
+    #[cfg(not(feature = "multi_thread"))]
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (rrow, lcol) in lhs.outer_iterator().enumerate() {
             let rval = &rcol[[rrow]];
@@ -275,7 +323,9 @@ pub fn csr_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     rhs: ArrayView<B, Ix2>,
     mut out: ArrayViewMut<'a, N, Ix2>,
 ) where
-    N: 'a + crate::MulAcc<A, B>,
+    A: Send + Sync,
+    B: Send + Sync,
+    N: 'a + crate::MulAcc<A, B> + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
 {
@@ -285,6 +335,23 @@ pub fn csr_mulacc_dense_colmaj<'a, N, A, B, I, Iptr>(
     assert!(lhs.is_csr(), "Storage mismatch");
 
     let axis1 = Axis(1);
+    // NOTE: This is parallel over the columns of the output and rhs
+    // which isn't ideal. This is still sequential for dense vector product.
+    // Ideally CsMat.outer_iterator() should get a par_iter rayon impl
+    #[cfg(feature = "multi_thread")]
+    ndarray::Zip::from(out.axis_iter_mut(axis1))
+        .and(rhs.axis_iter(axis1))
+        .par_for_each(|mut ocol, rcol| {
+            for (orow, lrow) in lhs.outer_iterator().enumerate() {
+                let oval = &mut ocol[[orow]];
+                for (rrow, lval) in lrow.iter() {
+                    let rval = &rcol[[rrow]];
+                    oval.mul_acc(lval, rval);
+                }
+            }
+        });
+
+    #[cfg(not(feature = "multi_thread"))]
     for (mut ocol, rcol) in out.axis_iter_mut(axis1).zip(rhs.axis_iter(axis1)) {
         for (orow, lrow) in lhs.outer_iterator().enumerate() {
             let oval = &mut ocol[[orow]];

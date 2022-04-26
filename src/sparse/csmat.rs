@@ -1901,7 +1901,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Mul<&'b ArrayBase<DS2, Ix2>>
     for &'a CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + crate::MulAcc + num_traits::Zero + Clone,
+    N: 'a + crate::MulAcc + num_traits::Zero + Clone + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -1962,7 +1962,13 @@ where
 impl<'a, 'b, N, I, IpS, IS, DS, DS2> Dot<CsMatBase<N, I, IpS, IS, DS>>
     for ArrayBase<DS2, Ix2>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero + std::fmt::Debug,
+    N: 'a
+        + Clone
+        + crate::MulAcc
+        + num_traits::Zero
+        + std::fmt::Debug
+        + Send
+        + Sync,
     I: 'a + SpIndex,
     IpS: 'a + Deref<Target = [I]>,
     IS: 'a + Deref<Target = [I]>,
@@ -2013,7 +2019,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix2>>
     for CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -2031,7 +2037,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Mul<&'b ArrayBase<DS2, Ix1>>
     for &'a CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
@@ -2072,7 +2078,7 @@ where
 impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix1>>
     for CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
+    N: 'a + Clone + crate::MulAcc + num_traits::Zero + Send + Sync,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     IpS: 'a + Deref<Target = [Iptr]>,
