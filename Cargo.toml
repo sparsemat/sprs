@@ -7,7 +7,7 @@ edition = "2018"
 
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/vbarrielle/sprs"
+repository = "https://github.com/sparsemat/sprs"
 documentation = "https://docs.rs/sprs"
 keywords = ["sparse", "matrix", "linear", "algebra"]
 

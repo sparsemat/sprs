@@ -8,7 +8,7 @@ edition = "2018"
 
 readme = "README.md"
 license = "LGPL-2.1"
-repository = "https://github.com/vbarrielle/sprs"
+repository = "https://github.com/sparsemat/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
 keywords = ["sparse", "matrix", "cholesky", "factorization", "linalg"]
 
