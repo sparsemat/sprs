@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies.sprs]
 version = "0.11.0"
-path = "../.."
+path = "../../sprs"
 
 [dependencies.suitesparse_camd_sys]
 path = "../suitesparse_camd_sys/"
