@@ -15,4 +15,4 @@ suitesparse_ldl_sys = { path = "../suitesparse_ldl_sys", version = "0.3.0" }
 
 [dependencies.sprs]
 version = "0.11.0"
-path = "../.."
+path = "../../sprs"
