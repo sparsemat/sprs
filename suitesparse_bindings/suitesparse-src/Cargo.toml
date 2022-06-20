@@ -10,7 +10,7 @@ build = "build.rs"
 links = "suitesparse-src"
 license-file = "SuiteSparse/LICENSE.txt"
 readme = "README.md"
-repository = "https://github.com/vbarrielle/sprs"
+repository = "https://github.com/sparsemat/sprs"
 description = "Builds the SuiteSparse components"
 exclude = [
     "SuiteSparse/AMD/",
