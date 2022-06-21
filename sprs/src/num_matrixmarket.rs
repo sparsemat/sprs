@@ -13,13 +13,23 @@ where
     }
 }
 
-// string conversions
-impl MatrixMarketDisplay for Complex<f64>
+impl<T : Display> MatrixMarketDisplay for T
 {
     fn mm_display(&self) -> Displayable<&Self> {
         Displayable(self)
     }
 }
+/*
+impl<T : Display> Display for Displayable<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Displayable(it) =>
+                write!(f, "{}", it)
+        }
+    }
+}
+*/
 
 // string conversions
 impl Display for Displayable<Complex<f64>>
@@ -32,38 +42,57 @@ impl Display for Displayable<Complex<f64>>
     }
 }
 
-
-/*
-
 // string conversions
-impl MatrixMarketDisplay for Complex<f64>
+impl Display for Displayable<Complex<f32>>
 {
-    fn mm_display(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.re, self.im)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Displayable(it) =>
+                write!(f, "{} {}", it.re, it.im)
+        }
     }
 }
 
 // string conversions
-impl MatrixMarketDisplay for Complex<f32>
+impl Display for Displayable<f64>
 {
-    fn mm_display(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.re, self.im)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Displayable(it) =>
+                write!(f, "{}", it)
+        }
     }
 }
 
 // string conversions
-impl MatrixMarketDisplay for i64
+impl Display for Displayable<f32>
 {
-    fn mm_display(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Displayable(it) =>
+                write!(f, "{}", it)
+        }
     }
 }
 
 // string conversions
-impl MatrixMarketDisplay for i32
+impl Display for Displayable<i64>
 {
-    fn mm_display(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Displayable(it) =>
+                write!(f, "{}", it)
+        }
     }
 }
-*/
+
+// string conversions
+impl Display for Displayable<i32>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Displayable(it) =>
+                write!(f, "{}", it)
+        }
+    }
+}

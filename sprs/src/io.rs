@@ -369,7 +369,7 @@ where
                     "{} {} {}",
                     row.index() + 1,
                     col.index() + 1,
-                    val
+                    val.mm_display()
                 )?;
                 entries += 1;
             }
