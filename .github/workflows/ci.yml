@@ -16,7 +16,7 @@ env:
 jobs:
   rustfmt:
     name: rustfmt
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
 
   documentation:
     name: documentation
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -49,7 +49,7 @@ jobs:
 
   clippy:
     name: clippy
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -71,16 +71,16 @@ jobs:
       matrix:
         include:
         - build: msrv
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           rust: 1.52.0
         - build: stable
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           rust: stable
         - build: beta
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           rust: beta
         - build: nightly
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           rust: nightly
         - build: macos
           os: macos-latest
@@ -97,7 +97,7 @@ jobs:
       with: {submodules: true}
 
     - name: Install suitesparse
-      if: matrix.os == 'ubuntu-18.04'
+      if: matrix.os == 'ubuntu-20.04'
       run: |
           sudo apt-get install libsuitesparse-dev
 
@@ -110,27 +110,27 @@ jobs:
 
     - name: Build (exclude suitesparse)
       run: cargo build --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys
-      if: matrix.os != 'ubuntu-18.04'
+      if: matrix.os != 'ubuntu-20.04'
 
     - name: Build (all)
       run: cargo build --verbose --workspace
-      if: matrix.os == 'ubuntu-18.04'
+      if: matrix.os == 'ubuntu-20.04'
 
     - name: Test (exclude suitesparse)
       run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys
-      if: matrix.os != 'ubuntu-18.04'
+      if: matrix.os != 'ubuntu-20.04'
 
     - name: Test (all)
       run: cargo test --verbose --workspace
-      if: matrix.os == 'ubuntu-18.04'
+      if: matrix.os == 'ubuntu-20.04'
 
     - name: Test (suitesparse integration)
       run: cargo test -p sprs-ldl --features "sprs-ldl/sprs_suitesparse_ldl sprs-ldl/sprs_suitesparse_camd"
-      if: matrix.os == 'ubuntu-18.04' && matrix.build == 'nightly'
+      if: matrix.os == 'ubuntu-20.04' && matrix.build == 'nightly'
 
   benches:
     name: benchmarks
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -150,7 +150,7 @@ jobs:
 
   optional_none:
     name: Optional features (none selected)
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -167,7 +167,7 @@ jobs:
 
   optional_approx:
     name: Optional features (approx selected)
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -189,7 +189,7 @@ jobs:
       matrix:
         include:
         - build: stable
-          os: ubuntu-18.04
+          os: ubuntu-20.04
           rust: stable
         - build: macos
           os: macos-latest
@@ -220,7 +220,7 @@ jobs:
           cargo test --features suitesparse_ldl_sys/static -p sprs
   miri:
     name: Miri
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
