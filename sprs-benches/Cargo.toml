@@ -17,7 +17,7 @@ path = "../sprs-rand"
 version = "0.2.12"
 
 [dependencies]
-pyo3 = { version="0.11.1" }
+pyo3 = { version="0.16.5" }
 
 [build-dependencies]
 cc = "1.0.52"

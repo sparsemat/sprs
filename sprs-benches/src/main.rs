@@ -12,7 +12,7 @@ fn scipy_mat<'a>(
 ) -> Result<&'a PyAny, String> {
     let indptr = mat.indptr().to_proper().to_vec();
     scipy_sparse
-        .call(
+        .call_method(
             "csr_matrix",
             ((mat.data().to_vec(), mat.indices().to_vec(), indptr),),
             Some([("shape", mat.shape())].into_py_dict(py)),
