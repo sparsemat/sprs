@@ -19,80 +19,57 @@ impl<T : Display> MatrixMarketDisplay for T
         Displayable(self)
     }
 }
-/*
-impl<T : Display> Display for Displayable<T>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{}", it)
-        }
-    }
-}
-*/
 
-// string conversions
-impl Display for Displayable<Complex<f64>>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{} {}", it.re, it.im)
+macro_rules! default_matrixmarket_display_impl {
+    ($t: ty) => {
+        impl Display for Displayable<$t>
+        {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    Displayable(it) =>
+                        write!(f, "{}", it)
+                }
+            }
         }
-    }
-}
-
-// string conversions
-impl Display for Displayable<Complex<f32>>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{} {}", it.re, it.im)
+        impl Display for Displayable<& $t>
+        {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    Displayable(it) =>
+                        write!(f, "{}", it)
+                }
+            }
         }
-    }
+    };
 }
 
-// string conversions
-impl Display for Displayable<f64>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{}", it)
+macro_rules! complex_matrixmarket_display_impl {
+    ($t: ty) => {
+        impl Display for Displayable<Complex<$t>>
+        {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    Displayable(it) =>
+                        write!(f, "{} {}", it.re, it.im)
+                }
+            }
         }
-    }
+        impl Display for Displayable<&Complex<$t>>
+        {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    Displayable(it) =>
+                        write!(f, "{} {}", it.re, it.im)
+                }
+            }
+        }
+    };
 }
 
-// string conversions
-impl Display for Displayable<f32>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{}", it)
-        }
-    }
-}
+default_matrixmarket_display_impl!(i32);
+default_matrixmarket_display_impl!(f32);
+default_matrixmarket_display_impl!(i64);
+default_matrixmarket_display_impl!(f64);
 
-// string conversions
-impl Display for Displayable<i64>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{}", it)
-        }
-    }
-}
-
-// string conversions
-impl Display for Displayable<i32>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Displayable(it) =>
-                write!(f, "{}", it)
-        }
-    }
-}
+complex_matrixmarket_display_impl!(f64);
+complex_matrixmarket_display_impl!(f32);
