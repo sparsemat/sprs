@@ -11,6 +11,7 @@ use num_traits::cast::NumCast;
 
 use crate::indexing::SpIndex;
 use crate::num_kinds::{NumKind, PrimitiveKind};
+use crate::num_matrixmarket::* ;
 use crate::sparse::{SparseMat, TriMatI};
 
 #[derive(Debug)]
@@ -270,7 +271,8 @@ pub fn write_matrix_market<'a, N, I, M, P>(
 ) -> Result<(), io::Error>
 where
     I: 'a + SpIndex + fmt::Display,
-    N: 'a + PrimitiveKind + fmt::Display,
+    N: 'a + PrimitiveKind + MatrixMarketDisplay,
+    for<'n> Displayable<&'n N>: std::fmt::Display,
     M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
     P: AsRef<Path>,
 {
@@ -296,7 +298,7 @@ where
 
     // entries
     for (val, (row, col)) in mat {
-        writeln!(writer, "{} {} {}", row.index() + 1, col.index() + 1, val)?;
+        writeln!(writer, "{} {} {}", row.index() + 1, col.index() + 1, val.mm_display())?;
     }
     Ok(())
 }
@@ -319,7 +321,8 @@ pub fn write_matrix_market_sym<'a, N, I, M, P>(
 ) -> Result<(), io::Error>
 where
     I: 'a + SpIndex + fmt::Display,
-    N: 'a + PrimitiveKind + fmt::Display,
+    N: 'a + PrimitiveKind + MatrixMarketDisplay,
+    for<'n> Displayable<&'n N>: std::fmt::Display,
     M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
     P: AsRef<Path>,
 {
@@ -380,7 +383,7 @@ where
                     "{} {} {}",
                     row.index() + 1,
                     col.index() + 1,
-                    val
+                    val.mm_display()
                 )?;
                 entries += 1;
             }
@@ -394,7 +397,7 @@ where
                     "{} {} {}",
                     row.index() + 1,
                     col.index() + 1,
-                    val
+                    val.mm_display()
                 )?;
                 entries += 1;
             }
