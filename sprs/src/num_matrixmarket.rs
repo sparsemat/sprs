@@ -20,7 +20,8 @@ where
 impl<T> MatrixMarketDisplay for T
 where
     for<'a> Displayable<&'a T>: Display,
-{    fn mm_display(&self) -> Displayable<&Self> {
+{
+    fn mm_display(&self) -> Displayable<&Self> {
         Displayable(self)
     }
 }
