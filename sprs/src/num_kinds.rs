@@ -2,12 +2,23 @@
 //! or a complex.
 
 use num_complex::{Complex32, Complex64};
+use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NumKind {
     Integer,
     Float,
     Complex,
+}
+
+impl fmt::Display for NumKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Integer => write!(f, "integer"),
+            Self::Float => write!(f, "real"),
+            Self::Complex => write!(f, "complex"),
+        }
+    }
 }
 
 pub trait PrimitiveKind {

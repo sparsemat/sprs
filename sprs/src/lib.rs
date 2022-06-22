@@ -82,6 +82,7 @@ pub mod indexing;
 pub mod io;
 mod mul_acc;
 pub mod num_kinds;
+pub mod num_matrixmarket;
 mod range;
 mod sparse;
 pub mod stack;
