@@ -79,9 +79,7 @@ use std::str::SplitWhitespace;
 use crate::io::IoError::BadMatrixMarketFile;
 
 pub trait MatrixMarketRead: Sized {
-    fn mm_read(
-        r: &mut SplitWhitespace,
-    ) -> Result<Self, crate::io::IoError>;
+    fn mm_read(r: &mut SplitWhitespace) -> Result<Self, crate::io::IoError>;
 }
 
 macro_rules! default_matrixmarket_read_impl {
