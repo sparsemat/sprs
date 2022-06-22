@@ -11,7 +11,7 @@ use num_traits::cast::NumCast;
 
 use crate::indexing::SpIndex;
 use crate::num_kinds::{NumKind, PrimitiveKind};
-use crate::num_matrixmarket::* ;
+use crate::num_matrixmarket::*;
 use crate::sparse::{SparseMat, TriMatI};
 
 #[derive(Debug)]
@@ -106,7 +106,11 @@ fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
 pub fn read_matrix_market<N, I, P>(mm_file: P) -> Result<TriMatI<N, I>, IoError>
 where
     I: SpIndex,
-    N: NumCast + PrimitiveKind + Clone + std::ops::Neg<Output = N> + MatrixMarketRead,
+    N: NumCast
+        + PrimitiveKind
+        + Clone
+        + std::ops::Neg<Output = N>
+        + MatrixMarketRead,
     P: AsRef<Path>,
 {
     let mm_file = mm_file.as_ref();
@@ -125,7 +129,11 @@ pub fn read_matrix_market_from_bufread<N, I, R>(
 ) -> Result<TriMatI<N, I>, IoError>
 where
     I: SpIndex,
-    N: NumCast + PrimitiveKind + Clone + std::ops::Neg<Output = N> + MatrixMarketRead,
+    N: NumCast
+        + PrimitiveKind
+        + Clone
+        + std::ops::Neg<Output = N>
+        + MatrixMarketRead,
     R: io::BufRead,
 {
     // MatrixMarket format specifies lines of at most 1024 chars
@@ -140,9 +148,10 @@ where
         DataType::Real => NumKind::Float,
         DataType::Complex => NumKind::Complex,
     };
-    if (N::num_kind() == NumKind::Complex || data_num_kind == NumKind::Complex) &&
-        N::num_kind() != data_num_kind {
-            return Err(BadMatrixMarketFile) ;
+    if (N::num_kind() == NumKind::Complex || data_num_kind == NumKind::Complex)
+        && N::num_kind() != data_num_kind
+    {
+        return Err(BadMatrixMarketFile);
     }
     if sym_mode == SymmetryMode::Hermitian {
         // support for Hermitian requires complex support
@@ -218,13 +227,11 @@ where
         if sym_mode != SymmetryMode::General && row != col {
             if sym_mode == SymmetryMode::Hermitian {
                 unreachable!();
-            }
-            else if sym_mode == SymmetryMode::SkewSymmetric {
+            } else if sym_mode == SymmetryMode::SkewSymmetric {
                 row_inds.push(I::from_usize(col));
                 col_inds.push(I::from_usize(row));
                 data.push(-val);
-            }
-            else {
+            } else {
                 row_inds.push(I::from_usize(col));
                 col_inds.push(I::from_usize(row));
                 data.push(val);
@@ -293,7 +300,13 @@ where
 
     // entries
     for (val, (row, col)) in mat {
-        writeln!(writer, "{} {} {}", row.index() + 1, col.index() + 1, val.mm_display())?;
+        writeln!(
+            writer,
+            "{} {} {}",
+            row.index() + 1,
+            col.index() + 1,
+            val.mm_display()
+        )?;
     }
     Ok(())
 }
@@ -418,8 +431,8 @@ mod test {
         read_matrix_market, read_matrix_market_from_bufread,
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
-    use num_complex::{ Complex32, Complex64 };
     use crate::CsMat;
+    use num_complex::{Complex32, Complex64};
     use tempfile::tempdir;
     #[cfg_attr(miri, ignore)]
     #[test]
@@ -441,17 +454,24 @@ mod test {
     fn failing_matrix_market_reads() {
         let complex_mm_path = "data/matrix_market/complex/simple.mtx";
         let float_mm_path = "data/matrix_market/simple_int.mm";
-        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(complex_mm_path).is_ok()) ;
-        assert!(read_matrix_market::<f64, usize, _>(complex_mm_path).is_err()) ;
+        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
+            complex_mm_path
+        )
+        .is_ok());
+        assert!(read_matrix_market::<f64, usize, _>(complex_mm_path).is_err());
 
-        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(float_mm_path).is_err()) ;
-        assert!(read_matrix_market::<f64, usize, _>(float_mm_path).is_ok()) ;
+        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
+            float_mm_path
+        )
+        .is_err());
+        assert!(read_matrix_market::<f64, usize, _>(float_mm_path).is_ok());
     }
 
     #[test]
     fn simple_matrix_market_read_complex64() {
         let path = "data/matrix_market/complex/simple.mtx";
-        let mat = read_matrix_market::<num_complex::Complex64, usize, _>(path).unwrap();
+        let mat = read_matrix_market::<num_complex::Complex64, usize, _>(path)
+            .unwrap();
         assert_eq!(mat.rows(), 2);
         assert_eq!(mat.cols(), 2);
         assert_eq!(mat.nnz(), 3);
@@ -460,8 +480,8 @@ mod test {
         assert_eq!(
             mat.data(),
             &[
-                Complex64::new(1.0, 2.0), 
-                Complex64::new(3.0, 4.0), 
+                Complex64::new(1.0, 2.0),
+                Complex64::new(3.0, 4.0),
                 Complex64::new(5.0, 6.0),
             ]
         );
@@ -470,7 +490,8 @@ mod test {
     #[test]
     fn simple_matrix_market_read_complex32() {
         let path = "data/matrix_market/complex/simple.mtx";
-        let mat = read_matrix_market::<num_complex::Complex32, usize, _>(path).unwrap();
+        let mat = read_matrix_market::<num_complex::Complex32, usize, _>(path)
+            .unwrap();
         assert_eq!(mat.rows(), 2);
         assert_eq!(mat.cols(), 2);
         assert_eq!(mat.nnz(), 3);
@@ -479,8 +500,8 @@ mod test {
         assert_eq!(
             mat.data(),
             &[
-                Complex32::new(1.0, 2.0), 
-                Complex32::new(3.0, 4.0), 
+                Complex32::new(1.0, 2.0),
+                Complex32::new(3.0, 4.0),
                 Complex32::new(5.0, 6.0),
             ]
         );
@@ -602,14 +623,19 @@ mod test {
             (2, 2),
             vec![0, 2, 3],
             vec![0, 1, 0],
-            vec![Complex64::new(1.0, 2.0), Complex64::new(3.0,4.0), Complex64::new(3.0,4.0)],
+            vec![
+                Complex64::new(1.0, 2.0),
+                Complex64::new(3.0, 4.0),
+                Complex64::new(3.0, 4.0),
+            ],
         );
         assert_eq!(csc, expected);
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("symmetric.mm");
         write_matrix_market_sym(&save_path, &csc, SymmetryMode::Symmetric)
             .unwrap();
-        let mat2 = read_matrix_market::<Complex64, usize, _>(&save_path).unwrap();
+        let mat2 =
+            read_matrix_market::<Complex64, usize, _>(&save_path).unwrap();
         assert_eq!(csc, mat2.to_csc());
     }
 
@@ -618,26 +644,27 @@ mod test {
     fn read_skew_symmetric_matrix_market_complex() {
         let path = "data/matrix_market/complex/skew-symmetric.mtx";
         let mat = read_matrix_market::<Complex64, usize, _>(path).unwrap();
-        println!("trimat: {:?}", mat) ;
+        println!("trimat: {:?}", mat);
         let csc = mat.to_csc();
-        assert_eq!(csc.get(0,0), None) ;
-        assert_eq!(csc.get(1,1), None) ;
-        assert_eq!(csc.get(0,1), Some(&Complex64::new(3.0, 4.0))) ;
+        assert_eq!(csc.get(0, 0), None);
+        assert_eq!(csc.get(1, 1), None);
+        assert_eq!(csc.get(0, 1), Some(&Complex64::new(3.0, 4.0)));
         let expected = CsMat::new_csc(
             (2, 2),
             vec![0, 1, 2],
             vec![1, 0],
-            vec![Complex64::new(-3.0, -4.0), Complex64::new(3.0,4.0)],
+            vec![Complex64::new(-3.0, -4.0), Complex64::new(3.0, 4.0)],
         );
-        assert_eq!(expected.get(0,0), None) ;
-        assert_eq!(expected.get(1,1), None) ;
-        assert_eq!(expected.get(0,1), Some(&Complex64::new(3.0, 4.0))) ;
+        assert_eq!(expected.get(0, 0), None);
+        assert_eq!(expected.get(1, 1), None);
+        assert_eq!(expected.get(0, 1), Some(&Complex64::new(3.0, 4.0)));
         assert_eq!(csc, expected);
         let tmp_dir = tempdir().unwrap();
         let save_path = tmp_dir.path().join("skew-symmetric.mm");
         write_matrix_market_sym(&save_path, &csc, SymmetryMode::SkewSymmetric)
             .unwrap();
-        let mat2 = read_matrix_market::<Complex64, usize, _>(&save_path).unwrap();
+        let mat2 =
+            read_matrix_market::<Complex64, usize, _>(&save_path).unwrap();
         assert_eq!(csc, mat2.to_csc());
     }
 
