@@ -12,6 +12,10 @@ Changelog
     the user tries something that produces a mismatch.
 
     Also make skew-symmetric and symmetric matrices work for complex values.
+  - add support for reading hermitian complex matrices in matrixmarket format.
+    Of course, reading non-complex hermitian matrices is nonsensical, so this
+    raises an error (on the off-chance that some other matrixmarket writer
+    can write such matrices).
 
 - 0.11.0
   - ``MulAcc`` is generalised to allow different output types from input

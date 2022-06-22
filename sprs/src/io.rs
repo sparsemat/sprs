@@ -121,7 +121,8 @@ where
         + PrimitiveKind
         + Clone
         + std::ops::Neg<Output = N>
-        + MatrixMarketRead,
+        + MatrixMarketRead
+        + MatrixMarketConjugate,
     P: AsRef<Path>,
 {
     let mm_file = mm_file.as_ref();
@@ -144,7 +145,8 @@ where
         + PrimitiveKind
         + Clone
         + std::ops::Neg<Output = N>
-        + MatrixMarketRead,
+        + MatrixMarketRead
+        + MatrixMarketConjugate,
     R: io::BufRead,
 {
     // MatrixMarket format specifies lines of at most 1024 chars
@@ -161,10 +163,6 @@ where
     };
     if N::num_kind() != data_num_kind {
         return Err(MismatchedMatrixMarketRead(N::num_kind(), data_num_kind));
-    }
-    if sym_mode == SymmetryMode::Hermitian {
-        // support for Hermitian requires complex support
-        return Err(UnsupportedMatrixMarketFormat);
     }
     // The header is followed by any number of comment or empty lines, skip
     'header: loop {
@@ -235,7 +233,10 @@ where
         data.push(val.clone());
         if sym_mode != SymmetryMode::General && row != col {
             if sym_mode == SymmetryMode::Hermitian {
-                unreachable!();
+                row_inds.push(I::from_usize(col));
+                col_inds.push(I::from_usize(row));
+                let conj = val.mm_conj().ok_or(UnsupportedMatrixMarketFormat) ? ;
+                data.push(conj);
             } else if sym_mode == SymmetryMode::SkewSymmetric {
                 row_inds.push(I::from_usize(col));
                 col_inds.push(I::from_usize(row));
@@ -441,6 +442,7 @@ mod test {
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
     use crate::CsMat;
+    use ndarray::{ arr2, Array2 };
     use num_complex::{Complex32, Complex64};
     use tempfile::tempdir;
     #[cfg_attr(miri, ignore)]
@@ -465,6 +467,7 @@ mod test {
         let complex_mm_path = "data/matrix_market/complex/simple.mtx";
         let float_mm_path = "data/matrix_market/simple.mm";
         let int_mm_path = "data/matrix_market/simple_int.mm";
+        let hermitian_int_mm_path = "data/matrix_market/complex/hermitian-int.mtx";
         assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
             complex_mm_path
         )
@@ -493,6 +496,11 @@ mod test {
             format!("{}", err),
             "Tried to load complex file into real matrix."
         );
+
+        assert_eq!(
+            read_matrix_market::<i64, usize, _>(hermitian_int_mm_path),
+            Err(crate::io::IoError::UnsupportedMatrixMarketFormat),
+        );
     }
 
     #[cfg_attr(miri, ignore)]
@@ -514,6 +522,34 @@ mod test {
                 Complex64::new(5.0, 6.0),
             ]
         );
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn simple_matrix_market_read_complex64_hermitian() {
+        let path = "data/matrix_market/complex/hermitian.mtx";
+        let mat = read_matrix_market::<num_complex::Complex64, usize, _>(path)
+            .unwrap();
+        assert_eq!(mat.rows(), 2);
+        assert_eq!(mat.cols(), 2);
+        assert_eq!(mat.nnz(), 3);
+        assert_eq!(mat.row_inds(), &[0, 1, 0]);
+        assert_eq!(mat.col_inds(), &[0, 0, 1]);
+        assert_eq!(
+            mat.data(),
+            &[
+                Complex64::new(1.0, 2.0),
+                Complex64::new(5.0, 6.0),
+                Complex64::new(5.0, -6.0),
+            ]
+        );
+        let expected_dm : Array2<Complex64>  = arr2(
+            &[[Complex64::new(1.0, 2.0), Complex64::new(5.0, -6.0)],
+              [Complex64::new(5.0, 6.0), Complex64::new(0.0, 0.0)]]);
+        let csr : CsMat<Complex64> = mat.to_csr() ;
+        let dm : Array2<Complex64> = csr.to_dense();
+        assert_eq!(dm, expected_dm) ;
+        println!("{}", dm) ;
     }
 
     #[cfg_attr(miri, ignore)]

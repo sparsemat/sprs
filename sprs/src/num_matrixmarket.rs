@@ -121,3 +121,43 @@ matrixmarket_read_impl!(f32);
 matrixmarket_read_impl!(f64);
 matrixmarket_read_impl!(Complex<f64>);
 matrixmarket_read_impl!(Complex<f32>);
+
+
+pub trait MatrixMarketConjugate
+where
+    Self: Sized,
+{
+    fn mm_conj(&self) -> Option<Self>;
+}
+
+macro_rules! matrixmarket_conjugate_impl {
+    (Complex<$t:ty>) => {
+        impl MatrixMarketConjugate for Complex<$t> {
+            fn mm_conj(&self) -> Option<Self> {
+                Some(self.conj())
+            }
+        }
+    };
+    ($t: ty) => {
+        impl MatrixMarketConjugate for $t {
+            fn mm_conj(&self) -> Option<Self> {
+                None
+            }
+        }
+    };
+}
+
+matrixmarket_conjugate_impl!(i8);
+matrixmarket_conjugate_impl!(u8);
+matrixmarket_conjugate_impl!(i16);
+matrixmarket_conjugate_impl!(u16);
+matrixmarket_conjugate_impl!(i32);
+matrixmarket_conjugate_impl!(u32);
+matrixmarket_conjugate_impl!(i64);
+matrixmarket_conjugate_impl!(u64);
+matrixmarket_conjugate_impl!(isize);
+matrixmarket_conjugate_impl!(usize);
+matrixmarket_conjugate_impl!(f32);
+matrixmarket_conjugate_impl!(f64);
+matrixmarket_conjugate_impl!(Complex<f64>);
+matrixmarket_conjugate_impl!(Complex<f32>);
