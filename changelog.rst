@@ -5,6 +5,13 @@ Changelog
 - Unreleased
   - Fixed a compilation regression in csmat_binop
   - Bump MSRV
+  - add support for reading/writing Complex{32,64} matrices in matrixmarket format.
+    Also change semantics so that files of kind  {integer,real,complex} are only readable
+    into matrices of the same kind (so integer can be read into [iu]{8,16,32,64,size}),
+    real into u{32,64}, complex into Complex{32,64}.  And raise a meaningful error if
+    the user tries something that produces a mismatch.
+
+    Also make skew-symmetric and symmetric matrices work for complex values.
 
 - 0.11.0
   - ``MulAcc`` is generalised to allow different output types from input
