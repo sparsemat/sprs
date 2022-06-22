@@ -1,6 +1,7 @@
 //! Trait to be able to know at runtime if a generic scalar is an integer, a float
 //! or a complex.
 
+use std::fmt ;
 use num_complex::{Complex32, Complex64};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -8,6 +9,16 @@ pub enum NumKind {
     Integer,
     Float,
     Complex,
+}
+
+impl fmt::Display for NumKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Integer => write!(f, "integer"),
+            Self::Float => write!(f, "real"),
+            Self::Complex => write!(f, "complex"),
+        }
+    }
 }
 
 pub trait PrimitiveKind {

@@ -18,6 +18,7 @@ use crate::sparse::{SparseMat, TriMatI};
 pub enum IoError {
     Io(io::Error),
     BadMatrixMarketFile,
+    MismatchedMatrixMarketRead(NumKind, NumKind),
     UnsupportedMatrixMarketFormat,
 }
 
@@ -29,6 +30,9 @@ impl fmt::Display for IoError {
             Self::Io(ref err) => err.fmt(f),
             Self::BadMatrixMarketFile | Self::UnsupportedMatrixMarketFormat => {
                 write!(f, "Bad matrix market file.")
+            }
+            Self::MismatchedMatrixMarketRead(matrix_kind, file_kind) => {
+                write!(f, "Tried to load {} file into {} matrix.", file_kind, matrix_kind)
             }
         }
     }
@@ -44,14 +48,12 @@ impl From<io::Error> for IoError {
 
 impl PartialEq for IoError {
     fn eq(&self, rhs: &Self) -> bool {
-        match *self {
-            Self::BadMatrixMarketFile => {
-                matches!(*rhs, Self::BadMatrixMarketFile)
-            }
-            Self::UnsupportedMatrixMarketFormat => {
-                matches!(*rhs, Self::UnsupportedMatrixMarketFormat)
-            }
-            Self::Io(..) => false,
+        match (&*self, rhs) {
+            (Self::BadMatrixMarketFile, Self::BadMatrixMarketFile) => true,
+            (Self::UnsupportedMatrixMarketFormat, Self::UnsupportedMatrixMarketFormat) => true,
+            (Self::MismatchedMatrixMarketRead(a1,a2), Self::MismatchedMatrixMarketRead(b1,b2)) =>
+                a1 == a2 && b1 == b2,
+            _ => false,
         }
     }
 }
@@ -148,10 +150,8 @@ where
         DataType::Real => NumKind::Float,
         DataType::Complex => NumKind::Complex,
     };
-    if (N::num_kind() == NumKind::Complex || data_num_kind == NumKind::Complex)
-        && N::num_kind() != data_num_kind
-    {
-        return Err(BadMatrixMarketFile);
+    if N::num_kind() != data_num_kind {
+        return Err(MismatchedMatrixMarketRead(N::num_kind(), data_num_kind));
     }
     if sym_mode == SymmetryMode::Hermitian {
         // support for Hermitian requires complex support
@@ -454,18 +454,36 @@ mod test {
     #[test]
     fn failing_matrix_market_reads() {
         let complex_mm_path = "data/matrix_market/complex/simple.mtx";
-        let float_mm_path = "data/matrix_market/simple_int.mm";
+        let float_mm_path = "data/matrix_market/simple.mm";
+        let int_mm_path = "data/matrix_market/simple_int.mm";
         assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
             complex_mm_path
         )
         .is_ok());
-        assert!(read_matrix_market::<f64, usize, _>(complex_mm_path).is_err());
-
-        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
+        assert!(read_matrix_market::<i64, usize, _>(
+            int_mm_path
+        )
+        .is_ok());
+        assert!(read_matrix_market::<f64, usize, _>(
             float_mm_path
         )
-        .is_err());
-        assert!(read_matrix_market::<f64, usize, _>(float_mm_path).is_ok());
+        .is_ok());
+
+        assert!(read_matrix_market::<f64, usize, _>(complex_mm_path).is_err());
+        assert!(read_matrix_market::<i64, usize, _>(complex_mm_path).is_err());
+
+        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(float_mm_path).is_err());
+        assert!(read_matrix_market::<i64, usize, _>(float_mm_path).is_err());
+
+        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(int_mm_path).is_err());
+        assert!(read_matrix_market::<f64, usize, _>(int_mm_path).is_err());
+
+        let err = read_matrix_market::<f64, usize, _>(complex_mm_path).unwrap_err() ;
+        assert_eq!(
+            format!("{}", err),
+            "Tried to load complex file into real matrix."
+        ) ;
+
     }
 
     #[cfg_attr(miri, ignore)]
@@ -541,14 +559,6 @@ mod test {
         assert_eq!(mat.row_inds(), &[0, 1, 2, 0, 3, 3, 3, 4]);
         assert_eq!(mat.col_inds(), &[0, 1, 2, 3, 1, 3, 4, 4]);
         assert_eq!(mat.data(), &[1, 1, 1, 6, 2, -2, 3, 1]);
-        // read int, convert to float
-        let mat = read_matrix_market::<f32, i16, _>(path).unwrap();
-        assert_eq!(mat.rows(), 5);
-        assert_eq!(mat.cols(), 5);
-        assert_eq!(mat.nnz(), 8);
-        assert_eq!(mat.row_inds(), &[0, 1, 2, 0, 3, 3, 3, 4]);
-        assert_eq!(mat.col_inds(), &[0, 1, 2, 3, 1, 3, 4, 4]);
-        assert_eq!(mat.data(), &[1., 1., 1., 6., 2., -2., 3., 1.]);
     }
 
     #[test]

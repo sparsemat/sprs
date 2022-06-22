@@ -1,4 +1,4 @@
-%%MatrixMarket matrix coordinate real general
+%%MatrixMarket matrix coordinate integer general
 %===============================================================================
 %
 % This ASCII file represents a sparse MxN matrix with L
