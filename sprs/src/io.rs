@@ -53,8 +53,8 @@ impl From<io::Error> for IoError {
 impl PartialEq for IoError {
     fn eq(&self, rhs: &Self) -> bool {
         match (&*self, rhs) {
-            (Self::BadMatrixMarketFile, Self::BadMatrixMarketFile) => true,
-            (
+            (Self::BadMatrixMarketFile, Self::BadMatrixMarketFile)
+            | (
                 Self::UnsupportedMatrixMarketFormat,
                 Self::UnsupportedMatrixMarketFormat,
             ) => true,
