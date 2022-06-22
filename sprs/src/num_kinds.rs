@@ -1,8 +1,8 @@
 //! Trait to be able to know at runtime if a generic scalar is an integer, a float
 //! or a complex.
 
-use std::fmt ;
 use num_complex::{Complex32, Complex64};
+use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NumKind {

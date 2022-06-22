@@ -32,7 +32,11 @@ impl fmt::Display for IoError {
                 write!(f, "Bad matrix market file.")
             }
             Self::MismatchedMatrixMarketRead(matrix_kind, file_kind) => {
-                write!(f, "Tried to load {} file into {} matrix.", file_kind, matrix_kind)
+                write!(
+                    f,
+                    "Tried to load {} file into {} matrix.",
+                    file_kind, matrix_kind
+                )
             }
         }
     }
@@ -50,9 +54,14 @@ impl PartialEq for IoError {
     fn eq(&self, rhs: &Self) -> bool {
         match (&*self, rhs) {
             (Self::BadMatrixMarketFile, Self::BadMatrixMarketFile) => true,
-            (Self::UnsupportedMatrixMarketFormat, Self::UnsupportedMatrixMarketFormat) => true,
-            (Self::MismatchedMatrixMarketRead(a1,a2), Self::MismatchedMatrixMarketRead(b1,b2)) =>
-                a1 == a2 && b1 == b2,
+            (
+                Self::UnsupportedMatrixMarketFormat,
+                Self::UnsupportedMatrixMarketFormat,
+            ) => true,
+            (
+                Self::MismatchedMatrixMarketRead(a1, a2),
+                Self::MismatchedMatrixMarketRead(b1, b2),
+            ) => a1 == a2 && b1 == b2,
             _ => false,
         }
     }
@@ -460,30 +469,30 @@ mod test {
             complex_mm_path
         )
         .is_ok());
-        assert!(read_matrix_market::<i64, usize, _>(
-            int_mm_path
-        )
-        .is_ok());
-        assert!(read_matrix_market::<f64, usize, _>(
-            float_mm_path
-        )
-        .is_ok());
+        assert!(read_matrix_market::<i64, usize, _>(int_mm_path).is_ok());
+        assert!(read_matrix_market::<f64, usize, _>(float_mm_path).is_ok());
 
         assert!(read_matrix_market::<f64, usize, _>(complex_mm_path).is_err());
         assert!(read_matrix_market::<i64, usize, _>(complex_mm_path).is_err());
 
-        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(float_mm_path).is_err());
+        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
+            float_mm_path
+        )
+        .is_err());
         assert!(read_matrix_market::<i64, usize, _>(float_mm_path).is_err());
 
-        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(int_mm_path).is_err());
+        assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
+            int_mm_path
+        )
+        .is_err());
         assert!(read_matrix_market::<f64, usize, _>(int_mm_path).is_err());
 
-        let err = read_matrix_market::<f64, usize, _>(complex_mm_path).unwrap_err() ;
+        let err =
+            read_matrix_market::<f64, usize, _>(complex_mm_path).unwrap_err();
         assert_eq!(
             format!("{}", err),
             "Tried to load complex file into real matrix."
-        ) ;
-
+        );
     }
 
     #[cfg_attr(miri, ignore)]
