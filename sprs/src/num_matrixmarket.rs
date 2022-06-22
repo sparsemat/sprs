@@ -122,7 +122,6 @@ matrixmarket_read_impl!(f64);
 matrixmarket_read_impl!(Complex<f64>);
 matrixmarket_read_impl!(Complex<f32>);
 
-
 pub trait MatrixMarketConjugate
 where
     Self: Sized,

@@ -235,7 +235,8 @@ where
             if sym_mode == SymmetryMode::Hermitian {
                 row_inds.push(I::from_usize(col));
                 col_inds.push(I::from_usize(row));
-                let conj = val.mm_conj().ok_or(UnsupportedMatrixMarketFormat) ? ;
+                let conj =
+                    val.mm_conj().ok_or(UnsupportedMatrixMarketFormat)?;
                 data.push(conj);
             } else if sym_mode == SymmetryMode::SkewSymmetric {
                 row_inds.push(I::from_usize(col));
@@ -442,7 +443,7 @@ mod test {
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
     use crate::CsMat;
-    use ndarray::{ arr2, Array2 };
+    use ndarray::{arr2, Array2};
     use num_complex::{Complex32, Complex64};
     use tempfile::tempdir;
     #[cfg_attr(miri, ignore)]
@@ -467,7 +468,8 @@ mod test {
         let complex_mm_path = "data/matrix_market/complex/simple.mtx";
         let float_mm_path = "data/matrix_market/simple.mm";
         let int_mm_path = "data/matrix_market/simple_int.mm";
-        let hermitian_int_mm_path = "data/matrix_market/complex/hermitian-int.mtx";
+        let hermitian_int_mm_path =
+            "data/matrix_market/complex/hermitian-int.mtx";
         assert!(read_matrix_market::<num_complex::Complex64, usize, _>(
             complex_mm_path
         )
@@ -543,13 +545,14 @@ mod test {
                 Complex64::new(5.0, -6.0),
             ]
         );
-        let expected_dm : Array2<Complex64>  = arr2(
-            &[[Complex64::new(1.0, 2.0), Complex64::new(5.0, -6.0)],
-              [Complex64::new(5.0, 6.0), Complex64::new(0.0, 0.0)]]);
-        let csr : CsMat<Complex64> = mat.to_csr() ;
-        let dm : Array2<Complex64> = csr.to_dense();
-        assert_eq!(dm, expected_dm) ;
-        println!("{}", dm) ;
+        let expected_dm: Array2<Complex64> = arr2(&[
+            [Complex64::new(1.0, 2.0), Complex64::new(5.0, -6.0)],
+            [Complex64::new(5.0, 6.0), Complex64::new(0.0, 0.0)],
+        ]);
+        let csr: CsMat<Complex64> = mat.to_csr();
+        let dm: Array2<Complex64> = csr.to_dense();
+        assert_eq!(dm, expected_dm);
+        println!("{}", dm);
     }
 
     #[cfg_attr(miri, ignore)]
