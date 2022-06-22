@@ -450,6 +450,7 @@ mod test {
         );
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn failing_matrix_market_reads() {
         let complex_mm_path = "data/matrix_market/complex/simple.mtx";
@@ -467,6 +468,7 @@ mod test {
         assert!(read_matrix_market::<f64, usize, _>(float_mm_path).is_ok());
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn simple_matrix_market_read_complex64() {
         let path = "data/matrix_market/complex/simple.mtx";
@@ -487,6 +489,7 @@ mod test {
         );
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn simple_matrix_market_read_complex32() {
         let path = "data/matrix_market/complex/simple.mtx";
