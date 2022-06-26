@@ -147,7 +147,7 @@ where
         + std::ops::Neg<Output = N>
         + MatrixMarketRead
         + MatrixMarketConjugate,
-    R: io::BufRead,
+    R: io::BufRead + ?Sized,
 {
     // MatrixMarket format specifies lines of at most 1024 chars
     let mut line = String::with_capacity(1024);
@@ -289,9 +289,22 @@ where
     M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
     P: AsRef<Path>,
 {
-    let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
     let f = File::create(path)?;
     let mut writer = io::BufWriter::new(f);
+    write_matrix_market_to_bufwrite(&mut writer, mat)
+}
+pub fn write_matrix_market_to_bufwrite<'a, N, I, M, W>(
+    writer: &mut W,
+    mat: M,
+) -> Result<(), io::Error>
+where
+    I: 'a + SpIndex + fmt::Display,
+    N: 'a + PrimitiveKind + MatrixMarketDisplay,
+    for<'n> Displayable<&'n N>: std::fmt::Display,
+    M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
+    W: io::Write + ?Sized,
+{
+    let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
 
     // header
     let data_type = match N::num_kind() {
