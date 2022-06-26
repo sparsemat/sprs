@@ -302,7 +302,7 @@ where
     N: 'a + PrimitiveKind + MatrixMarketDisplay,
     for<'n> Displayable<&'n N>: std::fmt::Display,
     M: IntoIterator<Item = (&'a N, (I, I))> + SparseMat,
-    W : io::Write + ?Sized,
+    W: io::Write + ?Sized,
 {
     let (rows, cols, nnz) = (mat.rows(), mat.cols(), mat.nnz());
 
