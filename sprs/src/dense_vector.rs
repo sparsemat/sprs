@@ -324,3 +324,111 @@ mod seal {
     {
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ndarray::{arr1, Array1};
+
+    // Tests on primitive arrays
+    #[test]
+    fn test_dim_of_empty_array() {
+        let vec: [i32; 0] = [];
+        assert_eq!(vec.dim(), 0);
+    }
+
+    #[test]
+    fn test_dim_of_non_empty_array() {
+        let vec = [10, 20];
+        assert_eq!(vec.dim(), 2);
+    }
+
+    #[test]
+    fn test_indexing_array() {
+        let vec: [i32; 3] = [10, 20, 30];
+        assert_eq!(*(vec.index(0)), 10);
+        assert_eq!(*(vec.index(1)), 20);
+        assert_eq!(*(vec.index(2)), 30);
+    }
+
+    #[test]
+    fn test_zeros_on_array() {
+        const DIM: usize = 5;
+        let vec = <[i32] as DenseVector>::zeros(DIM);
+        for i in 0..DIM {
+            assert_eq!(vec[i], 0);
+        }
+    }
+
+    // Tests on vectors
+    #[test]
+    fn test_dim_of_empty_vector() {
+        let vec: Vec<i32> = vec![];
+        assert_eq!(vec.dim(), 0);
+    }
+
+    #[test]
+    fn test_dim_of_non_empty_vector() {
+        let vec = vec![10, 20];
+        assert_eq!(vec.dim(), 2);
+    }
+
+    #[test]
+    fn test_dim_of_varying_size_vector() {
+        let mut vec: Vec<i32> = vec![];
+        assert_eq!(vec.dim(), 0);
+        vec.push(10);
+        assert_eq!(vec.dim(), 1);
+        vec.push(20);
+        assert_eq!(vec.dim(), 2);
+        vec.clear();
+        assert_eq!(vec.dim(), 0);
+    }
+
+    #[test]
+    fn test_indexing_vector() {
+        let vec = vec![10, 20, 30];
+        assert_eq!(*(vec.index(0)), 10);
+        assert_eq!(*(vec.index(1)), 20);
+        assert_eq!(*(vec.index(2)), 30);
+    }
+
+    #[test]
+    fn test_zeros_on_vector() {
+        const DIM: usize = 5;
+        let vec = Vec::<i32>::zeros(DIM);
+        for i in 0..DIM {
+            assert_eq!(vec[i], 0);
+        }
+    }
+
+    // Tests on ArrayBase
+    #[test]
+    fn test_dim_of_empty_ndarray() {
+        let array = Array1::<i32>::zeros(0);
+        assert_eq!(array.dim(), 0);
+    }
+
+    #[test]
+    fn test_dim_of_non_empty_ndarray() {
+        let array = Array1::<i32>::zeros(3);
+        assert_eq!(array.dim(), 3);
+    }
+
+    #[test]
+    fn test_indexing_ndarray() {
+        let array = arr1(&[10, 20, 30]);
+        assert_eq!(*(array.index(0)), 10);
+        assert_eq!(*(array.index(1)), 20);
+        assert_eq!(*(array.index(2)), 30);
+    }
+
+    #[test]
+    fn test_zeros_on_ndarray() {
+        const DIM: usize = 5;
+        let array = <Array1<i32> as DenseVector>::zeros(DIM);
+        for i in 0..DIM {
+            assert_eq!(array[i], 0);
+        }
+    }
+}
