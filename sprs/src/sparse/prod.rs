@@ -615,6 +615,10 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "https://github.com/rust-ndarray/ndarray/issues/1178"
+    )]
     fn test_sparse_dot_dense() {
         let sparse = [
             mat1(),
@@ -649,6 +653,10 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(
+        miri,
+        ignore = "https://github.com/rust-ndarray/ndarray/issues/1178"
+    )]
     fn test_dense_dot_sparse() {
         let sparse = [
             mat1(),
