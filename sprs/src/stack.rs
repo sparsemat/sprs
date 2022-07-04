@@ -145,3 +145,328 @@ pub fn extract_stack_val<I>(stack_val: &StackVal<I>) -> &I {
         StackVal::Enter(i) | StackVal::Exit(i) => i,
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_stack_val_default() {
+        let val = StackVal::<usize>::default();
+        assert_eq!(val, StackVal::<usize>::Enter(0));
+    }
+
+    // Testing with_capacity function
+    #[test]
+    #[should_panic]
+    fn test_create_stack_with_not_enough_capacity() {
+        let _stack = DStack::<i32>::with_capacity(1);
+    }
+
+    #[test]
+    fn test_create_empty_stack() {
+        const CAPACITY: usize = 10;
+        let stack = DStack::<i32>::with_capacity(CAPACITY);
+        assert_eq!(stack.stacks.len(), CAPACITY);
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, CAPACITY);
+    }
+
+    // Testing capacity function
+    #[test]
+    fn test_capacity() {
+        const CAPACITY: usize = 10;
+        let stack = DStack::<i32>::with_capacity(CAPACITY);
+        assert_eq!(stack.capacity(), CAPACITY);
+    }
+
+    // Testing is_left_empty function
+    #[test]
+    fn test_is_left_empty_with_empty_stack() {
+        let stack = DStack::<i32>::with_capacity(10);
+        assert!(stack.is_left_empty());
+    }
+
+    #[test]
+    fn test_is_left_empty_with_non_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        stack.push_left(3);
+        assert!(!stack.is_left_empty());
+    }
+
+    #[test]
+    fn test_is_left_empty_with_right_non_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        stack.push_right(3);
+        assert!(stack.is_left_empty());
+    }
+
+    // Testing is_right_empty function
+    #[test]
+    fn test_is_right_empty_with_empty_stack() {
+        let stack = DStack::<i32>::with_capacity(10);
+        assert!(stack.is_right_empty());
+    }
+
+    #[test]
+    fn test_is_right_empty_with_non_empty_stack() {
+        let mut stack = DStack::with_capacity(10);
+        stack.push_right(3);
+        assert!(!stack.is_right_empty());
+    }
+
+    #[test]
+    fn test_is_right_empty_with_left_non_empty_stack() {
+        let mut stack = DStack::with_capacity(10);
+        stack.push_left(3);
+        assert!(stack.is_right_empty());
+    }
+
+    // Testing push_left function
+    #[test]
+    fn test_push_left_stack() {
+        let mut stack = DStack::with_capacity(3);
+        stack.push_left(1);
+        stack.push_left(2);
+        stack.push_left(3);
+        assert_eq!(stack.stacks[0], 1);
+        assert_eq!(stack.stacks[1], 2);
+        assert_eq!(stack.stacks[2], 3);
+        assert_eq!(stack.left_head, Some(2));
+        assert_eq!(stack.right_head, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_push_left_more_item_that_capacity_stack() {
+        let mut stack = DStack::with_capacity(2);
+        stack.push_left(1);
+        stack.push_left(2);
+        stack.push_left(3);
+    }
+
+    // Testing push_right function
+    #[test]
+    fn test_push_right_stack() {
+        let mut stack = DStack::with_capacity(3);
+        stack.push_right(1);
+        stack.push_right(2);
+        stack.push_right(3);
+        assert_eq!(stack.stacks[0], 3);
+        assert_eq!(stack.stacks[1], 2);
+        assert_eq!(stack.stacks[2], 1);
+        assert_eq!(stack.right_head, 0);
+        assert_eq!(stack.left_head, None);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_push_right_more_item_that_capacity_stack() {
+        let mut stack = DStack::with_capacity(2);
+        stack.push_right(1);
+        stack.push_right(2);
+        stack.push_right(3);
+    }
+
+    // Testing push_left and push_right functions
+    #[test]
+    fn test_push_left_without_exceeding_right_head_stack() {
+        let mut stack = DStack::with_capacity(3);
+        stack.push_left(1);
+        stack.push_right(3);
+        stack.push_left(2);
+        assert_eq!(stack.stacks[0], 1);
+        assert_eq!(stack.stacks[1], 2);
+        assert_eq!(stack.stacks[2], 3);
+        assert_eq!(stack.left_head, Some(1));
+        assert_eq!(stack.right_head, 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_push_left_exceeding_right_head_stack() {
+        let mut stack = DStack::with_capacity(3);
+        stack.push_right(3);
+        stack.push_left(1);
+        stack.push_right(2);
+        stack.push_left(10);
+    }
+
+    #[test]
+    fn test_push_right_without_exceeding_left_head_stack() {
+        let mut stack = DStack::with_capacity(3);
+        stack.push_right(3);
+        stack.push_left(1);
+        stack.push_right(2);
+        assert_eq!(stack.stacks[0], 1);
+        assert_eq!(stack.stacks[1], 2);
+        assert_eq!(stack.stacks[2], 3);
+        assert_eq!(stack.left_head, Some(0));
+        assert_eq!(stack.right_head, 1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_push_right_exceeding_left_head_stack() {
+        let mut stack = DStack::with_capacity(3);
+        stack.push_left(3);
+        stack.push_right(1);
+        stack.push_left(2);
+        stack.push_right(10);
+    }
+
+    // Testing pop_left
+    #[test]
+    fn test_pop_left_on_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        let res = stack.pop_left();
+        assert!(matches!(res, None));
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 10);
+    }
+
+    #[test]
+    fn test_pop_left_on_non_empty_stack() {
+        let mut stack = DStack::with_capacity(10);
+        stack.push_left(144);
+        let res = stack.pop_left();
+        assert_eq!(res, Some(144));
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 10);
+    }
+
+    // Testing pop_right
+    #[test]
+    fn test_pop_right_on_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        let res = stack.pop_right();
+        assert!(matches!(res, None));
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 10);
+    }
+
+    #[test]
+    fn test_pop_right_on_non_empty_stack() {
+        let mut stack = DStack::with_capacity(10);
+        stack.push_right(144);
+        let res = stack.pop_right();
+        assert_eq!(res, Some(144));
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 10);
+    }
+
+    // Testing len_right function
+    #[test]
+    fn test_len_right_on_empty_stack() {
+        let stack = DStack::<i32>::with_capacity(10);
+        assert_eq!(stack.len_right(), 0);
+    }
+
+    #[test]
+    fn test_len_right_on_full_stack() {
+        let mut stack = DStack::<i32>::with_capacity(3);
+        stack.push_right(1);
+        stack.push_right(2);
+        stack.push_left(3);
+        assert_eq!(stack.len_right(), 2);
+    }
+
+    // Testing clear_right function
+    #[test]
+    fn test_clear_right_on_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        stack.clear_right();
+        assert_eq!(stack.right_head, 10);
+        assert_eq!(stack.left_head, None);
+    }
+
+    #[test]
+    fn test_clear_right_on_full_stack() {
+        let mut stack = DStack::<i32>::with_capacity(3);
+        stack.push_right(1);
+        stack.push_right(2);
+        stack.push_left(3);
+        stack.clear_right();
+        assert_eq!(stack.right_head, 3);
+        assert_eq!(stack.left_head, Some(0));
+    }
+
+    // Testing clear_left function
+    #[test]
+    fn test_clear_left_on_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        stack.clear_left();
+        assert_eq!(stack.right_head, 10);
+        assert_eq!(stack.left_head, None);
+    }
+
+    #[test]
+    fn test_clear_left_on_full_stack() {
+        let mut stack = DStack::<i32>::with_capacity(3);
+        stack.push_left(1);
+        stack.push_left(2);
+        stack.push_right(3);
+        stack.clear_left();
+        assert_eq!(stack.right_head, 2);
+        assert_eq!(stack.left_head, None);
+    }
+
+    // Testing iter_right function
+    #[test]
+    fn test_iter_right_on_empty_stack() {
+        let stack = DStack::<i32>::with_capacity(3);
+        let mut it = stack.iter_right();
+        assert_eq!(it.next(), None);
+    }
+
+    #[test]
+    fn test_iter_right_on_full_stack() {
+        let mut stack = DStack::<i32>::with_capacity(3);
+        stack.push_left(1);
+        stack.push_left(2);
+        stack.push_right(3);
+        let mut it = stack.iter_right();
+        assert!(matches!(it.next(), Some(3)));
+        assert_eq!(it.next(), None);
+    }
+
+    // Testing push_left_on_right function
+    #[test]
+    fn test_push_left_on_right_with_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        stack.push_left_on_right();
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 10);
+    }
+
+    #[test]
+    fn test_push_left_on_right_stack() {
+        let mut stack = DStack::with_capacity(10);
+        stack.push_left(1);
+        stack.push_left(2);
+        stack.push_left(3);
+        stack.push_left_on_right();
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 7);
+    }
+
+    // Testing push_right_on_left function
+    #[test]
+    fn test_push_right_on_left_with_empty_stack() {
+        let mut stack = DStack::<i32>::with_capacity(10);
+        stack.push_right_on_left();
+        assert_eq!(stack.left_head, None);
+        assert_eq!(stack.right_head, 10);
+    }
+
+    #[test]
+    fn test_push_right_on_left_stack() {
+        let mut stack = DStack::with_capacity(10);
+        stack.push_right(1);
+        stack.push_right(2);
+        stack.push_right(3);
+        stack.push_right_on_left();
+        assert_eq!(stack.left_head, Some(2));
+        assert_eq!(stack.right_head, 10);
+    }
+}
