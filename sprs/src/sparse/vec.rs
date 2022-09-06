@@ -334,7 +334,7 @@ where
     life: PhantomData<(&'a N1, &'a N2)>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum NnzEither<'a, N1: 'a, N2: 'a> {
     Both((usize, &'a N1, &'a N2)),
     Left((usize, &'a N1)),

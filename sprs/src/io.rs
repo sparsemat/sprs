@@ -52,7 +52,7 @@ impl From<io::Error> for IoError {
 
 impl PartialEq for IoError {
     fn eq(&self, rhs: &Self) -> bool {
-        match (&*self, rhs) {
+        match (self, rhs) {
             (Self::BadMatrixMarketFile, Self::BadMatrixMarketFile)
             | (
                 Self::UnsupportedMatrixMarketFormat,
@@ -67,14 +67,14 @@ impl PartialEq for IoError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 enum DataType {
     Integer,
     Real,
     Complex,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SymmetryMode {
     General,
     Hermitian,
@@ -204,7 +204,7 @@ where
             line.clear();
             let len = reader.read_line(&mut line)?;
             // check for an all whitespace line
-            if len != 0 && line.split_whitespace().next() == None {
+            if len != 0 && line.split_whitespace().next().is_none() {
                 continue 'empty_lines;
             }
             break;
