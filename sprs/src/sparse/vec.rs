@@ -73,6 +73,7 @@ where
 }
 
 /// An iterator over the non-zero elements of a sparse vector
+#[derive(Clone)]
 pub struct VectorIterator<'a, N: 'a, I: 'a> {
     ind_data: Zip<Iter<'a, I>, Iter<'a, N>>,
 }
