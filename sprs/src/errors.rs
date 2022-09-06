@@ -1,13 +1,13 @@
 //! Error type for sprs
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum StructureError {
     Unsorted(&'static str),
     SizeMismatch(&'static str),
     OutOfRange(&'static str),
 }
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 #[non_exhaustive]
 pub enum StructureErrorKind {
     Unsorted,
@@ -49,19 +49,19 @@ impl std::fmt::Display for StructureError {
 
 impl std::error::Error for StructureError {}
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct ShapeMismatchInfo {
     pub expected: (usize, usize),
     pub received: (usize, usize),
 }
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct SingularMatrixInfo {
     pub index: usize,
     pub reason: &'static str,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 #[non_exhaustive]
 pub enum LinalgError {
     ShapeMismatch(ShapeMismatchInfo),
@@ -103,7 +103,7 @@ impl std::error::Error for LinalgError {}
 /// Convenience wrapper around more precise error types. Not returned by
 /// functions in this crate, but can be easily obtained from any error
 /// returned in this crate using `Into` and `From`.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 #[non_exhaustive]
 pub enum SprsError {
     Structure(StructureError),

@@ -224,7 +224,7 @@ pub type CsVec<N> = CsVecI<N>;
 /// [`TriMatI`]: type.TriMatI.html
 /// [`TriMatViewI`]: type.TriMatViewI.html
 /// [`TriMatViewMutI`]: type.TriMatViewMutI.html
-#[derive(PartialEq, Debug, Hash)]
+#[derive(PartialEq, Eq, Debug, Hash)]
 pub struct TriMatBase<IStorage, DStorage> {
     rows: usize,
     cols: usize,
@@ -249,7 +249,7 @@ pub type TriMatViewMut<'a, N> = TriMatViewMutI<'a, N, usize>;
 /// As in `TriMat`, no order guarantee is provided and the same location can
 /// appear multiple times. The non-zero value is then considered as the sum
 /// of all the entries sharing its location.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct TriMatIter<RI, CI, DI> {
     rows: usize,
     cols: usize,
