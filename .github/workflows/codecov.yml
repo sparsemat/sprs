@@ -1,0 +1,36 @@
+---
+name: codecov
+on: [push]
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  tarpaulin:
+    name: tarpaulin
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+
+    - name: Install tarpaulin
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-tarpaulin
+        version: latest
+        use-tool-cache: true
+
+    - name: Tarpaulin
+      run: cargo tarpaulin --verbose --out Xml --ignore-tests --packages sprs --all-features
+
+    - name: Upload to codecov
+      uses: codecov/codecov-action@v3
+      with:
+          token: ${{ secrets.CODECOV_TOKEN }}
