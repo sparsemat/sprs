@@ -826,6 +826,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn read_pattern_matrix() {
         let path = "data/matrix_market/pattern.mm";
         let mat = read_matrix_market::<Pattern, usize, _>(path).unwrap();
@@ -856,6 +857,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn read_non_pattern_mtx_to_pattern() {
         let path = "data/matrix_market/simple.mm";
         let mat = read_matrix_market::<Pattern, usize, _>(path).unwrap();

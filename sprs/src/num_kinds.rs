@@ -9,7 +9,7 @@ use std::{
 };
 /// the type for Pattern data, it's special which contains no data
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Pattern {}
+pub struct Pattern;
 
 impl Add for Pattern {
     type Output = Pattern;
