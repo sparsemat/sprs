@@ -5,8 +5,16 @@ use std::fmt::Display;
 use std::str::SplitWhitespace;
 
 use crate::io::IoError::BadMatrixMarketFile;
+use crate::num_kinds::Pattern;
 
 pub struct Displayable<T>(T);
+
+impl<'a> Display for Displayable<&'a Pattern> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // write nothing for pattern
+        write!(f, "")
+    }
+}
 
 pub trait MatrixMarketDisplay
 where
@@ -75,6 +83,11 @@ complex_matrixmarket_display_impl!(f32);
 pub trait MatrixMarketRead: Sized {
     fn mm_read(r: &mut SplitWhitespace) -> Result<Self, crate::io::IoError>;
 }
+impl MatrixMarketRead for Pattern {
+    fn mm_read(_: &mut SplitWhitespace) -> Result<Self, crate::io::IoError> {
+        Ok(Pattern {})
+    }
+}
 
 macro_rules! matrixmarket_read_impl {
     (Complex<$t:ty>) => {
@@ -127,6 +140,11 @@ where
     Self: Sized,
 {
     fn mm_conj(&self) -> Option<Self>;
+}
+impl MatrixMarketConjugate for Pattern {
+    fn mm_conj(&self) -> Option<Self> {
+        None
+    }
 }
 
 macro_rules! matrixmarket_conjugate_impl {

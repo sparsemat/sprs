@@ -72,6 +72,7 @@ enum DataType {
     Integer,
     Real,
     Complex,
+    Pattern,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -92,6 +93,8 @@ fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
         DataType::Integer
     } else if header.contains("complex") {
         DataType::Complex
+    } else if header.contains("pattern") {
+        DataType::Pattern
     } else {
         return Err(BadMatrixMarketFile);
     };
@@ -160,10 +163,16 @@ where
         DataType::Integer => NumKind::Integer,
         DataType::Real => NumKind::Float,
         DataType::Complex => NumKind::Complex,
+        DataType::Pattern => NumKind::Pattern,
     };
-    if N::num_kind() != data_num_kind {
+    // any type can be convert to pattern
+    if N::num_kind() != NumKind::Pattern && N::num_kind() != data_num_kind {
         return Err(MismatchedMatrixMarketRead(N::num_kind(), data_num_kind));
     }
+    // we are going to ignore the data that the martix has
+    let droping_data =
+        N::num_kind() == NumKind::Pattern && data_num_kind != NumKind::Pattern;
+
     // The header is followed by any number of comment or empty lines, skip
     'header: loop {
         line.clear();
@@ -251,8 +260,19 @@ where
         if sym_mode == SymmetryMode::SkewSymmetric && row == col {
             return Err(BadMatrixMarketFile);
         }
-        if entry.next().is_some() {
-            return Err(BadMatrixMarketFile);
+        match droping_data {
+            true => {
+                // the mtx file has data, but we are ignoring it
+                if entry.next().is_none() {
+                    return Err(BadMatrixMarketFile);
+                }
+            }
+            false => {
+                // we are not ignoring data, so all data should be comsumed
+                if entry.next().is_some() {
+                    return Err(BadMatrixMarketFile);
+                }
+            }
         }
     }
 
@@ -311,6 +331,7 @@ where
         NumKind::Integer => "integer",
         NumKind::Float => "real",
         NumKind::Complex => "complex",
+        NumKind::Pattern => "pattern",
     };
     writeln!(
         writer,
@@ -367,6 +388,7 @@ where
         NumKind::Integer => "integer",
         NumKind::Float => "real",
         NumKind::Complex => "complex",
+        NumKind::Pattern => "pattern",
     };
     let mode = match sym {
         SymmetryMode::General => "general",
@@ -455,7 +477,7 @@ mod test {
         read_matrix_market, read_matrix_market_from_bufread,
         write_matrix_market, write_matrix_market_sym, IoError, SymmetryMode,
     };
-    use crate::CsMat;
+    use crate::{num_kinds::Pattern, CsMat};
     use ndarray::{arr2, Array2};
     use num_complex::{Complex32, Complex64};
     use tempfile::tempdir;
@@ -801,5 +823,65 @@ mod test {
             .unwrap();
         let mat2 = read_matrix_market::<i32, usize, _>(&save_path).unwrap();
         assert_eq!(mat, mat2.to_csr());
+    }
+
+    #[test]
+    fn read_pattern_matrix() {
+        let path = "data/matrix_market/pattern.mm";
+        let mat = read_matrix_market::<Pattern, usize, _>(path).unwrap();
+        println!("trimat: {:?}", mat);
+        let csc = mat.to_csc();
+        assert_eq!(csc.get(0, 0), Some(&Pattern {}));
+        assert_eq!(csc.get(1, 1), Some(&Pattern {}));
+        assert_eq!(csc.get(2, 2), Some(&Pattern {}));
+        assert_eq!(csc.get(3, 3), Some(&Pattern {}));
+        assert_eq!(csc.get(0, 1), None);
+        let expected = CsMat::new_csc(
+            (4, 4),
+            vec![0, 1, 2, 3, 4],
+            vec![0, 1, 2, 3],
+            vec![Pattern {}; 4],
+        );
+        assert_eq!(csc.get(0, 0), Some(&Pattern {}));
+        assert_eq!(csc.get(1, 1), Some(&Pattern {}));
+        assert_eq!(csc.get(2, 2), Some(&Pattern {}));
+        assert_eq!(csc.get(3, 3), Some(&Pattern {}));
+        assert_eq!(csc.get(0, 1), None);
+        assert_eq!(csc, expected);
+        let tmp_dir = tempdir().unwrap();
+        let save_path = tmp_dir.path().join("pattern_write.mm");
+        write_matrix_market(&save_path, &csc).unwrap();
+        let mat2 = read_matrix_market::<Pattern, usize, _>(&save_path).unwrap();
+        assert_eq!(csc, mat2.to_csc());
+    }
+
+    #[test]
+    fn read_non_pattern_mtx_to_pattern() {
+        let path = "data/matrix_market/simple.mm";
+        let mat = read_matrix_market::<Pattern, usize, _>(path).unwrap();
+        println!("trimat: {:?}", mat);
+        let csc = mat.to_csc();
+        assert_eq!(csc.get(0, 0), Some(&Pattern {}));
+        assert_eq!(csc.get(1, 1), Some(&Pattern {}));
+        assert_eq!(csc.get(2, 2), Some(&Pattern {}));
+        assert_eq!(csc.get(3, 3), Some(&Pattern {}));
+        assert_eq!(csc.get(0, 1), None);
+        let expected = CsMat::new_csc(
+            (5, 5),
+            vec![0, 1, 3, 4, 6, 8],
+            vec![0, 1, 3, 2, 0, 3, 3, 4],
+            vec![Pattern {}; 8],
+        );
+        assert_eq!(csc.get(0, 0), Some(&Pattern {}));
+        assert_eq!(csc.get(1, 1), Some(&Pattern {}));
+        assert_eq!(csc.get(2, 2), Some(&Pattern {}));
+        assert_eq!(csc.get(3, 3), Some(&Pattern {}));
+        assert_eq!(csc.get(0, 1), None);
+        assert_eq!(csc, expected);
+        let tmp_dir = tempdir().unwrap();
+        let save_path = tmp_dir.path().join("non_pattern_write.mm");
+        write_matrix_market(&save_path, &csc).unwrap();
+        let mat2 = read_matrix_market::<Pattern, usize, _>(&save_path).unwrap();
+        assert_eq!(csc, mat2.to_csc());
     }
 }
