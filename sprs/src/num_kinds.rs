@@ -8,7 +8,7 @@ use std::{
     ops::{Add, Neg},
 };
 /// the type for Pattern data, it's special which contains no data
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub struct Pattern;
 
 impl Add for Pattern {

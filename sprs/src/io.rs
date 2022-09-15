@@ -857,7 +857,6 @@ mod test {
         let mat = read_matrix_market::<Pattern, usize, _>(path).unwrap();
         println!("trimat: {:?}", mat);
         let csc = mat.to_csc();
-        assert_eq!(csc.get(0, 0), Some(&Pattern {}));
         assert_eq!(csc.get(1, 1), Some(&Pattern {}));
         assert_eq!(csc.get(2, 2), Some(&Pattern {}));
         assert_eq!(csc.get(3, 3), Some(&Pattern {}));
@@ -879,5 +878,20 @@ mod test {
         write_matrix_market(&save_path, &csc).unwrap();
         let mat2 = read_matrix_market::<Pattern, usize, _>(&save_path).unwrap();
         assert_eq!(csc, mat2.to_csc());
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn read_csc_to_csr_trans() {
+        let path = "data/matrix_market/simple.mm";
+        let mat = read_matrix_market::<Pattern, usize, _>(path).unwrap();
+        println!("trimat: {:?}", mat);
+        let csc: CsMat<Pattern> = mat.to_csc();
+        let csr = csc.to_csr();
+        let csc_copy = csr.to_csc();
+        let csr_copy = csc_copy.to_csr();
+
+        assert_eq!(csc, csc_copy);
+        assert_eq!(csr, csr_copy);
     }
 }
