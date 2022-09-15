@@ -5,9 +5,8 @@ use std::fmt;
 use std::fs::File;
 use std::io;
 use std::io::{Seek, SeekFrom, Write};
+use std::ops::Neg;
 use std::path::Path;
-
-use num_traits::cast::NumCast;
 
 use crate::indexing::SpIndex;
 use crate::num_kinds::{NumKind, PrimitiveKind};
@@ -120,12 +119,11 @@ fn parse_header(header: &str) -> Result<(SymmetryMode, DataType), IoError> {
 pub fn read_matrix_market<N, I, P>(mm_file: P) -> Result<TriMatI<N, I>, IoError>
 where
     I: SpIndex,
-    N: NumCast
-        + PrimitiveKind
+    N: PrimitiveKind
         + Clone
-        + std::ops::Neg<Output = N>
         + MatrixMarketRead
-        + MatrixMarketConjugate,
+        + MatrixMarketConjugate
+        + Neg<Output = N>,
     P: AsRef<Path>,
 {
     let mm_file = mm_file.as_ref();
@@ -144,10 +142,9 @@ pub fn read_matrix_market_from_bufread<N, I, R>(
 ) -> Result<TriMatI<N, I>, IoError>
 where
     I: SpIndex,
-    N: NumCast
-        + PrimitiveKind
+    N: PrimitiveKind
         + Clone
-        + std::ops::Neg<Output = N>
+        + Neg<Output = N>
         + MatrixMarketRead
         + MatrixMarketConjugate,
     R: io::BufRead + ?Sized,
@@ -260,18 +257,15 @@ where
         if sym_mode == SymmetryMode::SkewSymmetric && row == col {
             return Err(BadMatrixMarketFile);
         }
-        match droping_data {
-            true => {
-                // the mtx file has data, but we are ignoring it
-                if entry.next().is_none() {
-                    return Err(BadMatrixMarketFile);
-                }
+        if droping_data {
+            // the mtx file has data, but we are ignoring it
+            if entry.next().is_none() {
+                return Err(BadMatrixMarketFile);
             }
-            false => {
-                // we are not ignoring data, so all data should be comsumed
-                if entry.next().is_some() {
-                    return Err(BadMatrixMarketFile);
-                }
+        } else {
+            // we are not ignoring data, so all data should be comsumed
+            if entry.next().is_some() {
+                return Err(BadMatrixMarketFile);
             }
         }
     }

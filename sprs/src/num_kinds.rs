@@ -2,10 +2,10 @@
 //! or a complex.
 
 use num_complex::{Complex32, Complex64};
-use num_traits::{Num, NumCast, One, ToPrimitive, Zero};
+
 use std::{
     fmt,
-    ops::{Add, Div, Mul, Rem, Sub},
+    ops::{Add, Neg},
 };
 /// the type for Pattern data, it's special which contains no data
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -17,82 +17,10 @@ impl Add for Pattern {
         Pattern {}
     }
 }
-impl Zero for Pattern {
-    fn zero() -> Self {
-        Pattern {}
-    }
-    fn is_zero(&self) -> bool {
-        true
-    }
-
-    fn set_zero(&mut self) {
-        *self = Zero::zero();
-    }
-}
-impl Rem for Pattern {
-    type Output = Self;
-    fn rem(self, _rhs: Self) -> Self {
-        Pattern {}
-    }
-}
-impl Div for Pattern {
-    type Output = Self;
-    fn div(self, _rhs: Self) -> Self {
-        Pattern {}
-    }
-}
-impl Sub for Pattern {
-    type Output = Self;
-    fn sub(self, _rhs: Self) -> Self {
-        Pattern {}
-    }
-}
-impl Mul for Pattern {
-    type Output = Self;
-
-    fn mul(self, _rhs: Self) -> Self::Output {
-        Pattern {}
-    }
-}
-impl One for Pattern {
-    fn one() -> Self {
-        Pattern {}
-    }
-}
-impl Num for Pattern {
-    type FromStrRadixErr = ();
-
-    fn from_str_radix(
-        _str: &str,
-        _radix: u32,
-    ) -> Result<Self, Self::FromStrRadixErr> {
-        Err(())
-    }
-}
-
-impl std::ops::Neg for Pattern {
+impl Neg for Pattern {
     type Output = Pattern;
-
-    fn neg(self) -> Self::Output {
-        self
-    }
-}
-
-impl ToPrimitive for Pattern {
-    fn to_i64(&self) -> Option<i64> {
-        None
-    }
-    fn to_u64(&self) -> Option<u64> {
-        None
-    }
-    fn to_f64(&self) -> Option<f64> {
-        None
-    }
-}
-
-impl NumCast for Pattern {
-    fn from<T: num_traits::ToPrimitive>(_n: T) -> Option<Self> {
-        None
+    fn neg(self) -> Pattern {
+        Pattern {}
     }
 }
 

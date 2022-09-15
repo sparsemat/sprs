@@ -1,6 +1,6 @@
 use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
-use num_traits::Num;
+
 ///! Triplet format matrix
 ///!
 ///! Useful for building a matrix, but not for computations. Therefore this
@@ -11,7 +11,7 @@ use num_traits::Num;
 ///! the row indices, the column indices, and the values of the non-zero
 ///! entries. By convention, duplicate locations are summed up when converting
 ///! into `CsMat`.
-use std::ops::{Deref, DerefMut};
+use std::ops::{Add, Deref, DerefMut};
 use std::slice::Iter;
 
 /// Indexing type into a Triplet
@@ -259,7 +259,7 @@ where
     /// Create a CSC matrix from this triplet matrix
     pub fn to_csc<Iptr: SpIndex>(&self) -> CsMatI<N, I, Iptr>
     where
-        N: Clone + Num,
+        N: Clone + Add<Output = N>,
     {
         self.triplet_iter().into_csc()
     }
@@ -267,7 +267,7 @@ where
     /// Create a CSR matrix from this triplet matrix
     pub fn to_csr<Iptr: SpIndex>(&self) -> CsMatI<N, I, Iptr>
     where
-        N: Clone + Num,
+        N: Clone + Add<Output = N>,
     {
         self.triplet_iter().into_csr()
     }
