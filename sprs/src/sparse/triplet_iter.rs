@@ -1,7 +1,7 @@
 //! A structure for iterating over the non-zero values of any kind of
 //! sparse matrix.
 
-use num_traits::Num;
+use std::ops::Add;
 
 use crate::indexing::SpIndex;
 use crate::sparse::{CsMatI, TriMatIter};
@@ -110,7 +110,7 @@ where
     /// Consume `TriMatIter` and produce a CSC matrix
     pub fn into_csc<Iptr: SpIndex>(self) -> CsMatI<N, I, Iptr>
     where
-        N: Num,
+        N: Add<Output = N>,
     {
         self.into_cs(CompressedStorage::CSC)
     }
@@ -118,7 +118,7 @@ where
     /// Consume `TriMatIter` and produce a CSR matrix
     pub fn into_csr<Iptr: SpIndex>(self) -> CsMatI<N, I, Iptr>
     where
-        N: Num,
+        N: Add<Output = N>,
     {
         self.into_cs(CompressedStorage::CSR)
     }
@@ -129,7 +129,7 @@ where
         storage: crate::CompressedStorage,
     ) -> CsMatI<N, I, Iptr>
     where
-        N: Num,
+        N: Add<Output = N>,
     {
         // (i,j, input position, output position)
         let mut rc: Vec<(I, I, N)> = Vec::new();
@@ -149,9 +149,9 @@ where
             }
         }
 
-        let outer_idx = |idx: &(I, I, _)| match storage {
-            CompressedStorage::CSR => idx.0,
-            CompressedStorage::CSC => idx.1,
+        let outer_idx = |idx_r: I, idx_c: I| match storage {
+            CompressedStorage::CSR => idx_r,
+            CompressedStorage::CSC => idx_c,
         };
 
         let outer_dims = match storage {
@@ -175,7 +175,7 @@ where
                 }
             }
 
-            let new_outer = outer_idx(&rc[rec]);
+            let new_outer = outer_idx(rc[rec].0, rc[rec].1);
 
             while new_outer > cur_outer {
                 indptr[cur_outer.index() + 1] = Iptr::from_usize(slot);
@@ -195,17 +195,17 @@ where
 
         rc.truncate(slot);
 
-        let mut data: Vec<N> = vec![N::zero(); slot];
+        let mut data: Vec<N> = Vec::with_capacity(slot);
         let mut indices: Vec<I> = vec![I::zero(); slot];
 
         for (n, (i, j, v)) in rc.into_iter().enumerate() {
             assert!({
-                let outer = outer_idx(&(i, j, N::zero()));
+                let outer = outer_idx(i, j);
                 n >= indptr[outer.index()].index()
                     && n < indptr[outer.index() + 1].index()
             });
 
-            data[n] = v;
+            data.push(v);
 
             match storage {
                 CompressedStorage::CSR => indices[n] = j,
