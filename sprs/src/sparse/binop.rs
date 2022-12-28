@@ -13,7 +13,7 @@ use crate::IndPtr;
 use ndarray::{
     self, Array, ArrayBase, ArrayView, ArrayViewMut, Axis, ShapeBuilder,
 };
-use num_traits::Num;
+use num_traits::Zero;
 
 use crate::Ix2;
 
@@ -34,9 +34,9 @@ impl<
     > Add<&'b CsMatBase<Rhs, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<Lhs, I, IpStorage, IStorage, DStorage, Iptr>
 where
-    Lhs: num_traits::Zero + PartialEq + Clone + Default,
-    Rhs: num_traits::Zero + PartialEq + Clone + Default,
-    Res: num_traits::Zero + PartialEq + Clone,
+    Lhs: Zero,
+    Rhs: Zero + Clone + Default,
+    Res: Zero + Clone,
     for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
@@ -81,9 +81,9 @@ impl<
     > Sub<&'b CsMatBase<Rhs, I, IpS2, IS2, DS2, Iptr>>
     for &'a CsMatBase<Lhs, I, IpStorage, IStorage, DStorage, Iptr>
 where
-    Lhs: num_traits::Zero + PartialEq + Clone + Default,
-    Rhs: num_traits::Zero + PartialEq + Clone + Default,
-    Res: num_traits::Zero + PartialEq + Clone + Default,
+    Lhs: Zero,
+    Rhs: Zero + Clone + Default,
+    Res: Zero + Clone,
     for<'r> &'r Lhs: Sub<&'r Rhs, Output = Res>,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
@@ -117,9 +117,9 @@ pub fn mul_mat_same_storage<Lhs, Rhs, Res, I, Iptr, Mat1, Mat2>(
     rhs: &Mat2,
 ) -> CsMatI<Res, I, Iptr>
 where
-    Lhs: num_traits::Zero + PartialEq + Clone,
-    Rhs: num_traits::Zero + PartialEq + Clone,
-    Res: num_traits::Zero + PartialEq + Clone,
+    Lhs: Zero,
+    Rhs: Zero,
+    Res: Zero + Clone,
     for<'r> &'r Lhs: std::ops::Mul<&'r Rhs, Output = Res>,
     I: SpIndex,
     Iptr: SpIndex,
@@ -179,9 +179,9 @@ pub fn csmat_binop<Lhs, Rhs, Res, I, Iptr, F>(
     binop: F,
 ) -> CsMatI<Res, I, Iptr>
 where
-    Lhs: num_traits::Zero + PartialEq + Clone,
-    Rhs: num_traits::Zero + PartialEq + Clone,
-    Res: num_traits::Zero + PartialEq + Clone,
+    Lhs: Zero,
+    Rhs: Zero,
+    Res: Zero + Clone,
     I: SpIndex,
     Iptr: SpIndex,
     F: Fn(&Lhs, &Rhs) -> Res,
@@ -233,9 +233,9 @@ pub fn csmat_binop_same_storage_raw<Lhs, Rhs, Res, I, Iptr, F>(
     out_data: &mut [Res],
 ) -> usize
 where
-    Lhs: num_traits::Zero + PartialEq,
-    Rhs: num_traits::Zero + PartialEq,
-    Res: num_traits::Zero + PartialEq,
+    Lhs: Zero,
+    Rhs: Zero,
+    Res: Zero,
     I: SpIndex,
     Iptr: SpIndex,
     F: Fn(&Lhs, &Rhs) -> Res,
@@ -257,7 +257,7 @@ where
                 Right((ind, val)) => (ind, binop(&Lhs::zero(), val)),
                 Both((ind, lval, rval)) => (ind, binop(lval, rval)),
             };
-            if binop_val != Res::zero() {
+            if !binop_val.is_zero() {
                 out_indices[nnz] = I::from_usize_unchecked(ind);
                 out_data[nnz] = binop_val;
                 nnz += 1;
@@ -295,9 +295,9 @@ pub fn add_dense_mat_same_ordering<
 where
     Mat: SpMatView<Lhs, I, Iptr>,
     D: ndarray::Data<Elem = Rhs>,
-    Lhs: Num,
-    Rhs: Num,
-    Res: Num + Copy,
+    Lhs: Zero,
+    Rhs: Zero,
+    Res: Zero + Copy,
     for<'r> &'r Alpha: Mul<&'r Lhs, Output = ByProd1>,
     for<'r> &'r Beta: Mul<&'r Rhs, Output = ByProd2>,
     ByProd1: Add<ByProd2, Output = Res>,
@@ -342,9 +342,9 @@ pub fn mul_dense_mat_same_ordering<
     alpha: Alpha,
 ) -> Array<Res, Ix2>
 where
-    Lhs: Num,
-    Rhs: Num,
-    Res: Num + Clone,
+    Lhs: Zero,
+    Rhs: Zero,
+    Res: Zero + Clone,
     Alpha: Copy + for<'r> Mul<&'r Lhs, Output = ByProd>,
     ByProd: for<'r> Mul<&'r Rhs, Output = Res>,
     I: SpIndex,
@@ -385,9 +385,9 @@ pub fn csmat_binop_dense_raw<'a, Lhs, Rhs, Res, I, Iptr, F>(
     binop: F,
     mut out: ArrayViewMut<'a, Res, Ix2>,
 ) where
-    Lhs: 'a + Num,
-    Rhs: 'a + Num,
-    Res: Num,
+    Lhs: 'a + Zero,
+    Rhs: 'a + Zero,
+    Res: Zero,
     I: 'a + SpIndex,
     Iptr: 'a + SpIndex,
     F: Fn(&Lhs, &Rhs) -> Res,
@@ -443,8 +443,8 @@ pub fn csvec_binop<Lhs, Rhs, Res, I, F>(
     binop: F,
 ) -> Result<CsVecI<Res, I>, StructureError>
 where
-    Lhs: Num,
-    Rhs: Num,
+    Lhs: Zero,
+    Rhs: Zero,
     F: Fn(&Lhs, &Rhs) -> Res,
     I: SpIndex,
 {

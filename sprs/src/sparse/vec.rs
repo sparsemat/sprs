@@ -1135,8 +1135,8 @@ where
 impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
     for CsVecBase<IS1, DS1, Lhs, I>
 where
-    Lhs: Num,
-    Rhs: Num,
+    Lhs: Zero,
+    Rhs: Zero,
     for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
@@ -1154,8 +1154,8 @@ where
 impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
     Add<&'a CsVecBase<IS2, DS2, Rhs, I>> for CsVecBase<IS1, DS1, Lhs, I>
 where
-    Lhs: Num,
-    Rhs: Num,
+    Lhs: Zero,
+    Rhs: Zero,
     for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
@@ -1173,8 +1173,8 @@ where
 impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
     for &'a CsVecBase<IS1, DS1, Lhs, I>
 where
-    Lhs: Num,
-    Rhs: Num,
+    Lhs: Zero,
+    Rhs: Zero,
     for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
@@ -1192,8 +1192,8 @@ where
 impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
     Add<&'b CsVecBase<IS2, DS2, Rhs, I>> for &'a CsVecBase<IS1, DS1, Lhs, I>
 where
-    Lhs: Num,
-    Rhs: Num,
+    Lhs: Zero,
+    Rhs: Zero,
     for<'r> &'r Lhs: Add<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
@@ -1211,8 +1211,8 @@ where
 impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
     Sub<&'b CsVecBase<IS2, DS2, Rhs, I>> for &'a CsVecBase<IS1, DS1, Lhs, I>
 where
-    Lhs: Num,
-    Rhs: Num,
+    Lhs: Zero,
+    Rhs: Zero,
     for<'r> &'r Lhs: Sub<&'r Rhs, Output = Res>,
     I: SpIndex,
     IS1: Deref<Target = [I]>,
@@ -1229,7 +1229,7 @@ where
 
 impl<N, I> Neg for CsVecI<N, I>
 where
-    N: Num + Clone + Neg<Output = N>,
+    N: Clone + Neg<Output = N>,
     I: SpIndex,
 {
     type Output = Self;
@@ -1320,7 +1320,7 @@ where
 
 impl<N, I> Zero for CsVecI<N, I>
 where
-    N: Num + Clone,
+    N: Zero + Clone,
     for<'r> &'r N: Add<Output = N>,
     I: SpIndex,
 {
