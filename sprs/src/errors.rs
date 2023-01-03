@@ -92,7 +92,7 @@ impl std::fmt::Display for LinalgError {
                 )
             }
             LinalgError::ThirdPartyError(code, msg) => {
-                write!(f, "Third party error: {} (code {})", msg, code,)
+                write!(f, "Third party error: {msg} (code {code})",)
             }
         }
     }
@@ -125,8 +125,8 @@ impl From<LinalgError> for SprsError {
 impl std::fmt::Display for SprsError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Structure(e) => write!(f, "Structure error: {}", e),
-            Self::Linalg(e) => write!(f, "Linalg error: {}", e),
+            Self::Structure(e) => write!(f, "Structure error: {e}"),
+            Self::Linalg(e) => write!(f, "Linalg error: {e}"),
         }
     }
 }

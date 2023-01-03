@@ -218,6 +218,8 @@ where
                 };
                 let ideal_chunk_size = 8128;
                 let wanted_threads = (lhs.nnz() + rhs.nnz()) / ideal_chunk_size;
+                // wanted_threads could be < nb_cpus
+                #[allow(clippy::manual_clamp)]
                 1.max(wanted_threads).min(nb_cpus)
             }
         }

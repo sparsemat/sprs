@@ -18,7 +18,7 @@ fn scipy_mat<'a>(
             Some([("shape", mat.shape())].into_py_dict(py)),
         )
         .map_err(|e| {
-            let res = format!("Python error: {:?}", e);
+            let res = format!("Python error: {e:?}");
             e.print_and_set_sys_last_vars(py);
             res
         })
@@ -161,7 +161,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
     let gil = Python::acquire_gil();
     let py = gil.python();
     let scipy_sparse = PyModule::import(py, "scipy.sparse").map_err(|e| {
-        let res = format!("Python error: {:?}", e);
+        let res = format!("Python error: {e:?}");
         e.print_and_set_sys_last_vars(py);
         res
     })?;
@@ -203,7 +203,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             let m1 = rand_csr_std(shape, density);
             let m2 = rand_csr_std((shape.1, shape.0), density);
             let elapsed = now.elapsed().as_millis();
-            println!("Generating matrices took {}ms", elapsed);
+            println!("Generating matrices took {elapsed}ms");
 
             smmp::set_thread_threading_strategy(
                 smmp::ThreadingStrategy::Fixed(1),
@@ -271,7 +271,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         None,
                     )
                     .map_err(|e| {
-                        let res = format!("Python error: {:?}", e);
+                        let res = format!("Python error: {e:?}");
                         e.print_and_set_sys_last_vars(py);
                         res
                     })?;
@@ -299,15 +299,15 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         println!("Results for shape: ({}, {})", shape.0, shape.1);
-        println!("Product nnzs: {:?}", nnzs);
-        println!("Product densities: {:?}", res_densities);
-        println!("Product times (sprs): {:?}", times);
-        println!("Product times (sprs, 2 threads): {:?}", times_2threads);
-        println!("Product times (sprs, 4 threads): {:?}", times_4threads);
-        println!("Product times (sprs, auto threads): {:?}", times_autothread);
-        println!("Product times (scipy): {:?}", times_py);
+        println!("Product nnzs: {nnzs:?}");
+        println!("Product densities: {res_densities:?}");
+        println!("Product times (sprs): {times:?}");
+        println!("Product times (sprs, 2 threads): {times_2threads:?}");
+        println!("Product times (sprs, 4 threads): {times_4threads:?}");
+        println!("Product times (sprs, auto threads): {times_autothread:?}");
+        println!("Product times (scipy): {times_py:?}");
         #[cfg(feature = "eigen")]
-        println!("Product times (eigen): {:?}", times_eigen);
+        println!("Product times (eigen): {times_eigen:?}");
 
         // plot
         {

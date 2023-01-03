@@ -350,7 +350,7 @@ where
     // solve for the non-zero values into dense workspace
     rhs.scatter(&mut x_workspace);
     for &ind in dstack.iter_right().map(stack::extract_stack_val) {
-        println!("ind: {}", ind);
+        println!("ind: {ind}");
         let col = lower_tri_mat.outer_view(ind).expect("ind not in bounds");
         lspsolve_csc_process_col(col, ind, &mut x_workspace)?;
     }

@@ -33,8 +33,7 @@ impl fmt::Display for IoError {
             Self::MismatchedMatrixMarketRead(matrix_kind, file_kind) => {
                 write!(
                     f,
-                    "Tried to load {} file into {} matrix.",
-                    file_kind, matrix_kind
+                    "Tried to load {file_kind} file into {matrix_kind} matrix."
                 )
             }
         }
@@ -329,13 +328,12 @@ where
     };
     writeln!(
         writer,
-        "%%MatrixMarket matrix coordinate {} general",
-        data_type
+        "%%MatrixMarket matrix coordinate {data_type} general"
     )?;
     writeln!(writer, "% written by sprs")?;
 
     // dimensions and nnz
-    writeln!(writer, "{} {} {}", rows, cols, nnz)?;
+    writeln!(writer, "{rows} {cols} {nnz}")?;
 
     // entries
     for (val, (row, col)) in mat {
@@ -392,8 +390,7 @@ where
     };
     writeln!(
         writer,
-        "%%MatrixMarket matrix coordinate {} {}",
-        data_type, mode
+        "%%MatrixMarket matrix coordinate {data_type} {mode}"
     )?;
     writeln!(writer, "% written by sprs")?;
 
@@ -403,9 +400,9 @@ where
     // to store the number of entries can only decrease. We record the position
     // where we wrote the header and will later rewrite the number of entries,
     // replacing possible extra digits by spaces.
-    let dim_header_pos = writer.seek(SeekFrom::Current(0))?;
+    let dim_header_pos = writer.stream_position()?;
     // dimensions and nnz
-    writeln!(writer, "{} {} {}", rows, cols, nnz)?;
+    writeln!(writer, "{rows} {cols} {nnz}")?;
 
     // entries
     let mut entries = 0;
@@ -453,9 +450,9 @@ where
     };
     assert!(entries <= nnz);
     writer.seek(SeekFrom::Start(dim_header_pos))?;
-    write!(writer, "{} {} {}", rows, cols, entries)?;
-    let dim_header_size = format!("{} {} {}", rows, cols, nnz).len();
-    let new_size = format!("{} {} {}", rows, cols, entries).len();
+    write!(writer, "{rows} {cols} {entries}")?;
+    let dim_header_size = format!("{rows} {cols} {nnz}").len();
+    let new_size = format!("{rows} {cols} {entries}").len();
     if new_size < dim_header_size {
         let nb_spaces = dim_header_size - new_size;
         for _ in 0..nb_spaces {
