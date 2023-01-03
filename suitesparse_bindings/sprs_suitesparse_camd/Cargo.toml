@@ -6,6 +6,7 @@ authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 edition = "2018"
 keywords = ["sparse", "matrix", "fill-in", "permutation", "suitesparse"]
 license = "MIT OR Apache-2.0"
+rust-version.workspace = true
 
 [dependencies.sprs]
 version = "0.11.0"

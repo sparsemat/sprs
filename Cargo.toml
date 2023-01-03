@@ -11,3 +11,6 @@ members = [
     "sprs-benches",
     "sprs-tests",
 ]
+
+[workspace.package]
+rust-version = "1.64"

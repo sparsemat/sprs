@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Magnus Ulimoen <magnus@ulimoen.dev>"]
 edition = "2018"
 publish = false
+rust-version.workspace = true
 
 [dev-dependencies]
 sprs = { path = "../sprs", features = ["serde"], default-features = false }

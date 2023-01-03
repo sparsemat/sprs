@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/sparsemat/sprs"
 documentation = "https://docs.rs/sprs"
 keywords = ["sparse", "matrix", "linear", "algebra"]
+rust-version.workspace = true
 
 exclude = [
     "data/*"

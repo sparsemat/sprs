@@ -84,7 +84,7 @@ See the [changelog](changelog.rst).
 
 ## Minimum Supported Rust Version
 
-The minimum supported Rust version currently is 1.49. Prior to a 1.0 version,
+The minimum supported Rust version currently is 1.64. Prior to a 1.0 version,
 bumping the MSRV will not be considered a breaking change, but breakage will
 be avoided on a best effort basis.
 

@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 edition = "2018"
 publish = false
+rust-version.workspace = true
 
 [dependencies.sprs]
 version = "0.11.0"

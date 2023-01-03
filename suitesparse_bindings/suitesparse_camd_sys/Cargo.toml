@@ -7,6 +7,7 @@ description = "Raw bindings to SuiteSparse's CAMD algorithm"
 license = "MIT OR Apache-2.0"
 build = "build.rs"
 links = "camd"
+rust-version.workspace = true
 
 [features]
 static = ["suitesparse-src/camd"]
