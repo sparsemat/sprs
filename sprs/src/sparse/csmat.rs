@@ -1094,7 +1094,7 @@ where
     ) -> impl std::iter::DoubleEndedIterator<Item = (usize, CsVecViewI<N, I>)>
            + std::iter::ExactSizeIterator<Item = (usize, CsVecViewI<N, I>)>
            + '_ {
-        (0..self.outer_dims()).into_iter().map(move |outer_ind| {
+        (0..self.outer_dims()).map(move |outer_ind| {
             let outer_ind_perm = perm.at(outer_ind);
             let range = self.indptr.outer_inds_sz(outer_ind_perm);
             let indices = &self.indices[range.clone()];

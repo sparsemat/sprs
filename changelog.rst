@@ -4,7 +4,7 @@ Changelog
 
 - Unreleased
   - Fixed a compilation regression in csmat_binop
-  - Bump MSRV
+  - Bump MSRV (1.64)
   - add support for reading/writing Complex{32,64} matrices in matrixmarket format.
     Also change semantics so that files of kind  {integer,real,complex} are only readable
     into matrices of the same kind (so integer can be read into [iu]{8,16,32,64,size}),

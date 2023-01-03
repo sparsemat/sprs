@@ -11,6 +11,7 @@ license = "LGPL-2.1"
 repository = "https://github.com/sparsemat/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
 keywords = ["sparse", "matrix", "cholesky", "factorization", "linalg"]
+rust-version.workspace = true
 
 [dependencies]
 

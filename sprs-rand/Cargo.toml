@@ -6,6 +6,7 @@ authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
 documentation = "https://docs.rs/sprs-rand"
+rust-version.workspace = true
 
 [dependencies]
 rand = "0.7.3"

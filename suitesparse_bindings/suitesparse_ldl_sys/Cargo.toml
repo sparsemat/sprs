@@ -10,6 +10,7 @@ keywords = ["sparse", "cholesky", "factorization", "suitesparse", "binding"]
 edition = "2018"
 build = "build.rs"
 links = "ldl"
+rust-version.workspace = true
 
 [features]
 static = ["suitesparse-src/ldl"]

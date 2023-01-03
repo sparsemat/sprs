@@ -57,6 +57,7 @@ exclude = [
     "SuiteSparse/LDL/MATLAB/",
     "SuiteSparse/LDL/Matrix/",
 ]
+rust-version.workspace = true
 
 [features]
 camd = []

@@ -8,6 +8,7 @@ repository = "https://github.com/sparsemat/sprs"
 keywords = ["sparse", "matrix", "cholesky", "factorization", "suitesparse"]
 readme = "README.md"
 edition = "2018"
+rust-version.workspace = true
 
 [dependencies]
 num-traits = "0.2.0"

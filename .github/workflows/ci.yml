@@ -72,7 +72,7 @@ jobs:
         include:
         - build: msrv
           os: ubuntu-20.04
-          rust: 1.52.0
+          rust: 1.64.0
         - build: stable
           os: ubuntu-20.04
           rust: stable
