@@ -30,7 +30,7 @@ use std::ops::{
 };
 use std::slice::{Iter, IterMut};
 
-use num_traits::{Float, Num, Signed, Zero};
+use num_traits::{Float, Signed, Zero};
 
 use crate::array_backend::Array2;
 use crate::errors::StructureError;
@@ -1338,6 +1338,7 @@ where
 mod alga_impls {
     use super::*;
     use alga::general::*;
+    use num_traits::Num;
 
     impl<N, I> AbstractMagma<Additive> for CsVecI<N, I>
     where
