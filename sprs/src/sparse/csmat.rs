@@ -2809,6 +2809,7 @@ mod test {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn diag_mut() {
         // | 1 0 0 3 1 |
         // | 0 2 0 0 0 |
