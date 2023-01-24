@@ -22,7 +22,7 @@ pub trait MulAcc<A = Self, B = A> {
 /// Default for types which supports `mul_add`
 impl<N, A, B> MulAcc<A, B> for N
 where
-    for<'x, 'y> &'x A: Mul<&'y B, Output = N>,
+    for<'x> &'x A: Mul<&'x B, Output = N>,
     N: AddAssign<N> 
 {
     fn mul_acc(&mut self, a: &A, b: &B) {
