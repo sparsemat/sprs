@@ -4,7 +4,7 @@
 //! implementation that does not require cloning, which should prove useful
 //! when defining sparse matrices per blocks (eg BSR, BSC)
 
-use std::ops::{Mul, AddAssign};
+use std::ops::{AddAssign, Mul};
 
 /// Trait for types that have a multiply-accumulate operation, as required
 /// in dot products and matrix products.
@@ -23,7 +23,7 @@ pub trait MulAcc<A = Self, B = A> {
 impl<N, A, B> MulAcc<A, B> for N
 where
     for<'x> &'x A: Mul<&'x B, Output = N>,
-    N: AddAssign<N> 
+    N: AddAssign<N>,
 {
     fn mul_acc(&mut self, a: &A, b: &B) {
         self.add_assign(a * b);
