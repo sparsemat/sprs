@@ -71,7 +71,7 @@ Matrix matrix multiplication, addition
   assert_eq!(a, b.to_csr());
 ```
 
-For a more complete example, be sure to check out the [heat diffusion](examples/heat.rs) example.
+For a more complete example, be sure to check out the [heat diffusion](sprs/examples/heat.rs) example.
 
 
 ## Documentation
