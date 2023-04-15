@@ -62,8 +62,9 @@ rust-version.workspace = true
 [features]
 camd = []
 ldl = []
+umfpack = []
 
 [dependencies]
 
 [build-dependencies]
-cc = "1.0.60"
+cc = "1.0.79"
