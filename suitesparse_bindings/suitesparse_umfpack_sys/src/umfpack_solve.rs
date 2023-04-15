@@ -18,18 +18,15 @@ extern "C" {
 // Define a Rust wrapper function for umfpack_solve
 pub fn umfpack_solve_wrapper(
     sys: c_int,
-    ap: &[c_int],
-    ai: &[c_int],
-    ax: &[c_double],
-    x: &mut [c_double],
-    b: &[c_double],
-    numeric: *const c_void,
-    control: &[c_double],
-    info: &mut [c_int],
+    ap: &[c_int],           // Column pointers for sparse matrix A
+    ai: &[c_int],           // Row indices for sparse matrix A
+    ax: &[c_double],        // Values for sparse matrix A
+    x: &mut [c_double],     // Values for Ax=b system x
+    b: &[c_double], // Values for Ax=b system b, to be populated by solve
+    numeric: *const c_void, // Opaque representation of LU decomposition; populated by umfpack_numeric
+    control: &[c_double], // Control parameters; null pointer -> default settings
+    info: &mut [c_int],   // Info readout; null pointer -> ignore readout
 ) -> c_int {
-    // let n = x.len() as c_int;
-    // let m = b.len() as c_int;
-
     unsafe {
         umfpack_solve(
             sys,

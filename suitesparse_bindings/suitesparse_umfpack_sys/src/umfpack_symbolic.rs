@@ -1,6 +1,6 @@
 use libc::{c_double, c_int, c_void};
 
-// Define the C function signature for umfpack_symbolic
+// C function signature for umfpack_symbolic
 extern "C" {
     fn umfpack_symbolic(
         n_row: c_int,
@@ -14,16 +14,16 @@ extern "C" {
     ) -> c_int;
 }
 
-// Define a Rust wrapper function for umfpack_symbolic
+// Rust wrapper function for umfpack_symbolic
 pub fn umfpack_symbolic_wrapper(
-    n_row: c_int,
-    n_col: c_int,
-    ap: &[c_int],
-    ai: &[c_int],
-    ax: &[c_double],
-    symbolic: &mut *mut c_void,
-    control: &[c_double],
-    info: &mut [c_int],
+    n_row: c_int,               // Number of rows
+    n_col: c_int,               // Number of columns
+    ap: &[c_int],               // Column pointers for sparse matrix A
+    ai: &[c_int],               // Row indices for sparse matrix A
+    ax: &[c_double],            // Values for sparse matrix A
+    symbolic: &mut *mut c_void, // Opaque representation of symbolic decomposition; not populated yet
+    control: &[c_double], // Control parameters; null pointer -> default settings
+    info: &mut [c_int],   // Info readout; null pointer -> ignore readout
 ) -> c_int {
     unsafe {
         umfpack_symbolic(
