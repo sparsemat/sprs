@@ -1,30 +1,31 @@
-use libc::{c_double, c_int, c_void};
+use libc::{c_double, c_void};
+use super::SuiteSparseLong;
 
-// C function signature for umfpack_symbolic
+// Define a C function signature for umfpack_symbolic
 extern "C" {
     fn umfpack_symbolic(
-        n_row: c_int,
-        n_col: c_int,
-        Ap: *const c_int,
-        Ai: *const c_int,
+        n_row: SuiteSparseLong,
+        n_col: SuiteSparseLong,
+        Ap: *const SuiteSparseLong,
+        Ai: *const SuiteSparseLong,
         Ax: *const c_double,
         Symbolic: *mut *mut c_void,
         Control: *const c_double,
         Info: *mut c_void,
-    ) -> c_int;
+    ) -> SuiteSparseLong;
 }
 
-// Rust wrapper function for umfpack_symbolic
+// Define a Rust wrapper function for umfpack_symbolic
 pub fn umfpack_symbolic_wrapper(
-    n_row: c_int,               // Number of rows
-    n_col: c_int,               // Number of columns
-    ap: &[c_int],               // Column pointers for sparse matrix A
-    ai: &[c_int],               // Row indices for sparse matrix A
+    n_row: SuiteSparseLong,               // Number of rows
+    n_col: SuiteSparseLong,               // Number of columns
+    ap: &[SuiteSparseLong],               // Column pointers for sparse matrix A
+    ai: &[SuiteSparseLong],               // Row indices for sparse matrix A
     ax: &[c_double],            // Values for sparse matrix A
     symbolic: &mut *mut c_void, // Opaque representation of symbolic decomposition; not populated yet
     control: &[c_double], // Control parameters; null pointer -> default settings
-    info: &mut [c_int],   // Info readout; null pointer -> ignore readout
-) -> c_int {
+    info: &mut [SuiteSparseLong],   // Info readout; null pointer -> ignore readout
+) -> SuiteSparseLong {
     unsafe {
         umfpack_symbolic(
             n_row,

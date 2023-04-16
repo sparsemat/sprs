@@ -1,4 +1,4 @@
-use libc::{c_int, c_void};
+use libc::c_void;
 
 // Define the C function signature for umfpack_free_symbolic
 extern "C" {

@@ -74,13 +74,13 @@ fn main() {
         let umfpack_dir = Path::new(&"SuiteSparse/UMFPACK");
         let sources = get_source_files(umfpack_dir.join("Source"));
         cc::Build::new()
+            .define("DLONG", None)  // Use 64-bit int for addresses
             .include("SuiteSparse/SuiteSparse_config")
             .include(umfpack_dir.join("Include"))
             .files(sources)
             .include("SuiteSparse/AMD/Include")
             .cargo_metadata(false)
             .compile("umfpack");
-
     }
 
     if suitesparse_config {
@@ -92,7 +92,6 @@ fn main() {
     }
     println!("cargo:root={}", root.to_string_lossy());
 }
-
 
 /// Returns a vector of all the .c files in a given directory
 fn get_source_files(dir: PathBuf) -> Vec<PathBuf> {
