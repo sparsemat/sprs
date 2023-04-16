@@ -1,14 +1,19 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use sprs::errors::LinalgError;
+use sprs::{CsMatI, CsMatViewI, PermOwnedI, SpIndex};
+use suitesparse_umfpack_sys::*;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+macro_rules! umfpack_impl {
+    ($int: ty,
+     $Context: ident,
+     $Symbolic: ident,
+     $Numeric: ident,
+     $symbolic: ident,
+     $numeric: ident,
+     $solve: ident,
+     $get_numeric: ident,
+     $get_symbolic: ident,
+     $get_lunz: ident,
+     $free_numeric: ident,
+     $free_symbolic: ident,
+     ) => {};
 }
