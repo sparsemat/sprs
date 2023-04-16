@@ -1,3 +1,4 @@
+use libc::c_void;
 use sprs::errors::LinalgError;
 use sprs::{CsMatI, CsMatViewI, CsStructureViewI, PermOwnedI, SpIndex};
 use suitesparse_umfpack_sys::*;
@@ -15,7 +16,26 @@ macro_rules! umfpack_impl {
      $get_lunz: ident,
      $free_numeric: ident,
      $free_symbolic: ident,
-     ) => {};
+     ) => {
+
+        pub struct $Symbolic {
+            handle: *mut c_void
+        }
+
+        pub struct $Numeric {
+            handle: *mut c_void
+        }
+
+        pub struct $Context {
+            symbolic: $Symbolic,
+            numeric: $Numeric
+        }
+
+        impl $Context {
+            pub fn new<N>(mat: CsMatViewI<N, $int>) -> Self where N: Clone + Into<f64> {
+            }
+        }
+     };
 }
 
 umfpack_impl!(
