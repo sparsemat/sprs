@@ -2,7 +2,7 @@ use super::{SuiteSparseInt, SuiteSparseLong};
 use libc::{c_double, c_void};
 
 extern "C" {
-    fn umfpack_di_symbolic(
+    pub fn umfpack_di_symbolic(
         n_row: SuiteSparseInt,
         n_col: SuiteSparseInt,
         Ap: *const SuiteSparseInt,
@@ -13,7 +13,7 @@ extern "C" {
         Info: *mut c_void,
     ) -> SuiteSparseInt;
 
-    fn umfpack_dl_symbolic(
+    pub fn umfpack_dl_symbolic(
         n_row: SuiteSparseLong,
         n_col: SuiteSparseLong,
         Ap: *const SuiteSparseLong,
