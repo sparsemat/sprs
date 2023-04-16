@@ -8,3 +8,7 @@ pub type SuiteSparseInt = libc::c_int;
 pub mod umfpack_symbolic;
 pub mod umfpack_numeric;
 pub mod umfpack_solve;
+pub mod umfpack_free_numeric;
+pub mod umfpack_free_symbolic;
+pub mod umfpack_get_lunz;
+pub mod umfpack_get_numeric;

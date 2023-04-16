@@ -59,7 +59,7 @@ pub fn umfpack_di_get_numeric_wrapper(
             p.as_mut_ptr(),
             q.as_mut_ptr(),
             dx.as_mut_ptr(),
-            &mut do_recip as *mut SuiteSparseInt,
+            do_recip as *mut SuiteSparseInt,
             rs.as_mut_ptr(),
             numeric,
         )
