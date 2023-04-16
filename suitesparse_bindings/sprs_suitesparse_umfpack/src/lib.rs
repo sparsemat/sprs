@@ -1,5 +1,5 @@
-use libc::c_void;
 use core::ptr::{null, null_mut};
+use libc::c_void;
 use sprs::errors::LinalgError;
 use sprs::{CsMatI, SpIndex};
 use suitesparse_umfpack_sys::*;
@@ -132,6 +132,26 @@ macro_rules! umfpack_impl {
                 };
 
                 x
+            }
+
+            pub unsafe fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
+                let mut lnz: $int = 0;
+                let mut unz: $int = 0;
+                let mut nrow: $int = 0;
+                let mut ncol: $int = 0;
+                let mut nz_udiag: $int = 0;
+
+                unsafe {
+                    $get_lunz(
+                        &mut lnz as *mut $int,
+                        &mut unz as *mut $int,
+                        &mut nrow as *mut $int,
+                        &mut ncol as *mut $int,
+                        &mut nz_udiag as *mut $int,
+                        self.numeric.0 as *const c_void);
+                }
+
+                (lnz, unz, nrow, ncol, nz_udiag)
             }
 
         }
