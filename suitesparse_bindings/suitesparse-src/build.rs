@@ -73,14 +73,25 @@ fn main() {
     if std::env::var_os("CARGO_FEATURE_UMFPACK").is_some() {
         let umfpack_dir = Path::new(&"SuiteSparse/UMFPACK");
         let sources = get_source_files(umfpack_dir.join("Source"));
+
+        // Do the f64 val, i32 index version ('di' for double & int)
+        cc::Build::new()
+            .include("SuiteSparse/SuiteSparse_config")
+            .include(umfpack_dir.join("Include"))
+            .files(&sources)
+            .include("SuiteSparse/AMD/Include")
+            .cargo_metadata(false)
+            .compile("umfpack_di");
+
+        // Do the f64 val, i64 index version ('dl' for double & long)
         cc::Build::new()
             .define("DLONG", None)  // Use 64-bit int for addresses
             .include("SuiteSparse/SuiteSparse_config")
             .include(umfpack_dir.join("Include"))
-            .files(sources)
+            .files(&sources)
             .include("SuiteSparse/AMD/Include")
             .cargo_metadata(false)
-            .compile("umfpack");
+            .compile("umfpack_dl");
     }
 
     if suitesparse_config {
