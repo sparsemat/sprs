@@ -18,9 +18,21 @@ macro_rules! umfpack_impl {
      $free_symbolic: ident,
      ) => {
 
-        struct $Symbolic(*const c_void);
+        struct $Symbolic(*mut c_void);
 
-        struct $Numeric(*const c_void);
+        impl Drop for $Symbolic {
+            fn drop(&mut self) {
+                unsafe {$free_symbolic(&mut self.0 as *mut *mut c_void);}
+            }
+        }
+
+        struct $Numeric(*mut c_void);
+
+        impl Drop for $Numeric {
+            fn drop(&mut self) {
+                unsafe {$free_numeric(&mut self.0 as *mut *mut c_void);}
+            }
+        }
 
         pub struct $Context {
             mat: CsMatI<f64, $int>,
@@ -120,7 +132,9 @@ macro_rules! umfpack_impl {
 
                 x
             }
+
         }
+
      };
 }
 
