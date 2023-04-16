@@ -1,4 +1,5 @@
 use libc::c_void;
+use core::ptr::{null, null_mut};
 use sprs::errors::LinalgError;
 use sprs::{CsMatI, SpIndex};
 use suitesparse_umfpack_sys::*;
@@ -70,8 +71,8 @@ macro_rules! umfpack_impl {
                         ai,
                         ax,
                         symbolic_inner,
-                        0 as *const f64,  // Default settings
-                        0 as *mut c_void  // Ignore info
+                        null() as *const f64,  // Default settings
+                        null_mut() as *mut c_void  // Ignore info
                     );
                 };
                 let symbolic = $Symbolic(*symbolic_inner);
@@ -85,8 +86,8 @@ macro_rules! umfpack_impl {
                         ax,
                         symbolic.0,
                         numeric_inner,
-                        0 as *const f64,  // Default settings
-                        0 as *mut c_void  // Ignore info
+                        null() as *const f64,  // Default settings
+                        null_mut() as *mut c_void  // Ignore info
                     );
                 };
                 let numeric = $Numeric(*numeric_inner);
@@ -122,11 +123,11 @@ macro_rules! umfpack_impl {
                         ap,
                         ai,
                         ax,
-                        x.as_mut_ptr(),
+                        x[..].as_mut_ptr(),
                         b.as_ptr(),
                         self.numeric.0,
-                        0 as *const f64,  // Default settings
-                        0 as *mut c_void  // Ignore info
+                        null() as *const f64,  // Default settings
+                        null_mut() as *mut c_void  // Ignore info
                     )
                 };
 
