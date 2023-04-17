@@ -268,12 +268,12 @@ mod tests {
 
         let b = vec![1.0_f64; 4];
 
-        let _x = ctx.solve(&b[..]);
-        println!("{:?}", _x);
+        let x = ctx.solve(&b[..]);
+        println!("{:?}", x);
 
-        let x = CsVecI::new(4, vec![0_i32, 1_i32, 2_i32, 3_i32], _x);
+        let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
 
-        let b_recovered = ctx.a() * &x;
+        let b_recovered = ctx.a() * &xsprs;
         println!("{:?}", b_recovered);
 
         // Make sure the solved values match expectation
@@ -306,12 +306,12 @@ mod tests {
 
         let b = vec![1.0_f64; 4];
 
-        let _x = ctx.solve(&b[..]);
-        println!("{:?}", _x);
+        let x = ctx.solve(&b[..]);
+        println!("{:?}", x);
 
-        let x = CsVecI::new(4, vec![0_i64, 1_i64, 2_i64, 3_i64], _x);
+        let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
 
-        let b_recovered = ctx.a() * &x;
+        let b_recovered = ctx.a() * &xsprs;
         println!("{:?}", b_recovered);
 
         // Make sure the solved values match expectation
