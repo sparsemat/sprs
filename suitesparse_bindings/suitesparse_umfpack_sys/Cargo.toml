@@ -10,6 +10,7 @@ links = "umfpack"
 rust-version.workspace = true
 
 [features]
+default_features = ["static"]
 static = ["suitesparse-src/umfpack"]
 
 [dependencies]
