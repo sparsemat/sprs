@@ -257,14 +257,14 @@ mod tests {
 
     #[test]
     fn umfpack_di() {
-        let mat = CsMatI::new_csc(
+        let a = CsMatI::new_csc(
             (4, 4),
             vec![0, 2, 4, 6, 8],
             vec![0, 3, 1, 2, 1, 2, 0, 3],
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
         );
 
-        let ctx = UmfpackDIContext::new(mat);
+        let ctx = UmfpackDIContext::new(a);
 
         let b = vec![1.0_f64; 4];
 
@@ -288,5 +288,51 @@ mod tests {
 
         // Smoketest get_numeric - can we get the LU components out without a segfault?
         let (l, u, p, q, dx, rs) = ctx.get_numeric();
+
+        // Check LU = PAQ
+        let lu = (&l * &u).to_dense();
+        let a = ctx.a().to_owned();
+
+        // Do row permutation
+        let mut new_indices = Vec::<i32>::new();
+        for j in a.indices().into_iter() {
+            // Look up the permuted row index
+            let ind_permuted = p.at(*j as usize);
+            new_indices.push(ind_permuted as i32);
+        }
+
+        let a_row_permuted = CsMatI::new_from_unsorted(
+            a.shape(),
+            a.indptr().as_slice().unwrap().to_vec(),
+            new_indices,
+            a.data().to_vec(),
+        ).unwrap();
+
+        // Do column permutation
+        let a_row_permuted_csc = a_row_permuted.to_csc();
+
+        let mut new_indices = Vec::<i32>::new();
+        for j in a_row_permuted_csc.indices().into_iter() {
+            // Look up the permuted row index
+            let ind_permuted = q.at(*j as usize);
+            new_indices.push(ind_permuted as i32);
+        }
+
+        let paq = CsMatI::new_from_unsorted_csc(
+            a_row_permuted_csc.shape(),
+            a_row_permuted_csc.indptr().as_slice().unwrap().to_vec(),
+            new_indices,
+            a_row_permuted_csc.data().to_vec(),
+        ).unwrap();
+
+        // Check values
+        let lu_flat = lu.as_slice().unwrap().to_vec();
+        let paq_flat = paq.to_dense().as_slice().unwrap().to_vec();
+        for (left, right) in lu_flat.into_iter().zip(paq_flat) {
+            assert!(
+                (1.0 - left / right).abs() < 1e-14,
+                "Solved output did not match input"
+            );
+        }
     }
 }
