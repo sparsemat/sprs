@@ -3,10 +3,8 @@ fn main() {
     if std::env::var_os("CARGO_FEATURE_STATIC").is_some() {
         let path_to_umfpack = std::env::var("DEP_SUITESPARSE_SRC_ROOT").unwrap();
         println!("cargo:rustc-link-search=native={path_to_umfpack}");
-        println!("cargo:rustc-link-lib=static=umfpack_di");
-        println!("cargo:rustc-link-lib=static=umfpack_dl");
+        println!("cargo:rustc-link-lib=static=umfpack");
     } else {
-        println!("cargo:rustc-link-lib=umfpack_di");
-        println!("cargo:rustc-link-lib=umfpack_dl");
+        println!("cargo:rustc-link-lib=umfpack");
     }
 }
