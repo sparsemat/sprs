@@ -63,7 +63,8 @@ macro_rules! umfpack_impl {
                 let ax = mat.data().as_ptr();
 
                 // Do symbolic factorization
-                let symbolic_inner = (0 as *mut c_void) as *mut *mut c_void;
+                println!("start sym");
+                let symbolic_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
                 unsafe {
                     $symbolic(
                         nrow as $int,
@@ -76,10 +77,12 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
+                println!("end sym");
                 let symbolic = $Symbolic(*symbolic_inner);
 
                 // Do numeric factorization
-                let numeric_inner = (0 as *mut c_void) as *mut *mut c_void;
+                println!("start num");
+                let numeric_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
                 unsafe {
                     $numeric(
                         ap,
@@ -91,6 +94,7 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
+                println!("end num");
                 let numeric = $Numeric(*numeric_inner);
 
                 Self {
