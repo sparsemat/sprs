@@ -63,7 +63,6 @@ macro_rules! umfpack_impl {
                 let ax = mat.data().as_ptr();
 
                 // Do symbolic factorization
-                println!("start sym");
                 let symbolic_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
                 unsafe {
                     $symbolic(
@@ -77,11 +76,9 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                println!("end sym");
                 let symbolic = $Symbolic(*symbolic_inner);
 
                 // Do numeric factorization
-                println!("start num");
                 let numeric_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
                 unsafe {
                     $numeric(
@@ -94,7 +91,6 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                println!("end num");
                 let numeric = $Numeric(*numeric_inner);
 
                 Self {
@@ -113,6 +109,10 @@ macro_rules! umfpack_impl {
 
             pub fn nnz(&self) -> usize {
                 self._nnz as usize
+            }
+
+            pub fn a(&self) -> &CsMatI<f64, $int> {
+                &self.mat
             }
 
             pub unsafe fn solve(&self, b: &[f64]) -> Vec<f64> {
@@ -249,7 +249,7 @@ umfpack_impl!(
 
 #[cfg(test)]
 mod tests {
-    use sprs::CsMatI;
+    use sprs::{CsMatI, CsVecI};
 
     use crate::UmfpackDIContext;
 
@@ -267,6 +267,12 @@ mod tests {
         let b = vec![1.0_f64; 4];
 
         let _x = unsafe { ctx.solve(&b[..]) };
+        println!("{:?}", _x);
 
+        let x = CsVecI::new(4, vec![0_i32, 1_i32, 2_i32, 3_i32], _x);
+
+        let b_recovered = ctx.a() * &x;
+
+        println!("{:?}", b_recovered);
     }
 }
