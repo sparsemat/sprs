@@ -117,12 +117,12 @@ macro_rules! umfpack_impl {
 
             pub unsafe fn solve(&self, b: &[f64]) -> Vec<f64> {
                 // Check shape
-                let n = self.nrow * self.ncol;
-                assert!(b.len() == n, "Input right-hand-side does not have the expected number of entries");
-                assert!(self.nrow == self.ncol, "Solve can only be performed for square systems");
+                let (nrow, ncol) = self.shape();
+                assert!(b.len() == nrow, "Input right-hand-side does not have the expected number of entries");
+                assert!(nrow == ncol, "Solve can only be performed for square systems");
 
                 // Allocate dense output vector
-                let mut x = vec![0.0; n];
+                let mut x = vec![0.0; ncol];
 
                 // Get C-compatible raw pointers to column pointers, indices, and values
                 let ap = self.mat.indptr().to_proper().as_ptr();
