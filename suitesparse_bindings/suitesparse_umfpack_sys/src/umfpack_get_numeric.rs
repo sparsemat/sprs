@@ -12,7 +12,7 @@ extern "C" {
         P: *mut SuiteSparseInt,
         Q: *mut SuiteSparseInt,
         Dx: *mut c_double,
-        do_recip: *mut SuiteSparseInt,
+        do_recip: *const SuiteSparseInt,
         Rs: *mut c_double,
         Numeric: *const c_void,
     ) -> SuiteSparseInt;
@@ -27,7 +27,7 @@ extern "C" {
         P: *mut SuiteSparseLong,
         Q: *mut SuiteSparseLong,
         Dx: *mut c_double,
-        do_recip: *mut SuiteSparseLong,
+        do_recip: *const SuiteSparseLong,
         Rs: *mut c_double,
         Numeric: *const c_void,
     ) -> SuiteSparseLong;

@@ -1,7 +1,6 @@
 use core::ptr::{null, null_mut};
 use libc::c_void;
-use sprs::errors::LinalgError;
-use sprs::{CsMatI, SpIndex};
+use sprs::{CsMatI, PermOwnedI};
 use suitesparse_umfpack_sys::*;
 
 macro_rules! umfpack_impl {
@@ -134,12 +133,12 @@ macro_rules! umfpack_impl {
                 x
             }
 
-            pub unsafe fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
-                let mut lnz: $int = 0;
-                let mut unz: $int = 0;
-                let mut nrow: $int = 0;
-                let mut ncol: $int = 0;
-                let mut nz_udiag: $int = 0;
+            unsafe fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
+                let mut lnz: $int = 0;  // Total number of nonzero entries in L
+                let mut unz: $int = 0;  // Total number of nonzero entries in U
+                let mut nrow: $int = 0;  // Number of rows in both L and U (should match input matrix)
+                let mut ncol: $int = 0;  // Number of cols in both L and U (should match input matrix)
+                let mut nz_udiag: $int = 0;  // Number of nonzero entries on the diagonal of each L and U
 
                 unsafe {
                     $get_lunz(
@@ -152,6 +151,55 @@ macro_rules! umfpack_impl {
                 }
 
                 (lnz, unz, nrow, ncol, nz_udiag)
+            }
+
+
+            pub unsafe fn get_numeric(&self) -> (CsMatI<f64, $int>, CsMatI<f64, $int>, PermOwnedI<$int>, PermOwnedI<$int>, Vec<f64>, Vec<f64>) {
+                // Get shape info that tells us how much to allocate
+                let (lnz, unz, nrow, ncol, _) = self.get_lunz();
+                let n_inner = nrow.min(ncol) as usize;
+                let shape = (nrow as usize, ncol as usize);
+
+                // Allocate for the return values
+                let mut lp = vec![0 as $int; (nrow + 1) as usize];
+                let mut lj = vec![0 as $int; lnz as usize];
+                let mut lx = vec![0.0_f64; lnz as usize];
+
+                let mut up = vec![0 as $int; (ncol + 1) as usize];
+                let mut ui = vec![0 as $int; unz as usize];
+                let mut ux = vec![0.0_f64; unz as usize];
+
+                let mut rs = vec![0.0_f64; nrow as usize];
+                let mut dx = vec![0.0_f64; n_inner as usize];
+
+                let mut p = vec![0 as $int; nrow as usize];
+                let mut q = vec![0 as $int; ncol as usize];
+
+                // Extract the values from the opaque inner representation
+                unsafe {
+                    $get_numeric(
+                        lp[..].as_mut_ptr(),
+                        lj[..].as_mut_ptr(),
+                        lx[..].as_mut_ptr(),
+                        up[..].as_mut_ptr(),
+                        ui[..].as_mut_ptr(),
+                        ux[..].as_mut_ptr(),
+                        p[..].as_mut_ptr(),
+                        q[..].as_mut_ptr(),
+                        dx[..].as_mut_ptr(),
+                        &(0 as $int) as *const $int,  // Divide the scaling factors (the default behavior)
+                        rs[..].as_mut_ptr(),
+                        self.numeric.0
+                    );
+                }
+
+                // Pack results into sparse matrix structures
+                let l = CsMatI::new(shape, lp, lj, lx);
+                let u = CsMatI::new_csc(shape, up, ui, ux);
+                let p = PermOwnedI::new(p);
+                let q = PermOwnedI::new(q);
+
+                return (l, u, p, q, dx, rs)
             }
 
         }

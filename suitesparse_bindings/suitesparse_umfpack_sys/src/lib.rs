@@ -19,3 +19,4 @@ pub use umfpack_get_lunz::{umfpack_di_get_lunz, umfpack_dl_get_lunz};
 pub use umfpack_numeric::{umfpack_di_numeric, umfpack_dl_numeric};
 pub use umfpack_solve::{umfpack_di_solve, umfpack_dl_solve};
 pub use umfpack_symbolic::{umfpack_di_symbolic, umfpack_dl_symbolic};
+pub use umfpack_get_numeric::{umfpack_di_get_numeric, umfpack_dl_get_numeric};
