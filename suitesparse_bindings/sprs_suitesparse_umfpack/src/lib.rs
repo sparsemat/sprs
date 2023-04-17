@@ -35,7 +35,7 @@ macro_rules! umfpack_impl {
 
         pub struct $Context {
             mat: CsMatI<f64, $int>,
-            /// 
+            ///
             #[allow(dead_code)]
             symbolic: $Symbolic,
             /// This isn't used directly at the moment, but we have to keep this around to free memory properly
@@ -46,7 +46,7 @@ macro_rules! umfpack_impl {
         }
 
         impl $Context {
-            pub unsafe fn new<N>(mat: CsMatI<N, $int>) -> Self
+            pub fn new<N>(mat: CsMatI<N, $int>) -> Self
             where N: Default + Clone + Into<f64>,
             {
                 // UMFPACK methods require CSC format and f64 data
@@ -76,7 +76,7 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                let symbolic = $Symbolic(*symbolic_inner);
+                let symbolic = unsafe{$Symbolic(*symbolic_inner)};
 
                 // Do numeric factorization
                 let numeric_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
@@ -91,7 +91,7 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                let numeric = $Numeric(*numeric_inner);
+                let numeric = unsafe{$Numeric(*numeric_inner)};
 
                 Self {
                     mat: mat,
@@ -115,7 +115,7 @@ macro_rules! umfpack_impl {
                 &self.mat
             }
 
-            pub unsafe fn solve(&self, b: &[f64]) -> Vec<f64> {
+            pub fn solve(&self, b: &[f64]) -> Vec<f64> {
                 // Check shape
                 let (nrow, ncol) = self.shape();
                 assert!(b.len() == nrow, "Input right-hand-side does not have the expected number of entries");
@@ -147,7 +147,7 @@ macro_rules! umfpack_impl {
                 x
             }
 
-            pub unsafe fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
+            pub fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
                 let mut lnz: $int = 0;  // Total number of nonzero entries in L
                 let mut unz: $int = 0;  // Total number of nonzero entries in U
                 let mut nrow: $int = 0;  // Number of rows in both L and U (should match input matrix)
@@ -168,7 +168,7 @@ macro_rules! umfpack_impl {
             }
 
 
-            pub unsafe fn get_numeric(&self) -> (CsMatI<f64, $int>, CsMatI<f64, $int>, PermOwnedI<$int>, PermOwnedI<$int>, Vec<f64>, Vec<f64>) {
+            pub fn get_numeric(&self) -> (CsMatI<f64, $int>, CsMatI<f64, $int>, PermOwnedI<$int>, PermOwnedI<$int>, Vec<f64>, Vec<f64>) {
                 // Get shape info that tells us how much to allocate
                 let (lnz, unz, nrow, ncol, _) = self.get_lunz();
                 let n_inner = nrow.min(ncol) as usize;
@@ -262,11 +262,11 @@ mod tests {
             vec![1., 2., 21., 6., 6., 2., 2., 8.],
         );
 
-        let ctx = unsafe { UmfpackDIContext::new(mat) };
+        let ctx = UmfpackDIContext::new(mat);
 
         let b = vec![1.0_f64; 4];
 
-        let _x = unsafe { ctx.solve(&b[..]) };
+        let _x = ctx.solve(&b[..]);
         println!("{:?}", _x);
 
         let x = CsVecI::new(4, vec![0_i32, 1_i32, 2_i32, 3_i32], _x);
@@ -274,8 +274,17 @@ mod tests {
         let b_recovered = ctx.a() * &x;
         println!("{:?}", b_recovered);
 
-        for (input, output) in b.into_iter().zip(b_recovered.to_dense().into_iter()) {
-            assert!((1.0 - input / output).abs() < 1e-14, "Solved output did not match input");
+        // Make sure the solved values match expectation
+        for (input, output) in
+            b.into_iter().zip(b_recovered.to_dense().into_iter())
+        {
+            assert!(
+                (1.0 - input / output).abs() < 1e-14,
+                "Solved output did not match input"
+            );
         }
+
+        // Smoketest get_numeric - can we get the LU components out without a segfault?
+        let (l, u, p, q, dx, rs) = ctx.get_numeric();
     }
 }
