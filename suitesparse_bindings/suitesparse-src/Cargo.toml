@@ -55,14 +55,8 @@ exclude = [
     "SuiteSparse/LDL/Makefile",
     "SuiteSparse/LDL/MATLAB/",
     "SuiteSparse/LDL/Matrix/",
-
-    "SuiteSparse/UMFPACK/Demo/",
-    "SuiteSparse/UMFPACK/Doc/",
-    "SuiteSparse/UMFPACK/Lib/",
-    "SuiteSparse/UMFPACK/Makefile",
-    "SuiteSparse/UMFPACK/MATLAB/",
-    "SuiteSparse/UMFPACK/Tcov/",
-    
+  
+    "SuiteSparse/UMFPACK/",
 ]
 rust-version.workspace = true
 
