@@ -161,7 +161,8 @@ macro_rules! umfpack_impl {
                         &mut nrow as *mut $int,
                         &mut ncol as *mut $int,
                         &mut nz_udiag as *mut $int,
-                        self.numeric.0 as *const c_void);
+                        self.numeric.0
+                    );
                 }
 
                 (lnz, unz, nrow, ncol, nz_udiag)
@@ -190,6 +191,7 @@ macro_rules! umfpack_impl {
                 let mut q = vec![0 as $int; ncol as usize];
 
                 // Extract the values from the opaque inner representation
+                let do_recip = 0 as $int;  // Divide the scaling factors (the default behavior)
                 unsafe {
                     $get_numeric(
                         lp[..].as_mut_ptr(),
@@ -201,7 +203,7 @@ macro_rules! umfpack_impl {
                         p[..].as_mut_ptr(),
                         q[..].as_mut_ptr(),
                         dx[..].as_mut_ptr(),
-                        &(0 as $int) as *const $int,  // Divide the scaling factors (the default behavior)
+                        &do_recip as *const $int,
                         rs[..].as_mut_ptr(),
                         self.numeric.0
                     );
