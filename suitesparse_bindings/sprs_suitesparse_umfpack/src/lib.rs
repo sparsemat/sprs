@@ -1,7 +1,7 @@
-//! Partial interface (3rd party, unaffiliated) to SuiteSparse's UMFPACK solver package, 
-//! covering essentials for solving problems of the form Ax=b for real A, and for 
+//! Partial interface (3rd party, unaffiliated) to SuiteSparse's UMFPACK solver package,
+//! covering essentials for solving problems of the form Ax=b for real A, and for
 //! recovering LU decomposition components of A for other uses.
-//! 
+//!
 //! This wrapper currently covers the double-int (DI) and double-long (DL) variations of
 //! the underlying library, while several more variations (such as for complex data type)
 //! exist in the underlying library but do not have wrappers here.
