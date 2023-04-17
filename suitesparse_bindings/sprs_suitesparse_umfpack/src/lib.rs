@@ -272,7 +272,10 @@ mod tests {
         let x = CsVecI::new(4, vec![0_i32, 1_i32, 2_i32, 3_i32], _x);
 
         let b_recovered = ctx.a() * &x;
-
         println!("{:?}", b_recovered);
+
+        for (input, output) in b.into_iter().zip(b_recovered.to_dense().into_iter()) {
+            assert!((1.0 - input / output).abs() < 1e-14, "Solved output did not match input");
+        }
     }
 }
