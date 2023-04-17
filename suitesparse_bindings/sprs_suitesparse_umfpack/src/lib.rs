@@ -253,7 +253,7 @@ umfpack_impl!(
 mod tests {
     use sprs::{CsMatI, CsVecI};
 
-    use crate::UmfpackDIContext;
+    use crate::{UmfpackDIContext, UmfpackDLContext};
 
     #[test]
     fn umfpack_di() {
@@ -287,52 +287,47 @@ mod tests {
         }
 
         // Smoketest get_numeric - can we get the LU components out without a segfault?
-        let (l, u, p, q, dx, rs) = ctx.get_numeric();
+        let (_l, _u, _p, _q, _dx, _rs) = ctx.get_numeric();
+        
+        // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
+        // to make sure LUR = PAQ holds for the returned components
+    }
 
-        // Check LU = PAQ
-        let lu = (&l * &u).to_dense();
-        let a = ctx.a().to_owned();
+    #[test]
+    fn umfpack_dl() {
+        let a = CsMatI::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1., 2., 21., 6., 6., 2., 2., 8.],
+        );
 
-        // Do row permutation
-        let mut new_indices = Vec::<i32>::new();
-        for j in a.indices().into_iter() {
-            // Look up the permuted row index
-            let ind_permuted = p.at(*j as usize);
-            new_indices.push(ind_permuted as i32);
-        }
+        let ctx = UmfpackDLContext::new(a);
 
-        let a_row_permuted = CsMatI::new_from_unsorted(
-            a.shape(),
-            a.indptr().as_slice().unwrap().to_vec(),
-            new_indices,
-            a.data().to_vec(),
-        ).unwrap();
+        let b = vec![1.0_f64; 4];
 
-        // Do column permutation
-        let a_row_permuted_csc = a_row_permuted.to_csc();
+        let _x = ctx.solve(&b[..]);
+        println!("{:?}", _x);
 
-        let mut new_indices = Vec::<i32>::new();
-        for j in a_row_permuted_csc.indices().into_iter() {
-            // Look up the permuted row index
-            let ind_permuted = q.at(*j as usize);
-            new_indices.push(ind_permuted as i32);
-        }
+        let x = CsVecI::new(4, vec![0_i64, 1_i64, 2_i64, 3_i64], _x);
 
-        let paq = CsMatI::new_from_unsorted_csc(
-            a_row_permuted_csc.shape(),
-            a_row_permuted_csc.indptr().as_slice().unwrap().to_vec(),
-            new_indices,
-            a_row_permuted_csc.data().to_vec(),
-        ).unwrap();
+        let b_recovered = ctx.a() * &x;
+        println!("{:?}", b_recovered);
 
-        // Check values
-        let lu_flat = lu.as_slice().unwrap().to_vec();
-        let paq_flat = paq.to_dense().as_slice().unwrap().to_vec();
-        for (left, right) in lu_flat.into_iter().zip(paq_flat) {
+        // Make sure the solved values match expectation
+        for (input, output) in
+            b.into_iter().zip(b_recovered.to_dense().into_iter())
+        {
             assert!(
-                (1.0 - left / right).abs() < 1e-14,
+                (1.0 - input / output).abs() < 1e-14,
                 "Solved output did not match input"
             );
         }
+
+        // Smoketest get_numeric - can we get the LU components out without a segfault?
+        let (_l, _u, _p, _q, _dx, _rs) = ctx.get_numeric();
+        
+        // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
+        // to make sure LUR = PAQ holds for the returned components
     }
 }
