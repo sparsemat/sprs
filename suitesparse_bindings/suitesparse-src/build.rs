@@ -72,18 +72,19 @@ fn main() {
 
     if std::env::var_os("CARGO_FEATURE_UMFPACK").is_some() {
         let umfpack_dir = Path::new(&"SuiteSparse/UMFPACK");
-        let sources = get_source_files(umfpack_dir.join("Source"));
-
-
-
-
 
         // Do the f64 val, i64 index version ('dl' for double & long)
         cc::Build::new()
-            .define("DLONG", None)  // Use 64-bit int for addresses
+            .define("DLONG", None) // Use 64-bit int for addresses
             .include("SuiteSparse/SuiteSparse_config")
             .include(umfpack_dir.join("Include"))
-            .files(&sources)
+            .file(umfpack_dir.join("Source/umfpack_solve.c"))
+            .file(umfpack_dir.join("Source/umfpack_symbolic.c"))
+            .file(umfpack_dir.join("Source/umfpack_numeric.c"))
+            .file(umfpack_dir.join("Source/umfpack_get_numeric.c"))
+            .file(umfpack_dir.join("Source/umfpack_get_lunz.c"))
+            .file(umfpack_dir.join("Source/umfpack_free_symbolic.c"))
+            .file(umfpack_dir.join("Source/umfpack_free_numeric.c"))
             .include("SuiteSparse/AMD/Include")
             .cargo_metadata(false)
             .compile("umfpack_dl");
@@ -98,7 +99,13 @@ fn main() {
         cc::Build::new()
             .include("SuiteSparse/SuiteSparse_config")
             .include(umfpack_dir.join("Include"))
-            .files(&sources)
+            .file(umfpack_dir.join("Source/umfpack_solve.c"))
+            .file(umfpack_dir.join("Source/umfpack_symbolic.c"))
+            .file(umfpack_dir.join("Source/umfpack_numeric.c"))
+            .file(umfpack_dir.join("Source/umfpack_get_numeric.c"))
+            .file(umfpack_dir.join("Source/umfpack_get_lunz.c"))
+            .file(umfpack_dir.join("Source/umfpack_free_symbolic.c"))
+            .file(umfpack_dir.join("Source/umfpack_free_numeric.c"))
             .include("SuiteSparse/AMD/Include")
             .object(&umfpack_dl_path)
             .cargo_metadata(false)
@@ -113,18 +120,4 @@ fn main() {
             .compile("suitesparseconfig");
     }
     println!("cargo:root={}", root.to_string_lossy());
-}
-
-/// Returns a vector of all the .c files in a given directory
-fn get_source_files(dir: PathBuf) -> Vec<PathBuf> {
-    let mut sources = Vec::new();
-    for entry in dir.read_dir().unwrap() {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("c") {
-                sources.push(path);
-            }
-        }
-    }
-    sources
 }

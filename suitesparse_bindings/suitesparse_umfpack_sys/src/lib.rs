@@ -1,3 +1,5 @@
+//! Raw C bindings to some (but not all) UMFPACK functions.
+
 #[cfg(target_os = "windows")]
 pub type SuiteSparseLong = libc::c_longlong;
 #[cfg(not(target_os = "windows"))]

@@ -1,3 +1,11 @@
+//! Partial interface (3rd party, unaffiliated) to SuiteSparse's UMFPACK solver package, 
+//! covering essentials for solving problems of the form Ax=b for real A, and for 
+//! recovering LU decomposition components of A for other uses.
+//! 
+//! This wrapper currently covers the double-int (DI) and double-long (DL) variations of
+//! the underlying library, while several more variations (such as for complex data type)
+//! exist in the underlying library but do not have wrappers here.
+
 use core::ptr::{null, null_mut};
 use libc::c_void;
 use sprs::{CsMatI, PermOwnedI};
@@ -35,6 +43,8 @@ macro_rules! umfpack_impl {
             }
         }
 
+        /// Partial interface to SuiteSparse's UMFPACK solver package.
+        /// Provides LU factorization of A and solution of Ax=b using stored factorization.
         pub struct $Context {
             /// `A` matrix of system Ax=b
             _a: CsMatI<f64, $int>,
@@ -53,11 +63,11 @@ macro_rules! umfpack_impl {
 
         impl $Context {
 
-            /// Build a new stored factorization of matrix `a` into LU components
+            /// Build a new stored factorization of matrix `A` into LU components
             /// with a stored C handle to an efficient (but opaque) direct solver.
             ///
-            /// This factorization can be done for either square or rectangular `a` matrix,
-            /// but can only be solved directly if `a` is square.
+            /// This factorization can be done for either square or rectangular `A` matrix,
+            /// but can only be solved directly if `A` is square.
             pub fn new<N>(a: CsMatI<N, $int>) -> Self
             where N: Default + Clone + Into<f64>,
             {
@@ -199,7 +209,7 @@ macro_rules! umfpack_impl {
                 (lnz, unz, nrow, ncol, nz_udiag)
             }
 
-            /// Get raw components of the numerical factorization of `a`
+            /// Get raw components of the numerical factorization of `A`
             /// * l: `L` matrix in CSC format
             /// * u: `U` matrix in CSR format
             /// * p: row permutation
