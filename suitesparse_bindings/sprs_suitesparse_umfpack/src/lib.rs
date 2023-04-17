@@ -12,7 +12,6 @@ macro_rules! umfpack_impl {
      $numeric: ident,
      $solve: ident,
      $get_numeric: ident,
-     $get_symbolic: ident,
      $get_lunz: ident,
      $free_numeric: ident,
      $free_symbolic: ident,
@@ -36,11 +35,14 @@ macro_rules! umfpack_impl {
 
         pub struct $Context {
             mat: CsMatI<f64, $int>,
+            /// 
+            #[allow(dead_code)]
             symbolic: $Symbolic,
+            /// This isn't used directly at the moment, but we have to keep this around to free memory properly
             numeric: $Numeric,
             nrow: usize,
             ncol: usize,
-            nnz: usize,
+            _nnz: usize,
         }
 
         impl $Context {
@@ -97,8 +99,16 @@ macro_rules! umfpack_impl {
                     numeric: numeric,
                     nrow: nrow,
                     ncol: ncol,
-                    nnz: nnz
+                    _nnz: nnz
                 }
+            }
+
+            pub fn shape(&self) -> (usize, usize) {
+                (self.nrow as usize, self.ncol as usize)
+            }
+
+            pub fn nnz(&self) -> usize {
+                self._nnz as usize
             }
 
             pub unsafe fn solve(&self, b: &[f64]) -> Vec<f64> {
@@ -133,7 +143,7 @@ macro_rules! umfpack_impl {
                 x
             }
 
-            unsafe fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
+            pub unsafe fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
                 let mut lnz: $int = 0;  // Total number of nonzero entries in L
                 let mut unz: $int = 0;  // Total number of nonzero entries in U
                 let mut nrow: $int = 0;  // Number of rows in both L and U (should match input matrix)
@@ -201,10 +211,8 @@ macro_rules! umfpack_impl {
 
                 return (l, u, p, q, dx, rs)
             }
-
         }
-
-     };
+    };
 }
 
 umfpack_impl!(
@@ -216,7 +224,6 @@ umfpack_impl!(
     umfpack_di_numeric,
     umfpack_di_solve,
     umfpack_di_get_numeric,
-    umfpack_di_get_symbolic,
     umfpack_di_get_lunz,
     umfpack_di_free_numeric,
     umfpack_di_free_symbolic,
@@ -231,8 +238,31 @@ umfpack_impl!(
     umfpack_dl_numeric,
     umfpack_dl_solve,
     umfpack_dl_get_numeric,
-    umfpack_dl_get_symbolic,
     umfpack_dl_get_lunz,
     umfpack_dl_free_numeric,
     umfpack_dl_free_symbolic,
 );
+
+#[cfg(test)]
+mod tests {
+    use sprs::CsMatI;
+
+    use crate::UmfpackDIContext;
+
+    #[test]
+    fn umfpack_di() {
+        let mat = CsMatI::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1., 2., 21., 6., 6., 2., 2., 8.],
+        );
+
+        let ctx = unsafe { UmfpackDIContext::new(mat) };
+
+        let b = vec![1.0_f64; 4];
+
+        let _x = unsafe { ctx.solve(&b[..]) };
+
+    }
+}
