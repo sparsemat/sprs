@@ -9,14 +9,5 @@ build = "build.rs"
 links = "umfpack"
 rust-version.workspace = true
 
-[features]
-default_features = ["static"]
-static = ["suitesparse-src/umfpack"]
-
 [dependencies]
 libc = "0.2.141"
-
-[dependencies.suitesparse-src]
-path = "../suitesparse-src"
-version = "0.2.0"
-optional = true

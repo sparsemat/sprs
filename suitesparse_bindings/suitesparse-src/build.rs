@@ -70,41 +70,6 @@ fn main() {
             .compile("ldl");
     }
 
-    if std::env::var_os("CARGO_FEATURE_UMFPACK").is_some() {
-        let umfpack_dir = Path::new(&"SuiteSparse/UMFPACK");
-
-        // Do the f64 val, i64 index version ('dl' for double & long)
-        cc::Build::new()
-            .define("DLONG", None) // Use 64-bit int for addresses
-            .include("SuiteSparse/SuiteSparse_config")
-            .include(umfpack_dir.join("Include"))
-            .file(umfpack_dir.join("Source/umfpack_solve.c"))
-            .file(umfpack_dir.join("Source/umfpack_symbolic.c"))
-            .file(umfpack_dir.join("Source/umfpack_numeric.c"))
-            .file(umfpack_dir.join("Source/umfpack_get_numeric.c"))
-            .file(umfpack_dir.join("Source/umfpack_get_lunz.c"))
-            .file(umfpack_dir.join("Source/umfpack_free_symbolic.c"))
-            .file(umfpack_dir.join("Source/umfpack_free_numeric.c"))
-            .include("SuiteSparse/AMD/Include")
-            .cargo_metadata(false)
-            .compile("umfpack_dl");
-
-        // Do the f64 val, i32 index version ('di' for double & int)
-        cc::Build::new()
-            .include("SuiteSparse/SuiteSparse_config")
-            .include(umfpack_dir.join("Include"))
-            .file(umfpack_dir.join("Source/umfpack_solve.c"))
-            .file(umfpack_dir.join("Source/umfpack_symbolic.c"))
-            .file(umfpack_dir.join("Source/umfpack_numeric.c"))
-            .file(umfpack_dir.join("Source/umfpack_get_numeric.c"))
-            .file(umfpack_dir.join("Source/umfpack_get_lunz.c"))
-            .file(umfpack_dir.join("Source/umfpack_free_symbolic.c"))
-            .file(umfpack_dir.join("Source/umfpack_free_numeric.c"))
-            .include("SuiteSparse/AMD/Include")
-            .cargo_metadata(false)
-            .compile("umfpack_di");
-    }
-
     if suitesparse_config {
         cc::Build::new()
             .include("SuiteSparse/SuiteSparse_config")

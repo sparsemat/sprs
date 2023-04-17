@@ -1,6 +1,6 @@
 [package]
 name = "suitesparse-src"
-version = "0.2.0"
+version = "0.1.0"
 authors = [
   "Magnus Ulimoen <magnus@ulimoen.dev>",
   "Vincent Barrielle <vincent.barrielle@m4x.org"
@@ -69,7 +69,6 @@ rust-version.workspace = true
 [features]
 camd = []
 ldl = []
-umfpack = []
 
 [dependencies]
 

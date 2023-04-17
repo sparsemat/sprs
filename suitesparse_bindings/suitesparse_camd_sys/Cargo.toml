@@ -17,5 +17,5 @@ libc = "0.2.74"
 
 [dependencies.suitesparse-src]
 path = "../suitesparse-src"
-version = "0.2.0"
+version = "0.1.0"
 optional = true
