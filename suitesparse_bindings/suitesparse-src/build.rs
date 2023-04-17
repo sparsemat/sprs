@@ -88,13 +88,7 @@ fn main() {
             .include("SuiteSparse/AMD/Include")
             .cargo_metadata(false)
             .compile("umfpack_dl");
-        // We must then copy this to another location since the next
-        // invocation is just a compile definition
-        let mut umfpack_path = std::path::PathBuf::from(root.clone());
-        umfpack_path.push("SuiteSparse/UMFPACK/Source/umfpack.o");
-        let mut umfpack_dl_path = umfpack_path.clone();
-        umfpack_dl_path.set_file_name("umfpackl.o");
-        std::fs::copy(&umfpack_path, &umfpack_dl_path).unwrap();
+
         // Do the f64 val, i32 index version ('di' for double & int)
         cc::Build::new()
             .include("SuiteSparse/SuiteSparse_config")
@@ -107,7 +101,6 @@ fn main() {
             .file(umfpack_dir.join("Source/umfpack_free_symbolic.c"))
             .file(umfpack_dir.join("Source/umfpack_free_numeric.c"))
             .include("SuiteSparse/AMD/Include")
-            .object(&umfpack_dl_path)
             .cargo_metadata(false)
             .compile("umfpack_di");
     }
