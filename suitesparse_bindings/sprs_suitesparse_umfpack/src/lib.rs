@@ -125,7 +125,7 @@ macro_rules! umfpack_impl {
                 }
             }
 
-            /// Get the shape of A like (nrow, ncol)
+            /// Get the shape of A like (`nrow`, `ncol`)
             pub fn shape(&self) -> (usize, usize) {
                 (self.nrow as usize, self.ncol as usize)
             }
@@ -142,13 +142,13 @@ macro_rules! umfpack_impl {
                 &self._a
             }
 
-            /// Solve the system Ax=b for x given b,
-            /// using the stored decomposition of the A matrix.
+            /// Solve the system `Ax=b` for `x` given `b`,
+            /// using the stored decomposition of the `A` matrix.
             ///
             /// # Panics
             ///
-            /// * if b does not have the outer dimension of A
-            /// * if A is not square
+            /// * if `b` does not have the outer dimension of `A`
+            /// * if `A` is not square
             pub fn solve(&self, b: &[f64]) -> Vec<f64> {
                 // Check shape
                 let (nrow, ncol) = self.shape();
@@ -183,11 +183,11 @@ macro_rules! umfpack_impl {
             }
 
             /// Get shape info about LU components
-            /// * lnz: number of nonzero entries in L
-            /// * unz: number of nonzero entries in U
-            /// * nrow: number of rows in L and U
-            /// * ncol: number of columns in L and U
-            /// * nz_udiag: number of nonzeroes on the diagonal of L and U
+            /// * `lnz`: number of nonzero entries in `L`
+            /// * `unz`: number of nonzero entries in `U`
+            /// * `nrow`: number of rows in `L` and `U`
+            /// * `ncol`: number of columns in `L` and `U`
+            /// * `nz_udiag`: number of nonzeroes on the diagonal of `L` and `U`
             pub fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
                 let mut lnz: $int = 0;  // Total number of nonzero entries in L
                 let mut unz: $int = 0;  // Total number of nonzero entries in U
@@ -210,12 +210,12 @@ macro_rules! umfpack_impl {
             }
 
             /// Get raw components of the numerical factorization of `A`
-            /// * l: `L` matrix in CSC format
-            /// * u: `U` matrix in CSR format
-            /// * p: row permutation
-            /// * q: column permutation
-            /// * rs: inverse row scaling (divide rows of LU by these to recover PAQ)
-            /// * dx: unknown; this quantity is not mentioned in underlying documentation but has distinct values, so we provide it here
+            /// * `l`: `L` matrix in CSC format
+            /// * `u`: `U` matrix in CSR format
+            /// * `p`: row permutation
+            /// * `q`: column permutation
+            /// * `rs`: inverse row scaling (divide rows of LU by these to recover PAQ)
+            /// * `dx`: unknown; this quantity is not mentioned in underlying documentation but has distinct values, so we provide it here
             pub fn get_numeric(&self) -> (CsMatI<f64, $int>, CsMatI<f64, $int>, PermOwnedI<$int>, PermOwnedI<$int>, Vec<f64>, Vec<f64>) {
                 // Get shape info that tells us how much to allocate
                 let (lnz, unz, nrow, ncol, _) = self.get_lunz();
