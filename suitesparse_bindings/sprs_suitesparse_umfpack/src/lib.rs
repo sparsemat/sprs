@@ -17,6 +17,7 @@ macro_rules! umfpack_impl {
      $free_symbolic: ident,
      ) => {
 
+        /// Wrapper of raw handle to guarantee proper drop procedure
         struct $Symbolic(*mut c_void);
 
         impl Drop for $Symbolic {
@@ -25,6 +26,7 @@ macro_rules! umfpack_impl {
             }
         }
 
+        /// Wrapper of raw handle to guarantee proper drop procedure
         struct $Numeric(*mut c_void);
 
         impl Drop for $Numeric {
@@ -34,33 +36,43 @@ macro_rules! umfpack_impl {
         }
 
         pub struct $Context {
-            mat: CsMatI<f64, $int>,
-            ///
-            #[allow(dead_code)]
+            /// `A` matrix of system Ax=b
+            _a: CsMatI<f64, $int>,
+            /// Opaque raw handle to symbolic factorization
+            #[allow(dead_code)]  // We don't use this at the moment, but could extend the bindings to extract state
             symbolic: $Symbolic,
-            /// This isn't used directly at the moment, but we have to keep this around to free memory properly
+            /// Opaque raw handle to numeric factorization
             numeric: $Numeric,
+            /// Number of rows in `A`
             nrow: usize,
+            /// Number of cols in `A`
             ncol: usize,
+            /// Number of nonzeroes in `A`
             _nnz: usize,
         }
 
         impl $Context {
-            pub fn new<N>(mat: CsMatI<N, $int>) -> Self
+
+            /// Build a new stored factorization of matrix `a` into LU components
+            /// with a stored C handle to an efficient (but opaque) direct solver.
+            ///
+            /// This factorization can be done for either square or rectangular `a` matrix,
+            /// but can only be solved directly if `a` is square.
+            pub fn new<N>(a: CsMatI<N, $int>) -> Self
             where N: Default + Clone + Into<f64>,
             {
                 // UMFPACK methods require CSC format and f64 data
-                let mat: CsMatI<f64, $int> = mat.to_other_types().into_csc();
+                let a: CsMatI<f64, $int> = a.to_other_types().into_csc();
 
                 // Get shape info
-                let nrow = mat.rows();
-                let ncol = mat.cols();
-                let nnz = mat.nnz();
+                let nrow = a.rows();
+                let ncol = a.cols();
+                let nnz = a.nnz();
 
                 // Get C-compatible raw pointers to column pointers, indices, and values
-                let ap = mat.indptr().to_proper().as_ptr();
-                let ai = mat.indices().as_ptr();
-                let ax = mat.data().as_ptr();
+                let ap = a.indptr().to_proper().as_ptr();
+                let ai = a.indices().as_ptr();
+                let ax = a.data().as_ptr();
 
                 // Do symbolic factorization
                 let symbolic_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
@@ -94,7 +106,7 @@ macro_rules! umfpack_impl {
                 let numeric = unsafe{$Numeric(*numeric_inner)};
 
                 Self {
-                    mat: mat,
+                    _a: a,
                     symbolic: symbolic,
                     numeric: numeric,
                     nrow: nrow,
@@ -103,18 +115,30 @@ macro_rules! umfpack_impl {
                 }
             }
 
+            /// Get the shape of A like (nrow, ncol)
             pub fn shape(&self) -> (usize, usize) {
                 (self.nrow as usize, self.ncol as usize)
             }
 
+            /// Get the number of nonzero entries in A
             pub fn nnz(&self) -> usize {
                 self._nnz as usize
             }
 
+            /// Get a reference to the stored matrix,
+            /// which may have had its data type converted from
+            /// what was supplied.
             pub fn a(&self) -> &CsMatI<f64, $int> {
-                &self.mat
+                &self._a
             }
 
+            /// Solve the system Ax=b for x given b,
+            /// using the stored decomposition of the A matrix.
+            ///
+            /// # Panics
+            ///
+            /// * if b does not have the outer dimension of A
+            /// * if A is not square
             pub fn solve(&self, b: &[f64]) -> Vec<f64> {
                 // Check shape
                 let (nrow, ncol) = self.shape();
@@ -125,9 +149,10 @@ macro_rules! umfpack_impl {
                 let mut x = vec![0.0; ncol];
 
                 // Get C-compatible raw pointers to column pointers, indices, and values
-                let ap = self.mat.indptr().to_proper().as_ptr();
-                let ai = self.mat.indices().as_ptr();
-                let ax = self.mat.data().as_ptr();
+                let a = self.a();
+                let ap = a.indptr().to_proper().as_ptr();
+                let ai = a.indices().as_ptr();
+                let ax = a.data().as_ptr();
 
                 // Do the linear solve using pre-computed LU factors and permutation
                 unsafe {
@@ -147,6 +172,12 @@ macro_rules! umfpack_impl {
                 x
             }
 
+            /// Get shape info about LU components
+            /// * lnz: number of nonzero entries in L
+            /// * unz: number of nonzero entries in U
+            /// * nrow: number of rows in L and U
+            /// * ncol: number of columns in L and U
+            /// * nz_udiag: number of nonzeroes on the diagonal of L and U
             pub fn get_lunz(&self) -> ($int, $int, $int, $int, $int) {
                 let mut lnz: $int = 0;  // Total number of nonzero entries in L
                 let mut unz: $int = 0;  // Total number of nonzero entries in U
@@ -168,7 +199,13 @@ macro_rules! umfpack_impl {
                 (lnz, unz, nrow, ncol, nz_udiag)
             }
 
-
+            /// Get raw components of the numerical factorization of `a`
+            /// * l: `L` matrix in CSC format
+            /// * u: `U` matrix in CSR format
+            /// * p: row permutation
+            /// * q: column permutation
+            /// * rs: inverse row scaling (divide rows of LU by these to recover PAQ)
+            /// * dx: unknown; this quantity is not mentioned in underlying documentation but has distinct values, so we provide it here
             pub fn get_numeric(&self) -> (CsMatI<f64, $int>, CsMatI<f64, $int>, PermOwnedI<$int>, PermOwnedI<$int>, Vec<f64>, Vec<f64>) {
                 // Get shape info that tells us how much to allocate
                 let (lnz, unz, nrow, ncol, _) = self.get_lunz();
@@ -288,7 +325,7 @@ mod tests {
 
         // Smoketest get_numeric - can we get the LU components out without a segfault?
         let (_l, _u, _p, _q, _dx, _rs) = ctx.get_numeric();
-        
+
         // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
         // to make sure LUR = PAQ holds for the returned components
     }
@@ -326,7 +363,7 @@ mod tests {
 
         // Smoketest get_numeric - can we get the LU components out without a segfault?
         let (_l, _u, _p, _q, _dx, _rs) = ctx.get_numeric();
-        
+
         // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
         // to make sure LUR = PAQ holds for the returned components
     }
