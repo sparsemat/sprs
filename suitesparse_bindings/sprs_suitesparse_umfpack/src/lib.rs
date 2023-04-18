@@ -1,4 +1,4 @@
-//! Partial interface (3rd party, unaffiliated) to SuiteSparse's UMFPACK solver package,
+//! Partial interface (3rd party, unaffiliated) to `SuiteSparse`'s UMFPACK solver package,
 //! covering essentials for solving problems of the form Ax=b for real A, and for
 //! recovering LU decomposition components of A for other uses.
 //!
@@ -43,7 +43,7 @@ macro_rules! umfpack_impl {
             }
         }
 
-        /// Partial interface to SuiteSparse's UMFPACK solver package.
+        /// Partial interface to `SuiteSparse`'s UMFPACK solver package.
         /// Provides LU factorization of A and solution of Ax=b using stored factorization.
         pub struct $Context {
             /// `A` matrix of system Ax=b
@@ -75,8 +75,8 @@ macro_rules! umfpack_impl {
                 let a: CsMatI<f64, $int> = a.to_other_types().into_csc();
 
                 // Get shape info
-                let nrow = a.rows();
-                let ncol = a.cols();
+                let nrow_ = a.rows();
+                let ncol_ = a.cols();
                 let nnz = a.nnz();
 
                 // Get C-compatible raw pointers to column pointers, indices, and values
@@ -88,8 +88,8 @@ macro_rules! umfpack_impl {
                 let symbolic_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
                 unsafe {
                     $symbolic(
-                        nrow as $int,
-                        ncol as $int,
+                        nrow_ as $int,
+                        ncol_ as $int,
                         ap,
                         ai,
                         ax,
@@ -98,7 +98,7 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                let symbolic = unsafe{$Symbolic(*symbolic_inner)};
+                let symbolic_ = unsafe{$Symbolic(*symbolic_inner)};
 
                 // Do numeric factorization
                 let numeric_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
@@ -107,20 +107,20 @@ macro_rules! umfpack_impl {
                         ap,
                         ai,
                         ax,
-                        symbolic.0,
+                        symbolic_.0,
                         numeric_inner,
                         null() as *const f64,  // Default settings
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                let numeric = unsafe{$Numeric(*numeric_inner)};
+                let numeric_ = unsafe{$Numeric(*numeric_inner)};
 
                 Self {
                     _a: a,
-                    symbolic: symbolic,
-                    numeric: numeric,
-                    nrow: nrow,
-                    ncol: ncol,
+                    symbolic: symbolic_,
+                    numeric: numeric_,
+                    nrow: nrow_,
+                    ncol: ncol_,
                     _nnz: nnz
                 }
             }
