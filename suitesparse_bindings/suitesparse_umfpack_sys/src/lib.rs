@@ -1,11 +1,11 @@
 //! Raw C bindings to some (but not all) UMFPACK functions.
 
 #[cfg(target_os = "windows")]
-pub type SuiteSparseLong = libc::c_longlong;
+pub type SuiteSparseLong = core::ffi::c_longlong;
 #[cfg(not(target_os = "windows"))]
-pub type SuiteSparseLong = libc::c_long;
+pub type SuiteSparseLong = core::ffi::c_long;
 
-pub type SuiteSparseInt = libc::c_int;
+pub type SuiteSparseInt = core::ffi::c_int;
 
 pub mod umfpack_free_numeric;
 pub mod umfpack_free_symbolic;

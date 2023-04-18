@@ -7,7 +7,7 @@
 //! exist in the underlying library but do not have wrappers here.
 
 use core::ptr::{null, null_mut};
-use libc::c_void;
+use core::ffi::c_void;
 use sprs::{CsMatI, PermOwnedI};
 use suitesparse_umfpack_sys::*;
 

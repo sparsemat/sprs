@@ -1,5 +1,5 @@
 use super::{SuiteSparseInt, SuiteSparseLong};
-use libc::{c_double, c_void};
+use core::ffi::{c_double, c_void};
 
 extern "C" {
     pub fn umfpack_di_solve(

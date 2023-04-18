@@ -10,4 +10,3 @@ links = "umfpack"
 rust-version.workspace = true
 
 [dependencies]
-libc = "0.2.141"

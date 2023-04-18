@@ -1,4 +1,4 @@
-use libc::c_void;
+use core::ffi::c_void;
 
 extern "C" {
     pub fn umfpack_di_free_symbolic(Symbolic: *mut *mut c_void);
