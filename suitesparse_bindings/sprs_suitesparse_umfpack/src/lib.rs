@@ -8,7 +8,7 @@
 
 use core::ptr::{null, null_mut};
 use core::ffi::c_void;
-use sprs::{CsMatI, PermOwnedI};
+use sprs::{CsMatI, CsMatViewI, PermOwnedI};
 use suitesparse_umfpack_sys::*;
 
 macro_rules! umfpack_impl {
@@ -138,8 +138,8 @@ macro_rules! umfpack_impl {
             /// Get a reference to the stored matrix,
             /// which may have had its data type converted from
             /// what was supplied.
-            pub fn a(&self) -> &CsMatI<f64, $int> {
-                &self.a_
+            pub fn a(&self) -> CsMatViewI<f64, $int> {
+                self.a_.view()
             }
 
             /// Solve the system `Ax=b` for `x` given `b`,
@@ -320,7 +320,7 @@ mod tests {
 
         let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
 
-        let b_recovered = ctx.a() * &xsprs;
+        let b_recovered = &ctx.a() * &xsprs;
         println!("{:?}", b_recovered);
 
         // Make sure the solved values match expectation
@@ -358,7 +358,7 @@ mod tests {
 
         let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
 
-        let b_recovered = ctx.a() * &xsprs;
+        let b_recovered = &ctx.a() * &xsprs;
         println!("{:?}", b_recovered);
 
         // Make sure the solved values match expectation
