@@ -30,7 +30,7 @@ macro_rules! umfpack_impl {
 
         impl Drop for $Symbolic {
             fn drop(&mut self) {
-                unsafe {$free_symbolic(&mut self.0 as *mut *mut c_void);}
+                unsafe {$free_symbolic(core::ptr::addr_of_mut!(self.0).cast());}
             }
         }
 
@@ -39,7 +39,7 @@ macro_rules! umfpack_impl {
 
         impl Drop for $Numeric {
             fn drop(&mut self) {
-                unsafe {$free_numeric(&mut self.0 as *mut *mut c_void);}
+                unsafe {$free_numeric(core::ptr::addr_of_mut!(self.0).cast());}
             }
         }
 
