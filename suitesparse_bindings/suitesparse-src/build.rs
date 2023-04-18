@@ -1,4 +1,3 @@
-
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     let root = std::env::var_os("OUT_DIR").unwrap();
