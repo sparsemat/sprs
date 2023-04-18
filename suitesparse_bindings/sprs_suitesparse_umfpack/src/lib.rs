@@ -14,6 +14,7 @@ use suitesparse_umfpack_sys::*;
 macro_rules! umfpack_impl {
     ($int: ty,
      $Context: ident,
+     $NumericComponents: ident,
      $Symbolic: ident,
      $Numeric: ident,
      $symbolic: ident,
@@ -41,6 +42,22 @@ macro_rules! umfpack_impl {
             fn drop(&mut self) {
                 unsafe {$free_numeric(core::ptr::addr_of_mut!(self.0).cast());}
             }
+        }
+
+        /// Components of numeric factorization   
+        pub struct $NumericComponents {
+            /// `L` matrix in CSC format
+            pub l: CsMatI<f64, $int>,
+            /// `U` matrix in CSR format
+            pub u: CsMatI<f64, $int>,
+            /// Row permutation
+            pub p: PermOwnedI<$int>,
+            /// Column permutation
+            pub q: PermOwnedI<$int>,
+            /// Inverse row scaling (divide rows of LU by these to recover PAQ)
+            pub rs: Vec<f64>,
+            /// Unknown usage; this quantity is not mentioned in underlying documentation but has distinct values, so we provide it here
+            pub dx: Vec<f64>
         }
 
         /// Partial interface to `SuiteSparse`'s UMFPACK solver package.
@@ -216,7 +233,11 @@ macro_rules! umfpack_impl {
             /// * `q`: column permutation
             /// * `rs`: inverse row scaling (divide rows of LU by these to recover PAQ)
             /// * `dx`: unknown; this quantity is not mentioned in underlying documentation but has distinct values, so we provide it here
-            pub fn get_numeric(&self) -> (CsMatI<f64, $int>, CsMatI<f64, $int>, PermOwnedI<$int>, PermOwnedI<$int>, Vec<f64>, Vec<f64>) {
+            /// 
+            /// # Panics
+            /// 
+            /// * if the extracted values and indices do not have the same length
+            pub fn get_numeric(&self) -> $NumericComponents {
                 // Get shape info that tells us how much to allocate
                 let (lnz, unz, nrow, ncol, _) = self.get_lunz();
                 let n_inner = nrow.min(ncol) as usize;
@@ -231,8 +252,8 @@ macro_rules! umfpack_impl {
                 let mut ui = vec![0 as $int; unz as usize];
                 let mut ux = vec![0.0_f64; unz as usize];
 
-                let mut rs = vec![0.0_f64; nrow as usize];
-                let mut dx = vec![0.0_f64; n_inner as usize];
+                let mut rs_ = vec![0.0_f64; nrow as usize];
+                let mut dx_ = vec![0.0_f64; n_inner as usize];
 
                 let mut p = vec![0 as $int; nrow as usize];
                 let mut q = vec![0 as $int; ncol as usize];
@@ -249,20 +270,27 @@ macro_rules! umfpack_impl {
                         ux[..].as_mut_ptr(),
                         p[..].as_mut_ptr(),
                         q[..].as_mut_ptr(),
-                        dx[..].as_mut_ptr(),
+                        dx_[..].as_mut_ptr(),
                         &do_recip as *const $int,
-                        rs[..].as_mut_ptr(),
+                        rs_[..].as_mut_ptr(),
                         self.numeric.0
                     );
                 }
 
                 // Pack results into sparse matrix structures
-                let l = CsMatI::new(shape, lp, lj, lx);
-                let u = CsMatI::new_csc(shape, up, ui, ux);
-                let p = PermOwnedI::new(p);
-                let q = PermOwnedI::new(q);
+                let l_ = CsMatI::new_from_unsorted(shape, lp, lj, lx).unwrap();
+                let u_ = CsMatI::new_from_unsorted_csc(shape, up, ui, ux).unwrap();
+                let p_ = PermOwnedI::new(p);
+                let q_ = PermOwnedI::new(q);
 
-                return (l, u, p, q, dx, rs)
+                $NumericComponents {
+                    l: l_,
+                    u: u_,
+                    p: p_,
+                    q: q_,
+                    rs: rs_,
+                    dx: dx_
+                }
             }
         }
     };
@@ -271,6 +299,7 @@ macro_rules! umfpack_impl {
 umfpack_impl!(
     SuiteSparseInt,
     UmfpackDIContext,
+    UmfpackDINumericComponents,
     UmfpackDISymbolic,
     UmfpackDINumeric,
     umfpack_di_symbolic,
@@ -285,6 +314,7 @@ umfpack_impl!(
 umfpack_impl!(
     SuiteSparseLong,
     UmfpackDLContext,
+    UmfpackDLNumericComponents,
     UmfpackDLSymbolic,
     UmfpackDLNumeric,
     umfpack_dl_symbolic,
@@ -334,7 +364,7 @@ mod tests {
         }
 
         // Smoketest get_numeric - can we get the LU components out without a segfault?
-        let (_l, _u, _p, _q, _dx, _rs) = ctx.get_numeric();
+        let _ = ctx.get_numeric();
 
         // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
         // to make sure LUR = PAQ holds for the returned components
@@ -372,7 +402,7 @@ mod tests {
         }
 
         // Smoketest get_numeric - can we get the LU components out without a segfault?
-        let (_l, _u, _p, _q, _dx, _rs) = ctx.get_numeric();
+        let _ = ctx.get_numeric();
 
         // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
         // to make sure LUR = PAQ holds for the returned components
