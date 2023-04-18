@@ -47,7 +47,7 @@ macro_rules! umfpack_impl {
         /// Provides LU factorization of A and solution of Ax=b using stored factorization.
         pub struct $Context {
             /// `A` matrix of system Ax=b
-            _a: CsMatI<f64, $int>,
+            a_: CsMatI<f64, $int>,
             /// Opaque raw handle to symbolic factorization
             #[allow(dead_code)]  // We don't use this at the moment, but could extend the bindings to extract state
             symbolic: $Symbolic,
@@ -58,7 +58,7 @@ macro_rules! umfpack_impl {
             /// Number of cols in `A`
             ncol: usize,
             /// Number of nonzeroes in `A`
-            _nnz: usize,
+            nnz_: usize,
         }
 
         impl $Context {
@@ -116,12 +116,12 @@ macro_rules! umfpack_impl {
                 let numeric_ = unsafe{$Numeric(*numeric_inner)};
 
                 Self {
-                    _a: a,
+                    a_: a,
                     symbolic: symbolic_,
                     numeric: numeric_,
                     nrow: nrow_,
                     ncol: ncol_,
-                    _nnz: nnz
+                    nnz_: nnz
                 }
             }
 
@@ -132,14 +132,14 @@ macro_rules! umfpack_impl {
 
             /// Get the number of nonzero entries in A
             pub fn nnz(&self) -> usize {
-                self._nnz as usize
+                self.nnz_ as usize
             }
 
             /// Get a reference to the stored matrix,
             /// which may have had its data type converted from
             /// what was supplied.
             pub fn a(&self) -> &CsMatI<f64, $int> {
-                &self._a
+                &self.a_
             }
 
             /// Solve the system `Ax=b` for `x` given `b`,
