@@ -6,8 +6,8 @@
 //! the underlying library, while several more variations (such as for complex data type)
 //! exist in the underlying library but do not have wrappers here.
 
-use core::ptr::{null, null_mut};
 use core::ffi::c_void;
+use core::ptr::{null, null_mut};
 use sprs::{CsMatI, CsMatViewI, PermOwnedI};
 use suitesparse_umfpack_sys::*;
 
@@ -44,7 +44,7 @@ macro_rules! umfpack_impl {
             }
         }
 
-        /// Components of numeric factorization   
+        /// Components of numeric factorization
         pub struct $NumericComponents {
             /// `L` matrix in CSC format
             pub l: CsMatI<f64, $int>,
@@ -233,9 +233,9 @@ macro_rules! umfpack_impl {
             /// * `q`: column permutation
             /// * `rs`: inverse row scaling (divide rows of LU by these to recover PAQ)
             /// * `dx`: unknown; this quantity is not mentioned in underlying documentation but has distinct values, so we provide it here
-            /// 
+            ///
             /// # Panics
-            /// 
+            ///
             /// * if the extracted values and indices do not have the same length
             pub fn get_numeric(&self) -> $NumericComponents {
                 // Get shape info that tells us how much to allocate
