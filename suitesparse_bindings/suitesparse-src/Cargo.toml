@@ -67,4 +67,4 @@ ldl = []
 [dependencies]
 
 [build-dependencies]
-cc = "1.0.79"
+cc = "1.0.60"
