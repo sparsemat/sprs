@@ -26,6 +26,7 @@ exclude = [
     "SuiteSparse/GPUQREngine/",
     "SuiteSparse/GraphBLAS/",
     "SuiteSparse/KLU/",
+    "SuiteSparse/UMFPACK/",
     "SuiteSparse/lib/",
     "SuiteSparse/Makefile",
     "SuiteSparse/MATLAB_Tools/",
@@ -55,8 +56,6 @@ exclude = [
     "SuiteSparse/LDL/Makefile",
     "SuiteSparse/LDL/MATLAB/",
     "SuiteSparse/LDL/Matrix/",
-  
-    "SuiteSparse/UMFPACK/",
 ]
 rust-version.workspace = true
 

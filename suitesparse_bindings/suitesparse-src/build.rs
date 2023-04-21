@@ -67,7 +67,6 @@ fn main() {
             .cargo_metadata(false)
             .compile("ldl");
     }
-
     if suitesparse_config {
         cc::Build::new()
             .include("SuiteSparse/SuiteSparse_config")
