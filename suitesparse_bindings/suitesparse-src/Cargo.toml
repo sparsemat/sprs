@@ -26,7 +26,6 @@ exclude = [
     "SuiteSparse/GPUQREngine/",
     "SuiteSparse/GraphBLAS/",
     "SuiteSparse/KLU/",
-    "SuiteSparse/UMFPACK/",
     "SuiteSparse/lib/",
     "SuiteSparse/Makefile",
     "SuiteSparse/MATLAB_Tools/",
@@ -37,6 +36,7 @@ exclude = [
     "SuiteSparse/SLIP_LU/",
     "SuiteSparse/SPQR/",
     "SuiteSparse/ssget/",
+    "SuiteSparse/UMFPACK/",
 
     "SuiteSparse/contents.m",
     "SuiteSparse/SuiteSparse_GPURuntime/",
