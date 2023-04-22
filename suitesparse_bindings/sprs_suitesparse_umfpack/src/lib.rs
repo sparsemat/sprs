@@ -64,7 +64,7 @@ macro_rules! umfpack_impl {
         /// Provides LU factorization of A and solution of Ax=b using stored factorization.
         pub struct $Context {
             /// `A` matrix of system Ax=b
-            a_: CsMatI<f64, $int>,
+            a: CsMatI<f64, $int>,
             /// Opaque raw handle to symbolic factorization
             #[allow(dead_code)]  // We don't use this at the moment, but could extend the bindings to extract state
             symbolic: $Symbolic,
@@ -75,7 +75,7 @@ macro_rules! umfpack_impl {
             /// Number of cols in `A`
             ncol: usize,
             /// Number of nonzeroes in `A`
-            nnz_: usize,
+            nnz: usize,
         }
 
         impl $Context {
@@ -92,8 +92,8 @@ macro_rules! umfpack_impl {
                 let a: CsMatI<f64, $int> = a.to_other_types().into_csc();
 
                 // Get shape info
-                let nrow_ = a.rows();
-                let ncol_ = a.cols();
+                let nrow = a.rows();
+                let ncol = a.cols();
                 let nnz = a.nnz();
 
                 // Get C-compatible raw pointers to column pointers, indices, and values
@@ -105,8 +105,8 @@ macro_rules! umfpack_impl {
                 let symbolic_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
                 unsafe {
                     $symbolic(
-                        nrow_ as $int,
-                        ncol_ as $int,
+                        nrow as $int,
+                        ncol as $int,
                         ap,
                         ai,
                         ax,
@@ -115,7 +115,7 @@ macro_rules! umfpack_impl {
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                let symbolic_ = unsafe{$Symbolic(*symbolic_inner)};
+                let symbolic = unsafe{$Symbolic(*symbolic_inner)};
 
                 // Do numeric factorization
                 let numeric_inner = &mut (null_mut() as *mut c_void) as *mut *mut c_void;
@@ -124,21 +124,21 @@ macro_rules! umfpack_impl {
                         ap,
                         ai,
                         ax,
-                        symbolic_.0,
+                        symbolic.0,
                         numeric_inner,
                         null() as *const f64,  // Default settings
                         null_mut() as *mut c_void  // Ignore info
                     );
                 };
-                let numeric_ = unsafe{$Numeric(*numeric_inner)};
+                let numeric = unsafe{$Numeric(*numeric_inner)};
 
                 Self {
-                    a_: a,
-                    symbolic: symbolic_,
-                    numeric: numeric_,
-                    nrow: nrow_,
-                    ncol: ncol_,
-                    nnz_: nnz
+                    a,
+                    symbolic,
+                    numeric,
+                    nrow,
+                    ncol,
+                    nnz,
                 }
             }
 
@@ -149,14 +149,14 @@ macro_rules! umfpack_impl {
 
             /// Get the number of nonzero entries in A
             pub fn nnz(&self) -> usize {
-                self.nnz_ as usize
+                self.nnz as usize
             }
 
             /// Get a reference to the stored matrix,
             /// which may have had its data type converted from
             /// what was supplied.
             pub fn a(&self) -> CsMatViewI<f64, $int> {
-                self.a_.view()
+                self.a.view()
             }
 
             /// Solve the system `Ax=b` for `x` given `b`,
@@ -252,8 +252,8 @@ macro_rules! umfpack_impl {
                 let mut ui = vec![0 as $int; unz as usize];
                 let mut ux = vec![0.0_f64; unz as usize];
 
-                let mut rs_ = vec![0.0_f64; nrow as usize];
-                let mut dx_ = vec![0.0_f64; n_inner as usize];
+                let mut rs = vec![0.0_f64; nrow as usize];
+                let mut dx = vec![0.0_f64; n_inner as usize];
 
                 let mut p = vec![0 as $int; nrow as usize];
                 let mut q = vec![0 as $int; ncol as usize];
@@ -270,26 +270,26 @@ macro_rules! umfpack_impl {
                         ux[..].as_mut_ptr(),
                         p[..].as_mut_ptr(),
                         q[..].as_mut_ptr(),
-                        dx_[..].as_mut_ptr(),
+                        dx[..].as_mut_ptr(),
                         &do_recip as *const $int,
-                        rs_[..].as_mut_ptr(),
+                        rs[..].as_mut_ptr(),
                         self.numeric.0
                     );
                 }
 
                 // Pack results into sparse matrix structures
-                let l_ = CsMatI::new_from_unsorted(shape, lp, lj, lx).unwrap();
-                let u_ = CsMatI::new_from_unsorted_csc(shape, up, ui, ux).unwrap();
-                let p_ = PermOwnedI::new(p);
-                let q_ = PermOwnedI::new(q);
+                let l = CsMatI::new_from_unsorted(shape, lp, lj, lx).unwrap();
+                let u = CsMatI::new_from_unsorted_csc(shape, up, ui, ux).unwrap();
+                let p = PermOwnedI::new(p);
+                let q = PermOwnedI::new(q);
 
                 $NumericComponents {
-                    l: l_,
-                    u: u_,
-                    p: p_,
-                    q: q_,
-                    rs: rs_,
-                    dx: dx_
+                    l,
+                    u,
+                    p,
+                    q,
+                    rs,
+                    dx,
                 }
             }
         }
