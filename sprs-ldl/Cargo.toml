@@ -1,36 +1,21 @@
 [package]
-
 name = "sprs-ldl"
 description = "Sparse cholesky factorization"
 version = "0.10.0"
 authors = ["Vincent Barrielle"]
-edition = "2018"
-
 readme = "README.md"
 license = "LGPL-2.1"
 repository = "https://github.com/sparsemat/sprs"
 documentation = "https://vbarrielle.github.io/sprs/doc/sprs/"
 keywords = ["sparse", "matrix", "cholesky", "factorization", "linalg"]
 rust-version.workspace = true
+edition.workspace = true
 
 [dependencies]
-
 num-traits = "0.2.0"
-
-
-[dependencies.sprs]
-version = "0.11.0"
-path = "../sprs"
-
-[dependencies.sprs_suitesparse_ldl]
-version = "0.8.0"
-path = "../suitesparse_bindings/sprs_suitesparse_ldl"
-optional = true
-
-[dependencies.sprs_suitesparse_camd]
-version = "0.3.0"
-path = "../suitesparse_bindings/sprs_suitesparse_camd"
-optional = true
+sprs = { version = "0.11.0", path = "../sprs" }
+sprs_suitesparse_ldl = { version = "0.8.0", path = "../suitesparse_bindings/sprs_suitesparse_ldl", optional = true }
+sprs_suitesparse_camd = { version = "0.3.0", path = "../suitesparse_bindings/sprs_suitesparse_camd", optional = true }
 
 [dev-dependencies]
 ndarray = ">=0.11.0,<0.16"

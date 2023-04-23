@@ -1,11 +1,11 @@
 #![allow(non_camel_case_types)]
-pub type ldl_int = libc::c_int;
+pub type ldl_int = std::ffi::c_int;
 
 #[cfg(target_os = "windows")]
 pub type ldl_long = i64;
 #[cfg(not(target_os = "windows"))]
-pub type ldl_long = libc::c_long;
-pub type ldl_double = libc::c_double;
+pub type ldl_long = std::ffi::c_long;
+pub type ldl_double = std::ffi::c_double;
 
 extern "C" {
     pub fn ldl_symbolic(

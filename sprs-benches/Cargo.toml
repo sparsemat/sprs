@@ -2,32 +2,23 @@
 name = "sprs-benches"
 version = "0.1.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
-edition = "2018"
 publish = false
 rust-version.workspace = true
-
-[dependencies.sprs]
-version = "0.11.0"
-path = "../sprs"
-
-[dependencies.sprs-rand]
-version = "0.4.0"
-path = "../sprs-rand"
-
-[dependencies.plotters]
-version = "0.2.12"
+edition.workspace = true
 
 [dependencies]
-pyo3 = { version="0.16.5" }
+sprs = { version = "0.11.0", path = "../sprs" }
+sprs-rand = { version = "0.4.0", path = "../sprs-rand" }
+plotters = "0.3.4"
+pyo3 = { version = "0.18.3", features = ["auto-initialize"] }
 
 [build-dependencies]
 cc = "1.0.52"
-reqwest = { version="0.10.4", features=["blocking"], optional=true }
+reqwest = { version="0.11.16", features=["blocking"], optional=true }
 tar = { version="0.4.26", optional=true }
-libflate = {version="1.0.0", optional=true }
+libflate = { version="1.0.0", optional=true }
 
 [features]
-
 default = []
-dl_eigen = ["reqwest", "tar", "libflate"]
+dl_eigen = ["dep:reqwest", "dep:tar", "dep:libflate"]
 eigen = []

@@ -2,11 +2,11 @@
 name = "suitesparse_umfpack_sys"
 version = "0.1.0"
 authors = ["James Logan <jlogan03@gmail.com>"]
-edition = "2021"
 description = "Raw bindings to SuiteSparse's UMFPACK collection"
-license = "MIT OR Apache-2.0"
 build = "build.rs"
 links = "umfpack"
 rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]

@@ -2,20 +2,15 @@
 name = "suitesparse_camd_sys"
 version = "0.1.1"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
-edition = "2018"
 description = "Raw bindings to SuiteSparse's CAMD algorithm"
-license = "MIT OR Apache-2.0"
 build = "build.rs"
 links = "camd"
 rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [features]
-static = ["suitesparse-src/camd"]
+static = ["dep:suitesparse-src", "suitesparse-src?/camd"]
 
 [dependencies]
-libc = "0.2.74"
-
-[dependencies.suitesparse-src]
-path = "../suitesparse-src"
-version = "0.1.0"
-optional = true
+suitesparse-src = { version = "0.1.0", path = "../suitesparse-src", optional = true }

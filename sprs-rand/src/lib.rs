@@ -40,7 +40,7 @@ where
     let mut data = Vec::with_capacity(exp_nnz);
     // sample row indices
     for _ in 0..exp_nnz {
-        indices.push(I::from_usize(rng.gen_range(0, shape.0)));
+        indices.push(I::from_usize(rng.gen_range(0..shape.0)));
         // Note: there won't be any correspondence between the data
         // sampled here and the row sampled before, but this does not matter
         // as we are sampling.
@@ -65,7 +65,7 @@ where
         let end = indptr[row + 1].index();
         for _ in start..end {
             loop {
-                let col = I::from_usize(rng.gen_range(0, shape.1));
+                let col = I::from_usize(rng.gen_range(0..shape.1));
                 let loc = indices[start..].binary_search(&col);
                 match loc {
                     Ok(_) => {

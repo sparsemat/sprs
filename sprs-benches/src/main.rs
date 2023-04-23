@@ -43,7 +43,6 @@ extern "C" {
 
 #[cfg(feature = "eigen")]
 fn eigen_prod(a: sprs::CsMatView<f64>, b: sprs::CsMatView<f64>) -> usize {
-    use std::convert::TryFrom;
     let (a_rows, a_cols) = a.shape();
     let (b_rows, b_cols) = b.shape();
     assert_eq!(a_cols, b_rows);
@@ -94,6 +93,12 @@ struct BenchSpec {
 }
 
 fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
+    Python::with_gil(bench_densities_with_py)
+}
+
+fn bench_densities_with_py(
+    py: Python,
+) -> Result<(), Box<dyn std::error::Error>> {
     let bench_specs = [
         BenchSpec {
             shape: (1500, 2500),
@@ -158,8 +163,6 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
         },
     ];
 
-    let gil = Python::acquire_gil();
-    let py = gil.python();
     let scipy_sparse = PyModule::import(py, "scipy.sparse").map_err(|e| {
         let res = format!("Python error: {e:?}");
         e.print_and_set_sys_last_vars(py);
@@ -357,7 +360,7 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                 .margin(5)
                 .x_label_area_size(30)
                 .y_label_area_size(50)
-                .build_ranged(0_f32..max_absciss, 0_f32..max_time)?;
+                .build_cartesian_2d(0_f32..max_absciss, 0_f32..max_time)?;
 
             let abscisses = if is_shape_bench {
                 shapes.iter().map(|(rows, _)| *rows as f64).collect()
@@ -373,11 +376,11 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times.iter().map(|t| *t as f32)),
-                    &MAGENTA,
+                    MAGENTA,
                 ))?
                 .label("sprs (1T)")
                 .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &MAGENTA)
+                    PathElement::new(vec![(x, y), (x + 20, y)], MAGENTA)
                 });
 
             chart
@@ -386,11 +389,11 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times_2threads.iter().map(|t| *t as f32)),
-                    &BLACK,
+                    BLACK,
                 ))?
                 .label("sprs (2T)")
                 .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &BLACK)
+                    PathElement::new(vec![(x, y), (x + 20, y)], BLACK)
                 });
 
             chart
@@ -399,11 +402,11 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times_4threads.iter().map(|t| *t as f32)),
-                    &YELLOW,
+                    YELLOW,
                 ))?
                 .label("sprs (4T)")
                 .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW)
+                    PathElement::new(vec![(x, y), (x + 20, y)], YELLOW)
                 });
 
             chart
@@ -412,11 +415,11 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times_autothread.iter().map(|t| *t as f32)),
-                    &BLUE,
+                    BLUE,
                 ))?
                 .label("sprs (auto thread)")
                 .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &BLUE)
+                    PathElement::new(vec![(x, y), (x + 20, y)], BLUE)
                 });
 
             chart
@@ -425,11 +428,11 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                         .iter()
                         .map(|d| *d as f32)
                         .zip(times_py.iter().map(|t| *t as f32)),
-                    &GREEN,
+                    GREEN,
                 ))?
                 .label("Scipy")
                 .legend(|(x, y)| {
-                    PathElement::new(vec![(x, y), (x + 20, y)], &GREEN)
+                    PathElement::new(vec![(x, y), (x + 20, y)], GREEN)
                 });
 
             #[cfg(feature = "eigen")]
@@ -441,19 +444,19 @@ fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
                                 .iter()
                                 .map(|d| *d as f32)
                                 .zip(times_eigen.iter().map(|t| *t as f32)),
-                            &CYAN,
+                            CYAN,
                         ))?
                         .label("Eigen")
                         .legend(|(x, y)| {
-                            PathElement::new(vec![(x, y), (x + 20, y)], &CYAN)
+                            PathElement::new(vec![(x, y), (x + 20, y)], CYAN)
                         });
                 }
             }
 
             chart
                 .configure_series_labels()
-                .background_style(&WHITE.mix(0.8))
-                .border_style(&BLACK)
+                .background_style(WHITE.mix(0.8))
+                .border_style(BLACK)
                 .draw()?;
         }
     }
