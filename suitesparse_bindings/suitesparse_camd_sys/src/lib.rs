@@ -3,11 +3,13 @@
 //! For a static build activate the "static" feature, which builds CAMD
 //! from source and includes this statically.
 #[cfg(target_os = "windows")]
-pub type SuiteSparseLong = libc::c_longlong;
+pub type SuiteSparseLong = std::ffi::c_longlong;
 #[cfg(not(target_os = "windows"))]
-pub type SuiteSparseLong = libc::c_long;
+pub type SuiteSparseLong = std::ffi::c_long;
 
-pub type SuiteSparseInt = libc::c_int;
+pub type SuiteSparseInt = std::ffi::c_int;
+
+use std::ffi::c_double;
 
 extern "C" {
     /// Find a permutation matrix P, represented by the permutation indices
@@ -34,8 +36,8 @@ extern "C" {
         ap: *const SuiteSparseInt,
         ai: *const SuiteSparseInt,
         p: *mut SuiteSparseInt,
-        control: *mut libc::c_double,
-        info: *mut libc::c_double,
+        control: *mut c_double,
+        info: *mut c_double,
         constraint: *mut SuiteSparseInt,
     ) -> SuiteSparseInt;
 
@@ -45,8 +47,8 @@ extern "C" {
         ap: *const SuiteSparseLong,
         ai: *const SuiteSparseLong,
         p: *mut SuiteSparseLong,
-        control: *mut libc::c_double,
-        info: *mut libc::c_double,
+        control: *mut c_double,
+        info: *mut c_double,
         constraint: *mut SuiteSparseLong,
     ) -> SuiteSparseLong;
 
@@ -84,22 +86,22 @@ extern "C" {
     );
 
     /// Fill the `control` array of size `CAMD_CONTROL` with default values
-    pub fn camd_defaults(control: *mut libc::c_double);
+    pub fn camd_defaults(control: *mut c_double);
 
     /// Fill the `control` array of size `CAMD_CONTROL` with default values
-    pub fn camd_l_defaults(control: *mut libc::c_double);
+    pub fn camd_l_defaults(control: *mut c_double);
 
     /// Pretty print the `control` array of size `CAMD_CONTROL`
-    pub fn camd_control(control: *const libc::c_double);
+    pub fn camd_control(control: *const c_double);
 
     /// Pretty print the `control` array of size `CAMD_CONTROL`
-    pub fn camd_l_control(control: *const libc::c_double);
+    pub fn camd_l_control(control: *const c_double);
 
     /// Pretty print the `info` array of size `CAMD_INFO`
-    pub fn camd_info(info: *const libc::c_double);
+    pub fn camd_info(info: *const c_double);
 
     /// Pretty print the `info` array of size `CAMD_INFO`
-    pub fn camd_l_info(info: *const libc::c_double);
+    pub fn camd_l_info(info: *const c_double);
 }
 
 pub const CAMD_CONTROL: usize = 5;

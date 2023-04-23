@@ -16,3 +16,5 @@ members = [
 
 [workspace.package]
 rust-version = "1.64"
+edition = "2021"
+license = "MIT OR Apache-2.0"

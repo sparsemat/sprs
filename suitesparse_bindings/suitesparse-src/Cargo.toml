@@ -5,7 +5,6 @@ authors = [
   "Magnus Ulimoen <magnus@ulimoen.dev>",
   "Vincent Barrielle <vincent.barrielle@m4x.org"
 ]
-edition = "2018"
 build = "build.rs"
 links = "suitesparse-src"
 license-file = "SuiteSparse/LICENSE.txt"
@@ -58,6 +57,7 @@ exclude = [
     "SuiteSparse/LDL/Matrix/",
 ]
 rust-version.workspace = true
+edition.workspace = true
 
 [features]
 camd = []

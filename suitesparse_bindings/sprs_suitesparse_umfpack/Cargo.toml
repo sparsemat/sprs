@@ -3,16 +3,13 @@ name = "sprs_suitesparse_umfpack"
 description = "sprs bindings to the suitesparse umfpack solver"
 version = "0.1.0"
 authors = ["James Logan <jlogan03@gmail.com>"]
-license = "MIT OR Apache-2.0"
 repository = "https://github.com/sparsemat/sprs"
 keywords = ["sparse", "matrix", "cholesky", "factorization", "suitesparse"]
 readme = "README.md"
-edition = "2021"
+edition.workspace = true
+license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-suitesparse_umfpack_sys = { path = "../suitesparse_umfpack_sys", version = "0.1.0" }
-
-[dependencies.sprs]
-version = "0.11.0"
-path = "../../sprs"
+suitesparse_umfpack_sys = { version = "0.1.0", path = "../suitesparse_umfpack_sys" }
+sprs = { version = "0.11.0", path = "../../sprs" }

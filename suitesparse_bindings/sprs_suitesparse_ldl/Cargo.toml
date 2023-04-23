@@ -3,17 +3,14 @@ name = "sprs_suitesparse_ldl"
 description = "sprs bindings to the suitesparse ldl solver"
 version = "0.8.0"
 authors = ["Vincent Barrielle <vincent.barrielle@m4x.org>"]
-license = "MIT OR Apache-2.0"
 repository = "https://github.com/sparsemat/sprs"
 keywords = ["sparse", "matrix", "cholesky", "factorization", "suitesparse"]
 readme = "README.md"
-edition = "2018"
+edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
 
 [dependencies]
 num-traits = "0.2.0"
-suitesparse_ldl_sys = { path = "../suitesparse_ldl_sys", version = "0.3.0" }
-
-[dependencies.sprs]
-version = "0.11.0"
-path = "../../sprs"
+suitesparse_ldl_sys = { version = "0.3.0", path = "../suitesparse_ldl_sys" }
+sprs = { version = "0.11.0", path = "../../sprs" }
