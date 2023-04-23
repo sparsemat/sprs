@@ -109,7 +109,7 @@ jobs:
         override: true
 
     - name: Build (exclude suitesparse)
-      run: cargo build --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys
+      run: cargo build --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys  --exclude suitesparse_umfpack_sys --exclude sprs_suitesparse_umfpack
       if: matrix.os != 'ubuntu-20.04'
 
     - name: Build (all)
@@ -117,7 +117,7 @@ jobs:
       if: matrix.os == 'ubuntu-20.04'
 
     - name: Test (exclude suitesparse)
-      run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys
+      run: cargo test --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys --exclude suitesparse_umfpack_sys --exclude sprs_suitesparse_umfpack
       if: matrix.os != 'ubuntu-20.04'
 
     - name: Test (all)

@@ -7,6 +7,8 @@ members = [
     "suitesparse_bindings/suitesparse_camd_sys",
     "suitesparse_bindings/sprs_suitesparse_camd",
     "suitesparse_bindings/suitesparse-src",
+    "suitesparse_bindings/suitesparse_umfpack_sys",
+    "suitesparse_bindings/sprs_suitesparse_umfpack",
     "sprs-rand",
     "sprs-benches",
     "sprs-tests",
