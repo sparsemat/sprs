@@ -549,17 +549,37 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
-    pub fn append_outer(mut self, data: &[N]) -> Self
+    pub fn append_outer(self, data: &[N]) -> Self
     where
         N: Clone + Num,
     {
+        self.append_outer_iter(data.iter().cloned().enumerate())
+    }
+
+    /// Append an outer dim to an existing matrix, provided by an iterator
+    pub fn append_outer_iter<Iter>(mut self, iter: Iter) -> Self
+    where
+        N: Num,
+        Iter: Iterator<Item = (usize, N)>,
+    {
         let mut nnz = self.nnz();
-        for (inner_ind, val) in data.iter().enumerate() {
-            if *val != N::zero() {
+        let mut prev_inner_ind = None;
+        for (inner_ind, val) in iter {
+            if val != N::zero() {
+                if let Some(p_ind) = prev_inner_ind {
+                    assert!(p_ind < inner_ind, "inner index order");
+                }
+                prev_inner_ind = Some(inner_ind);
                 self.indices.push(I::from_usize(inner_ind));
-                self.data.push(val.clone());
+                self.data.push(val);
                 nnz += 1;
             }
+        }
+        if let Some(last_inner_ind) = prev_inner_ind {
+            assert!(
+                last_inner_ind < self.inner_dims(),
+                "inner index out of range"
+            );
         }
         match self.storage {
             CSR => self.nrows += 1,
