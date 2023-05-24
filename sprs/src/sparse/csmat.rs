@@ -563,6 +563,9 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         N: Num,
         Iter: Iterator<Item = (usize, N)>,
     {
+        if let (_, Some(nnz)) = iter.size_hint() {
+            self.reserve_nnz(nnz)
+        }
         let mut nnz = self.nnz();
         let mut prev_inner_ind = None;
         for (inner_ind, val) in iter {
