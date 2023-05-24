@@ -556,7 +556,8 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         self.append_outer_iter(data.iter().cloned().enumerate())
     }
 
-    /// Append an outer dim to an existing matrix, provided by an iterator
+    /// Append an outer dim to an existing matrix, increasing the size along the outer
+    /// dimension by one.
     pub fn append_outer_iter<Iter>(mut self, iter: Iter) -> Self
     where
         N: Num,
