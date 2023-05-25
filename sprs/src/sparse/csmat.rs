@@ -553,35 +553,49 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     where
         N: Clone + Num,
     {
-        self.append_outer_iter(data.iter().cloned().enumerate())
+        self.append_outer_iter_unchecked(
+            data.iter()
+                .cloned()
+                .enumerate()
+                .filter(|(_, val)| !val.is_zero()),
+        )
     }
 
     /// Append an outer dim to an existing matrix, increasing the size along the outer
     /// dimension by one.
-    pub fn append_outer_iter<Iter>(mut self, iter: Iter) -> Self
+    ///
+    /// **Note** Panics if the iterator is **not** strictly ordered by ascending index
+    pub fn append_outer_iter<Iter>(self, iter: Iter) -> Self
     where
         N: Num,
+        Iter: Iterator<Item = (usize, N)>,
+    {
+        self.append_outer_iter_unchecked(AssertOrderedIterator {
+            prev: None,
+            iter: iter.filter(|(_, val)| !val.is_zero()),
+        })
+    }
+
+    /// Append an outer dim to an existing matrix, increasing the size along the outer
+    /// dimension by one.
+    ///
+    /// **Note** The iterator must be strictly ordered by ascending index
+    pub fn append_outer_iter_unchecked<Iter>(mut self, iter: Iter) -> Self
+    where
         Iter: Iterator<Item = (usize, N)>,
     {
         if let (_, Some(nnz)) = iter.size_hint() {
             self.reserve_nnz(nnz)
         }
         let mut nnz = self.nnz();
-        let mut prev_inner_ind = None;
         for (inner_ind, val) in iter {
-            if val != N::zero() {
-                if let Some(p_ind) = prev_inner_ind {
-                    assert!(p_ind < inner_ind, "inner index order");
-                }
-                prev_inner_ind = Some(inner_ind);
-                self.indices.push(I::from_usize(inner_ind));
-                self.data.push(val);
-                nnz += 1;
-            }
+            self.indices.push(I::from_usize(inner_ind));
+            self.data.push(val);
+            nnz += 1;
         }
-        if let Some(last_inner_ind) = prev_inner_ind {
+        if let Some(last_inner_ind) = self.indices.last() {
             assert!(
-                last_inner_ind < self.inner_dims(),
+                last_inner_ind.index_unchecked() < self.inner_dims(),
                 "inner index out of range"
             );
         }
@@ -594,22 +608,14 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVecViewI<N, I>) -> Self
+    pub fn append_outer_csvec(self, vec: CsVecViewI<N, I>) -> Self
     where
         N: Clone,
     {
         assert_eq!(self.inner_dims(), vec.dim());
-        for (ind, val) in vec.indices().iter().zip(vec.data()) {
-            self.indices.push(*ind);
-            self.data.push(val.clone());
-        }
-        match self.storage {
-            CSR => self.nrows += 1,
-            CSC => self.ncols += 1,
-        }
-        let nnz = Iptr::from_usize(self.indptr.nnz() + vec.nnz());
-        self.indptr.push(nnz);
-        self
+        self.append_outer_iter_unchecked(
+            vec.iter().map(|(i, val)| (i, val.clone())),
+        )
     }
 
     /// Insert an element in the matrix. If the element is already present,
@@ -681,6 +687,37 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
             CSR => self.ncols = inner_dims,
             CSC => self.nrows = inner_dims,
         }
+    }
+}
+
+pub(crate) struct AssertOrderedIterator<Iter> {
+    prev: Option<usize>,
+    iter: Iter,
+}
+
+impl<N, Iter: Iterator<Item = (usize, N)>> Iterator
+    for AssertOrderedIterator<Iter>
+{
+    type Item = (usize, N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((idx, n)) = self.iter.next() {
+            if let Some(prev_idx) = self.prev {
+                assert!(
+                    idx < prev_idx,
+                    "index out of order. {} followed {}",
+                    idx,
+                    prev_idx
+                );
+            }
+            self.prev = Some(idx);
+            return Some((idx, n));
+        }
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
