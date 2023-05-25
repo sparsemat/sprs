@@ -551,36 +551,50 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     /// Append an outer dim to an existing matrix, compressing it in the process
     pub fn append_outer(self, data: &[N]) -> Self
     where
-        N: Clone + Num,
+        N: Clone + Zero,
     {
-        self.append_outer_iter_unchecked(
-            data.iter()
-                .cloned()
-                .enumerate()
-                .filter(|(_, val)| !val.is_zero()),
-        )
+        // Safety: enumerate is monotonically increasing
+        unsafe {
+            self.append_outer_iter_unchecked(
+                data.iter()
+                    .cloned()
+                    .enumerate()
+                    .filter(|(_, val)| !val.is_zero()),
+            )
+        }
     }
 
     /// Append an outer dim to an existing matrix, increasing the size along the outer
     /// dimension by one.
     ///
-    /// **Note** Panics if the iterator is **not** strictly ordered by ascending index
+    /// # Panics
+    ///
+    /// if the iterator index is **not** monotonically increasing
     pub fn append_outer_iter<Iter>(self, iter: Iter) -> Self
     where
-        N: Num,
+        N: Zero,
         Iter: Iterator<Item = (usize, N)>,
     {
-        self.append_outer_iter_unchecked(AssertOrderedIterator {
-            prev: None,
-            iter: iter.filter(|(_, val)| !val.is_zero()),
-        })
+        unsafe {
+            self.append_outer_iter_unchecked(AssertOrderedIterator {
+                prev: None,
+                iter: iter.filter(|(_, val)| !val.is_zero()),
+            })
+        }
     }
 
     /// Append an outer dim to an existing matrix, increasing the size along the outer
     /// dimension by one.
     ///
-    /// **Note** The iterator must be strictly ordered by ascending index
-    pub fn append_outer_iter_unchecked<Iter>(mut self, iter: Iter) -> Self
+    /// # Safety
+    ///
+    /// This is unsafe since indices for each inner dim should be monotonically increasing
+    /// which is not checked. The data values are additionally not checked for zero.
+    /// See `append_outer_iter` for the checked version
+    pub unsafe fn append_outer_iter_unchecked<Iter>(
+        mut self,
+        iter: Iter,
+    ) -> Self
     where
         Iter: Iterator<Item = (usize, N)>,
     {
@@ -613,9 +627,12 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         N: Clone,
     {
         assert_eq!(self.inner_dims(), vec.dim());
-        self.append_outer_iter_unchecked(
-            vec.iter().map(|(i, val)| (i, val.clone())),
-        )
+        // Safety: CsVec has monotonically increasing indices
+        unsafe {
+            self.append_outer_iter_unchecked(
+                vec.iter().map(|(i, val)| (i, val.clone())),
+            )
+        }
     }
 
     /// Insert an element in the matrix. If the element is already present,
@@ -701,19 +718,18 @@ impl<N, Iter: Iterator<Item = (usize, N)>> Iterator
     type Item = (usize, N);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some((idx, n)) = self.iter.next() {
-            if let Some(prev_idx) = self.prev {
-                assert!(
-                    idx < prev_idx,
-                    "index out of order. {} followed {}",
-                    idx,
-                    prev_idx
-                );
-            }
-            self.prev = Some(idx);
-            return Some((idx, n));
+        let (idx, n) = self.iter.next()?;
+
+        if let Some(prev_idx) = self.prev {
+            assert!(
+                idx < prev_idx,
+                "index out of order. {} followed {}",
+                idx,
+                prev_idx
+            );
         }
-        None
+        self.prev = Some(idx);
+        Some((idx, n))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
