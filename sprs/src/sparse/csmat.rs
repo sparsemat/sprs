@@ -722,7 +722,7 @@ impl<N, Iter: Iterator<Item = (usize, N)>> Iterator
 
         if let Some(prev_idx) = self.prev {
             assert!(
-                idx < prev_idx,
+                prev_idx < idx,
                 "index out of order. {} followed {}",
                 idx,
                 prev_idx
