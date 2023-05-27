@@ -549,17 +549,69 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     }
 
     /// Append an outer dim to an existing matrix, compressing it in the process
-    pub fn append_outer(mut self, data: &[N]) -> Self
+    pub fn append_outer(self, data: &[N]) -> Self
     where
-        N: Clone + Num,
+        N: Clone + Zero,
     {
+        // Safety: enumerate is monotonically increasing
+        unsafe {
+            self.append_outer_iter_unchecked(
+                data.iter()
+                    .cloned()
+                    .enumerate()
+                    .filter(|(_, val)| !val.is_zero()),
+            )
+        }
+    }
+
+    /// Append an outer dim to an existing matrix, increasing the size along the outer
+    /// dimension by one.
+    ///
+    /// # Panics
+    ///
+    /// if the iterator index is **not** monotonically increasing
+    pub fn append_outer_iter<Iter>(self, iter: Iter) -> Self
+    where
+        N: Zero,
+        Iter: Iterator<Item = (usize, N)>,
+    {
+        unsafe {
+            self.append_outer_iter_unchecked(AssertOrderedIterator {
+                prev: None,
+                iter: iter.filter(|(_, val)| !val.is_zero()),
+            })
+        }
+    }
+
+    /// Append an outer dim to an existing matrix, increasing the size along the outer
+    /// dimension by one.
+    ///
+    /// # Safety
+    ///
+    /// This is unsafe since indices for each inner dim should be monotonically increasing
+    /// which is not checked. The data values are additionally not checked for zero.
+    /// See `append_outer_iter` for the checked version
+    pub unsafe fn append_outer_iter_unchecked<Iter>(
+        mut self,
+        iter: Iter,
+    ) -> Self
+    where
+        Iter: Iterator<Item = (usize, N)>,
+    {
+        if let (_, Some(nnz)) = iter.size_hint() {
+            self.reserve_nnz(nnz)
+        }
         let mut nnz = self.nnz();
-        for (inner_ind, val) in data.iter().enumerate() {
-            if *val != N::zero() {
-                self.indices.push(I::from_usize(inner_ind));
-                self.data.push(val.clone());
-                nnz += 1;
-            }
+        for (inner_ind, val) in iter {
+            self.indices.push(I::from_usize(inner_ind));
+            self.data.push(val);
+            nnz += 1;
+        }
+        if let Some(last_inner_ind) = self.indices.last() {
+            assert!(
+                last_inner_ind.index_unchecked() < self.inner_dims(),
+                "inner index out of range"
+            );
         }
         match self.storage {
             CSR => self.nrows += 1,
@@ -570,22 +622,17 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     }
 
     /// Append an outer dim to an existing matrix, provided by a sparse vector
-    pub fn append_outer_csvec(mut self, vec: CsVecViewI<N, I>) -> Self
+    pub fn append_outer_csvec(self, vec: CsVecViewI<N, I>) -> Self
     where
         N: Clone,
     {
         assert_eq!(self.inner_dims(), vec.dim());
-        for (ind, val) in vec.indices().iter().zip(vec.data()) {
-            self.indices.push(*ind);
-            self.data.push(val.clone());
+        // Safety: CsVec has monotonically increasing indices
+        unsafe {
+            self.append_outer_iter_unchecked(
+                vec.iter().map(|(i, val)| (i, val.clone())),
+            )
         }
-        match self.storage {
-            CSR => self.nrows += 1,
-            CSC => self.ncols += 1,
-        }
-        let nnz = Iptr::from_usize(self.indptr.nnz() + vec.nnz());
-        self.indptr.push(nnz);
-        self
     }
 
     /// Insert an element in the matrix. If the element is already present,
@@ -657,6 +704,36 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
             CSR => self.ncols = inner_dims,
             CSC => self.nrows = inner_dims,
         }
+    }
+}
+
+pub(crate) struct AssertOrderedIterator<Iter> {
+    prev: Option<usize>,
+    iter: Iter,
+}
+
+impl<N, Iter: Iterator<Item = (usize, N)>> Iterator
+    for AssertOrderedIterator<Iter>
+{
+    type Item = (usize, N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (idx, n) = self.iter.next()?;
+
+        if let Some(prev_idx) = self.prev {
+            assert!(
+                prev_idx < idx,
+                "index out of order. {} followed {}",
+                idx,
+                prev_idx
+            );
+        }
+        self.prev = Some(idx);
+        Some((idx, n))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
