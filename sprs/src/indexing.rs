@@ -1,12 +1,12 @@
+//! Abstraction over types of indices
+//!
+//! Our sparse matrices can use any integer type for its indices among
+//! `u16, u32, u64, usize, i16, i32, i64, isize`.
+//!
+//! By default, sprs matrices will use `usize`, but it can be useful to switch
+//! to another index type to reduce the memory usage of sparse matrices, of for
+//! compatibility purposes when calling into an existing library through FFI.
 use std::fmt::Debug;
-///! Abstraction over types of indices
-///!
-///! Our sparse matrices can use any integer type for its indices among
-///! `u16, u32, u64, usize, i16, i32, i64, isize`.
-///!
-///! By default, sprs matrices will use `usize`, but it can be useful to switch
-///! to another index type to reduce the memory usage of sparse matrices, of for
-///! compatibility purposes when calling into an existing library through FFI.
 use std::ops::AddAssign;
 
 use num_traits::int::PrimInt;

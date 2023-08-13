@@ -1,5 +1,6 @@
-///! Data structures to work with elimination trees (etree).
-///! etrees arise when considering cholesky factorization, QR factorization, ...
+//! Data structures to work with elimination trees (etree).
+//! etrees arise when considering cholesky factorization, QR factorization, ...
+
 use std::ops::{Deref, DerefMut};
 
 pub type Parent = Option<usize>;

@@ -1,56 +1,57 @@
-///! Cholesky factorization module.
-///!
-///! Contains LDLT decomposition methods.
-///!
-///! This decomposition operates on symmetric positive definite matrices,
-///! and is written `A = L D L` where L is lower triangular and D is diagonal.
-///! It is closely related to the Cholesky decomposition, but is often more
-///! numerically stable and can work on some indefinite matrices.
-///!
-///! The easiest way to use this API is to create a `LdlNumeric` instance from
-///! a matrix, then use the `LdlNumeric::solve` method.
-///!
-///! It is possible to update a decomposition if the sparsity structure of a
-///! matrix does not change. In that case the `LdlNumeric::update` method can
-///! be used.
-///!
-///! When only the sparsity structure of a matrix is known, it is possible
-///! to precompute part of the factorization by using the `LdlSymbolic` struct.
-///! This struct can the be converted into a `LdlNumeric` once the non-zero
-///! values are known, using the `LdlSymbolic::factor` method.
-// This method is adapted from the LDL library by Tim Davis:
-//
-// LDL Copyright (c) 2005 by Timothy A. Davis.  All Rights Reserved.
-//
-// LDL License:
-//
-//     Your use or distribution of LDL or any modified version of
-//     LDL implies that you agree to this License.
-//
-//     This library is free software; you can redistribute it and/or
-//     modify it under the terms of the GNU Lesser General Public
-//     License as published by the Free Software Foundation; either
-//     version 2.1 of the License, or (at your option) any later version.
-//
-//     This library is distributed in the hope that it will be useful,
-//     but WITHOUT ANY WARRANTY; without even the implied warranty of
-//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//     Lesser General Public License for more details.
-//
-//     You should have received a copy of the GNU Lesser General Public
-//     License along with this library; if not, write to the Free Software
-//     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
-//     USA
-//
-//     Permission is hereby granted to use or copy this program under the
-//     terms of the GNU LGPL, provided that the Copyright, this License,
-//     and the Availability of the original version is retained on all copies.
-//     User documentation of any code that uses this code or any modified
-//     version of this code must cite the Copyright, this License, the
-//     Availability note, and "Used by permission." Permission to modify
-//     the code and to distribute modified code is granted, provided the
-//     Copyright, this License, and the Availability note are retained,
-//     and a notice that the code was modified is included.
+//! Cholesky factorization module.
+//!
+//! Contains LDLT decomposition methods.
+//!
+//! This decomposition operates on symmetric positive definite matrices,
+//! and is written `A = L D L` where L is lower triangular and D is diagonal.
+//! It is closely related to the Cholesky decomposition, but is often more
+//! numerically stable and can work on some indefinite matrices.
+//!
+//! The easiest way to use this API is to create a `LdlNumeric` instance from
+//! a matrix, then use the `LdlNumeric::solve` method.
+//!
+//! It is possible to update a decomposition if the sparsity structure of a
+//! matrix does not change. In that case the `LdlNumeric::update` method can
+//! be used.
+//!
+//! When only the sparsity structure of a matrix is known, it is possible
+//! to precompute part of the factorization by using the `LdlSymbolic` struct.
+//! This struct can the be converted into a `LdlNumeric` once the non-zero
+//! values are known, using the `LdlSymbolic::factor` method.
+//!
+//! This method is adapted from the LDL library by Tim Davis:
+//!
+//! LDL Copyright (c) 2005 by Timothy A. Davis.  All Rights Reserved.
+//!
+//! LDL License:
+//!
+//! Your use or distribution of LDL or any modified version of
+//! LDL implies that you agree to this License.
+//!
+//! This library is free software; you can redistribute it and/or
+//! modify it under the terms of the GNU Lesser General Public
+//! License as published by the Free Software Foundation; either
+//! version 2.1 of the License, or (at your option) any later version.
+//!
+//! This library is distributed in the hope that it will be useful,
+//! but WITHOUT ANY WARRANTY; without even the implied warranty of
+//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+//! Lesser General Public License for more details.
+//!
+//! You should have received a copy of the GNU Lesser General Public
+//! License along with this library; if not, write to the Free Software
+//! Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
+//! USA
+//!
+//! Permission is hereby granted to use or copy this program under the
+//! terms of the GNU LGPL, provided that the Copyright, this License,
+//! and the Availability of the original version is retained on all copies.
+//! User documentation of any code that uses this code or any modified
+//! version of this code must cite the Copyright, this License, the
+//! Availability note, and "Used by permission." Permission to modify
+//! the code and to distribute modified code is granted, provided the
+//! Copyright, this License, and the Availability note are retained,
+//! and a notice that the code was modified is included.
 use std::ops::Deref;
 
 use num_traits::Num;

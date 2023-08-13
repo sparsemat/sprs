@@ -1,7 +1,8 @@
+//! Utilities for sparse-to-dense conversion
+
 use super::{CsMatViewI, CsVecViewI};
 use crate::indexing::SpIndex;
 use crate::{Ix1, Ix2};
-///! Utilities for sparse-to-dense conversion
 use ndarray::{ArrayViewMut, Axis};
 
 /// Assign a sparse matrix into a dense matrix
