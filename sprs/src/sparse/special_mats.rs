@@ -1,5 +1,5 @@
+//! Common sparse matrices
 use ndarray::ArrayView2;
-///! Common sparse matrices
 use smallvec::SmallVec;
 
 use crate::indexing::SpIndex;

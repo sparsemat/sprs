@@ -13,6 +13,7 @@ members = [
     "sprs-benches",
     "sprs-tests",
 ]
+resolver = "2"
 
 [workspace.package]
 rust-version = "1.64"

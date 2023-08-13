@@ -1,17 +1,17 @@
+//! A sparse matrix in the Compressed Sparse Row/Column format
+//!
+//! In the CSR format, a matrix is a structure containing three vectors:
+//! indptr, indices, and data
+//! These vectors satisfy the relation
+//! for i in [0, nrows],
+//! A(i, indices[indptr[i]..indptr[i+1]]) = data[indptr[i]..indptr[i+1]]
+//! In the CSC format, the relation is
+//! A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 use ndarray::ArrayView;
 use num_traits::{Float, Num, Signed, Zero};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp;
-///! A sparse matrix in the Compressed Sparse Row/Column format
-///
-/// In the CSR format, a matrix is a structure containing three vectors:
-/// indptr, indices, and data
-/// These vectors satisfy the relation
-/// for i in [0, nrows],
-/// A(i, indices[indptr[i]..indptr[i+1]]) = data[indptr[i]..indptr[i+1]]
-/// In the CSC format, the relation is
-/// A(indices[indptr[i]..indptr[i+1]], i) = data[indptr[i]..indptr[i+1]]
 use std::default::Default;
 use std::iter::{Enumerate, Zip};
 use std::mem;

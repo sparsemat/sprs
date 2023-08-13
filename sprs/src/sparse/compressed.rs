@@ -1,5 +1,5 @@
+//! Traits to generalize over compressed sparse matrices storages
 use crate::indexing::SpIndex;
-///! Traits to generalize over compressed sparse matrices storages
 use crate::sparse::prelude::*;
 use std::ops::Deref;
 

@@ -1,7 +1,8 @@
+//! Sparse matrix product
+
 use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::indexing::SpIndex;
 use crate::sparse::compressed::SpMatView;
-///! Sparse matrix product
 use crate::sparse::prelude::*;
 use crate::Ix2;
 use ndarray::{ArrayView, ArrayViewMut, Axis};

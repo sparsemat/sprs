@@ -1,8 +1,9 @@
+//! Sparse linear algebra
+//!
+//! This module contains solvers for sparse linear systems. Currently
+//! there are solver for sparse triangular systems and symmetric systems.
+
 use crate::{DenseVector, DenseVectorMut};
-///! Sparse linear algebra
-///!
-///! This module contains solvers for sparse linear systems. Currently
-///! there are solver for sparse triangular systems and symmetric systems.
 use num_traits::Num;
 
 pub mod etree;

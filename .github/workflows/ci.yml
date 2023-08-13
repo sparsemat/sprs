@@ -19,14 +19,12 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        override: true
-        profile: minimal
         components: rustfmt
     - name: Check formatting
       run: cargo fmt -- --check
@@ -36,14 +34,12 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        override: true
-        profile: minimal
     - name: Documentation
       run: cargo doc --all-features --workspace
 
@@ -52,14 +48,12 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
-        override: true
-        profile: minimal
         components: clippy
     - name: Run Clippy
       run: cargo clippy --workspace --all-features -- -W clippy::doc_markdown -W clippy::needless_borrow -W clippy::checked_conversions -W clippy::unseparated_literal_suffix -W clippy::unreadable_literal -W clippy::if_not_else -W clippy::needless_continue -W clippy::match_same_arms -W clippy::match_wildcard_for_single_variants -W clippy::explicit_into_iter_loop -W clippy::needless_borrow
@@ -93,7 +87,7 @@ jobs:
           rust: stable
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
 
     - name: Install suitesparse
@@ -102,11 +96,9 @@ jobs:
           sudo apt-get install libsuitesparse-dev
 
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
-        profile: minimal
-        override: true
 
     - name: Build (exclude suitesparse)
       run: cargo build --verbose --workspace --exclude suitesparse_ldl_sys --exclude sprs_suitesparse_ldl --exclude sprs_suitesparse_camd --exclude suitesparse_camd_sys  --exclude suitesparse_umfpack_sys --exclude sprs_suitesparse_umfpack
@@ -133,17 +125,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install dependencies
       run: |
           sudo apt-get install libeigen3-dev libsuitesparse-dev
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
           toolchain: nightly
-          override: true
-          profile: minimal
     - name: Run benchmarks
       run: |
           cargo bench --workspace
@@ -153,14 +143,12 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
           toolchain: nightly
-          override: true
-          profile: minimal
     - name: Run test
       run: |
           cargo test --no-default-features -p sprs
@@ -170,10 +158,10 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
           toolchain: nightly
           override: true
@@ -202,35 +190,31 @@ jobs:
           rust: stable
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: true}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
           toolchain: nightly
-          override: true
-          profile: minimal
     - name: Run tests (camd)
       run: |
           cd suitesparse_bindings/sprs_suitesparse_camd
-          cargo test --features suitesparse_camd_sys/static -p sprs
+          cargo test -p suitesparse_camd_sys --features static -p sprs
     - name: Run tests (ldl)
       run: |
           cd suitesparse_bindings/sprs_suitesparse_ldl
-          cargo test --features suitesparse_ldl_sys/static -p sprs
+          cargo test -p suitesparse_ldl_sys --features static -p sprs
   miri:
     name: Miri
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with: {submodules: false}
     - name: Install rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
           toolchain: nightly
-          override: true
-          profile: minimal
           components: miri
     - name: Run test
       run: |

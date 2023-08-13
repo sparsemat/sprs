@@ -1,16 +1,16 @@
+//! Triplet format matrix
+//!
+//! Useful for building a matrix, but not for computations. Therefore this
+//! struct is mainly used to initialize a matrix before converting to
+//! to a [`CsMat`](CsMatBase).
+//!
+//! A triplet format matrix is formed of three arrays of equal length, storing
+//! the row indices, the column indices, and the values of the non-zero
+//! entries. By convention, duplicate locations are summed up when converting
+//! into `CsMat`.
 use crate::indexing::SpIndex;
 use crate::sparse::prelude::*;
 
-///! Triplet format matrix
-///!
-///! Useful for building a matrix, but not for computations. Therefore this
-///! struct is mainly used to initialize a matrix before converting to
-///! to a [`CsMat`](CsMatBase).
-///!
-///! A triplet format matrix is formed of three arrays of equal length, storing
-///! the row indices, the column indices, and the values of the non-zero
-///! entries. By convention, duplicate locations are summed up when converting
-///! into `CsMat`.
 use std::ops::{Add, Deref, DerefMut};
 use std::slice::Iter;
 
