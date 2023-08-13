@@ -199,11 +199,11 @@ jobs:
     - name: Run tests (camd)
       run: |
           cd suitesparse_bindings/sprs_suitesparse_camd
-          cargo test --features suitesparse_camd_sys/static -p sprs
+          cargo test -p suitesparse_camd_sys --features static -p sprs
     - name: Run tests (ldl)
       run: |
           cd suitesparse_bindings/sprs_suitesparse_ldl
-          cargo test --features suitesparse_ldl_sys/static -p sprs
+          cargo test -p suitesparse_ldl_sys --features static -p sprs
   miri:
     name: Miri
     runs-on: ubuntu-20.04
