@@ -109,8 +109,8 @@ pub use crate::mul_acc::MulAcc;
 pub use crate::sparse::symmetric::is_symmetric;
 
 pub use crate::sparse::permutation::{
-    perm_is_valid, transform_mat_papt, PermOwned, PermOwnedI, PermView,
-    PermViewI, Permutation,
+    perm_is_valid, permute_cols, permute_rows, transform_mat_papt,
+    transform_mat_paq, PermOwned, PermOwnedI, PermView, PermViewI, Permutation,
 };
 
 pub use crate::sparse::CompressedStorage::{self, CSC, CSR};

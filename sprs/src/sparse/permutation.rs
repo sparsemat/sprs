@@ -292,6 +292,149 @@ where
     }
 }
 
+/// Compute the outer (uncompressed) dimension only
+fn permute_outer<N, I, Iptr>(
+    mat: CsMatViewI<N, I, Iptr>,
+    perm: PermViewI<I>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Clone + ::std::fmt::Debug,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    assert!(mat.outer_dims() == perm.dim());
+    if mat.rows() == 0 || mat.cols() == 0 {
+        return mat.to_owned();
+    }
+
+    let mut indptr = Vec::with_capacity(mat.indptr().len());
+    let mut indices = Vec::with_capacity(mat.indices().len());
+    let mut data = Vec::with_capacity(mat.data().len());
+
+    let p = match perm.storage {
+        Identity => unreachable!(),
+        FinitePerm {
+            perm: p,
+            perm_inv: _,
+        } => p,
+    };
+
+    let mut nnz = Iptr::zero();
+    indptr.push(nnz);
+    let mut tmp = Vec::with_capacity(mat.max_outer_nnz());
+    for in_outer in p {
+        nnz += mat.indptr().nnz_in_outer(in_outer.index());
+        indptr.push(nnz);
+        tmp.clear();
+
+        let outer = mat.outer_view(in_outer.index()).unwrap();
+        for (ind, val) in outer.indices().iter().zip(outer.data()) {
+            tmp.push((*ind, val.clone()));
+        }
+        tmp.sort_by_key(|(ind, _)| *ind);
+        for (ind, val) in &tmp {
+            indices.push(*ind);
+            data.push(val.clone());
+        }
+    }
+
+    match mat.storage() {
+        CompressedStorage::CSR => {
+            CsMatI::new(mat.shape(), indptr, indices, data)
+        }
+        CompressedStorage::CSC => {
+            CsMatI::new_csc(mat.shape(), indptr, indices, data)
+        }
+    }
+}
+
+/// Compute the inner (compressed) dimension only
+fn permute_inner<N, I, Iptr>(
+    mat: CsMatViewI<N, I, Iptr>,
+    perm: PermViewI<I>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Clone + ::std::fmt::Debug,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    assert!(mat.inner_dims() == perm.dim());
+    if mat.rows() == 0 || mat.cols() == 0 {
+        return mat.to_owned();
+    }
+
+    let mut indptr = Vec::with_capacity(mat.indptr().len());
+    let mut indices = Vec::with_capacity(mat.indices().len());
+    let mut data = Vec::with_capacity(mat.data().len());
+    let p_ = match perm.storage {
+        Identity => unreachable!(),
+        FinitePerm {
+            perm: _,
+            perm_inv: p_,
+        } => p_,
+    };
+
+    let mut nnz = Iptr::zero();
+    indptr.push(nnz);
+    let mut tmp = Vec::with_capacity(mat.max_outer_nnz());
+    for in_outer in 0..mat.outer_dims() {
+        nnz += mat.indptr().nnz_in_outer(in_outer.index());
+        indptr.push(nnz);
+        tmp.clear();
+
+        let outer = mat.outer_view(in_outer.index()).unwrap();
+        for (ind, val) in outer.indices().iter().zip(outer.data()) {
+            tmp.push((p_[ind.index()], val.clone()));
+        }
+        tmp.sort_by_key(|(ind, _)| *ind);
+        for (ind, val) in &tmp {
+            indices.push(*ind);
+            data.push(val.clone());
+        }
+    }
+
+    match mat.storage() {
+        CompressedStorage::CSR => {
+            CsMatI::new(mat.shape(), indptr, indices, data)
+        }
+        CompressedStorage::CSC => {
+            CsMatI::new_csc(mat.shape(), indptr, indices, data)
+        }
+    }
+}
+
+/// Compute the matrix resulting from the product P * A
+pub fn permute_rows<N, I, Iptr>(
+    mat: CsMatViewI<N, I, Iptr>,
+    perm: PermViewI<I>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Clone + ::std::fmt::Debug,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    match mat.storage {
+        CompressedStorage::CSC => permute_inner(mat, perm),
+        CompressedStorage::CSR => permute_outer(mat, perm),
+    }
+}
+
+/// Compute the matrix resulting from the product A * P
+pub fn permute_cols<N, I, Iptr>(
+    mat: CsMatViewI<N, I, Iptr>,
+    perm: PermViewI<I>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Clone + ::std::fmt::Debug,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    match mat.storage {
+        CompressedStorage::CSC => permute_outer(mat, perm),
+        CompressedStorage::CSR => permute_inner(mat, perm),
+    }
+}
+
 /// Compute the square matrix resulting from the product P * A * P^T
 pub fn transform_mat_papt<N, I, Iptr>(
     mat: CsMatViewI<N, I, Iptr>,
@@ -329,6 +472,96 @@ where
         let outer = mat.outer_view(in_outer.index()).unwrap();
         for (ind, val) in outer.indices().iter().zip(outer.data()) {
             tmp.push((p_[ind.index()], val.clone()));
+        }
+        tmp.sort_by_key(|(ind, _)| *ind);
+        for (ind, val) in &tmp {
+            indices.push(*ind);
+            data.push(val.clone());
+        }
+    }
+
+    match mat.storage() {
+        CompressedStorage::CSR => {
+            CsMatI::new(mat.shape(), indptr, indices, data)
+        }
+        CompressedStorage::CSC => {
+            CsMatI::new_csc(mat.shape(), indptr, indices, data)
+        }
+    }
+}
+
+/// Compute the matrix resulting from the product P * A * Q,
+/// using the same number of operations and allocation as
+/// for computing either P * A or A * Q by itself.
+pub fn transform_mat_paq<N, I, Iptr>(
+    mat: CsMatViewI<N, I, Iptr>,
+    row_perm: PermViewI<I>,
+    col_perm: PermViewI<I>,
+) -> CsMatI<N, I, Iptr>
+where
+    N: Clone + ::std::fmt::Debug,
+    I: SpIndex,
+    Iptr: SpIndex,
+{
+    assert!(mat.rows() == row_perm.dim());
+    assert!(mat.cols() == col_perm.dim());
+
+    if (row_perm.is_identity() && col_perm.is_identity())
+        || mat.rows() == 0
+        || mat.cols() == 0
+    {
+        return mat.to_owned();
+    }
+
+    // Unpack permutations and handle the case where one or the other is identity.
+    // Similar to the PAP^T variant, we can use the same method for CSC and CSR
+    // but unlike the PAP^T variant, we have to account for identity permutations
+    // since one of P or Q may be identity when the other is not, and we have to swap
+    // the permutations depending on which storage medium we're using
+    let (p, p_) = match row_perm.storage {
+        Identity => {
+            // If the row permutation is identity, only do a column permutation
+            return permute_cols(mat, col_perm);
+        }
+        FinitePerm {
+            perm: p,
+            perm_inv: p_,
+        } => (p, p_),
+    };
+
+    let (q, q_) = match col_perm.storage {
+        Identity => {
+            // If the column permutation is identity, only do a row permutation
+            return permute_rows(mat, row_perm);
+        }
+        FinitePerm {
+            perm: q,
+            perm_inv: q_,
+        } => (q, q_),
+    };
+
+    // Switch permutations between inner and outer depending on storage medium
+    let (outer_perm, inner_perm) = match mat.storage() {
+        CompressedStorage::CSR => (p, q_),
+        CompressedStorage::CSC => (q, p_),
+    };
+
+    // If both permutations are non-identity, apply them together in about the
+    // same number of operations as applying just one or the other, following
+    // the same pattern as transform_mat_papt().
+    let mut indptr = Vec::with_capacity(mat.indptr().len());
+    let mut indices = Vec::with_capacity(mat.indices().len());
+    let mut data = Vec::with_capacity(mat.data().len());
+    let mut nnz = Iptr::zero();
+    indptr.push(nnz);
+    let mut tmp = Vec::with_capacity(mat.max_outer_nnz());
+    for in_outer in outer_perm {
+        nnz += mat.indptr().nnz_in_outer(in_outer.index());
+        indptr.push(nnz);
+        tmp.clear();
+        let outer = mat.outer_view(in_outer.index()).unwrap();
+        for (ind, val) in outer.indices().iter().zip(outer.data()) {
+            tmp.push((inner_perm[ind.index()], val.clone()));
         }
         tmp.sort_by_key(|(ind, _)| *ind);
         for (ind, val) in &tmp {
@@ -404,6 +637,139 @@ mod test {
         );
         let papt = super::transform_mat_papt(mat.view(), perm.view());
         assert_eq!(expected_papt, papt);
+    }
+
+    #[test]
+    fn transform_mat_paq() {
+        // | 1 0 0 3 1 |
+        // | 0 2 0 0 0 |
+        // | 0 0 0 1 0 |
+        // | 3 0 1 1 0 |
+        // | 1 0 0 0 1 |
+        let mat = CsMat::new_csc(
+            (5, 5),
+            vec![0, 3, 4, 5, 8, 10],
+            vec![0, 3, 4, 1, 3, 0, 2, 3, 0, 4],
+            vec![1, 3, 1, 2, 1, 3, 1, 1, 1, 1],
+        );
+
+        let row_perm = super::PermOwned::new(vec![2, 1, 3, 0, 4]);
+        let col_perm = super::PermOwned::new(vec![1, 2, 3, 0, 4]);
+        // expected matrix PAQ
+        // | 0 0 1 0 0 |
+        // | 2 0 0 0 0 |
+        // | 0 1 1 3 0 |
+        // | 0 0 3 1 1 |
+        // | 0 0 0 1 1 |
+        let expected_paq = CsMat::new_csc(
+            (5, 5),
+            vec![0, 1, 2, 5, 8, 10],
+            vec![1, 2, 0, 2, 3, 2, 3, 4, 3, 4],
+            vec![2, 1, 1, 1, 3, 3, 1, 1, 1, 1],
+        );
+
+        // Test with CSC
+        let paq = super::transform_mat_paq(
+            mat.view(),
+            row_perm.view(),
+            col_perm.view(),
+        );
+        assert_eq!(expected_paq.to_dense(), paq.to_dense());
+
+        // Test with CSR
+        let paq = super::transform_mat_paq(
+            mat.to_other_storage().view(),
+            row_perm.view(),
+            col_perm.view(),
+        );
+        assert_eq!(expected_paq.to_dense(), paq.to_dense());
+
+        // Make sure we get the same result as applying the permutations separately
+        let aq = super::permute_cols(mat.view(), col_perm.view());
+        let paq_separate = super::permute_rows(aq.view(), row_perm.view());
+        assert_eq!(expected_paq.to_dense(), paq_separate.to_dense());
+    }
+
+    #[test]
+    fn permute_rows() {
+        // Test with nonsquare matrix to make sure dimensions are handled properly
+
+        // | 1 0 0 3 |
+        // | 0 2 0 0 |
+        // | 0 0 0 1 |
+        // | 3 0 1 1 |
+        // | 1 0 0 0 |
+        let mat = CsMat::new_csc(
+            (5, 4),
+            vec![0, 3, 4, 5, 8],
+            vec![0, 3, 4, 1, 3, 0, 2, 3],
+            vec![1, 3, 1, 2, 1, 3, 1, 1],
+        );
+
+        // | 0 2 0 0 |
+        // | 1 0 0 3 |
+        // | 0 0 0 1 |
+        // | 3 0 1 1 |
+        // | 1 0 0 0 |
+        let pa_expected = CsMat::new_csc(
+            (5, 4),
+            vec![0, 3, 4, 5, 8],
+            vec![1, 3, 4, 0, 3, 1, 2, 3],
+            vec![1, 3, 1, 2, 1, 3, 1, 1],
+        );
+
+        // Test with CSC
+        let perm = super::PermOwned::new(vec![1, 0, 2, 3, 4]);
+        let pa = super::permute_rows(mat.view(), perm.view());
+        assert_eq!(pa_expected.to_dense(), pa.to_dense());
+
+        // Test with CSR
+        let perm = super::PermOwned::new(vec![1, 0, 2, 3, 4]);
+        let pa =
+            super::permute_rows(mat.to_other_storage().view(), perm.view());
+        assert_eq!(pa_expected.to_dense(), pa.to_dense());
+    }
+
+    #[test]
+    fn permute_cols() {
+        // Test with nonsquare matrix to make sure dimensions are handled properly
+
+        // | 1 0 0 3 |
+        // | 0 2 0 0 |
+        // | 0 0 0 1 |
+        // | 3 0 1 1 |
+        // | 1 0 0 0 |
+        let mat = CsMat::new_csc(
+            (5, 4),
+            vec![0, 3, 4, 5, 8],
+            vec![0, 3, 4, 1, 3, 0, 2, 3],
+            vec![1, 3, 1, 2, 1, 3, 1, 1],
+        );
+
+        // | 0 2 0 0 |
+        // | 1 0 0 3 |
+        // | 0 0 0 1 |
+        // | 3 0 1 1 |
+        // | 1 0 0 0 |
+        let atqt_expected = CsMat::new_csc(
+            (5, 4),
+            vec![0, 3, 4, 5, 8],
+            vec![1, 3, 4, 0, 3, 1, 2, 3],
+            vec![1, 3, 1, 2, 1, 3, 1, 1],
+        );
+
+        // Test with CSC
+        let perm = super::PermOwned::new(vec![1, 0, 2, 3, 4]);
+        let atq = super::permute_cols(mat.transpose_view(), perm.view());
+        assert_eq!(atqt_expected.to_dense(), atq.transpose_view().to_dense());
+
+        // Test with CSR
+        let perm = super::PermOwned::new(vec![1, 0, 2, 3, 4]);
+        let atq = super::permute_cols(
+            mat.to_other_storage().transpose_view(),
+            perm.view(),
+        );
+        assert_eq!(atqt_expected.to_dense(), atq.transpose_view().to_dense());
     }
 
     #[test]

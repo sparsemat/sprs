@@ -24,6 +24,7 @@ macro_rules! umfpack_impl {
      $get_lunz: ident,
      $free_numeric: ident,
      $free_symbolic: ident,
+     $test_name: ident
      ) => {
 
         /// Wrapper of raw handle to guarantee proper drop procedure
@@ -293,7 +294,62 @@ macro_rules! umfpack_impl {
                 }
             }
         }
-    };
+
+        #[cfg(test)]
+        mod $test_name {
+            use super::$Context;
+            use sprs::{transform_mat_paq, CsMatI, CsVecI};
+
+            #[test]
+            fn test() {
+                let a = CsMatI::new_csc(
+                    (4, 4),
+                    vec![0, 2, 4, 6, 8],
+                    vec![0, 3, 1, 2, 1, 2, 0, 3],
+                    vec![1., 2., 21., 6., 6., 2., 2., 8.],
+                );
+
+                // Factorize
+                let ctx = $Context::new(a.clone());
+
+                // Extract numeric factorization
+                let numeric = ctx.get_numeric();
+
+                // Extract row scaling matrix from umfpack R values
+                let r = CsMatI::new_csc(
+                    (4, 4),
+                    vec![0, 1, 2, 3, 4],
+                    vec![0, 1, 2, 3],
+                    numeric.rs.into(),
+                );
+
+                // Solve Ax=b
+                let b = vec![1.0_f64; 4];
+                let x = ctx.solve(&b[..]);
+                let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
+                let b_recovered = &ctx.a() * &xsprs;
+
+                // Make sure the solved values match expectation
+                for (input, output) in
+                    b.into_iter().zip(b_recovered.to_dense().into_iter())
+                {
+                    assert!(
+                        (1.0 - input / output).abs() < 1e-14,
+                        "Solved output did not match input"
+                    );
+                }
+
+                // Check that LU == PRAQ
+                let lu = &numeric.l * &numeric.u;
+                let praq = transform_mat_paq(
+                    (&r * &a).view(),
+                    numeric.p.view(),
+                    numeric.q.view(),
+                );
+                assert_eq!(lu.to_dense(), praq.to_dense());
+            }
+        }
+    }
 }
 
 umfpack_impl!(
@@ -309,6 +365,7 @@ umfpack_impl!(
     umfpack_di_get_lunz,
     umfpack_di_free_numeric,
     umfpack_di_free_symbolic,
+    test_umfpack_di
 );
 
 umfpack_impl!(
@@ -324,87 +381,5 @@ umfpack_impl!(
     umfpack_dl_get_lunz,
     umfpack_dl_free_numeric,
     umfpack_dl_free_symbolic,
+    test_umfpack_dl
 );
-
-#[cfg(test)]
-mod tests {
-    use sprs::{CsMatI, CsVecI};
-
-    use crate::{UmfpackDIContext, UmfpackDLContext};
-
-    #[test]
-    fn umfpack_di() {
-        let a = CsMatI::new_csc(
-            (4, 4),
-            vec![0, 2, 4, 6, 8],
-            vec![0, 3, 1, 2, 1, 2, 0, 3],
-            vec![1., 2., 21., 6., 6., 2., 2., 8.],
-        );
-
-        let ctx = UmfpackDIContext::new(a);
-
-        let b = vec![1.0_f64; 4];
-
-        let x = ctx.solve(&b[..]);
-        println!("{:?}", x);
-
-        let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
-
-        let b_recovered = &ctx.a() * &xsprs;
-        println!("{:?}", b_recovered);
-
-        // Make sure the solved values match expectation
-        for (input, output) in
-            b.into_iter().zip(b_recovered.to_dense().into_iter())
-        {
-            assert!(
-                (1.0 - input / output).abs() < 1e-14,
-                "Solved output did not match input"
-            );
-        }
-
-        // Smoketest get_numeric - can we get the LU components out without a segfault?
-        let _ = ctx.get_numeric();
-
-        // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
-        // to make sure LUR = PAQ holds for the returned components
-    }
-
-    #[test]
-    fn umfpack_dl() {
-        let a = CsMatI::new_csc(
-            (4, 4),
-            vec![0, 2, 4, 6, 8],
-            vec![0, 3, 1, 2, 1, 2, 0, 3],
-            vec![1., 2., 21., 6., 6., 2., 2., 8.],
-        );
-
-        let ctx = UmfpackDLContext::new(a);
-
-        let b = vec![1.0_f64; 4];
-
-        let x = ctx.solve(&b[..]);
-        println!("{:?}", x);
-
-        let xsprs = CsVecI::new(4, vec![0, 1, 2, 3], x);
-
-        let b_recovered = &ctx.a() * &xsprs;
-        println!("{:?}", b_recovered);
-
-        // Make sure the solved values match expectation
-        for (input, output) in
-            b.into_iter().zip(b_recovered.to_dense().into_iter())
-        {
-            assert!(
-                (1.0 - input / output).abs() < 1e-14,
-                "Solved output did not match input"
-            );
-        }
-
-        // Smoketest get_numeric - can we get the LU components out without a segfault?
-        let _ = ctx.get_numeric();
-
-        // FIXME: Once there's more functionality for doing row and column permutations, this needs a quantitative check
-        // to make sure LUR = PAQ holds for the returned components
-    }
-}
