@@ -6,6 +6,7 @@
 use crate::{DenseVector, DenseVectorMut};
 use num_traits::Num;
 
+pub mod bicgstab;
 pub mod etree;
 pub mod ordering;
 pub mod trisolve;
