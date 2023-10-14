@@ -10,6 +10,7 @@ pub mod bicgstab;
 pub mod etree;
 pub mod ordering;
 pub mod trisolve;
+pub mod qmrcgstab;
 
 pub use self::ordering::reverse_cuthill_mckee;
 

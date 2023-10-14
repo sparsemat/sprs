@@ -58,24 +58,11 @@
 //! ```
 //!
 //! # Commentary
-//! This implementation differs slightly from the common pseudocode variations in the following ways:
-//! * Both soft-restart and hard-restart logic are present
-//!   * Soft restart on `r` becoming perpendicular to `rhat`
-//!   * Hard restart to check true error before claiming convergence
-//! * Soft-restart logic uses a correct metric of perpendicularity instead of a magnitude heuristic
-//!   * The usual method, which compares a fixed value to `rho`, does not capture the fact that the
-//!   magnitude of `rho` will naturally decrease as the solver approaches convergence
-//!   * This change eliminates the effect where the a soft restart is performed on every iteration for the last few
-//!   iterations of any solve with a reasonable error tolerance
-//! * Hard-restart logic provides some real guarantee of correctness
-//!   * The usual implementations keep a cheap, but inaccurate, running estimate of the error
-//!     * That decreases the cost of iterations by about half by eliminating a matrix-vector multiplication,
-//!     but allows the estimate of error to drift numerically, which causes the solver to return claiming
-//!     convergence when the solved output does not, in fact, match the input system
-//!   * This change guarantees that the solver will not return claiming convergence unless the solution
-//!   actually matches the input system, and will refresh its estimate of the error and continue iterations
-//!   if it has reached a falsely-converged state, continuing until it either reaches true convergence or
-//!   reaches maximum iterations
+//! This implementation differs slightly from the paper's pseudocode:
+//! * The solver will restart if `rhat` becomes perpendicular to `r`, to prevent
+//!   the update from becoming singular
+//! * The true error is recalculated when the estimated error appears to be resolved,
+//!   and the solver will either return or continue iterations based on the result
 use crate::indexing::SpIndex;
 use crate::sparse::{CsMatViewI, CsVecI, CsVecViewI};
 use num_traits::One;
@@ -85,9 +72,9 @@ use num_traits::One;
 pub struct QMRCGSTAB<'a, T, I: SpIndex, Iptr: SpIndex> {
     // Configuration
     iteration_count: usize,
-    soft_restart_threshold: T,
-    soft_restart_count: usize,
-    hard_restart_count: usize,
+    restart_threshold: T,
+    restart_count: usize,
+    warm: bool,
     // Problem statement: err = a * x - b
     err: T,
     a: CsMatViewI<'a, T, I, Iptr>,
@@ -99,6 +86,7 @@ pub struct QMRCGSTAB<'a, T, I: SpIndex, Iptr: SpIndex> {
     p: CsVecI<T, I>,
     v: CsVecI<T, I>,
     d: CsVecI<T, I>,
+    s: CsVecI<T, I>,
     // Intermediate scalars
     rho: T,
     alpha: T,
@@ -106,6 +94,9 @@ pub struct QMRCGSTAB<'a, T, I: SpIndex, Iptr: SpIndex> {
     theta: T,
     eta: T,
     tau: T,
+    tau_hat: T,
+    theta_hat: T,
+    eta_hat: T,
 }
 
 macro_rules! qmrcgstab_impl {
@@ -120,21 +111,26 @@ macro_rules! qmrcgstab_impl {
                 let r = &b - &(&a.view() * &x0.view()).view();
                 let rhat = r.to_owned();
                 let x = x0.to_owned();
-                let p = CsVecI<T, I>::empty(r.dim());
-                let v = CsVecI<T, I>::empty(r.dim());
-                let d = CsVecI<T, I>::empty(r.dim());
+                let p = CsVecI::<$T, I>::empty(r.dim());
+                let v = CsVecI::<$T, I>::empty(r.dim());
+                let d = CsVecI::<$T, I>::empty(r.dim());
+                let s = CsVecI::<$T, I>::empty(r.dim());
                 let err = (&r).l2_norm();
-                let rho = 1;
-                let alpha = 1;
-                let omega = 1;
-                let theta = 1;
-                let eta = 1;
+                let rho = 1.0;
+                let alpha = 1.0;
+                let omega = 1.0;
+                let theta = 1.0;
+                let eta = 1.0;
                 let tau = err;
+                let tau_hat = 0.0;
+                let theta_hat = 0.0;
+                let eta_hat = 0.0;
+                let warm = false;
                 Self {
                     iteration_count: 0,
-                    soft_restart_threshold: 0.1 * <$T>::one(), // A sensible default
-                    soft_restart_count: 0,
-                    hard_restart_count: 0,
+                    restart_threshold: 0.1 * <$T>::one(), // A sensible default
+                    restart_count: 0,
+                    warm,
                     err,
                     a,
                     b,
@@ -144,12 +140,16 @@ macro_rules! qmrcgstab_impl {
                     p,
                     v,
                     d,
+                    s,
                     rho,
                     alpha,
                     omega,
                     theta,
                     eta,
                     tau,
+                    tau_hat,
+                    theta_hat,
+                    eta_hat,
                 }
             }
 
@@ -172,7 +172,7 @@ macro_rules! qmrcgstab_impl {
                     if solver.err() < tol {
                         // Check true error, which may not match the running error estimate
                         // and either continue iterations or return depending on result.
-                        solver.hard_restart();
+                        solver.restart();
                         if solver.err() < tol {
                             return Ok(Box::new(solver));
                         }
@@ -183,81 +183,95 @@ macro_rules! qmrcgstab_impl {
                 Err(Box::new(solver))
             }
 
-            /// Reset the reference direction `rhat` to be equal to `r`
+            /// Recalculate the residual and
+            /// reset the reference direction `rhat` to be equal to `r`
             /// to prevent a singularity in `1 / rho`.
-            pub fn soft_restart(&mut self) {
-                self.soft_restart_count += 1;
-                self.rhat = self.r.to_owned();
-                self.rho = self.err * self.err; // Shortcut to (&self.r).squared_l2_norm();
-            }
+            pub fn restart(&mut self) {
+                self.warm = false;
+                self.restart_count += 1;
 
-            /// Recalculate the error vector from scratch using `a` and `b`.
-            pub fn hard_restart(&mut self) {
-                self.hard_restart_count += 1;
-                // Recalculate true error
+                // Recalculate true error and reference direction
                 self.r = &self.b - &(&self.a.view() * &self.x.view()).view();
                 self.err = (&self.r).l2_norm();
-                // Recalculate reference directions
-                self.soft_restart();
-                self.soft_restart_count -= 1; // Don't increment soft restart count for hard restarts
+                self.rhat = self.r.to_owned();
+
+                // Reset vectors
+                self.p = CsVecI::<$T, I>::empty(self.r.dim());
+                self.v = CsVecI::<$T, I>::empty(self.r.dim());
+                self.d = CsVecI::<$T, I>::empty(self.r.dim());
+                self.s = CsVecI::<$T, I>::empty(self.r.dim());
+
+                // Reset scalars
+                self.rho = 1.0;
+                self.alpha = 1.0;
+                self.omega = 1.0;
+                self.theta = 1.0;
+                self.eta = 1.0;
+                self.tau_hat = 0.0;
+                self.theta_hat = 0.0;
+                self.eta_hat = 0.0;
             }
 
             pub fn step(&mut self) -> $T {
                 self.iteration_count += 1;
 
-                // Prep
+                // Second quasi-minimization step,
+                // reordered here to avoid changing the residual
+                // after the error is reported at the end of the first
+                // quasi-minimization step, or alternatively, to avoid
+                // using an extra matrix-vector product per iteration
+                // to check the true error at every iteration.
+                if self.warm {
+                    self.theta = self.err / self.tau_hat;
+                    let c = 1.0 / (1.0 + self.theta.powi(2)).sqrt();
+                    self.tau = self.tau_hat * self.theta * c;
+                    self.eta = c.powi(2) * self.omega;
+                    self.d = &self.s + &self.d.map(|x| x * (self.theta_hat.powi(2) * self.eta_hat / self.omega));
+                    self.x = &self.x + &self.d.map(|x| x * self.eta);
+                }
+
+                // Prep for first quasi-minimization step
                 let mut rho_prev = self.rho;
                 self.rho = (&self.rhat).dot(&self.r);
 
-                // Soft-restart if `rhat` is becoming perpendicular to `r`.
+                // Restart if `rhat` is becoming perpendicular to `r`.
                 if self.rho.abs() / (self.err * self.err)
-                    < self.soft_restart_threshold
+                    < self.restart_threshold
                 {
-                    self.soft_restart();
-                    rho_prev = 1;
+                    self.restart();
+                    rho_prev = 1.0;
                 }
 
                 let beta = (self.rho * self.alpha) * (rho_prev * self.omega);
                 self.p = &self.r
-                    + (&self.p - &v.map(|x| x * omega)).map(|x| x * beta);
+                    + (&self.p - &self.v.map(|x| x * self.omega)).map(|x| x * beta);
 
                 self.v = &self.a.view() * &self.p.view();
-                self.alpha = self.rho / ((&self.rhat).dot(&v));
-                let s = &self.r - &v.map(|x| x * alpha);
+                self.alpha = self.rho / ((&self.rhat).dot(&self.v));
+                self.s = &self.r - &self.v.map(|x| x * self.alpha);
 
                 // First quasi-minimization step
-                let theta_hat = s.l2_norm() / self.err;
-                let c = 1.0 / (1.0 + theta_hat.powi(2)).sqrt();
-                let tau_hat = self.tau * theta_hat * c;
-                let eta_hat = c.powi(2) * self.alpha;
+                self.theta_hat = self.s.l2_norm() / self.err;
+                let c = 1.0 / (1.0 + self.theta_hat.powi(2)).sqrt();
+                self.tau_hat = self.tau * self.theta_hat * c;
+                self.eta_hat = c.powi(2) * self.alpha;
 
                 self.d = &self.p + &self.d.map(|x| x * (self.theta.powi(2) * self.eta / self.alpha));
-                let xhat = &self.x + &self.d.map(|x| x * eta_hat);  // latest estimate of `x`
+                self.x = &self.x + &self.d.map(|x| x * self.eta_hat);  // latest estimate of `x`
 
                 // Update residual
-                let t = &self.a.view() * &s.view();
-                self.omega = t.dot(&s) / &t.squared_l2_norm();
-                self.r = &s - &t.map(|x| x * omega);
+                let t = &self.a.view() * &self.s.view();
+                self.omega = t.dot(&self.s) / &t.squared_l2_norm();
+                self.r = &self.s - &t.map(|x| x * self.omega);
                 self.err = (&self.r).l2_norm();
 
-                // Second quasi-minimization step
-                self.theta = self.err / tau_hat;
-                let c = 1.0 / (1.0 + self.theta.powi(2)).sqrt();
-                self.tau = tau_hat * self.theta * c;
-                self.eta = c.powi(2) * self.omega;
-                self.d = &s + &self.d.map(|x| x * (theta_hat.powi(2) * eta_hat / self.omega));
-                self.x = &xhat + &self.d.map(|x| x * self.eta);
-
-                // Check error
-                let true_residual = &self.b - &(&self.a.view() * &self.x.view()).view();
-                self.err = true_residual.l2_norm();
-
+                self.warm = true;
                 self.err
             }
 
             /// Set the minimum value of `rho.abs() / err^2` to trigger a soft restart
             pub fn with_restart_threshold(mut self, thresh: $T) -> Self {
-                self.soft_restart_threshold = thresh;
+                self.restart_threshold = thresh;
                 self
             }
 
@@ -267,18 +281,13 @@ macro_rules! qmrcgstab_impl {
             }
 
             /// The minimum value of `rho.abs() / err^2` to trigger a soft restart
-            pub fn soft_restart_threshold(&self) -> $T {
-                self.soft_restart_threshold
+            pub fn restart_threshold(&self) -> $T {
+                self.restart_threshold
             }
 
             /// Number of soft restarts that have been done so far
-            pub fn soft_restart_count(&self) -> usize {
-                self.soft_restart_count
-            }
-
-            /// Number of soft restarts that have been done so far
-            pub fn hard_restart_count(&self) -> usize {
-                self.hard_restart_count
+            pub fn restart_count(&self) -> usize {
+                self.restart_count
             }
 
             /// Latest estimate of normed error
@@ -290,6 +299,46 @@ macro_rules! qmrcgstab_impl {
             /// update to the gradient descent step direction will be.
             pub fn rho(&self) -> $T {
                 self.rho
+            }
+
+            /// Intermediate scalar `alpha`
+            pub fn alpha(&self) -> $T {
+                self.alpha
+            }
+
+            /// Intermediate scalar `omega`
+            pub fn omega(&self) -> $T {
+                self.omega
+            }
+
+            /// Intermediate scalar `theta`
+            pub fn theta(&self) -> $T {
+                self.theta
+            }
+
+            /// Intermediate scalar `eta`
+            pub fn eta(&self) -> $T {
+                self.eta
+            }
+
+            /// Intermediate scalar `tau`
+            pub fn tau(&self) -> $T {
+                self.tau
+            }
+
+            /// Intermediate scalar `tau_hat`
+            pub fn tau_hat(&self) -> $T {
+                self.tau_hat
+            }
+
+            /// Intermediate scalar `theta_hat`
+            pub fn theta_hat(&self) -> $T {
+                self.theta_hat
+            }
+
+            /// Intermediate scalar `eta_hat`
+            pub fn eta_hat(&self) -> $T {
+                self.eta_hat
             }
 
             /// The problem matrix
@@ -324,6 +373,21 @@ macro_rules! qmrcgstab_impl {
             pub fn p(&self) -> CsVecViewI<'_, $T, I> {
                 self.p.view()
             }
+
+            /// Intermediate vector `v`
+            pub fn v(&self) -> CsVecViewI<'_, $T, I> {
+                self.v.view()
+            }
+
+            /// Intermediate vector `d`
+            pub fn d(&self) -> CsVecViewI<'_, $T, I> {
+                self.d.view()
+            }
+
+            /// Intermediate vector `s`
+            pub fn s(&self) -> CsVecViewI<'_, $T, I> {
+                self.s.view()
+            }
         }
     };
 }
@@ -331,50 +395,49 @@ macro_rules! qmrcgstab_impl {
 qmrcgstab_impl!(f64);
 qmrcgstab_impl!(f32);
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     use crate::CsMatI;
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::CsMatI;
 
-//     #[test]
-//     fn test_qmrcgstab_f32() {
-//         let a = CsMatI::new_csc(
-//             (4, 4),
-//             vec![0, 2, 4, 6, 8],
-//             vec![0, 3, 1, 2, 1, 2, 0, 3],
-//             vec![1.0, 2., 21., 6., 6., 2., 2., 8.],
-//         );
+    #[test]
+    fn test_qmrcgstab_f32() {
+        let a = CsMatI::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1.0, 2., 21., 6., 6., 2., 2., 8.],
+        );
 
-//         // Solve Ax=b
-//         let tol = 1e-18;
-//         let max_iter = 50;
-//         let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
-//         let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
+        // Solve Ax=b
+        let tol = 1e-6;
+        let max_iter = 200;
+        let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
+        let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
 
-//         let res = BiCGSTAB::<'_, f32, _, _>::solve(
-//             a.view(),
-//             x0.view(),
-//             b.view(),
-//             tol,
-//             max_iter,
-//         )
-//         .unwrap();
-//         let b_recovered = &a * &res.x();
+        let res = QMRCGSTAB::<'_, f32, _, _>::solve(
+            a.view(),
+            x0.view(),
+            b.view(),
+            tol,
+            max_iter,
+        )
+        .unwrap();
+        let b_recovered = &a * &res.x();
 
-//         println!("Iteration count {:?}", res.iteration_count());
-//         println!("Soft restart count {:?}", res.soft_restart_count());
-//         println!("Hard restart count {:?}", res.hard_restart_count());
+        println!("Iteration count {:?}", res.iteration_count());
+        println!("Restart count {:?}", res.restart_count());
 
-//         // Make sure the solved values match expectation
-//         for (input, output) in
-//             b.to_dense().iter().zip(b_recovered.to_dense().iter())
-//         {
-//             assert!(
-//                 (1.0 - input / output).abs() < tol,
-//                 "Solved output did not match input"
-//             );
-//         }
-//     }
+        // Make sure the solved values match expectation
+        for (input, output) in
+            b.to_dense().iter().zip(b_recovered.to_dense().iter())
+        {
+            assert!(
+                (input - output).abs() <= tol,
+                "Solved output did not match input"
+            );
+        }
+    }
 
 //     #[test]
 //     fn test_qmrcgstab_f64() {
@@ -391,7 +454,7 @@ qmrcgstab_impl!(f32);
 //         let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
 //         let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
 
-//         let res = BiCGSTAB::<'_, f64, _, _>::solve(
+//         let res = QMRCGSTAB::<'_, f64, _, _>::solve(
 //             a.view(),
 //             x0.view(),
 //             b.view(),
@@ -415,4 +478,4 @@ qmrcgstab_impl!(f32);
 //             );
 //         }
 //     }
-// }
+}
