@@ -4,13 +4,13 @@
 //! # References
 //!
 //! The paper that introduces QMRCGSTAB:
-//! 
+//!
 //! ```text
 //! T. F. Chan, E. Gallopoulos, V. Simoncini, T. Szeto, and C. H. Tong,
 //! “A Quasi-Minimal Residual Variant of the Bi-CGSTAB Algorithm for Nonsymmetric Systems,”
 //! SIAM J. Sci. Comput., vol. 15, no. 2, pp. 338–347, Mar. 1994, doi: 10.1137/0915023.
 //! ```
-//! 
+//!
 //! A useful discussion of computational cost and convergence characteristics for the CG
 //! family of algorithms can be found in Table 1.
 //!
@@ -169,7 +169,12 @@ macro_rules! qmrcgstab_impl {
                 let mut solver = Self::new(a, x0, b);
                 for _ in 0..max_iter {
                     solver.step();
-                    if solver.err() < tol {
+
+                    // if  {
+                    //     solver.restart();
+                    // }
+
+                    if solver.err().is_nan() || solver.err() < tol {
                         // Check true error, which may not match the running error estimate
                         // and either continue iterations or return depending on result.
                         solver.restart();
@@ -226,7 +231,21 @@ macro_rules! qmrcgstab_impl {
                     let c = 1.0 / (1.0 + self.theta.powi(2)).sqrt();
                     self.tau = self.tau_hat * self.theta * c;
                     self.eta = c.powi(2) * self.omega;
-                    self.d = &self.s + &self.d.map(|x| x * (self.theta_hat.powi(2) * self.eta_hat / self.omega));
+
+                    if self.theta.is_nan()
+                        || c.is_nan()
+                        || self.tau.is_nan()
+                        || self.eta.is_nan()
+                    {
+                        self.restart();
+                        return self.err;
+                    }
+
+                    self.d = &self.s
+                        + &self.d.map(|x| {
+                            x * (self.theta_hat.powi(2) * self.eta_hat
+                                / self.omega)
+                        });
                     self.x = &self.x + &self.d.map(|x| x * self.eta);
                 }
 
@@ -244,24 +263,49 @@ macro_rules! qmrcgstab_impl {
 
                 let beta = (self.rho * self.alpha) * (rho_prev * self.omega);
                 self.p = &self.r
-                    + (&self.p - &self.v.map(|x| x * self.omega)).map(|x| x * beta);
+                    + (&self.p - &self.v.map(|x| x * self.omega))
+                        .map(|x| x * beta);
 
                 self.v = &self.a.view() * &self.p.view();
                 self.alpha = self.rho / ((&self.rhat).dot(&self.v));
                 self.s = &self.r - &self.v.map(|x| x * self.alpha);
 
+                if self.alpha.is_nan() || beta.is_nan() || self.rho.is_nan() {
+                    self.restart();
+                    return self.err;
+                }
+
                 // First quasi-minimization step
-                self.theta_hat = self.s.l2_norm() / self.err;
+                let snormsq = self.s.squared_l2_norm();
+                self.theta_hat = snormsq / self.err;
                 let c = 1.0 / (1.0 + self.theta_hat.powi(2)).sqrt();
                 self.tau_hat = self.tau * self.theta_hat * c;
                 self.eta_hat = c.powi(2) * self.alpha;
 
-                self.d = &self.p + &self.d.map(|x| x * (self.theta.powi(2) * self.eta / self.alpha));
-                self.x = &self.x + &self.d.map(|x| x * self.eta_hat);  // latest estimate of `x`
+                if self.theta_hat.is_nan()
+                    || self.tau_hat.is_nan()
+                    || self.eta_hat.is_nan()
+                    || c.is_nan()
+                {
+                    self.restart();
+                    return self.err;
+                }
+
+                self.d = &self.p
+                    + &self.d.map(|x| {
+                        x * (self.theta.powi(2) * self.eta / self.alpha)
+                    });
+                self.x = &self.x + &self.d.map(|x| x * self.eta_hat); // latest estimate of `x`
 
                 // Update residual
                 let t = &self.a.view() * &self.s.view();
-                self.omega = t.dot(&self.s) / &t.squared_l2_norm();
+                self.omega = snormsq / t.dot(&self.s);
+
+                if self.omega.is_nan() {
+                    self.restart();
+                    return self.err;
+                }
+
                 self.r = &self.s - &t.map(|x| x * self.omega);
                 self.err = (&self.r).l2_norm();
 
@@ -393,7 +437,6 @@ macro_rules! qmrcgstab_impl {
 }
 
 qmrcgstab_impl!(f64);
-qmrcgstab_impl!(f32);
 
 #[cfg(test)]
 mod test {
@@ -401,7 +444,7 @@ mod test {
     use crate::CsMatI;
 
     #[test]
-    fn test_qmrcgstab_f32() {
+    fn test_qmrcgstab_f64() {
         let a = CsMatI::new_csc(
             (4, 4),
             vec![0, 2, 4, 6, 8],
@@ -410,12 +453,12 @@ mod test {
         );
 
         // Solve Ax=b
-        let tol = 1e-6;
-        let max_iter = 200;
+        let tol = 1e-7;
+        let max_iter = 100;
         let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
         let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
 
-        let res = QMRCGSTAB::<'_, f32, _, _>::solve(
+        let res = QMRCGSTAB::<'_, f64, _, _>::solve(
             a.view(),
             x0.view(),
             b.view(),
@@ -438,44 +481,4 @@ mod test {
             );
         }
     }
-
-//     #[test]
-//     fn test_qmrcgstab_f64() {
-//         let a = CsMatI::new_csc(
-//             (4, 4),
-//             vec![0, 2, 4, 6, 8],
-//             vec![0, 3, 1, 2, 1, 2, 0, 3],
-//             vec![1.0, 2., 21., 6., 6., 2., 2., 8.],
-//         );
-
-//         // Solve Ax=b
-//         let tol = 1e-60;
-//         let max_iter = 50;
-//         let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
-//         let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
-
-//         let res = QMRCGSTAB::<'_, f64, _, _>::solve(
-//             a.view(),
-//             x0.view(),
-//             b.view(),
-//             tol,
-//             max_iter,
-//         )
-//         .unwrap();
-//         let b_recovered = &a * &res.x();
-
-//         println!("Iteration count {:?}", res.iteration_count());
-//         println!("Soft restart count {:?}", res.soft_restart_count());
-//         println!("Hard restart count {:?}", res.hard_restart_count());
-
-//         // Make sure the solved values match expectation
-//         for (input, output) in
-//             b.to_dense().iter().zip(b_recovered.to_dense().iter())
-//         {
-//             assert!(
-//                 (1.0 - input / output).abs() < tol,
-//                 "Solved output did not match input"
-//             );
-//         }
-//     }
 }
