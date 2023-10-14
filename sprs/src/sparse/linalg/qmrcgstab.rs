@@ -2,7 +2,7 @@
 //! A simple, sparse-sparse, serial, un-preconditioned implementation.
 //! 
 //! Due to the use of the term `1 / (1 + err^2)^0.5`, the solver update here will
-//! produce an error any time the error is less than around sqrt(<T>::EPSILON), where epsilon
+//! crash any time the error is less than around sqrt(<T>::EPSILON), where epsilon
 //! is around 1e-16 for f64 and around 1e-7 for f32. Empirically, this sets a practical 
 //! lower bound on tolerances of about 1e-6 for f64 and about 0.1 for f32 after which 
 //! the solver will produce NaN values regardless of the quality of the inputs.
