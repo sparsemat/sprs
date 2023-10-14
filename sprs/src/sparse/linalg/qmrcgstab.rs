@@ -1,9 +1,18 @@
 //! Stabilized quasi-minimum-residual bi-conjugate gradient solver for solving Ax = b with x unknown. Suitable for non-symmetric matrices.
 //! A simple, sparse-sparse, serial, un-preconditioned implementation.
+//! 
+//! Due to the use of the term `1 / (1 + err^2)^0.5`, the solver update here will
+//! produce an error any time the error is less than around sqrt(<T>::EPSILON), where epsilon
+//! is around 1e-16 for f64 and around 1e-7 for f32. Empirically, this sets a practical 
+//! lower bound on tolerances of about 1e-6 for f64 and about 0.1 for f32 after which 
+//! the solver will produce NaN values regardless of the quality of the inputs.
+//! 
+//! To summarize, it is numerically unstable even for well-conditioned inputs,
+//! and should be used only for rough tolerances.
 //!
 //! # References
 //!
-//! The paper that introduces QMRCGSTAB:
+//! The paper that introduces QMRCGSTAB2:
 //!
 //! ```text
 //! T. F. Chan, E. Gallopoulos, V. Simoncini, T. Szeto, and C. H. Tong,
@@ -14,53 +23,11 @@
 //! A useful discussion of computational cost and convergence characteristics for the CG
 //! family of algorithms can be found in Table 1.
 //!
-//! # Example
-//! ```rust
-//! use sprs::{CsMatI, CsVecI};
-//! use sprs::linalg::qmrcgstab::BiCGSTAB;
-//!
-//! let a = CsMatI::new_csc(
-//!     (4, 4),
-//!     vec![0, 2, 4, 6, 8],
-//!     vec![0, 3, 1, 2, 1, 2, 0, 3],
-//!     vec![1.0, 2., 21., 6., 6., 2., 2., 8.],
-//! );
-//!
-//! // Solve Ax=b
-//! let tol = 1e-60;
-//! let max_iter = 50;
-//! let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
-//! let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
-//!
-//! let res = BiCGSTAB::<'_, f64, _, _>::solve(
-//!     a.view(),
-//!     x0.view(),
-//!     b.view(),
-//!     tol,
-//!     max_iter,
-//! )
-//! .unwrap();
-//! let b_recovered = &a * &res.x();
-//!
-//! println!("Iteration count {:?}", res.iteration_count());
-//! println!("Soft restart count {:?}", res.soft_restart_count());
-//! println!("Hard restart count {:?}", res.hard_restart_count());
-//!
-//! // Make sure the solved values match expectation
-//! for (input, output) in
-//!     b.to_dense().iter().zip(b_recovered.to_dense().iter())
-//! {
-//!     assert!(
-//!         (1.0 - input / output).abs() < tol,
-//!         "Solved output did not match input"
-//!     );
-//! }
-//! ```
-//!
 //! # Commentary
 //! This implementation differs slightly from the paper's pseudocode:
 //! * The solver will restart if `rhat` becomes perpendicular to `r`, to prevent
-//!   the update from becoming singular
+//!   the update from becoming singular, or if any of the other intermediate scalars
+//!   becomes NaN
 //! * The true error is recalculated when the estimated error appears to be resolved,
 //!   and the solver will either return or continue iterations based on the result
 use crate::indexing::SpIndex;
@@ -69,7 +36,7 @@ use num_traits::One;
 
 /// Stabilized quasi-minimum-residual bi-conjugate gradient solver
 #[derive(Debug)]
-pub struct QMRCGSTAB<'a, T, I: SpIndex, Iptr: SpIndex> {
+pub struct QMRCGSTAB2<'a, T, I: SpIndex, Iptr: SpIndex> {
     // Configuration
     iteration_count: usize,
     restart_threshold: T,
@@ -101,7 +68,7 @@ pub struct QMRCGSTAB<'a, T, I: SpIndex, Iptr: SpIndex> {
 
 macro_rules! qmrcgstab_impl {
     ($T: ty) => {
-        impl<'a, I: SpIndex, Iptr: SpIndex> QMRCGSTAB<'a, $T, I, Iptr> {
+        impl<'a, I: SpIndex, Iptr: SpIndex> QMRCGSTAB2<'a, $T, I, Iptr> {
             /// Initialize the solver with a fresh error estimate
             pub fn new(
                 a: CsMatViewI<'a, $T, I, Iptr>,
@@ -163,8 +130,8 @@ macro_rules! qmrcgstab_impl {
                 tol: $T,
                 max_iter: usize,
             ) -> Result<
-                Box<QMRCGSTAB<'a, $T, I, Iptr>>,
-                Box<QMRCGSTAB<'a, $T, I, Iptr>>,
+                Box<QMRCGSTAB2<'a, $T, I, Iptr>>,
+                Box<QMRCGSTAB2<'a, $T, I, Iptr>>,
             > {
                 let mut solver = Self::new(a, x0, b);
                 for _ in 0..max_iter {
@@ -437,6 +404,7 @@ macro_rules! qmrcgstab_impl {
 }
 
 qmrcgstab_impl!(f64);
+qmrcgstab_impl!(f32);
 
 #[cfg(test)]
 mod test {
@@ -453,12 +421,51 @@ mod test {
         );
 
         // Solve Ax=b
-        let tol = 1e-7;
+        let tol = 1e-6;
         let max_iter = 100;
         let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
         let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
 
-        let res = QMRCGSTAB::<'_, f64, _, _>::solve(
+        let res = QMRCGSTAB2::<'_, f64, _, _>::solve(
+            a.view(),
+            x0.view(),
+            b.view(),
+            tol,
+            max_iter,
+        )
+        .unwrap();
+        let b_recovered = &a * &res.x();
+
+        println!("Iteration count {:?}", res.iteration_count());
+        println!("Restart count {:?}", res.restart_count());
+
+        // Make sure the solved values match expectation
+        for (input, output) in
+            b.to_dense().iter().zip(b_recovered.to_dense().iter())
+        {
+            assert!(
+                (input - output).abs() <= tol,
+                "Solved output did not match input"
+            );
+        }
+    }
+
+    #[test]
+    fn test_qmrcgstab_f32() {
+        let a = CsMatI::new_csc(
+            (4, 4),
+            vec![0, 2, 4, 6, 8],
+            vec![0, 3, 1, 2, 1, 2, 0, 3],
+            vec![1.0, 2., 21., 6., 6., 2., 2., 8.],
+        );
+
+        // Solve Ax=b
+        let tol = 1e-1;
+        let max_iter = 100;
+        let b = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0; 4]);
+        let x0 = CsVecI::new(4, vec![0, 1, 2, 3], vec![1.0, 1.0, 1.0, 1.0]);
+
+        let res = QMRCGSTAB2::<'_, f32, _, _>::solve(
             a.view(),
             x0.view(),
             b.view(),
