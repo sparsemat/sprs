@@ -573,8 +573,9 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
     pub fn append_outer_iter<Iter>(self, iter: Iter) -> Self
     where
         N: Zero,
-        Iter: Iterator<Item = (usize, N)>,
+        Iter: IntoIterator<Item = (usize, N)>,
     {
+        let iter = iter.into_iter();
         unsafe {
             self.append_outer_iter_unchecked(AssertOrderedIterator {
                 prev: None,
@@ -596,8 +597,9 @@ impl<N, I: SpIndex, Iptr: SpIndex> CsMatI<N, I, Iptr> {
         iter: Iter,
     ) -> Self
     where
-        Iter: Iterator<Item = (usize, N)>,
+        Iter: IntoIterator<Item = (usize, N)>,
     {
+        let iter = iter.into_iter();
         if let (_, Some(nnz)) = iter.size_hint() {
             self.reserve_nnz(nnz)
         }
