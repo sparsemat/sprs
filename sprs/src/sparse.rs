@@ -260,6 +260,7 @@ pub struct TriMatIter<RI, CI, DI> {
 }
 
 mod prelude {
+    #[allow(unused_imports)]
     pub use super::{
         CsMat, CsMatBase, CsMatI, CsMatVecView, CsMatVecView_, CsMatView,
         CsMatViewI, CsMatViewMut, CsMatViewMutI, CsStructure, CsStructureI,

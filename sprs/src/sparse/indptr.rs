@@ -120,7 +120,7 @@ where
     ///
     /// An empty matrix is considered non-proper.
     pub fn is_proper(&self) -> bool {
-        self.storage.get(0).map_or(false, |i| *i == Iptr::zero())
+        self.storage.first().map_or(false, |i| *i == Iptr::zero())
     }
 
     /// Return a view on the underlying slice if it is a proper `indptr` slice,
@@ -215,7 +215,7 @@ where
 
     fn offset(&self) -> Iptr {
         let zero = Iptr::zero();
-        self.storage.get(0).copied().unwrap_or(zero)
+        self.storage.first().copied().unwrap_or(zero)
     }
 
     /// Iterate over the nonzeros represented by this indptr, yielding the

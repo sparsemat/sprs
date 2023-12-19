@@ -1023,7 +1023,7 @@ where
         let mut indices: Vec<I> = Vec::with_capacity(max_data_len);
         let mut data = Vec::with_capacity(max_data_len);
 
-        for (_, inner_vec) in self.outer_iterator().enumerate() {
+        for inner_vec in self.outer_iterator() {
             let hot_element = inner_vec
                 .iter()
                 .filter(|e| !e.1.is_nan())

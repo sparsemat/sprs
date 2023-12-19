@@ -140,8 +140,7 @@ where
             })
         })
         .collect();
-    let mut to_vstack = Vec::new();
-    to_vstack.reserve(super_rows);
+    let mut to_vstack = Vec::with_capacity(super_rows);
     for (i, row) in mats.iter().enumerate() {
         let with_zeros: Vec<_> = row
             .as_ref()
