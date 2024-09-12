@@ -2123,9 +2123,11 @@ where
     fn mul(self, rhs: &'b ArrayBase<DS2, Ix1>) -> Array<N, Ix1> {
         let rows = self.rows();
         let cols = rhs.shape()[0];
+        #[allow(deprecated)]
         let rhs_reshape = rhs.view().into_shape((cols, 1)).unwrap();
         let mut res = Array::zeros(rows);
         {
+            #[allow(deprecated)]
             let res_reshape = res.view_mut().into_shape((rows, 1)).unwrap();
             match self.storage() {
                 CSR => {

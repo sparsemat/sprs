@@ -41,6 +41,7 @@ fn sparse_dense_vec_matprod_specialized(bench: &mut Bencher) {
     );
     let rows = a.rows();
     let cols = w.shape()[0];
+    #[allow(deprecated)]
     let w_reshape = w.view().into_shape((1, cols)).unwrap();
     let w_t = w_reshape.t();
     let mut res = Array2::<f64>::zeros((rows, 1).f());
