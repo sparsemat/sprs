@@ -158,6 +158,7 @@ fn main() {
                 "Solved system in {} iterations with residual error {}",
                 iters, error
             );
+            #[allow(deprecated)]
             let grid = x.view().into_shape((rows, cols)).unwrap();
             for i in 0..rows {
                 for j in 0..cols {
