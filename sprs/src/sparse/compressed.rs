@@ -30,22 +30,3 @@ where
         self.transpose_view()
     }
 }
-
-/// The `SpVecView` trait describes types that can be seen as a view into
-/// a `CsVec`
-pub trait SpVecView<N, I: SpIndex> {
-    /// Return a view into the current vector
-    fn view(&self) -> CsVecViewI<N, I>;
-}
-
-impl<N, I, IndStorage, DataStorage> SpVecView<N, I>
-    for CsVecBase<IndStorage, DataStorage, N, I>
-where
-    IndStorage: Deref<Target = [I]>,
-    DataStorage: Deref<Target = [N]>,
-    I: SpIndex,
-{
-    fn view(&self) -> CsVecViewI<N, I> {
-        self.view()
-    }
-}
