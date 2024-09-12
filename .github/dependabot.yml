@@ -6,5 +6,5 @@ updates:
       interval: "weekly"
     commit-message:
       # Prefix all commit messages with "deps: ", which should be
-      # accepted as a conventional commit and trigger release-please
+      # accepted as a conventional commit
       prefix: "deps"
