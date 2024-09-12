@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    commit-message:
+      # Prefix all commit messages with "deps: ", which should be
+      # accepted as a conventional commit
+      prefix: "deps"
