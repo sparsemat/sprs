@@ -689,7 +689,7 @@ where
 
     /// Check the sparse structure, namely that:
     /// - indices are sorted
-    /// - all indices are less than dims()
+    /// - all indices are less than `dims()`
     pub fn check_structure(&self) -> Result<(), StructureError> {
         // Make sure indices can be converted to usize
         for i in self.indices.iter() {

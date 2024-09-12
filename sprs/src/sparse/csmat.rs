@@ -841,14 +841,14 @@ where
         nnz / (rows * cols)
     }
 
-    /// Number of outer dimensions, that ie equal to self.rows() for a CSR
-    /// matrix, and equal to self.cols() for a CSC matrix
+    /// Number of outer dimensions, that ie equal to `self.rows()` for a CSR
+    /// matrix, and equal to `self.cols()` for a CSC matrix
     pub fn outer_dims(&self) -> usize {
         outer_dimension(self.storage, self.nrows, self.ncols)
     }
 
-    /// Number of inner dimensions, that ie equal to self.cols() for a CSR
-    /// matrix, and equal to self.rows() for a CSC matrix
+    /// Number of inner dimensions, that ie equal to `self.cols()` for a CSR
+    /// matrix, and equal to `self.rows()` for a CSC matrix
     pub fn inner_dims(&self) -> usize {
         match self.storage {
             CSC => self.nrows,
@@ -870,10 +870,10 @@ where
         }
     }
 
-    /// The array of offsets in the indices() and data() slices.
+    /// The array of offsets in the `indices()` `and data()` slices.
     /// The elements of the slice at outer dimension i
-    /// are available between the elements indptr\[i\] and indptr\[i+1\]
-    /// in the indices() and data() slices.
+    /// are available between the elements `indptr\[i\]` and `indptr\[i+1\]`
+    /// in the `indices()` and `data()` slices.
     ///
     /// # Example
     ///
@@ -921,12 +921,12 @@ where
     }
 
     /// The inner dimension location for each non-zero value. See
-    /// the documentation of indptr() for more explanations.
+    /// the documentation of `indptr()` for more explanations.
     pub fn indices(&self) -> &[I] {
         &self.indices[..]
     }
 
-    /// The non-zero values. See the documentation of indptr()
+    /// The non-zero values. See the documentation of `indptr()`
     /// for more explanations.
     pub fn data(&self) -> &[N] {
         &self.data[..]
