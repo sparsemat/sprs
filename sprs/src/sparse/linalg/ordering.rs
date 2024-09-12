@@ -272,6 +272,8 @@ pub mod order {
     use crate::indexing::SpIndex;
     use crate::sparse::permutation::PermOwnedI;
 
+    /// Internal trait for working with Cuthill-McKee
+    ///
     /// This trait is very deeply integrated with the inner workings of the
     /// Cuthill-McKee algorithm implemented here.  It is conceptually only an
     /// enum, specifying if the Cuthill-McKee ordering should be built in
@@ -434,7 +436,7 @@ pub mod order {
 /// - `starting_strategy` - The strategy to use for choosing a starting vertex.
 ///
 /// - `directed_ordering` - The order of the computed ordering, should either be
-/// `Forward` or `Reverse`.
+///   `Forward` or `Reverse`.
 pub fn cuthill_mckee_custom<N, I, Iptr, S, D>(
     mat: CsMatViewI<N, I, Iptr>,
     mut starting_strategy: S,

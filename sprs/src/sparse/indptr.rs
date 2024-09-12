@@ -54,7 +54,7 @@ where
             .last()
             .copied()
             .map(Iptr::index_unchecked)
-            .map_or(false, |i| i > usize::max_value() / 2)
+            .map_or(false, |i| i > usize::MAX / 2)
         {
             // We do not allow indptr values to be larger than half
             // the maximum value of an usize, as that would clearly exhaust

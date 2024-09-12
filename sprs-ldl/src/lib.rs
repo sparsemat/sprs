@@ -497,7 +497,7 @@ pub fn ldl_symbolic<N, I, PStorage>(
 
 /// Perform numeric LDLT decomposition
 ///
-/// `pattern_workspace` is a [`DStack`](DStack) of capacity n
+/// `pattern_workspace` is a [`DStack`] of capacity n
 #[allow(clippy::too_many_arguments)]
 pub fn ldl_numeric<N, I, PStorage>(
     mat: CsMatViewI<N, I>,

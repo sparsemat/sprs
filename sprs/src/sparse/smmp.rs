@@ -32,9 +32,10 @@ pub enum ThreadingStrategy {
 }
 
 #[cfg(feature = "multi_thread")]
-thread_local!(static THREADING_STRAT: RefCell<ThreadingStrategy> =
-    RefCell::new(ThreadingStrategy::Automatic)
-);
+thread_local! {
+    static THREADING_STRAT: RefCell<ThreadingStrategy> =
+    const { RefCell::new(ThreadingStrategy::Automatic) };
+}
 
 /// Set the threading strategy for matrix products in this thread.
 ///

@@ -296,8 +296,9 @@ where
         // context to a plain function, which enables specifying the type
         // Needless to say, this needs to go when it's no longer necessary
         #[inline(always)]
-        fn hack_instead_of_closure<N, V: ?Sized>(vi: (&V, usize)) -> (usize, &N)
+        fn hack_instead_of_closure<N, V>(vi: (&V, usize)) -> (usize, &N)
         where
+            V: ?Sized,
             V: DenseVector<Scalar = N>,
         {
             (vi.1, vi.0.index(vi.1))
@@ -824,10 +825,11 @@ where
     /// assert_eq!(4., v1.dot(&v1));
     /// assert_eq!(16., v2.dot(&v2));
     /// ```
-    pub fn dot<'b, T: IntoSparseVecIter<'b, N>>(&'b self, rhs: T) -> N
+    pub fn dot<'b, T>(&'b self, rhs: T) -> N
     where
         N: 'b + crate::MulAcc + num_traits::Zero,
         I: 'b,
+        T: IntoSparseVecIter<'b, N>,
         <T as IntoSparseVecIter<'b, N>>::IterType:
             Iterator<Item = (usize, &'b N)>,
         T: Copy, // T is supposed to be a reference type
@@ -841,13 +843,11 @@ where
     /// that can be interpreted as a sparse vector (hence sparse vectors, std
     /// vectors and slices, and ndarray's dense vectors work).
     /// The output type can be any type supporting `MulAcc`.
-    pub fn dot_acc<'b, T: IntoSparseVecIter<'b, M>, M, Acc>(
-        &'b self,
-        rhs: T,
-    ) -> Acc
+    pub fn dot_acc<'b, T, M, Acc>(&'b self, rhs: T) -> Acc
     where
         Acc: 'b + crate::MulAcc<N, M> + num_traits::Zero,
         M: 'b,
+        T: IntoSparseVecIter<'b, M>,
         <T as IntoSparseVecIter<'b, M>>::IterType:
             Iterator<Item = (usize, &'b M)>,
         T: Copy, // T is supposed to be a reference type

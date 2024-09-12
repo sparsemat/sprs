@@ -5,8 +5,10 @@ use suitesparse_camd_sys::*;
 // FIXME should be using SuiteSparseInt::MAX but this will not compile
 // in rust 1.42 as u32::MAX was introduced in 1.43. This can be changed if
 // the MSRV is bumped.
-const MAX_INT32: usize = std::u32::MAX as usize;
+const MAX_INT32: usize = u32::MAX as usize;
 
+/// Find permutation of `mat`
+///
 /// Find a permutation matrix P which reduces the fill-in of the square
 /// sparse matrix `mat` in Cholesky factorization (ie, the number of nonzeros
 /// of the Cholesky factorization of P A P^T is less than for the Cholesky
@@ -77,6 +79,8 @@ where
     Ok(PermOwnedI::new(perm))
 }
 
+/// Find permutation of `mat`
+///
 /// Find a permutation matrix P which reduces the fill-in of the square
 /// sparse matrix `mat` in Cholesky factorization (ie, the number of nonzeros
 /// of the Cholesky factorization of P A P^T is less than for the Cholesky

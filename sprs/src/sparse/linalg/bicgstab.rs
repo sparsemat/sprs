@@ -74,18 +74,18 @@
 //!   * Hard restart to check true error before claiming convergence
 //! * Soft-restart logic uses a correct metric of perpendicularity instead of a magnitude heuristic
 //!   * The usual method, which compares a fixed value to `rho`, does not capture the fact that the
-//!   magnitude of `rho` will naturally decrease as the solver approaches convergence
+//!     magnitude of `rho` will naturally decrease as the solver approaches convergence
 //!   * This change eliminates the effect where the a soft restart is performed on every iteration for the last few
-//!   iterations of any solve with a reasonable error tolerance
+//!     iterations of any solve with a reasonable error tolerance
 //! * Hard-restart logic provides some real guarantee of correctness
 //!   * The usual implementations keep a cheap, but inaccurate, running estimate of the error
 //!     * That decreases the cost of iterations by about half by eliminating a matrix-vector multiplication,
-//!     but allows the estimate of error to drift numerically, which causes the solver to return claiming
-//!     convergence when the solved output does not, in fact, match the input system
+//!       but allows the estimate of error to drift numerically, which causes the solver to return claiming
+//!       convergence when the solved output does not, in fact, match the input system
 //!   * This change guarantees that the solver will not return claiming convergence unless the solution
-//!   actually matches the input system, and will refresh its estimate of the error and continue iterations
-//!   if it has reached a falsely-converged state, continuing until it either reaches true convergence or
-//!   reaches maximum iterations
+//!     actually matches the input system, and will refresh its estimate of the error and continue iterations
+//!     if it has reached a falsely-converged state, continuing until it either reaches true convergence or
+//!     reaches maximum iterations
 use crate::indexing::SpIndex;
 use crate::sparse::{CsMatViewI, CsVecI, CsVecViewI};
 use num_traits::One;

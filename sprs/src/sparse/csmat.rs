@@ -1170,9 +1170,9 @@ where
     pub fn outer_iterator_papt<'a, 'perm: 'a>(
         &'a self,
         perm: PermViewI<'perm, I>,
-    ) -> impl std::iter::DoubleEndedIterator<Item = (usize, CsVecViewI<N, I>)>
-           + std::iter::ExactSizeIterator<Item = (usize, CsVecViewI<N, I>)>
-           + '_ {
+    ) -> impl std::iter::DoubleEndedIterator<Item = (usize, CsVecViewI<'a, N, I>)>
+           + std::iter::ExactSizeIterator<Item = (usize, CsVecViewI<'a, N, I>)>
+           + 'a {
         (0..self.outer_dims()).map(move |outer_ind| {
             let outer_ind_perm = perm.at(outer_ind);
             let range = self.indptr.outer_inds_sz(outer_ind_perm);
