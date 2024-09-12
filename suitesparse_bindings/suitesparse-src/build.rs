@@ -44,26 +44,21 @@ fn main() {
     if std::env::var_os("CARGO_FEATURE_LDL").is_some() {
         // We first build ldl with LDL_LONG to make the bindings to
         // the long bits of the library
-        cc::Build::new()
+        let ldll_artifact = cc::Build::new()
             .include("SuiteSparse/SuiteSparse_config")
             .include("SuiteSparse/LDL/Include")
             .file("SuiteSparse/LDL/Source/ldl.c")
             .cargo_metadata(false)
             .define("LDL_LONG", None)
-            .compile("ldll");
-        // We must then copy this to another location since the next
-        // invocation is just a compile definition
-        let mut ldl_path = std::path::PathBuf::from(root.clone());
-        ldl_path.push("SuiteSparse/LDL/Source/ldl.o");
-        let mut ldll_path = ldl_path.clone();
-        ldll_path.set_file_name("ldll.o");
-        std::fs::copy(&ldl_path, &ldll_path).unwrap();
+            .compile_intermediates();
+        let (ldll_artifact, rest) = ldll_artifact.split_first().unwrap();
+        assert!(rest.is_empty());
         // And now we build ldl again (in int form), and link with the long bits
         cc::Build::new()
             .include("SuiteSparse/SuiteSparse_config")
             .include("SuiteSparse/LDL/Include")
             .file("SuiteSparse/LDL/Source/ldl.c")
-            .object(&ldll_path)
+            .object(ldll_artifact)
             .cargo_metadata(false)
             .compile("ldl");
     }

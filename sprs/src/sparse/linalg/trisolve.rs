@@ -279,7 +279,7 @@ where
 ///
 /// # Panics
 ///
-/// * if dstack.capacity() is too small
+/// * if `dstack.capacity()` is too small
 /// * if dstack is not empty
 /// * if `w_workspace` is not of length n
 ///

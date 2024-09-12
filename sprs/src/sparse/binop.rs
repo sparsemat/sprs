@@ -162,6 +162,8 @@ sparse_scalar_mul!(usize);
 sparse_scalar_mul!(f32);
 sparse_scalar_mul!(f64);
 
+/// Apply binary operation to two sparse matrices
+///
 /// Applies a binary operation to matching non-zero elements
 /// of two sparse matrices. When e.g. only the `lhs` has a non-zero at a
 /// given location, `0` is inferred for the non-zero value of the other matrix.

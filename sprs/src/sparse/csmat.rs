@@ -841,14 +841,14 @@ where
         nnz / (rows * cols)
     }
 
-    /// Number of outer dimensions, that ie equal to self.rows() for a CSR
-    /// matrix, and equal to self.cols() for a CSC matrix
+    /// Number of outer dimensions, that ie equal to `self.rows()` for a CSR
+    /// matrix, and equal to `self.cols()` for a CSC matrix
     pub fn outer_dims(&self) -> usize {
         outer_dimension(self.storage, self.nrows, self.ncols)
     }
 
-    /// Number of inner dimensions, that ie equal to self.cols() for a CSR
-    /// matrix, and equal to self.rows() for a CSC matrix
+    /// Number of inner dimensions, that ie equal to `self.cols()` for a CSR
+    /// matrix, and equal to `self.rows()` for a CSC matrix
     pub fn inner_dims(&self) -> usize {
         match self.storage {
             CSC => self.nrows,
@@ -870,10 +870,10 @@ where
         }
     }
 
-    /// The array of offsets in the indices() and data() slices.
+    /// The array of offsets in the `indices()` `and data()` slices.
     /// The elements of the slice at outer dimension i
-    /// are available between the elements indptr\[i\] and indptr\[i+1\]
-    /// in the indices() and data() slices.
+    /// are available between the elements `indptr\[i\]` and `indptr\[i+1\]`
+    /// in the `indices()` and `data()` slices.
     ///
     /// # Example
     ///
@@ -921,12 +921,12 @@ where
     }
 
     /// The inner dimension location for each non-zero value. See
-    /// the documentation of indptr() for more explanations.
+    /// the documentation of `indptr()` for more explanations.
     pub fn indices(&self) -> &[I] {
         &self.indices[..]
     }
 
-    /// The non-zero values. See the documentation of indptr()
+    /// The non-zero values. See the documentation of `indptr()`
     /// for more explanations.
     pub fn data(&self) -> &[N] {
         &self.data[..]
@@ -1170,9 +1170,9 @@ where
     pub fn outer_iterator_papt<'a, 'perm: 'a>(
         &'a self,
         perm: PermViewI<'perm, I>,
-    ) -> impl std::iter::DoubleEndedIterator<Item = (usize, CsVecViewI<N, I>)>
-           + std::iter::ExactSizeIterator<Item = (usize, CsVecViewI<N, I>)>
-           + '_ {
+    ) -> impl std::iter::DoubleEndedIterator<Item = (usize, CsVecViewI<'a, N, I>)>
+           + std::iter::ExactSizeIterator<Item = (usize, CsVecViewI<'a, N, I>)>
+           + 'a {
         (0..self.outer_dims()).map(move |outer_ind| {
             let outer_ind_perm = perm.at(outer_ind);
             let range = self.indptr.outer_inds_sz(outer_ind_perm);
