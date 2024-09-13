@@ -1,6 +1,6 @@
 [package]
 name = "suitesparse-src"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   "Magnus Ulimoen <magnus@ulimoen.dev>",
   "Vincent Barrielle <vincent.barrielle@m4x.org"
