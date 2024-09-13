@@ -8,6 +8,10 @@ on:
   schedule:
   - cron: '0 0 15 * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
     CARGO_TERM_COLOR: always
     RUSTFLAGS: -D warnings
