@@ -1,3 +1,4 @@
+---
 version: 2
 updates:
   - package-ecosystem: "cargo"
@@ -8,3 +9,9 @@ updates:
       # Prefix all commit messages with "deps: ", which should be
       # accepted as a conventional commit
       prefix: "deps"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps-ci"
