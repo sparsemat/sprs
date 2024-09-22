@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
@@ -91,7 +91,7 @@ jobs:
           rust: stable
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
 
     - name: Install suitesparse
@@ -129,7 +129,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install dependencies
       run: |
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
@@ -194,7 +194,7 @@ jobs:
           rust: stable
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: true}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
@@ -213,7 +213,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with: {submodules: false}
     - name: Install rust
       uses: dtolnay/rust-toolchain@stable
