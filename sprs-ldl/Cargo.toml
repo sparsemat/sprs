@@ -18,4 +18,4 @@ sprs_suitesparse_ldl = { version = "0.8.0", path = "../suitesparse_bindings/sprs
 sprs_suitesparse_camd = { version = "0.3.0", path = "../suitesparse_bindings/sprs_suitesparse_camd", optional = true }
 
 [dev-dependencies]
-ndarray = ">=0.15.0, <=0.16"
+ndarray = ">=0.15.0, <=0.16.1"
