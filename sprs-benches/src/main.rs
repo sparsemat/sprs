@@ -7,7 +7,7 @@ use sprs_rand::rand_csr_std;
 
 fn scipy_mat<'a>(
     scipy_sparse: &Bound<'a, PyModule>,
-    py: Python,
+    py: Python<'a>,
     mat: &sprs::CsMat<f64>,
 ) -> Result<Bound<'a, PyAny>, String> {
     let indptr = mat.indptr().to_proper().to_vec();
@@ -15,7 +15,7 @@ fn scipy_mat<'a>(
         .call_method(
             "csr_matrix",
             ((mat.data().to_vec(), mat.indices().to_vec(), indptr),),
-            Some(&[("shape", mat.shape())].into_py_dict_bound(py)),
+            Some(&[("shape", mat.shape())].into_py_dict(py).unwrap()),
         )
         .map_err(|e| {
             let res = format!("Python error: {e:?}");
@@ -163,12 +163,11 @@ fn bench_densities_with_py(
         },
     ];
 
-    let scipy_sparse =
-        PyModule::import_bound(py, "scipy.sparse").map_err(|e| {
-            let res = format!("Python error: {e:?}");
-            e.print_and_set_sys_last_vars(py);
-            res
-        })?;
+    let scipy_sparse = PyModule::import(py, "scipy.sparse").map_err(|e| {
+        let res = format!("Python error: {e:?}");
+        e.print_and_set_sys_last_vars(py);
+        res
+    })?;
 
     for spec in &bench_specs {
         let shape = spec.shape;
@@ -269,12 +268,9 @@ fn bench_densities_with_py(
                 let m2_py = scipy_mat(&scipy_sparse, py, &m2)?;
                 let now = std::time::Instant::now();
                 let _prod_py = py
-                    .eval_bound(
-                        "m1 * m2",
-                        Some(
-                            &[("m1", m1_py), ("m2", m2_py)]
-                                .into_py_dict_bound(py),
-                        ),
+                    .eval(
+                        c"m1 * m2",
+                        Some(&[("m1", m1_py), ("m2", m2_py)].into_py_dict(py)?),
                         None,
                     )
                     .map_err(|e| {
