@@ -2,7 +2,10 @@
 Changelog
 =========
 
-- Unreleased
+- 0.11.3
+  - Fixed a bug where Iptr -> I conversion was not checked
+
+- 0.11.2
   - Fixed a compilation regression in csmat_binop
   - Bump MSRV (1.77)
   - add support for reading/writing Complex{32,64} matrices in matrixmarket format.
