@@ -1788,6 +1788,11 @@ pub mod raw {
 
         assert!(indptr.iter().all(num_traits::Zero::is_zero));
 
+        assert!(
+            I::try_from_usize(mat.rows()).is_some(),
+            "Index type is not large enough to hold the number of rows requested (I::max_value={:?} vs. required {})", I::max_value(), mat.rows(),
+        );
+
         for vec in mat.outer_iterator() {
             for (inner_dim, _) in vec.iter() {
                 indptr[inner_dim] += Iptr::one();
@@ -1805,10 +1810,11 @@ pub mod raw {
         }
 
         for (outer_dim, vec) in mat.outer_iterator().enumerate() {
+            let outer_dim = I::from_usize_unchecked(outer_dim);
             for (inner_dim, val) in vec.iter() {
                 let dest = indptr[inner_dim].index();
                 data[dest] = val.clone();
-                indices[dest] = I::from_usize_unchecked(outer_dim);
+                indices[dest] = outer_dim;
                 indptr[inner_dim] += Iptr::one();
             }
         }
