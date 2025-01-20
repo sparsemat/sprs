@@ -1820,14 +1820,14 @@ pub mod raw {
     }
 }
 
-impl<'a, I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::MulAssign<T>
+impl<I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::MulAssign<T>
     for CsMatBase<T, I, IpStorage, IStorage, DStorage, Iptr>
 where
-    I: 'a + SpIndex,
-    Iptr: 'a + SpIndex,
-    IpStorage: 'a + Deref<Target = [Iptr]>,
-    IStorage: 'a + Deref<Target = [I]>,
-    DStorage: 'a + DerefMut<Target = [T]>,
+    I: SpIndex,
+    Iptr: SpIndex,
+    IpStorage: Deref<Target = [Iptr]>,
+    IStorage: Deref<Target = [I]>,
+    DStorage: DerefMut<Target = [T]>,
     T: std::ops::MulAssign<T> + Clone,
 {
     fn mul_assign(&mut self, rhs: T) {
@@ -1837,14 +1837,14 @@ where
     }
 }
 
-impl<'a, I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::DivAssign<T>
+impl<I, Iptr, IpStorage, IStorage, DStorage, T> std::ops::DivAssign<T>
     for CsMatBase<T, I, IpStorage, IStorage, DStorage, Iptr>
 where
-    I: 'a + SpIndex,
-    Iptr: 'a + SpIndex,
-    IpStorage: 'a + Deref<Target = [Iptr]>,
-    IStorage: 'a + Deref<Target = [I]>,
-    DStorage: 'a + DerefMut<Target = [T]>,
+    I: SpIndex,
+    Iptr: SpIndex,
+    IpStorage: Deref<Target = [Iptr]>,
+    IStorage: Deref<Target = [I]>,
+    DStorage: DerefMut<Target = [T]>,
     T: std::ops::DivAssign<T> + Clone,
 {
     fn div_assign(&mut self, rhs: T) {
@@ -1879,7 +1879,7 @@ where
 }
 
 /// Multiply two sparse matrices.
-
+///
 /// This function is generic over `MulAcc`, and supports accumulating
 /// into a different output type. This is not the default for `Mul`,
 /// as type inference fails for intermediaries
@@ -2038,15 +2038,15 @@ where
     }
 }
 
-impl<'a, 'b, N, I, IpS, IS, DS, DS2> Dot<CsMatBase<N, I, IpS, IS, DS>>
+impl<N, I, IpS, IS, DS, DS2> Dot<CsMatBase<N, I, IpS, IS, DS>>
     for ArrayBase<DS2, Ix2>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero + std::fmt::Debug,
-    I: 'a + SpIndex,
-    IpS: 'a + Deref<Target = [I]>,
-    IS: 'a + Deref<Target = [I]>,
-    DS: 'a + Deref<Target = [N]>,
-    DS2: 'b + ndarray::Data<Elem = N>,
+    N: Clone + crate::MulAcc + num_traits::Zero + std::fmt::Debug,
+    I: SpIndex,
+    IpS: Deref<Target = [I]>,
+    IS: Deref<Target = [I]>,
+    DS: Deref<Target = [N]>,
+    DS2: ndarray::Data<Elem = N>,
 {
     type Output = Array<N, Ix2>;
 
@@ -2089,16 +2089,16 @@ where
     }
 }
 
-impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix2>>
+impl<N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix2>>
     for CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
-    I: 'a + SpIndex,
-    Iptr: 'a + SpIndex,
-    IpS: 'a + Deref<Target = [Iptr]>,
-    IS: 'a + Deref<Target = [I]>,
-    DS: 'a + Deref<Target = [N]>,
-    DS2: 'b + ndarray::Data<Elem = N>,
+    N: Clone + crate::MulAcc + num_traits::Zero,
+    I: SpIndex,
+    Iptr: SpIndex,
+    IpS: Deref<Target = [Iptr]>,
+    IS: Deref<Target = [I]>,
+    DS: Deref<Target = [N]>,
+    DS2: ndarray::Data<Elem = N>,
 {
     type Output = Array<N, Ix2>;
 
@@ -2150,16 +2150,16 @@ where
     }
 }
 
-impl<'a, 'b, N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix1>>
+impl<N, I, Iptr, IpS, IS, DS, DS2> Dot<ArrayBase<DS2, Ix1>>
     for CsMatBase<N, I, IpS, IS, DS, Iptr>
 where
-    N: 'a + Clone + crate::MulAcc + num_traits::Zero,
-    I: 'a + SpIndex,
-    Iptr: 'a + SpIndex,
-    IpS: 'a + Deref<Target = [Iptr]>,
-    IS: 'a + Deref<Target = [I]>,
-    DS: 'a + Deref<Target = [N]>,
-    DS2: 'b + ndarray::Data<Elem = N>,
+    N: Clone + crate::MulAcc + num_traits::Zero,
+    I: SpIndex,
+    Iptr: SpIndex,
+    IpS: Deref<Target = [Iptr]>,
+    IS: Deref<Target = [I]>,
+    DS: Deref<Target = [N]>,
+    DS2: ndarray::Data<Elem = N>,
 {
     type Output = Array<N, Ix1>;
 

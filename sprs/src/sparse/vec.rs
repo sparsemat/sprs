@@ -998,11 +998,10 @@ where
 }
 
 /// # Methods on sparse vectors with mutable access to their data
-impl<'a, N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage, N, I>
+impl<N, I, IStorage, DStorage> CsVecBase<IStorage, DStorage, N, I>
 where
-    N: 'a,
-    I: 'a + SpIndex,
-    IStorage: 'a + Deref<Target = [I]>,
+    I: SpIndex,
+    IStorage: Deref<Target = [I]>,
     DStorage: DerefMut<Target = [N]>,
 {
     /// The underlying non zero values as a mutable slice.
@@ -1102,9 +1101,8 @@ where
     }
 }
 
-impl<'a, 'b, N, I, Iptr, IpS1, IS1, DS1, IS2, DS2>
-    Mul<&'b CsVecBase<IS2, DS2, N, I>>
-    for &'a CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
+impl<N, I, Iptr, IpS1, IS1, DS1, IS2, DS2> Mul<&CsVecBase<IS2, DS2, N, I>>
+    for &CsMatBase<N, I, IpS1, IS1, DS1, Iptr>
 where
     N: Clone
         + crate::MulAcc
@@ -1151,8 +1149,8 @@ where
     }
 }
 
-impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
-    Add<&'a CsVecBase<IS2, DS2, Rhs, I>> for CsVecBase<IS1, DS1, Lhs, I>
+impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<&CsVecBase<IS2, DS2, Rhs, I>>
+    for CsVecBase<IS1, DS1, Lhs, I>
 where
     Lhs: Zero,
     Rhs: Zero,
@@ -1170,8 +1168,8 @@ where
     }
 }
 
-impl<'a, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
-    for &'a CsVecBase<IS1, DS1, Lhs, I>
+impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<CsVecBase<IS2, DS2, Rhs, I>>
+    for &CsVecBase<IS1, DS1, Lhs, I>
 where
     Lhs: Zero,
     Rhs: Zero,
@@ -1189,8 +1187,8 @@ where
     }
 }
 
-impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
-    Add<&'b CsVecBase<IS2, DS2, Rhs, I>> for &'a CsVecBase<IS1, DS1, Lhs, I>
+impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Add<&CsVecBase<IS2, DS2, Rhs, I>>
+    for &CsVecBase<IS1, DS1, Lhs, I>
 where
     Lhs: Zero,
     Rhs: Zero,
@@ -1208,8 +1206,8 @@ where
     }
 }
 
-impl<'a, 'b, Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2>
-    Sub<&'b CsVecBase<IS2, DS2, Rhs, I>> for &'a CsVecBase<IS1, DS1, Lhs, I>
+impl<Lhs, Rhs, Res, I, IS1, DS1, IS2, DS2> Sub<&CsVecBase<IS2, DS2, Rhs, I>>
+    for &CsVecBase<IS1, DS1, Lhs, I>
 where
     Lhs: Zero,
     Rhs: Zero,

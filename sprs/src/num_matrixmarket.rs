@@ -9,7 +9,7 @@ use crate::num_kinds::Pattern;
 
 pub struct Displayable<T>(T);
 
-impl<'a> Display for Displayable<&'a Pattern> {
+impl Display for Displayable<&Pattern> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // write nothing for pattern
         write!(f, "")

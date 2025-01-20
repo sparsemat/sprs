@@ -1,3 +1,4 @@
+//! Sparse triangular solves
 use crate::dense_vector::{DenseVector, DenseVectorMut};
 use crate::errors::{LinalgError, SingularMatrixInfo};
 use crate::indexing::SpIndex;
@@ -5,7 +6,6 @@ use crate::sparse::CsMatViewI;
 use crate::sparse::CsVecViewI;
 use crate::stack::{self, DStack, StackVal};
 use num_traits::Num;
-/// Sparse triangular solves
 
 fn check_solver_dimensions<N, I, Iptr, V>(
     lower_tri_mat: &CsMatViewI<N, I, Iptr>,
