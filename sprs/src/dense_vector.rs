@@ -252,7 +252,7 @@ pub trait DenseVectorMut: DenseVector {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Scalar;
 }
 
-impl<'a, N: 'a + Zero + Clone> DenseVectorMut for [N] {
+impl<N: Zero + Clone> DenseVectorMut for [N] {
     #[inline(always)]
     fn index_mut(&mut self, idx: usize) -> &mut N {
         &mut self[idx]

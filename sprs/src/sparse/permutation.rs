@@ -66,7 +66,7 @@ impl<I: SpIndex> PermOwnedI<I> {
     }
 }
 
-impl<'a, I: SpIndex> PermViewI<'a, I> {
+impl<I: SpIndex> PermViewI<'_, I> {
     pub fn reborrow(&self) -> Self {
         match self.storage {
             Identity => Self {

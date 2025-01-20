@@ -18,7 +18,7 @@ pub struct NnzPatternFormatter<'a, N, I: SpIndex, Iptr: SpIndex> {
     mat: CsMatViewI<'a, N, I, Iptr>,
 }
 
-impl<'a, N, I, Iptr> fmt::Display for NnzPatternFormatter<'a, N, I, Iptr>
+impl<N, I, Iptr> fmt::Display for NnzPatternFormatter<'_, N, I, Iptr>
 where
     N: Clone + Default,
     I: SpIndex,
