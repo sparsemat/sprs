@@ -1,6 +1,6 @@
 //! Random sparse matrix generation
 
-use crate::rand::distributions::Distribution;
+use crate::rand::distr::Distribution;
 use crate::rand::Rng;
 use crate::rand::SeedableRng;
 use sprs::indexing::SpIndex;
@@ -40,7 +40,7 @@ where
     let mut data = Vec::with_capacity(exp_nnz);
     // sample row indices
     for _ in 0..exp_nnz {
-        indices.push(I::from_usize(rng.gen_range(0..shape.0)));
+        indices.push(I::from_usize(rng.random_range(0..shape.0)));
         // Note: there won't be any correspondence between the data
         // sampled here and the row sampled before, but this does not matter
         // as we are sampling.
@@ -65,7 +65,7 @@ where
         let end = indptr[row + 1].index();
         for _ in start..end {
             loop {
-                let col = I::from_usize(rng.gen_range(0..shape.1));
+                let col = I::from_usize(rng.random_range(0..shape.1));
                 let loc = indices[start..].binary_search(&col);
                 match loc {
                     Ok(_) => {
@@ -87,21 +87,21 @@ where
 /// Convenient wrapper for the common case of sampling a matrix with standard
 /// normal distribution of the nnz values, using a lightweight rng.
 pub fn rand_csr_std(shape: (usize, usize), density: f64) -> CsMat<f64> {
-    let mut rng = rand_pcg::Pcg64Mcg::from_entropy();
+    let mut rng = rand_pcg::Pcg64Mcg::from_rng(&mut rand::rng());
     rand_csr(&mut rng, crate::rand_distr::StandardNormal, shape, density)
 }
 
 #[cfg(test)]
 mod tests {
-    use rand::distributions::Standard;
+    use rand::distr::StandardUniform;
     use rand::SeedableRng;
     use sprs::CsMat;
 
     #[test]
     fn empty_random_mat() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let empty: CsMat<f64> =
-            super::rand_csr(&mut rng, Standard, (0, 0), 0.3);
+            super::rand_csr(&mut rng, StandardUniform, (0, 0), 0.3);
         assert_eq!(empty.nnz(), 0);
     }
 
@@ -109,12 +109,12 @@ mod tests {
     fn random_csr() {
         let mut rng = rand::rngs::StdRng::seed_from_u64(1234);
         let mat: CsMat<f64> =
-            super::rand_csr(&mut rng, Standard, (100, 70), 0.3);
+            super::rand_csr(&mut rng, StandardUniform, (100, 70), 0.3);
         assert!(mat.density() > 0.25);
         assert!(mat.density() < 0.35);
 
         let mat: CsMat<f64> =
-            super::rand_csr(&mut rng, Standard, (1, 10000), 0.3);
+            super::rand_csr(&mut rng, StandardUniform, (1, 10000), 0.3);
         assert!(mat.density() > 0.28);
         assert!(mat.density() < 0.32);
     }
