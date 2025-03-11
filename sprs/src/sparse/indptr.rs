@@ -54,7 +54,7 @@ where
             .last()
             .copied()
             .map(Iptr::index_unchecked)
-            .map_or(false, |i| i > usize::MAX / 2)
+            .is_some_and(|i| i > usize::MAX / 2)
         {
             // We do not allow indptr values to be larger than half
             // the maximum value of an usize, as that would clearly exhaust
@@ -120,7 +120,7 @@ where
     ///
     /// An empty matrix is considered non-proper.
     pub fn is_proper(&self) -> bool {
-        self.storage.first().map_or(false, |i| *i == Iptr::zero())
+        self.storage.first().is_some_and(|i| *i == Iptr::zero())
     }
 
     /// Return a view on the underlying slice if it is a proper `indptr` slice,
