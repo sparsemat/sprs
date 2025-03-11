@@ -2,6 +2,9 @@
 Changelog
 =========
 
+- unreleased
+  - Bump MSRV (1.85)
+
 - 0.11.3
   - Fixed a bug where Iptr -> I conversion was not checked
 
