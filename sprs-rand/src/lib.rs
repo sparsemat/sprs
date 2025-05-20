@@ -67,14 +67,9 @@ where
             loop {
                 let col = I::from_usize(rng.random_range(0..shape.1));
                 let loc = indices[start..].binary_search(&col);
-                match loc {
-                    Ok(_) => {
-                        continue;
-                    }
-                    Err(loc) => {
-                        indices.insert(start + loc, col);
-                        break;
-                    }
+                if let Err(loc) = loc {
+                    indices.insert(start + loc, col);
+                    break;
                 }
             }
         }
