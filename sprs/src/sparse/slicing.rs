@@ -14,7 +14,10 @@ where
 {
     /// Slice the outer dimension of the matrix according to the specified
     /// range.
-    pub fn slice_outer<S: Range>(&self, range: S) -> CsMatViewI<N, I, Iptr> {
+    pub fn slice_outer<S: Range>(
+        &self,
+        range: S,
+    ) -> CsMatViewI<'_, N, I, Iptr> {
         self.view().slice_outer_rbr(range)
     }
 }
@@ -31,7 +34,7 @@ where
     pub fn slice_outer_mut<S: Range>(
         &mut self,
         range: S,
-    ) -> CsMatViewMutI<N, I, Iptr> {
+    ) -> CsMatViewMutI<'_, N, I, Iptr> {
         let start = range.start();
         let end = range.end().unwrap_or_else(|| self.outer_dims());
         assert!(end >= start, "Invalid view");

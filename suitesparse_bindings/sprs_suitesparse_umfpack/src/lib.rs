@@ -156,7 +156,7 @@ macro_rules! umfpack_impl {
             /// Get a reference to the stored matrix,
             /// which may have had its data type converted from
             /// what was supplied.
-            pub fn a(&self) -> CsMatViewI<f64, $int> {
+            pub fn a(&self) -> CsMatViewI<'_, f64, $int> {
                 self.a.view()
             }
 

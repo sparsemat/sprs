@@ -7,10 +7,10 @@ use std::ops::Deref;
 /// into a `CsMat`
 pub trait SpMatView<N, I: SpIndex, Iptr: SpIndex = I> {
     /// Return a view into the current matrix
-    fn view(&self) -> CsMatViewI<N, I, Iptr>;
+    fn view(&self) -> CsMatViewI<'_, N, I, Iptr>;
 
     /// Return a view into the current matrix
-    fn transpose_view(&self) -> CsMatViewI<N, I, Iptr>;
+    fn transpose_view(&self) -> CsMatViewI<'_, N, I, Iptr>;
 }
 
 impl<N, I, Iptr, IpStorage, IndStorage, DataStorage> SpMatView<N, I, Iptr>
@@ -22,11 +22,11 @@ where
     IndStorage: Deref<Target = [I]>,
     DataStorage: Deref<Target = [N]>,
 {
-    fn view(&self) -> CsMatViewI<N, I, Iptr> {
+    fn view(&self) -> CsMatViewI<'_, N, I, Iptr> {
         self.view()
     }
 
-    fn transpose_view(&self) -> CsMatViewI<N, I, Iptr> {
+    fn transpose_view(&self) -> CsMatViewI<'_, N, I, Iptr> {
         self.transpose_view()
     }
 }
