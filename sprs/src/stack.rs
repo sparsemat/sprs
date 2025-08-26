@@ -120,7 +120,7 @@ where
     }
 
     /// Iterates along the right stack without removing items
-    pub fn iter_right(&self) -> slice::Iter<I> {
+    pub fn iter_right(&self) -> slice::Iter<'_, I> {
         self.stacks[self.right_head..].iter()
     }
 

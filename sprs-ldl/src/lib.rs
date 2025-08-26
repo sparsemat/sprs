@@ -415,7 +415,7 @@ impl<N, I: SpIndex> LdlNumeric<N, I> {
     }
 
     /// The L factor of the LDL^T decomposition
-    pub fn l(&self) -> CsMatViewI<N, I> {
+    pub fn l(&self) -> CsMatViewI<'_, N, I> {
         use std::slice::from_raw_parts;
         let n = self.symbolic.problem_size();
         // CsMat invariants are guaranteed by the LDL algorithm

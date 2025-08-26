@@ -87,7 +87,7 @@ where
         Self { storage }
     }
 
-    pub fn view(&self) -> IndPtrView<Iptr> {
+    pub fn view(&self) -> IndPtrView<'_, Iptr> {
         IndPtrView {
             storage: &self.storage[..],
         }
@@ -203,7 +203,7 @@ where
     /// // This line is UB.
     /// // println!("ptr deref: {}", *ptr);
     /// ```
-    pub fn to_proper(&self) -> std::borrow::Cow<[Iptr]> {
+    pub fn to_proper(&self) -> std::borrow::Cow<'_, [Iptr]> {
         if self.is_proper() {
             std::borrow::Cow::Borrowed(&self.storage[..])
         } else {
@@ -361,7 +361,7 @@ where
     pub(crate) fn middle_slice(
         &self,
         range: impl crate::range::Range,
-    ) -> IndPtrView<Iptr> {
+    ) -> IndPtrView<'_, Iptr> {
         self.view().middle_slice_rbr(range)
     }
 }

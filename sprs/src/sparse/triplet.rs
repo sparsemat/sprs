@@ -234,7 +234,7 @@ where
     }
 
     /// Get a transposed view of this matrix
-    pub fn transpose_view(&self) -> TriMatViewI<N, I> {
+    pub fn transpose_view(&self) -> TriMatViewI<'_, N, I> {
         TriMatViewI {
             rows: self.cols,
             cols: self.rows,
@@ -245,7 +245,9 @@ where
     }
 
     /// Get an iterator over non-zero elements stored by this matrix
-    pub fn triplet_iter(&self) -> TriMatIter<Iter<I>, Iter<I>, Iter<N>> {
+    pub fn triplet_iter(
+        &self,
+    ) -> TriMatIter<Iter<'_, I>, Iter<'_, I>, Iter<'_, N>> {
         TriMatIter {
             rows: self.rows,
             cols: self.cols,
@@ -272,7 +274,7 @@ where
         self.triplet_iter().into_csr()
     }
 
-    pub fn view(&self) -> TriMatViewI<N, I> {
+    pub fn view(&self) -> TriMatViewI<'_, N, I> {
         TriMatViewI {
             rows: self.rows,
             cols: self.cols,
@@ -320,7 +322,7 @@ where
         self.data[triplet_ind] = val;
     }
 
-    pub fn view_mut(&mut self) -> TriMatViewMutI<N, I> {
+    pub fn view_mut(&mut self) -> TriMatViewMutI<'_, N, I> {
         TriMatViewMutI {
             rows: self.rows,
             cols: self.cols,

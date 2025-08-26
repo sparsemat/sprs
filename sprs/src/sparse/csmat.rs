@@ -889,7 +889,7 @@ where
     /// assert_eq!(eye.indices()[range.start], 3);
     /// assert_eq!(eye.data()[range.start], 1.);
     /// ```
-    pub fn indptr(&self) -> crate::IndPtrView<Iptr> {
+    pub fn indptr(&self) -> crate::IndPtrView<'_, Iptr> {
         crate::IndPtrView::new_trusted(self.indptr.raw_storage())
     }
 
@@ -916,7 +916,7 @@ where
     /// // This line is UB.
     /// // println!("ptr deref: {}", *ptr);
     /// ```
-    pub fn proper_indptr(&self) -> std::borrow::Cow<[Iptr]> {
+    pub fn proper_indptr(&self) -> std::borrow::Cow<'_, [Iptr]> {
         self.indptr.to_proper()
     }
 
@@ -979,7 +979,7 @@ where
 
     /// Transposed view of this matrix
     /// No allocation required (this is simply a storage order change)
-    pub fn transpose_view(&self) -> CsMatViewI<N, I, Iptr> {
+    pub fn transpose_view(&self) -> CsMatViewI<'_, N, I, Iptr> {
         CsMatViewI {
             storage: self.storage.other_storage(),
             nrows: self.ncols,
@@ -1091,7 +1091,7 @@ where
     }
 
     /// Return a view into the current matrix
-    pub fn view(&self) -> CsMatViewI<N, I, Iptr> {
+    pub fn view(&self) -> CsMatViewI<'_, N, I, Iptr> {
         CsMatViewI {
             storage: self.storage,
             nrows: self.nrows,
@@ -1102,7 +1102,7 @@ where
         }
     }
 
-    pub fn structure_view(&self) -> CsStructureViewI<I, Iptr> {
+    pub fn structure_view(&self) -> CsStructureViewI<'_, I, Iptr> {
         // Safety: std::slice::from_raw_parts requires its passed
         // pointer to be valid for the whole length of the slice. We have a
         // zero-sized type, so the length is zero, and since we cast
@@ -1149,8 +1149,8 @@ where
     /// ```
     pub fn outer_iterator(
         &self,
-    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewI<N, I>>
-           + std::iter::ExactSizeIterator<Item = CsVecViewI<N, I>>
+    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewI<'_, N, I>>
+           + std::iter::ExactSizeIterator<Item = CsVecViewI<'_, N, I>>
            + '_ {
         self.indptr.iter_outer_sz().map(move |range| {
             CsVecViewI::new_trusted(
@@ -1216,7 +1216,7 @@ where
     }
 
     /// Get a view into the i-th outer dimension (eg i-th row for a CSR matrix)
-    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<N, I>> {
+    pub fn outer_view(&self, i: usize) -> Option<CsVecViewI<'_, N, I>> {
         if i >= self.outer_dims() {
             return None;
         }
@@ -1272,8 +1272,8 @@ where
     pub fn outer_block_iter(
         &self,
         block_size: usize,
-    ) -> impl std::iter::DoubleEndedIterator<Item = CsMatViewI<N, I, Iptr>>
-           + std::iter::ExactSizeIterator<Item = CsMatViewI<N, I, Iptr>>
+    ) -> impl std::iter::DoubleEndedIterator<Item = CsMatViewI<'_, N, I, Iptr>>
+           + std::iter::ExactSizeIterator<Item = CsMatViewI<'_, N, I, Iptr>>
            + '_ {
         (0..self.outer_dims()).step_by(block_size).map(move |i| {
             let count = if i + block_size > self.outer_dims() {
@@ -1379,7 +1379,7 @@ where
 
     /// Get an iterator that yields the non-zero locations and values stored in
     /// this matrix, in the fastest iteration order.
-    pub fn iter(&self) -> CsIter<N, I, Iptr> {
+    pub fn iter(&self) -> CsIter<'_, N, I, Iptr> {
         CsIter {
             storage: self.storage,
             cur_outer: I::zero(),
@@ -1515,7 +1515,10 @@ where
 
     /// Get a mutable view into the i-th outer dimension
     /// (eg i-th row for a CSR matrix)
-    pub fn outer_view_mut(&mut self, i: usize) -> Option<CsVecViewMutI<N, I>> {
+    pub fn outer_view_mut(
+        &mut self,
+        i: usize,
+    ) -> Option<CsVecViewMutI<'_, N, I>> {
         if i >= self.outer_dims() {
             return None;
         }
@@ -1597,8 +1600,8 @@ where
     /// structure is kept immutable.
     pub fn outer_iterator_mut(
         &mut self,
-    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<N, I>>
-           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<N, I>>
+    ) -> impl std::iter::DoubleEndedIterator<Item = CsVecViewMutI<'_, N, I>>
+           + std::iter::ExactSizeIterator<Item = CsVecViewMutI<'_, N, I>>
            + '_ {
         let inner_dim = self.inner_dims();
         let indices = &self.indices[..];
@@ -1619,7 +1622,7 @@ where
     }
 
     /// Return a mutable view into the current matrix
-    pub fn view_mut(&mut self) -> CsMatViewMutI<N, I, Iptr> {
+    pub fn view_mut(&mut self) -> CsMatViewMutI<'_, N, I, Iptr> {
         CsMatViewMutI {
             storage: self.storage,
             nrows: self.nrows,

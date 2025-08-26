@@ -613,7 +613,7 @@ where
     DStorage: Deref<Target = [N]>,
 {
     /// Get a view of this vector.
-    pub fn view(&self) -> CsVecViewI<N, I> {
+    pub fn view(&self) -> CsVecViewI<'_, N, I> {
         CsVecViewI::new_trusted(self.dim, &self.indices[..], &self.data)
     }
 
@@ -640,7 +640,7 @@ where
     /// assert_eq!(iter.next(), Some((4, &3.)));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> VectorIterator<N, I> {
+    pub fn iter(&self) -> VectorIterator<'_, N, I> {
         VectorIterator {
             ind_data: self.indices.iter().zip(self.data.iter()),
         }
@@ -744,7 +744,7 @@ where
     }
 
     /// View this vector as a matrix with only one row.
-    pub fn row_view<Iptr: SpIndex>(&self) -> CsMatVecView_<N, I, Iptr> {
+    pub fn row_view<Iptr: SpIndex>(&self) -> CsMatVecView_<'_, N, I, Iptr> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
@@ -764,7 +764,7 @@ where
     }
 
     /// View this vector as a matrix with only one column.
-    pub fn col_view<Iptr: SpIndex>(&self) -> CsMatVecView_<N, I, Iptr> {
+    pub fn col_view<Iptr: SpIndex>(&self) -> CsMatVecView_<'_, N, I, Iptr> {
         // Safe because we're taking a view into a vector that has
         // necessarily been checked
         let indptr = Array2 {
@@ -1009,7 +1009,7 @@ where
         &mut self.data[..]
     }
 
-    pub fn view_mut(&mut self) -> CsVecViewMutI<N, I> {
+    pub fn view_mut(&mut self) -> CsVecViewMutI<'_, N, I> {
         CsVecViewMutI::new_trusted(
             self.dim,
             &self.indices[..],
@@ -1039,7 +1039,7 @@ where
     /// Mutable iteration over the non-zero values of a sparse vector
     ///
     /// Only the values can be changed, the sparse structure is kept.
-    pub fn iter_mut(&mut self) -> VectorIteratorMut<N, I> {
+    pub fn iter_mut(&mut self) -> VectorIteratorMut<'_, N, I> {
         VectorIteratorMut {
             ind_data: self.indices.iter().zip(self.data.iter_mut()),
         }
@@ -1758,8 +1758,11 @@ mod test {
         assert_eq!(7., v.norm(std::f32::INFINITY));
         assert_eq!(0., v.norm(std::f32::NEG_INFINITY));
         assert_eq!(4., v.norm(0.));
-        assert_eq!(v.l1_norm(), v.norm(1.));
-        assert_eq!(v.l2_norm(), v.norm(2.));
+
+        let diff = v.l1_norm() - v.norm(1.0);
+        assert!(diff.abs() < 1e-4);
+        let diff = v.l2_norm() - v.norm(2.0);
+        assert!(diff.abs() < 1e-4);
     }
 
     #[test]

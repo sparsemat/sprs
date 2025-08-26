@@ -117,7 +117,7 @@ where
         }
     }
 
-    pub fn inv(&self) -> PermViewI<I> {
+    pub fn inv(&self) -> PermViewI<'_, I> {
         match self.storage {
             Identity => PermViewI {
                 dim: self.dim,
@@ -151,7 +151,7 @@ where
         }
     }
 
-    pub fn view(&self) -> PermViewI<I> {
+    pub fn view(&self) -> PermViewI<'_, I> {
         match self.storage {
             Identity => PermViewI {
                 dim: self.dim,
