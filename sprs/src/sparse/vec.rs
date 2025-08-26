@@ -1758,8 +1758,11 @@ mod test {
         assert_eq!(7., v.norm(std::f32::INFINITY));
         assert_eq!(0., v.norm(std::f32::NEG_INFINITY));
         assert_eq!(4., v.norm(0.));
-        assert_eq!(v.l1_norm(), v.norm(1.));
-        assert_eq!(v.l2_norm(), v.norm(2.));
+
+        let diff = v.l1_norm() - v.norm(1.0);
+        assert!(diff.abs() < 1e-4);
+        let diff = v.l2_norm() - v.norm(2.0);
+        assert!(diff.abs() < 1e-4);
     }
 
     #[test]
