@@ -93,7 +93,7 @@ struct BenchSpec {
 }
 
 fn bench_densities() -> Result<(), Box<dyn std::error::Error>> {
-    Python::with_gil(bench_densities_with_py)
+    Python::attach(bench_densities_with_py)
 }
 
 fn bench_densities_with_py(
