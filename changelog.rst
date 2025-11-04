@@ -3,7 +3,10 @@ Changelog
 =========
 
 - unreleased
+
+- 0.11.4
   - Bump MSRV (1.85)
+  - Accept ndarray 0.17 as dependency
 
 - 0.11.3
   - Fixed a bug where Iptr -> I conversion was not checked
