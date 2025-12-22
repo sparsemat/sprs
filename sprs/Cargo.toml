@@ -34,7 +34,7 @@ approx = { version = "0.5", optional = true }
 num-derive = "0.4"
 bencher = "0.1.0"
 tempfile = "3.1.0"
-bincode = { version = "2.0.1", features = ["serde"] }
+bincode = { version = "3.0.0", features = ["serde"] }
 tobj = "4.0"
 image = { version = "0.25.2", default-features = false, features = ["png"] }
 rand = { version = "0.9", default-features = false, features = ["small_rng"] }
