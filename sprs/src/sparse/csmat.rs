@@ -2830,7 +2830,7 @@ mod test {
             (3, 3),
             vec![0u32, 1, 3, 4],
             vec![1, 0, 2, 2],
-            vec![1.; 4],
+            vec![1.0f32; 4],
         );
         let mat_: CsMatI<f32, usize, u32> = mat.to_other_types();
         assert_eq!(mat_.indptr(), &[0, 1, 3, 4][..]);
