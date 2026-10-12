@@ -850,10 +850,7 @@ where
     /// Number of inner dimensions, that ie equal to `self.cols()` for a CSR
     /// matrix, and equal to `self.rows()` for a CSC matrix
     pub fn inner_dims(&self) -> usize {
-        match self.storage {
-            CSC => self.nrows,
-            CSR => self.ncols,
-        }
+        inner_dimension(self.storage, self.nrows, self.ncols)
     }
 
     /// Access the element located at row i and column j.
