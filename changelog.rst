@@ -4,6 +4,9 @@ Changelog
 
 - unreleased
 
+- 0.11.6
+  - Fixed an issue where CsMat::set modified wrong entry
+
 - 0.11.4
   - Bump MSRV (1.85)
   - Accept ndarray 0.17 as dependency
