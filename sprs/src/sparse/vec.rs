@@ -1750,13 +1750,13 @@ mod test {
     #[test]
     fn norm() {
         let v = CsVec::new(0, Vec::<usize>::new(), Vec::<f32>::new());
-        assert_eq!(0., v.norm(std::f32::INFINITY)); // Here we choose the same behavior as Eigen
+        assert_eq!(0., v.norm(f32::INFINITY)); // Here we choose the same behavior as Eigen
         assert_eq!(0., v.norm(0.));
         assert_eq!(0., v.norm(5.));
 
         let v = CsVec::new(8, vec![0, 1, 4, 5, 7], vec![0., 1., -4., 5., -7.]);
-        assert_eq!(7., v.norm(std::f32::INFINITY));
-        assert_eq!(0., v.norm(std::f32::NEG_INFINITY));
+        assert_eq!(7., v.norm(f32::INFINITY));
+        assert_eq!(0., v.norm(f32::NEG_INFINITY));
         assert_eq!(4., v.norm(0.));
 
         let diff = v.l1_norm() - v.norm(1.0);

@@ -850,10 +850,7 @@ where
     /// Number of inner dimensions, that ie equal to `self.cols()` for a CSR
     /// matrix, and equal to `self.rows()` for a CSC matrix
     pub fn inner_dims(&self) -> usize {
-        match self.storage {
-            CSC => self.nrows,
-            CSR => self.ncols,
-        }
+        inner_dimension(self.storage, self.nrows, self.ncols)
     }
 
     /// Access the element located at row i and column j.
@@ -1574,12 +1571,7 @@ where
     /// - on out-of-bounds access
     /// - if no non-zero element exists at the given location
     pub fn set(&mut self, row: usize, col: usize, val: N) {
-        let outer = outer_dimension(self.storage(), row, col);
-        let inner = inner_dimension(self.storage(), row, col);
-        let vec::NnzIndex(index) = self
-            .outer_view(outer)
-            .and_then(|vec| vec.nnz_index(inner))
-            .unwrap();
+        let NnzIndex(index) = self.nnz_index(row, col).unwrap();
         self.data[index] = val;
     }
 
@@ -2989,7 +2981,7 @@ mod test {
             (2, 2),
             vec![0, 2, 3],
             vec![0, 1, 1],
-            vec![2.0, std::f64::NAN, 2.0],
+            vec![2.0, f64::NAN, 2.0],
         );
 
         let onehot = mat.to_inner_onehot();
@@ -3049,6 +3041,46 @@ mod test {
         let a = crate::TriMat::<i32>::new((10, 1)).to_csc::<usize>();
         let b = crate::TriMat::<i32>::new((1, 9)).to_csr();
         let _c = &a * &b;
+    }
+
+    #[test]
+    fn issue_410() {
+        use crate::TriMat;
+        let mut t = TriMat::new((3, 3));
+        for (r, c, v) in [
+            (0, 0, 1.0),
+            (0, 1, 4.0),
+            (1, 1, 2.0),
+            (1, 2, 5.0),
+            (2, 2, 3.0),
+        ] {
+            t.add_triplet(r, c, v);
+        }
+        let mut m: CsMat<f64> = t.to_csc();
+
+        m.set(1, 1, 20.0);
+        assert_eq!(Some(20.0), m.get(1, 1).copied());
+        assert_eq!(Some(4.0), m.get(0, 1).copied());
+    }
+
+    #[test]
+    fn issue_410_csr() {
+        use crate::TriMat;
+        let mut t = TriMat::new((3, 3));
+        for (r, c, v) in [
+            (0, 0, 1.0),
+            (0, 1, 4.0),
+            (1, 1, 2.0),
+            (1, 2, 5.0),
+            (2, 2, 3.0),
+        ] {
+            t.add_triplet(r, c, v);
+        }
+        let mut m: CsMat<f64> = t.to_csr();
+
+        m.set(1, 1, 20.0);
+        assert_eq!(Some(20.0), m.get(1, 1).copied());
+        assert_eq!(Some(4.0), m.get(0, 1).copied());
     }
 }
 
