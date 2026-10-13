@@ -3062,6 +3062,26 @@ mod test {
         assert_eq!(Some(20.0), m.get(1, 1).copied());
         assert_eq!(Some(4.0), m.get(0, 1).copied());
     }
+
+    #[test]
+    fn issue_410_csr() {
+        use crate::TriMat;
+        let mut t = TriMat::new((3, 3));
+        for (r, c, v) in [
+            (0, 0, 1.0),
+            (0, 1, 4.0),
+            (1, 1, 2.0),
+            (1, 2, 5.0),
+            (2, 2, 3.0),
+        ] {
+            t.add_triplet(r, c, v);
+        }
+        let mut m: CsMat<f64> = t.to_csr();
+
+        m.set(1, 1, 20.0);
+        assert_eq!(Some(20.0), m.get(1, 1).copied());
+        assert_eq!(Some(4.0), m.get(0, 1).copied());
+    }
 }
 
 #[cfg(feature = "approx")]
